@@ -54,6 +54,10 @@ class SubstrateInterface:
 
         return json_body
 
+    def get_system_name(self):
+        response = self.__rpc_request("system_name", [])
+        return response.get('result')
+
     def get_chain_head(self):
         response = self.__rpc_request("chain_getHead", [])
         return response.get('result')
