@@ -148,7 +148,7 @@ setup(
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=['requests', 'urllib3'],  # Optional
     
-    dependency_links=['git+https://github.com/polkascan/py-scale-codec.git@master#egg=scalecodec'],
+    dependency_links=['https://github.com/polkascan/py-scale-codec/tarball/master#egg=scalecodec'],
     
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
