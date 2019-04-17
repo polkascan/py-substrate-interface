@@ -146,9 +146,8 @@ setup(
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['requests', 'urllib3'],  # Optional
-    
-    dependency_links=['https://github.com/polkascan/py-scale-codec/tarball/master#egg=scalecodec'],
+    install_requires=['requests', 'urllib3',
+                      'scalecodec@https://github.com/polkascan/py-scale-codec/tarball/master#egg=scalecodec'],  
     
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
