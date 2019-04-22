@@ -2,6 +2,6 @@ certifi==2019.3.9
 chardet==3.0.4
 idna==2.8
 requests==2.21.0
-urllib3==1.24.1
+urllib3==1.24.2
 
 git+https://github.com/polkascan/py-scale-codec.git@master#egg=scalecodec
