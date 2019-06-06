@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Polkascan. If not, see <http://www.gnu.org/licenses/>.
 
+import binascii
+import xxhash
 import json
 import requests
 
@@ -23,6 +25,7 @@ from scalecodec import ScaleBytes
 from scalecodec.block import ExtrinsicsDecoder, EventsDecoder
 from scalecodec.metadata import MetadataDecoder
 from .exceptions import SubstrateRequestException
+from .constants import *
 
 
 class SubstrateInterface:
@@ -115,7 +118,7 @@ class SubstrateInterface:
             raise SubstrateRequestException("Error occurred during retrieval of metadata")
 
     def get_block_events(self, block_hash, metadata_decoder=None):
-        response = self.__rpc_request("state_getStorageAt", ["0xcc956bdb7605e3547539f321ac2bc95c", block_hash])
+        response = self.__rpc_request("state_getStorageAt", [STORAGE_HASH_SYSTEM_EVENTS, block_hash])
 
         if response.get('result'):
 
@@ -138,3 +141,17 @@ class SubstrateInterface:
     def get_block_runtime_version(self, block_hash):
         response = self.__rpc_request("chain_getRuntimeVersion", [block_hash])
         return response.get('result')
+
+    @staticmethod
+    def generate_storage_hash(storage_module, storage_function, params=None):
+        storage_function = storage_module.encode() + b" " + storage_function.encode()
+        if params:
+            storage_function += binascii.unhexlify(params)
+
+        storage_key1 = bytearray(xxhash.xxh64(storage_function, seed=0).digest())
+        storage_key1.reverse()
+
+        storage_key2 = bytearray(xxhash.xxh64(storage_function, seed=1).digest())
+        storage_key2.reverse()
+
+        return "0x{}{}".format(storage_key1.hex(), storage_key2.hex())
