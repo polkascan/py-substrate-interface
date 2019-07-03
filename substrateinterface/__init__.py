@@ -117,6 +117,24 @@ class SubstrateInterface:
         else:
             raise SubstrateRequestException("Error occurred during retrieval of metadata")
 
+    def get_storage(self, block_hash, module, function, params=None):
+        """
+        Retrieves the storage for given given module, function and optional paramaters at given block
+        :param block_hash:
+        :param module:
+        :param function:
+        :param params:
+        :return:
+        """
+        storage_hash = self.generate_storage_hash(module, function, params)
+        print('key', storage_hash)
+        response = self.__rpc_request("state_getStorageAt", [storage_hash, block_hash])
+
+        if 'result' in response:
+            return response.get('result')
+        else:
+            raise SubstrateRequestException("Error occurred during retrieval of events")
+
     def get_block_events(self, block_hash, metadata_decoder=None):
         response = self.__rpc_request("state_getStorageAt", [STORAGE_HASH_SYSTEM_EVENTS, block_hash])
 
@@ -144,6 +162,13 @@ class SubstrateInterface:
 
     @staticmethod
     def generate_storage_hash(storage_module, storage_function, params=None):
+        """
+        Generate a storage key for given module/function
+        :param storage_module:
+        :param storage_function:
+        :param params:
+        :return:
+        """
         storage_function = storage_module.encode() + b" " + storage_function.encode()
         if params:
             storage_function += binascii.unhexlify(params)
