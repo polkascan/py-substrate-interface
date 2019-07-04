@@ -22,6 +22,7 @@ import json
 import requests
 
 from scalecodec import ScaleBytes
+from scalecodec.base import ScaleDecoder
 from scalecodec.block import ExtrinsicsDecoder, EventsDecoder
 from scalecodec.metadata import MetadataDecoder
 from .exceptions import SubstrateRequestException
@@ -117,9 +118,10 @@ class SubstrateInterface:
         else:
             raise SubstrateRequestException("Error occurred during retrieval of metadata")
 
-    def get_storage(self, block_hash, module, function, params=None):
+    def get_storage(self, block_hash, module, function, params=None, return_scale_type=None):
         """
         Retrieves the storage for given given module, function and optional paramaters at given block
+        :param return_scale_type: Scale type string to interprete result
         :param block_hash:
         :param module:
         :param function:
@@ -127,11 +129,15 @@ class SubstrateInterface:
         :return:
         """
         storage_hash = self.generate_storage_hash(module, function, params)
-        print('key', storage_hash)
         response = self.__rpc_request("state_getStorageAt", [storage_hash, block_hash])
 
         if 'result' in response:
-            return response.get('result')
+
+            if return_scale_type and response.get('result'):
+                obj = ScaleDecoder.get_decoder_class(return_scale_type, ScaleBytes(response.get('result')))
+                return obj.decode()
+            else:
+                return response.get('result')
         else:
             raise SubstrateRequestException("Error occurred during retrieval of events")
 
