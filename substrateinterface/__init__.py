@@ -32,9 +32,10 @@ from .constants import *
 
 class SubstrateInterface:
 
-    def __init__(self, url):
+    def __init__(self, url, metadata_version=4):
         self.request_id = 1
         self.url = url
+        self.metadata_version = metadata_version
         self.default_headers = {
             'content-type': "application/json",
             'cache-control': "no-cache"
@@ -112,9 +113,9 @@ class SubstrateInterface:
             if decode:
                 metadata_decoder = MetadataDecoder(ScaleBytes(response.get('result')))
                 metadata_decoder.decode()
-                
+
                 return metadata_decoder
-        
+
             return response
         else:
             raise SubstrateRequestException("Error occurred during retrieval of metadata")
@@ -127,10 +128,8 @@ class SubstrateInterface:
         :param module:
         :param function:
         :param params:
-        :param hasher:
         :return:
         """
-
         storage_hash = self.generate_storage_hash(module, function, params)
         response = self.__rpc_request("state_getStorageAt", [storage_hash, block_hash])
 
@@ -169,11 +168,9 @@ class SubstrateInterface:
         response = self.__rpc_request("chain_getRuntimeVersion", [block_hash])
         return response.get('result')
 
-    @staticmethod
-    def generate_storage_hash(storage_module, storage_function, params=None):
+    def generate_storage_hash(self, storage_module, storage_function, params=None):
         """
         Generate a storage key for given module/function
-        :param hasher:
         :param storage_module:
         :param storage_function:
         :param params:
@@ -184,7 +181,13 @@ class SubstrateInterface:
 
         if params:
             storage_function += binascii.unhexlify(params)
-            hasher = 'Blake2_256'
+
+        # Determine hasher function
+        if self.metadata_version >= 4:
+            if params:
+                hasher = 'Blake2_256'
+            else:
+                hasher = 'Twox64Concat'
         else:
             hasher = 'Twox64Concat'
 
