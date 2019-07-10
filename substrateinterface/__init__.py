@@ -17,6 +17,7 @@
 # along with Polkascan. If not, see <http://www.gnu.org/licenses/>.
 
 import binascii
+from hashlib import blake2b
 import xxhash
 import json
 import requests
@@ -118,7 +119,7 @@ class SubstrateInterface:
         else:
             raise SubstrateRequestException("Error occurred during retrieval of metadata")
 
-    def get_storage(self, block_hash, module, function, params=None, return_scale_type=None):
+    def get_storage(self, block_hash, module, function, params=None, return_scale_type=None, hasher='Blake2_256'):
         """
         Retrieves the storage for given given module, function and optional paramaters at given block
         :param return_scale_type: Scale type string to interprete result
@@ -126,9 +127,10 @@ class SubstrateInterface:
         :param module:
         :param function:
         :param params:
+        :param hasher:
         :return:
         """
-        storage_hash = self.generate_storage_hash(module, function, params)
+        storage_hash = self.generate_storage_hash(module, function, params, hasher=hasher)
         response = self.__rpc_request("state_getStorageAt", [storage_hash, block_hash])
 
         if 'result' in response:
@@ -167,22 +169,28 @@ class SubstrateInterface:
         return response.get('result')
 
     @staticmethod
-    def generate_storage_hash(storage_module, storage_function, params=None):
+    def generate_storage_hash(storage_module, storage_function, params=None, hasher='Blake2_256'):
         """
         Generate a storage key for given module/function
+        :param hasher:
         :param storage_module:
         :param storage_function:
         :param params:
         :return:
         """
+
         storage_function = storage_module.encode() + b" " + storage_function.encode()
         if params:
             storage_function += binascii.unhexlify(params)
 
-        storage_key1 = bytearray(xxhash.xxh64(storage_function, seed=0).digest())
-        storage_key1.reverse()
+        if hasher == 'Blake2_256':
+            return "0x{}".format(blake2b(storage_function, digest_size=32).digest().hex())
 
-        storage_key2 = bytearray(xxhash.xxh64(storage_function, seed=1).digest())
-        storage_key2.reverse()
+        elif hasher == 'Twox64Concat':
+            storage_key1 = bytearray(xxhash.xxh64(storage_function, seed=0).digest())
+            storage_key1.reverse()
 
-        return "0x{}{}".format(storage_key1.hex(), storage_key2.hex())
+            storage_key2 = bytearray(xxhash.xxh64(storage_function, seed=1).digest())
+            storage_key2.reverse()
+
+            return "0x{}{}".format(storage_key1.hex(), storage_key2.hex())
