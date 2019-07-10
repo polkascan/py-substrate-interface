@@ -119,7 +119,7 @@ class SubstrateInterface:
         else:
             raise SubstrateRequestException("Error occurred during retrieval of metadata")
 
-    def get_storage(self, block_hash, module, function, params=None, return_scale_type=None, hasher='Blake2_256'):
+    def get_storage(self, block_hash, module, function, params=None, return_scale_type=None):
         """
         Retrieves the storage for given given module, function and optional paramaters at given block
         :param return_scale_type: Scale type string to interprete result
@@ -130,7 +130,8 @@ class SubstrateInterface:
         :param hasher:
         :return:
         """
-        storage_hash = self.generate_storage_hash(module, function, params, hasher=hasher)
+
+        storage_hash = self.generate_storage_hash(module, function, params)
         response = self.__rpc_request("state_getStorageAt", [storage_hash, block_hash])
 
         if 'result' in response:
@@ -169,7 +170,7 @@ class SubstrateInterface:
         return response.get('result')
 
     @staticmethod
-    def generate_storage_hash(storage_module, storage_function, params=None, hasher='Blake2_256'):
+    def generate_storage_hash(storage_module, storage_function, params=None):
         """
         Generate a storage key for given module/function
         :param hasher:
@@ -180,8 +181,12 @@ class SubstrateInterface:
         """
 
         storage_function = storage_module.encode() + b" " + storage_function.encode()
+
         if params:
             storage_function += binascii.unhexlify(params)
+            hasher = 'Blake2_256'
+        else:
+            hasher = 'Twox64Concat'
 
         if hasher == 'Blake2_256':
             return "0x{}".format(blake2b(storage_function, digest_size=32).digest().hex())
