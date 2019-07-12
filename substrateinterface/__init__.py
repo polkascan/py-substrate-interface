@@ -120,9 +120,10 @@ class SubstrateInterface:
         else:
             raise SubstrateRequestException("Error occurred during retrieval of metadata")
 
-    def get_storage(self, block_hash, module, function, params=None, return_scale_type=None):
+    def get_storage(self, block_hash, module, function, params=None, return_scale_type=None, hasher=None):
         """
         Retrieves the storage for given given module, function and optional paramaters at given block
+        :param hasher: Hashing method used to determine storage key, defaults to 'Twox64Concat' if not provided
         :param return_scale_type: Scale type string to interprete result
         :param block_hash:
         :param module:
@@ -130,7 +131,7 @@ class SubstrateInterface:
         :param params:
         :return:
         """
-        storage_hash = self.generate_storage_hash(module, function, params)
+        storage_hash = self.generate_storage_hash(module, function, params, hasher)
         response = self.__rpc_request("state_getStorageAt", [storage_hash, block_hash])
 
         if 'result' in response:
@@ -168,12 +169,13 @@ class SubstrateInterface:
         response = self.__rpc_request("chain_getRuntimeVersion", [block_hash])
         return response.get('result')
 
-    def generate_storage_hash(self, storage_module, storage_function, params=None):
+    def generate_storage_hash(self, storage_module, storage_function, params=None, hasher=None):
         """
         Generate a storage key for given module/function
+        :param hasher: Hashing method used to determine storage key, defaults to 'Twox64Concat' if not provided
         :param storage_module:
         :param storage_function:
-        :param params:
+        :param params: Parameters of the storage function, provided in scale encoded hex-bytes
         :return:
         """
 
@@ -183,12 +185,7 @@ class SubstrateInterface:
             storage_function += binascii.unhexlify(params)
 
         # Determine hasher function
-        if self.metadata_version >= 4:
-            if params:
-                hasher = 'Blake2_256'
-            else:
-                hasher = 'Twox64Concat'
-        else:
+        if not hasher:
             hasher = 'Twox64Concat'
 
         if hasher == 'Blake2_256':
