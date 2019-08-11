@@ -36,6 +36,7 @@ class SubstrateInterface:
         self.request_id = 1
         self.url = url
         self.metadata_version = metadata_version
+        self._version = None
         self.default_headers = {
             'content-type': "application/json",
             'cache-control': "no-cache"
@@ -70,6 +71,12 @@ class SubstrateInterface:
     def get_system_name(self):
         response = self.__rpc_request("system_name", [])
         return response.get('result')
+
+    def get_version(self):
+        if not self._version:
+            response = self.__rpc_request("system_version", [])
+            self._version = response.get('result')
+        return self._version
 
     def get_chain_head(self):
         response = self.__rpc_request("chain_getHead", [])
@@ -185,6 +192,7 @@ class SubstrateInterface:
             storage_function += binascii.unhexlify(params)
 
         # Determine hasher function
+        # TODO default differs per spec version
         if not hasher:
             hasher = 'Twox64Concat'
 
