@@ -35,6 +35,7 @@ class SubstrateInterface:
     def __init__(self, url, metadata_version=4):
         self.request_id = 1
         self.url = url
+        self.mock_extrinsics = None
         self.metadata_version = metadata_version
         self._version = None
         self.default_headers = {
@@ -93,6 +94,10 @@ class SubstrateInterface:
 
         response = self.__rpc_request("chain_getBlock", [block_hash]).get('result')
 
+        if self.mock_extrinsics:
+            # Replace extrinsics with mock_extrinsics for e.g. performance tests
+            response['block']['extrinsics'] = self.mock_extrinsics
+
         # Decode extrinsics
         if metadata_decoder:
             for idx, extrinsic_data in enumerate(response['block']['extrinsics']):
@@ -127,9 +132,11 @@ class SubstrateInterface:
         else:
             raise SubstrateRequestException("Error occurred during retrieval of metadata")
 
-    def get_storage(self, block_hash, module, function, params=None, return_scale_type=None, hasher=None):
+    def get_storage(self, block_hash, module, function, params=None, return_scale_type=None, hasher=None,
+                    spec_version_id='default'):
         """
         Retrieves the storage for given given module, function and optional paramaters at given block
+        :param spec_version_id:
         :param hasher: Hashing method used to determine storage key, defaults to 'Twox64Concat' if not provided
         :param return_scale_type: Scale type string to interprete result
         :param block_hash:
