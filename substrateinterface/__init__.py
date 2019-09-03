@@ -119,7 +119,7 @@ class SubstrateInterface:
 
     def get_block_number(self, block_hash):
         response = self.__rpc_request("chain_getHeader", [block_hash])
-        return int(response['block']['header']['number'], 16)
+        return int(response['number'], 16)
 
     def get_block_metadata(self, block_hash, decode=True):
         response = self.__rpc_request("state_getMetadata", [block_hash])
