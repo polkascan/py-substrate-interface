@@ -95,8 +95,8 @@ class SubstrateInterface:
         response = self.__rpc_request("chain_getBlock", [block_hash]).get('result')
 
         if self.mock_extrinsics:
-            # Replace extrinsics with mock_extrinsics for e.g. performance tests
-            response['block']['extrinsics'] = self.mock_extrinsics
+            # Extend extrinsics with mock_extrinsics for e.g. performance tests
+            response['block']['extrinsics'].extend(self.mock_extrinsics)
 
         # Decode extrinsics
         if metadata_decoder:
