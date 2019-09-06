@@ -137,9 +137,10 @@ class SubstrateInterface:
             raise SubstrateRequestException("Error occurred during retrieval of metadata")
 
     def get_storage(self, block_hash, module, function, params=None, return_scale_type=None, hasher=None,
-                    spec_version_id='default'):
+                    spec_version_id='default', metadata=None):
         """
         Retrieves the storage for given given module, function and optional paramaters at given block
+        :param metadata:
         :param spec_version_id:
         :param hasher: Hashing method used to determine storage key, defaults to 'Twox64Concat' if not provided
         :param return_scale_type: Scale type string to interprete result
@@ -150,12 +151,18 @@ class SubstrateInterface:
         :return:
         """
         storage_hash = self.generate_storage_hash(module, function, params, hasher)
+        print('storage_hash', storage_hash)
+        print('block_hash', block_hash)
         response = self.__rpc_request("state_getStorageAt", [storage_hash, block_hash])
 
         if 'result' in response:
 
             if return_scale_type and response.get('result'):
-                obj = ScaleDecoder.get_decoder_class(return_scale_type, ScaleBytes(response.get('result')))
+                obj = ScaleDecoder.get_decoder_class(
+                    return_scale_type,
+                    ScaleBytes(response.get('result')),
+                    metadata=metadata
+                )
                 return obj.decode()
             else:
                 return response.get('result')
