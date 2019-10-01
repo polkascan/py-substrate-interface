@@ -90,7 +90,7 @@ class SubstrateInterface:
     def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
 
         if block_id:
-            block_hash = self.get_block_hash(block_hash)
+            block_hash = self.get_block_hash(block_id)
 
         response = self.__rpc_request("chain_getBlock", [block_hash]).get('result')
 
