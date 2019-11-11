@@ -167,6 +167,14 @@ class SubstrateInterface:
         else:
             raise SubstrateRequestException("Error occurred during retrieval of events")
 
+    def get_storage_by_key(self, block_hash, storage_key):
+
+        response = self.__rpc_request("state_getStorageAt", [storage_key, block_hash])
+        if 'result' in response:
+            return response.get('result')
+        else:
+            raise SubstrateRequestException("Error occurred during retrieval of events")
+
     def get_block_events(self, block_hash, metadata_decoder=None):
         response = self.__rpc_request("state_getStorageAt", [STORAGE_HASH_SYSTEM_EVENTS, block_hash])
 
