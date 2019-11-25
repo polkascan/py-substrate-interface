@@ -24,7 +24,7 @@ import requests
 
 from scalecodec import ScaleBytes
 from scalecodec.base import ScaleDecoder
-from scalecodec.block import ExtrinsicsDecoder, EventsDecoder
+from scalecodec.block import ExtrinsicsDecoder, EventsDecoder, LogDigest
 from scalecodec.metadata import MetadataDecoder
 from .exceptions import SubstrateRequestException
 from .constants import *
@@ -43,7 +43,9 @@ class SubstrateInterface:
             'cache-control': "no-cache"
         }
 
-    def __rpc_request(self, method, params):
+        self.metadata_store = {}
+
+    def rpc_request(self, method, params):
 
         payload = {
             "jsonrpc": "2.0",
@@ -61,30 +63,24 @@ class SubstrateInterface:
 
         json_body = response.json()
 
-        if json_body.get('error'):
-            raise SubstrateRequestException("RPC request failed with error code {} and message \"{}\"".format(
-                json_body['error']['code'],
-                json_body['error']['message']
-            ))
-
         return json_body
 
     def get_system_name(self):
-        response = self.__rpc_request("system_name", [])
+        response = self.rpc_request("system_name", [])
         return response.get('result')
 
     def get_version(self):
         if not self._version:
-            response = self.__rpc_request("system_version", [])
+            response = self.rpc_request("system_version", [])
             self._version = response.get('result')
         return self._version
 
     def get_chain_head(self):
-        response = self.__rpc_request("chain_getHead", [])
+        response = self.rpc_request("chain_getHead", [])
         return response.get('result')
 
     def get_chain_finalised_head(self):
-        response = self.__rpc_request("chain_getFinalisedHead", [])
+        response = self.rpc_request("chain_getFinalisedHead", [])
         return response.get('result')
 
     def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
@@ -92,7 +88,7 @@ class SubstrateInterface:
         if block_id:
             block_hash = self.get_block_hash(block_id)
 
-        response = self.__rpc_request("chain_getBlock", [block_hash]).get('result')
+        response = self.rpc_request("chain_getBlock", [block_hash]).get('result')
 
         if self.mock_extrinsics:
             # Extend extrinsics with mock_extrinsics for e.g. performance tests
@@ -100,29 +96,40 @@ class SubstrateInterface:
 
         # Decode extrinsics
         if metadata_decoder:
+
+            response['block']['header']['number'] = int(response['block']['header']['number'], 16)
+
             for idx, extrinsic_data in enumerate(response['block']['extrinsics']):
                 extrinsic_decoder = ExtrinsicsDecoder(
                     data=ScaleBytes(extrinsic_data),
                     metadata=metadata_decoder
                 )
                 extrinsic_decoder.decode()
-                response['block']['extrinsics'][idx] = extrinsic_decoder
+                response['block']['extrinsics'][idx] = extrinsic_decoder.value
+
+            for idx, log_data in enumerate(response['block']['header']["digest"]["logs"]):
+                log_digest = LogDigest(ScaleBytes(log_data))
+                log_digest.decode()
+                response['block']['header']["digest"]["logs"][idx] = log_digest.value
 
         return response
 
     def get_block_hash(self, block_id):
-        return self.__rpc_request("chain_getBlockHash", [block_id]).get('result')
+        return self.rpc_request("chain_getBlockHash", [block_id]).get('result')
 
     def get_block_header(self, block_hash):
-        response = self.__rpc_request("chain_getHeader", [block_hash])
+        response = self.rpc_request("chain_getHeader", [block_hash])
         return response.get('result')
 
     def get_block_number(self, block_hash):
-        response = self.__rpc_request("chain_getHeader", [block_hash])
+        response = self.rpc_request("chain_getHeader", [block_hash])
         return int(response['result']['number'], 16)
 
-    def get_block_metadata(self, block_hash, decode=True):
-        response = self.__rpc_request("state_getMetadata", [block_hash])
+    def get_block_metadata(self, block_hash=None, decode=True):
+        params = None
+        if block_hash:
+            params = [block_hash]
+        response = self.rpc_request("state_getMetadata", params)
 
         if response.get('result'):
 
@@ -151,7 +158,7 @@ class SubstrateInterface:
         :return:
         """
         storage_hash = self.generate_storage_hash(module, function, params, hasher)
-        response = self.__rpc_request("state_getStorageAt", [storage_hash, block_hash])
+        response = self.rpc_request("state_getStorageAt", [storage_hash, block_hash])
 
         if 'result' in response:
 
@@ -169,14 +176,14 @@ class SubstrateInterface:
 
     def get_storage_by_key(self, block_hash, storage_key):
 
-        response = self.__rpc_request("state_getStorageAt", [storage_key, block_hash])
+        response = self.rpc_request("state_getStorageAt", [storage_key, block_hash])
         if 'result' in response:
             return response.get('result')
         else:
             raise SubstrateRequestException("Error occurred during retrieval of events")
 
     def get_block_events(self, block_hash, metadata_decoder=None):
-        response = self.__rpc_request("state_getStorageAt", [STORAGE_HASH_SYSTEM_EVENTS, block_hash])
+        response = self.rpc_request("state_getStorageAt", [STORAGE_HASH_SYSTEM_EVENTS, block_hash])
 
         if response.get('result'):
 
@@ -197,7 +204,7 @@ class SubstrateInterface:
             raise SubstrateRequestException("Error occurred during retrieval of events")
 
     def get_block_runtime_version(self, block_hash):
-        response = self.__rpc_request("chain_getRuntimeVersion", [block_hash])
+        response = self.rpc_request("chain_getRuntimeVersion", [block_hash])
         return response.get('result')
 
     def generate_storage_hash(self, storage_module, storage_function, params=None, hasher=None):
