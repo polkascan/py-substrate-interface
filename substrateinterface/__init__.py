@@ -238,3 +238,48 @@ class SubstrateInterface:
             storage_key2.reverse()
 
             return "0x{}{}".format(storage_key1.hex(), storage_key2.hex())
+
+    def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
+        """
+        Retrieves the storage for given given module, function and optional paramaters at given block
+        :param module:
+        :param storage_function:
+        :param params:
+        :param block_hash:
+        :return:
+        """
+
+        # Retrieve metadata
+        metadata = self.get_block_metadata(block_hash=block_hash)
+
+        # Search storage call in metadata
+        for metadata_module in metadata.metadata.modules:
+            if metadata_module.name == module:
+                if metadata_module.storage:
+                    for storage_item in metadata_module.storage.items:
+                        if storage_item.name == storage_function:
+
+                            if storage_item.type.get('PlainType'):
+                                hasher = 'Twox64Concat'
+                                return_scale_type = storage_item.type.get('PlainType')
+                                if params:
+                                    raise ValueError('Storage call of type "PlainType" doesn\'t accept params')
+                            else:
+                                raise NotImplementedError("Storage type not implemented")
+
+                            storage_hash = self.generate_storage_hash(module, storage_function, params, hasher)
+                            response = self.rpc_request("state_getStorageAt", [storage_hash, block_hash])
+
+                            if 'result' in response:
+
+                                if return_scale_type and response.get('result'):
+                                    obj = ScaleDecoder.get_decoder_class(
+                                        return_scale_type,
+                                        ScaleBytes(response.get('result')),
+                                        metadata=metadata
+                                    )
+                                    return obj.decode()
+                                else:
+                                    return response.get('result')
+                            else:
+                                raise SubstrateRequestException("Error occurred during retrieval of events")
