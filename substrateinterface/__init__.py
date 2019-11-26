@@ -30,6 +30,14 @@ from .exceptions import SubstrateRequestException
 from .constants import *
 
 
+def xxh6464(x):
+    o1 = bytearray(xxhash.xxh64(x, seed=0).digest())
+    o1.reverse()
+    o2 = bytearray(xxhash.xxh64(x, seed=1).digest())
+    o2.reverse()
+    return "0x{}{}".format(o1.hex(), o2.hex())
+    
+
 class SubstrateInterface:
 
     def __init__(self, url, metadata_version=4):
@@ -174,7 +182,11 @@ class SubstrateInterface:
         else:
             raise SubstrateRequestException("Error occurred during retrieval of events")
 
-    def get_storage_by_key(self, block_hash, storage_key):
+    def get_storage_by_key(self, block_hash, storage_key=None, storage_key_name=None):
+        if (not storage_key and not storage_key_name) or (storage_key and storage_key_name):
+            raise SubstrateRequestException("Must give EITHER storage_key OR storage_key_name")
+        if not storage_key:
+            storage_key = xxh6464(storage_key_name)
 
         response = self.rpc_request("state_getStorageAt", [storage_key, block_hash])
         if 'result' in response:
