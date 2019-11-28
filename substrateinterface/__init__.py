@@ -26,6 +26,8 @@ from scalecodec import ScaleBytes
 from scalecodec.base import ScaleDecoder
 from scalecodec.block import ExtrinsicsDecoder, EventsDecoder, LogDigest
 from scalecodec.metadata import MetadataDecoder
+
+from substrateinterface.utils.hasher import blake2_256, two_x64_concat
 from .exceptions import SubstrateRequestException
 from .constants import *
 
@@ -144,9 +146,10 @@ class SubstrateInterface:
             raise SubstrateRequestException("Error occurred during retrieval of metadata")
 
     def get_storage(self, block_hash, module, function, params=None, return_scale_type=None, hasher=None,
-                    spec_version_id='default', metadata=None):
+                    spec_version_id='default', metadata=None, metadata_version=None):
         """
         Retrieves the storage for given given module, function and optional paramaters at given block
+        :param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
         :param metadata:
         :param spec_version_id:
         :param hasher: Hashing method used to determine storage key, defaults to 'Twox64Concat' if not provided
@@ -157,7 +160,13 @@ class SubstrateInterface:
         :param params:
         :return:
         """
-        storage_hash = self.generate_storage_hash(module, function, params, hasher)
+        storage_hash = self.generate_storage_hash(
+            storage_module=module,
+            storage_function=function,
+            params=params,
+            hasher=hasher,
+            metadata_version=metadata_version
+        )
         response = self.rpc_request("state_getStorageAt", [storage_hash, block_hash])
 
         if 'result' in response:
@@ -207,9 +216,10 @@ class SubstrateInterface:
         response = self.rpc_request("chain_getRuntimeVersion", [block_hash])
         return response.get('result')
 
-    def generate_storage_hash(self, storage_module, storage_function, params=None, hasher=None):
+    def generate_storage_hash(self, storage_module, storage_function, params=None, hasher=None, metadata_version=None):
         """
         Generate a storage key for given module/function
+        :param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
         :param hasher: Hashing method used to determine storage key, defaults to 'Twox64Concat' if not provided
         :param storage_module:
         :param storage_function:
@@ -217,27 +227,38 @@ class SubstrateInterface:
         :return:
         """
 
-        storage_function = storage_module.encode() + b" " + storage_function.encode()
+        if metadata_version and metadata_version >= 9:
+            storage_hash = two_x64_concat(storage_module.encode()) + two_x64_concat(storage_function.encode())
+            if params:
 
-        if params:
-            storage_function += binascii.unhexlify(params)
+                params_key = binascii.unhexlify(params)
 
-        # Determine hasher function
-        # TODO default differs per spec version
-        if not hasher:
-            hasher = 'Twox64Concat'
+                if not hasher:
+                    hasher = 'Twox64Concat'
 
-        if hasher == 'Blake2_256':
-            return "0x{}".format(blake2b(storage_function, digest_size=32).digest().hex())
+                if hasher == 'Blake2_256':
+                    storage_hash += blake2_256(params_key)
 
-        elif hasher == 'Twox64Concat':
-            storage_key1 = bytearray(xxhash.xxh64(storage_function, seed=0).digest())
-            storage_key1.reverse()
+                elif hasher == 'Twox64Concat':
+                    storage_hash += two_x64_concat(params_key)
 
-            storage_key2 = bytearray(xxhash.xxh64(storage_function, seed=1).digest())
-            storage_key2.reverse()
+            return '0x{}'.format(storage_hash)
 
-            return "0x{}{}".format(storage_key1.hex(), storage_key2.hex())
+        else:
+            storage_hash = storage_module.encode() + b" " + storage_function.encode()
+
+            if params:
+                storage_hash += binascii.unhexlify(params)
+
+            # Determine hasher function
+            if not hasher:
+                hasher = 'Twox64Concat'
+
+            if hasher == 'Blake2_256':
+                return "0x{}".format(blake2_256(storage_hash))
+
+            elif hasher == 'Twox64Concat':
+                return "0x{}".format(two_x64_concat(storage_hash))
 
     def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
         """
@@ -267,7 +288,14 @@ class SubstrateInterface:
                             else:
                                 raise NotImplementedError("Storage type not implemented")
 
-                            storage_hash = self.generate_storage_hash(module, storage_function, params, hasher)
+                            storage_hash = self.generate_storage_hash(
+                                storage_module=module,
+                                storage_function=storage_function,
+                                params=params,
+                                hasher=hasher,
+                                metadata_version=metadata.version.index
+                            )
+
                             response = self.rpc_request("state_getStorageAt", [storage_hash, block_hash])
 
                             if 'result' in response:
