@@ -17,8 +17,6 @@
 # along with Polkascan. If not, see <http://www.gnu.org/licenses/>.
 
 import binascii
-from hashlib import blake2b
-import xxhash
 import json
 import requests
 
@@ -27,7 +25,7 @@ from scalecodec.base import ScaleDecoder
 from scalecodec.block import ExtrinsicsDecoder, EventsDecoder, LogDigest
 from scalecodec.metadata import MetadataDecoder
 
-from substrateinterface.utils.hasher import blake2_256, two_x64_concat
+from .utils.hasher import blake2_256, two_x64_concat
 from .exceptions import SubstrateRequestException
 from .constants import *
 
@@ -148,7 +146,7 @@ class SubstrateInterface:
     def get_storage(self, block_hash, module, function, params=None, return_scale_type=None, hasher=None,
                     spec_version_id='default', metadata=None, metadata_version=None):
         """
-        Retrieves the storage for given given module, function and optional paramaters at given block
+        Retrieves the storage for given module, function and optional parameters at given block
         :param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
         :param metadata:
         :param spec_version_id:
@@ -262,7 +260,7 @@ class SubstrateInterface:
 
     def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
         """
-        Retrieves the storage for given given module, function and optional paramaters at given block
+        Retrieves the storage for given module, function and optional parameters at given block
         :param module:
         :param storage_function:
         :param params:
