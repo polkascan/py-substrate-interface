@@ -190,7 +190,13 @@ class SubstrateInterface:
             raise SubstrateRequestException("Error occurred during retrieval of events")
 
     def get_block_events(self, block_hash, metadata_decoder=None):
-        response = self.rpc_request("state_getStorageAt", [STORAGE_HASH_SYSTEM_EVENTS, block_hash])
+
+        if metadata_decoder and metadata_decoder.version.index >= 9:
+            storage_hash = STORAGE_HASH_SYSTEM_EVENTS_V9
+        else:
+            storage_hash = STORAGE_HASH_SYSTEM_EVENTS
+
+        response = self.rpc_request("state_getStorageAt", [storage_hash, block_hash])
 
         if response.get('result'):
 
