@@ -56,8 +56,6 @@ class SubstrateInterface:
 
         response = requests.request("POST", self.url, data=json.dumps(payload), headers=self.default_headers)
 
-        self.request_id += 1
-
         if response.status_code != 200:
             raise SubstrateRequestException("RPC request failed with HTTP status code {}".format(response.status_code))
 
@@ -131,17 +129,14 @@ class SubstrateInterface:
             params = [block_hash]
         response = self.rpc_request("state_getMetadata", params)
 
-        if response.get('result'):
+        if decode:
+            metadata_decoder = MetadataDecoder(ScaleBytes(response.get('result')))
+            metadata_decoder.decode()
 
-            if decode:
-                metadata_decoder = MetadataDecoder(ScaleBytes(response.get('result')))
-                metadata_decoder.decode()
+            return metadata_decoder
 
-                return metadata_decoder
+        return response
 
-            return response
-        else:
-            raise SubstrateRequestException("Error occurred during retrieval of metadata")
 
     def get_storage(self, block_hash, module, function, params=None, return_scale_type=None, hasher=None,
                     spec_version_id='default', metadata=None, metadata_version=None):
@@ -158,6 +153,7 @@ class SubstrateInterface:
         :param params:
         :return:
         """
+
         storage_hash = self.generate_storage_hash(
             storage_module=module,
             storage_function=function,
@@ -235,7 +231,18 @@ class SubstrateInterface:
             storage_hash = two_x64_concat(storage_module.encode()) + two_x64_concat(storage_function.encode())
             if params:
 
-                params_key = binascii.unhexlify(params)
+                if type(params) is not list:
+                    params = [params]
+
+                params_key = bytes()
+
+                for param in params:
+                    if type(param) is str:
+                        params_key += binascii.unhexlify(param)
+                    elif type(param) is ScaleBytes:
+                        params_key += param.data
+                    elif isinstance(param, ScaleDecoder):
+                        params_key += param.data.data
 
                 if not hasher:
                     hasher = 'Twox64Concat'
@@ -269,7 +276,7 @@ class SubstrateInterface:
         Retrieves the storage for given module, function and optional parameters at given block
         :param module:
         :param storage_function:
-        :param params:
+        :param params: list of params, can be list of Scalebytes
         :param block_hash:
         :return:
         """
@@ -310,8 +317,6 @@ class SubstrateInterface:
                                         ScaleBytes(response.get('result')),
                                         metadata=metadata
                                     )
-                                    return obj.decode()
-                                else:
-                                    return response.get('result')
-                            else:
-                                raise SubstrateRequestException("Error occurred during retrieval of events")
+                                    response['result'] = obj.decode()
+
+                            return response
