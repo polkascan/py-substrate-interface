@@ -137,7 +137,6 @@ class SubstrateInterface:
 
         return response
 
-
     def get_storage(self, block_hash, module, function, params=None, return_scale_type=None, hasher=None,
                     spec_version_id='default', metadata=None, metadata_version=None):
         """
@@ -320,3 +319,15 @@ class SubstrateInterface:
                                     response['result'] = obj.decode()
 
                             return response
+
+    def get_runtime_metadata(self, block_hash=None):
+        params = None
+        if block_hash:
+            params = [block_hash]
+        response = self.rpc_request("state_getMetadata", params)
+
+        if 'result' in response:
+            metadata_decoder = MetadataDecoder(ScaleBytes(response.get('result')))
+            response['result'] = metadata_decoder.decode()
+
+        return response
