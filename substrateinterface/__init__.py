@@ -28,13 +28,15 @@ from scalecodec.metadata import MetadataDecoder
 from .utils.hasher import blake2_256, two_x64_concat
 from .exceptions import SubstrateRequestException
 from .constants import *
+from .utils.ss58 import ss58_decode
 
 
 class SubstrateInterface:
 
-    def __init__(self, url, metadata_version=4):
+    def __init__(self, url, metadata_version=4, address_type=42):
         self.request_id = 1
         self.url = url
+        self.address_type = address_type
         self.mock_extrinsics = None
         self.metadata_version = metadata_version
         self._version = None
@@ -270,6 +272,13 @@ class SubstrateInterface:
             elif hasher == 'Twox64Concat':
                 return "0x{}".format(two_x64_concat(storage_hash))
 
+    def convert_storage_parameter(self, scale_type, value):
+        if scale_type == 'AccountId':
+            if value[0:2] != '0x':
+                return '0x{}'.format(ss58_decode(value, self.address_type))
+
+        return value
+
     def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
         """
         Retrieves the storage for given module, function and optional parameters at given block
@@ -290,11 +299,26 @@ class SubstrateInterface:
                     for storage_item in metadata_module.storage.items:
                         if storage_item.name == storage_function:
 
-                            if storage_item.type.get('PlainType'):
+                            if 'PlainType' in storage_item.type:
                                 hasher = 'Twox64Concat'
                                 return_scale_type = storage_item.type.get('PlainType')
                                 if params:
                                     raise ValueError('Storage call of type "PlainType" doesn\'t accept params')
+
+                            elif 'MapType' in storage_item.type:
+
+                                map_type = storage_item.type.get('MapType')
+                                hasher = map_type.get('hasher')
+                                return_scale_type = map_type.get('value')
+
+                                if len(params) != 1:
+                                    raise ValueError('Storage call of type "MapType" requires 1 parameter')
+
+                                # Encode parameter
+                                params[0] = self.convert_storage_parameter(map_type['key'], params[0])
+                                param_obj = ScaleDecoder.get_decoder_class(map_type['key'])
+                                params[0] = param_obj.encode(params[0])
+
                             else:
                                 raise NotImplementedError("Storage type not implemented")
 
