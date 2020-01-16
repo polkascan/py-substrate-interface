@@ -439,3 +439,32 @@ class SubstrateInterface:
             "module_name": module.name,
             "spec_version": spec_version
         }
+
+    def serialize_module_event(self, module, event, spec_version, event_index):
+        return {
+            "event_id": event.name,
+            "event_name": event.name,
+            "event_args": [
+                  {
+                    "event_arg_index": idx,
+                    "type": arg
+                  } for idx, arg in enumerate(event.args)
+                ],
+            "lookup": '0x{}'.format(event_index),
+            "documentation": '\n'.join(event.docs),
+            "module_id": module.get_identifier(),
+            "module_prefix": module.prefix,
+            "module_name": module.name,
+            "spec_version": spec_version
+        }
+
+    def serialize_module_error(self, module, error, spec_version):
+        return {
+            "error_name": error.name,
+            "documentation": '\n'.join(error.docs),
+            "module_id": module.get_identifier(),
+            "module_prefix": module.prefix,
+            "module_name": module.name,
+            "spec_version": spec_version
+        }
+
