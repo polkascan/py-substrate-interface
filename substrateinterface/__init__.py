@@ -355,3 +355,87 @@ class SubstrateInterface:
             response['result'] = metadata_decoder.decode()
 
         return response
+
+    def serialize_storage_item(self, storage_item, module, spec_version_id):
+        storage_dict = {
+            "storage_name": storage_item.name,
+            "storage_modifier": storage_item.modifier,
+            "storage_fallback_scale": storage_item.fallback,
+            "storage_fallback": None,
+            "documentation": '\n'.join(storage_item.docs),
+            "module_id": module.get_identifier(),
+            "module_prefix": module.prefix,
+            "module_name": module.name,
+            "spec_version": spec_version_id,
+            "type_key1": None,
+            "type_key2": None,
+            "type_hasher_key1": None,
+            "type_hasher_key2": None,
+            "type_value": None,
+            "type_is_linked": None
+        }
+
+        type_class, type_info = next(iter(storage_item.type.items()))
+
+        storage_dict["type_class"] = type_class
+
+        if type_class == 'PlainType':
+            storage_dict["type_value"] = type_info
+
+        elif type_class == 'MapType':
+            storage_dict["type_value"] = type_info["value"]
+            storage_dict["type_key1"] = type_info["key"]
+            storage_dict["type_hasher_key1"] = type_info["hasher"]
+            storage_dict["type_is_linked"] = type_info["isLinked"]
+
+        elif type_class == 'DoubleMapType':
+
+            storage_dict["type_value"] = type_info["value"]
+            storage_dict["type_key1"] = type_info["key1"]
+            storage_dict["type_key2"] = type_info["key2"]
+            storage_dict["type_hasher_key1"] = type_info["hasher"]
+            storage_dict["type_hasher_key1"] = type_info["key2Hasher"]
+
+        if storage_item.fallback != '0x00':
+            # Decode fallback
+            try:
+                fallback_obj = ScaleDecoder.get_decoder_class(storage_dict["type_value"],
+                                                              ScaleBytes(storage_item.fallback))
+                storage_dict["storage_fallback"] = fallback_obj.decode()
+            except Exception:
+                storage_dict["storage_fallback"] = '[decoding error]'
+
+        return storage_dict
+
+    def serialize_constant(self, constant, module, spec_version_id):
+        try:
+            value_obj = ScaleDecoder.get_decoder_class(constant.type,
+                                                       ScaleBytes(constant.constant_value))
+            constant_decoded_value = value_obj.decode()
+        except Exception:
+            constant_decoded_value = '[decoding error]'
+
+        return {
+            "constant_name": constant.name,
+            "constant_type": constant.type,
+            "constant_value": constant_decoded_value,
+            "constant_value_scale": constant.constant_value,
+            "documentation": '\n'.join(constant.docs),
+            "module_id": module.get_identifier(),
+            "module_prefix": module.prefix,
+            "module_name": module.name,
+            "spec_version": spec_version_id
+        }
+
+    def serialize_module_call(self, module, call, spec_version, call_index):
+        return {
+            "call_id": call.get_identifier(),
+            "call_name": call.name,
+            "call_args": [call_arg.value for call_arg in call.args],
+            "lookup": '0x{}'.format(call_index),
+            "documentation": '\n'.join(call.docs),
+            "module_id": module.get_identifier(),
+            "module_prefix": module.prefix,
+            "module_name": module.name,
+            "spec_version": spec_version
+        }
