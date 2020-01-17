@@ -279,9 +279,10 @@ class SubstrateInterface:
 
         return value
 
-    def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
+    def get_runtime_state(self, module, storage_function, params=None, block_hash=None, metadata=None):
         """
         Retrieves the storage for given module, function and optional parameters at given block
+        :param metadata:
         :param module:
         :param storage_function:
         :param params: list of params, can be list of Scalebytes
@@ -290,7 +291,8 @@ class SubstrateInterface:
         """
 
         # Retrieve metadata
-        metadata = self.get_block_metadata(block_hash=block_hash)
+        if not metadata:
+            metadata = self.get_block_metadata(block_hash=block_hash)
 
         # Search storage call in metadata
         for metadata_module in metadata.metadata.modules:
