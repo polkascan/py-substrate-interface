@@ -21,9 +21,10 @@ import json
 import requests
 
 from scalecodec import ScaleBytes
-from scalecodec.base import ScaleDecoder
+from scalecodec.base import ScaleDecoder, RuntimeConfiguration
 from scalecodec.block import ExtrinsicsDecoder, EventsDecoder, LogDigest
 from scalecodec.metadata import MetadataDecoder
+from scalecodec.type_registry import load_type_registry_preset
 
 from .utils.hasher import blake2_256, two_x64_concat
 from .exceptions import SubstrateRequestException
@@ -33,19 +34,32 @@ from .utils.ss58 import ss58_decode
 
 class SubstrateInterface:
 
-    def __init__(self, url, metadata_version=4, address_type=42):
+    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None):
+
+        RuntimeConfiguration().update_type_registry(load_type_registry_preset("default"))
+
+        if type_registry:
+            # Load type registries in runtime configuration
+            RuntimeConfiguration().update_type_registry(type_registry)
+        if type_registry_preset:
+            # Load type registries in runtime configuration
+            RuntimeConfiguration().update_type_registry(load_type_registry_preset(type_registry_preset))
+
         self.request_id = 1
         self.url = url
-        self.address_type = address_type
+        self.address_type = address_type or 42
+
         self.mock_extrinsics = None
-        self.metadata_version = metadata_version
         self._version = None
         self.default_headers = {
             'content-type': "application/json",
             'cache-control': "no-cache"
         }
 
-        self.metadata_store = {}
+        self.metadata_decoder = None
+        self.runtime_version = None
+        self.block_hash = None
+        self.metadata_cache = {}
 
     def rpc_request(self, method, params):
 
@@ -279,7 +293,33 @@ class SubstrateInterface:
 
         return value
 
-    def get_runtime_state(self, module, storage_function, params=None, block_hash=None, metadata=None):
+    # Runtime functions used by Substrate API
+
+    def init_runtime_request(self, block_hash=None, block_id=None):
+
+        if block_id and block_hash:
+            raise ValueError('Cannot provide block_hash and block_id at the same time')
+
+        if block_id:
+            block_hash = self.get_block_hash(block_id)
+
+        self.block_hash = block_hash
+
+        self.runtime_version = self.get_block_runtime_version(block_hash=self.block_hash).get("specVersion")
+
+        # Set active runtime version
+        RuntimeConfiguration().set_active_spec_version_id(self.runtime_version)
+
+        if self.runtime_version in self.metadata_cache:
+            # Get metadata from cache
+            self.metadata_decoder = self.metadata_cache[self.runtime_version]
+        else:
+            self.metadata_decoder = self.get_block_metadata(block_hash=self.block_hash, decode=True)
+
+            # Update metadata cache
+            self.metadata_cache[self.runtime_version] = self.metadata_decoder
+
+    def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
         """
         Retrieves the storage for given module, function and optional parameters at given block
         :param metadata:
@@ -290,12 +330,10 @@ class SubstrateInterface:
         :return:
         """
 
-        # Retrieve metadata
-        if not metadata:
-            metadata = self.get_block_metadata(block_hash=block_hash)
+        self.init_runtime_request(block_hash=block_hash)
 
         # Search storage call in metadata
-        for metadata_module in metadata.metadata.modules:
+        for metadata_module in self.metadata_decoder.metadata.modules:
             if metadata_module.name == module:
                 if metadata_module.storage:
                     for storage_item in metadata_module.storage.items:
@@ -329,7 +367,7 @@ class SubstrateInterface:
                                 storage_function=storage_function,
                                 params=params,
                                 hasher=hasher,
-                                metadata_version=metadata.version.index
+                                metadata_version=self.metadata_decoder.version.index
                             )
 
                             response = self.rpc_request("state_getStorageAt", [storage_hash, block_hash])
@@ -340,7 +378,7 @@ class SubstrateInterface:
                                     obj = ScaleDecoder.get_decoder_class(
                                         return_scale_type,
                                         ScaleBytes(response.get('result')),
-                                        metadata=metadata
+                                        metadata=self.metadata_decoder
                                     )
                                     response['result'] = obj.decode()
 
@@ -357,6 +395,213 @@ class SubstrateInterface:
             response['result'] = metadata_decoder.decode()
 
         return response
+
+    def compose_call(self, call_module, call_function, call_params=(), block_hash=None):
+
+        self.init_runtime_request(block_hash=block_hash)
+
+        extrinsic = ExtrinsicsDecoder(metadata=self.metadata_decoder, address_type=self.address_type)
+
+        payload = extrinsic.encode({
+            'call_module': call_module,
+            'call_function': call_function,
+            'call_args': call_params
+        })
+
+        return str(payload)
+
+    def get_type_registry(self):
+        raise NotImplementedError()
+
+    def get_metadata_modules(self, block_hash=None):
+
+        self.init_runtime_request(block_hash=block_hash)
+
+        return [{
+            'metadata_index': idx,
+            'module_id': module.get_identifier(),
+            'name': module.name,
+            'prefix': module.prefix,
+            'spec_version': self.runtime_version,
+            'count_call_functions': len(module.calls or []),
+            'count_storage_functions': len(module.calls or []),
+            'count_events': len(module.events or []),
+            'count_constants': len(module.constants or []),
+            'count_errors': len(module.errors or []),
+        } for idx, module in enumerate(self.metadata_decoder.metadata.modules)]
+
+    def get_metadata_call_functions(self, block_hash=None):
+
+        self.init_runtime_request(block_hash=block_hash)
+
+        call_list = []
+
+        for call_index, (module, call) in self.metadata_decoder.call_index.items():
+            call_list.append(
+                self.serialize_module_call(
+                    module, call, self.runtime_version, call_index
+                )
+            )
+        return call_list
+
+    def get_metadata_call_function(self, module_name, call_function_name, block_hash=None):
+
+        self.init_runtime_request(block_hash=block_hash)
+
+        result = None
+
+        for call_index, (module, call) in self.metadata_decoder.call_index.items():
+            if module.name == module_name and \
+                    call.get_identifier() == call_function_name:
+                result = self.serialize_module_call(
+                    module, call, self.runtime_version, call_index
+                )
+                break
+
+        return result
+
+    def get_metadata_events(self, block_hash=None):
+
+        self.init_runtime_request(block_hash=block_hash)
+
+        event_list = []
+
+        for event_index, (module, event) in self.metadata_decoder.event_index.items():
+            event_list.append(
+                self.serialize_module_event(
+                    module, event, self.runtime_version, event_index
+                )
+            )
+
+        return event_list
+
+    def get_metadata_event(self, module_name, event_name, block_hash=None):
+
+        self.init_runtime_request(block_hash=block_hash)
+
+        for event_index, (module, event) in self.metadata_decoder.event_index.items():
+            if module.name == module_name and \
+                    event.name == event_name:
+                return self.serialize_module_event(
+                    module, event, self.runtime_version, event_index
+                )
+
+    def get_metadata_constants(self, block_hash=None):
+
+        self.init_runtime_request(block_hash=block_hash)
+
+        constant_list = []
+
+        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+            for constant in module.constants or []:
+                constant_list.append(
+                    self.serialize_constant(
+                        constant, module, self.runtime_version
+                    )
+                )
+
+        return constant_list
+
+    def get_metadata_constant(self, module_name, constant_name, block_hash=None):
+
+        self.init_runtime_request(block_hash=block_hash)
+
+        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+
+            if module_name == module.name and module.constants:
+
+                for constant in module.constants:
+                    if constant_name == constant.name:
+                        return self.serialize_constant(
+                            constant, module, self.runtime_version
+                        )
+
+    def get_metadata_storage_functions(self, block_hash=None):
+
+        self.init_runtime_request(block_hash=block_hash)
+
+        storage_list = []
+
+        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+            if module.storage:
+                for storage in module.storage.items:
+                    storage_list.append(
+                        self.serialize_storage_item(
+                            storage_item=storage,
+                            module=module,
+                            spec_version_id=self.runtime_version
+                        )
+                    )
+
+        return storage_list
+
+    def get_metadata_storage_function(self, module_name, storage_name, block_hash=None):
+
+        self.init_runtime_request(block_hash=block_hash)
+
+        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+            if module.name == module_name and module.storage:
+                for storage in module.storage.items:
+                    if storage.name == storage_name:
+                        return self.serialize_storage_item(
+                            storage_item=storage,
+                            module=module,
+                            spec_version_id=self.runtime_version
+                        )
+
+    def get_metadata_errors(self, block_hash=None):
+
+        self.init_runtime_request(block_hash=block_hash)
+
+        error_list = []
+
+        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+            if module.errors:
+                for error in module.errors:
+                    error_list.append(
+                        self.serialize_module_error(
+                            module=module, error=error, spec_version=self.runtime_version
+                        )
+                    )
+
+        return error_list
+
+    def get_metadata_error(self, module_name, error_name, block_hash=None):
+
+        self.init_runtime_request(block_hash=block_hash)
+
+        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+            if module.name == module_name and module.errors:
+                for error in module.errors:
+                    if error_name == error.name:
+                        return self.serialize_module_error(
+                            module=module, error=error, spec_version=self.runtime_version
+                        )
+
+    def get_runtime_block(self, block_hash=None, block_id=None):
+
+        self.init_runtime_request(block_hash=block_hash, block_id=block_id)
+
+        response = self.rpc_request("chain_getBlock", [block_hash]).get('result')
+
+        response['block']['header']['number'] = int(response['block']['header']['number'], 16)
+
+        for idx, extrinsic_data in enumerate(response['block']['extrinsics']):
+            extrinsic_decoder = ExtrinsicsDecoder(
+                data=ScaleBytes(extrinsic_data),
+                metadata=self.metadata_decoder
+            )
+            extrinsic_decoder.decode()
+            response['block']['extrinsics'][idx] = extrinsic_decoder.value
+
+        for idx, log_data in enumerate(response['block']['header']["digest"]["logs"]):
+            log_digest = LogDigest(ScaleBytes(log_data))
+            log_digest.decode()
+            response['block']['header']["digest"]["logs"][idx] = log_digest.value
+
+        return response
+
+    # Serializing helper function
 
     def serialize_storage_item(self, storage_item, module, spec_version_id):
         storage_dict = {

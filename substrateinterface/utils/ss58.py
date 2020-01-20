@@ -71,7 +71,7 @@ def ss58_encode(address, address_type=42):
     if type(address) is bytes or type(address) is bytearray:
         address_bytes = address
     else:
-        address_bytes = bytes.fromhex(address)
+        address_bytes = bytes.fromhex(address.replace('0x', ''))
 
     if len(address_bytes) == 32:
         # Checksum size is 2 bytes for public key

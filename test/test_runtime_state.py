@@ -26,6 +26,12 @@ class TestRuntimeState(unittest.TestCase):
     def test_plaintype_call(self):
 
         def mocked_request(method, params):
+            if method == 'chain_getRuntimeVersion':
+                return {
+                    "jsonrpc": "2.0",
+                    "result": {"specVersion": 1042},
+                    "id": 1
+                }
             if method == 'state_getStorageAt':
                 return {
                     "jsonrpc": "2.0",
@@ -56,7 +62,13 @@ class TestRuntimeState(unittest.TestCase):
     def test_maptype_call(self):
 
         def mocked_request(method, params):
-            if method == 'state_getStorageAt':
+            if method == 'chain_getRuntimeVersion':
+                return {
+                    "jsonrpc": "2.0",
+                    "result": {"specVersion": 1042},
+                    "id": 1
+                }
+            elif method == 'state_getStorageAt':
                 return {
                     'jsonrpc': '2.0',
                     'result': '0x36fb1042cdcc00000000000000000000',
