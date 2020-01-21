@@ -36,14 +36,16 @@ class SubstrateInterface:
 
     def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None, metadata_version=4):
 
-        RuntimeConfiguration().update_type_registry(load_type_registry_preset("default"))
+        if type_registry or type_registry_preset:
 
-        if type_registry:
-            # Load type registries in runtime configuration
-            RuntimeConfiguration().update_type_registry(type_registry)
-        if type_registry_preset:
-            # Load type registries in runtime configuration
-            RuntimeConfiguration().update_type_registry(load_type_registry_preset(type_registry_preset))
+            RuntimeConfiguration().update_type_registry(load_type_registry_preset("default"))
+
+            if type_registry:
+                # Load type registries in runtime configuration
+                RuntimeConfiguration().update_type_registry(type_registry)
+            if type_registry_preset:
+                # Load type registries in runtime configuration
+                RuntimeConfiguration().update_type_registry(load_type_registry_preset(type_registry_preset))
 
         self.request_id = 1
         self.url = url
