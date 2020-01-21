@@ -34,7 +34,7 @@ from .utils.ss58 import ss58_decode
 
 class SubstrateInterface:
 
-    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None):
+    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None, metadata_version=4):
 
         RuntimeConfiguration().update_type_registry(load_type_registry_preset("default"))
 
