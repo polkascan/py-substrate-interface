@@ -297,7 +297,7 @@ class SubstrateInterface:
 
     # Runtime functions used by Substrate API
 
-    def init_runtime_request(self, block_hash=None, block_id=None):
+    def init_runtime(self, block_hash=None, block_id=None):
 
         if block_id and block_hash:
             raise ValueError('Cannot provide block_hash and block_id at the same time')
@@ -332,7 +332,7 @@ class SubstrateInterface:
         :return:
         """
 
-        self.init_runtime_request(block_hash=block_hash)
+        self.init_runtime(block_hash=block_hash)
 
         # Search storage call in metadata
         for metadata_module in self.metadata_decoder.metadata.modules:
@@ -400,7 +400,7 @@ class SubstrateInterface:
 
     def compose_call(self, call_module, call_function, call_params=(), block_hash=None):
 
-        self.init_runtime_request(block_hash=block_hash)
+        self.init_runtime(block_hash=block_hash)
 
         extrinsic = ExtrinsicsDecoder(metadata=self.metadata_decoder, address_type=self.address_type)
 
@@ -417,7 +417,7 @@ class SubstrateInterface:
 
     def get_metadata_modules(self, block_hash=None):
 
-        self.init_runtime_request(block_hash=block_hash)
+        self.init_runtime(block_hash=block_hash)
 
         return [{
             'metadata_index': idx,
@@ -434,7 +434,7 @@ class SubstrateInterface:
 
     def get_metadata_call_functions(self, block_hash=None):
 
-        self.init_runtime_request(block_hash=block_hash)
+        self.init_runtime(block_hash=block_hash)
 
         call_list = []
 
@@ -448,7 +448,7 @@ class SubstrateInterface:
 
     def get_metadata_call_function(self, module_name, call_function_name, block_hash=None):
 
-        self.init_runtime_request(block_hash=block_hash)
+        self.init_runtime(block_hash=block_hash)
 
         result = None
 
@@ -464,7 +464,7 @@ class SubstrateInterface:
 
     def get_metadata_events(self, block_hash=None):
 
-        self.init_runtime_request(block_hash=block_hash)
+        self.init_runtime(block_hash=block_hash)
 
         event_list = []
 
@@ -479,7 +479,7 @@ class SubstrateInterface:
 
     def get_metadata_event(self, module_name, event_name, block_hash=None):
 
-        self.init_runtime_request(block_hash=block_hash)
+        self.init_runtime(block_hash=block_hash)
 
         for event_index, (module, event) in self.metadata_decoder.event_index.items():
             if module.name == module_name and \
@@ -490,7 +490,7 @@ class SubstrateInterface:
 
     def get_metadata_constants(self, block_hash=None):
 
-        self.init_runtime_request(block_hash=block_hash)
+        self.init_runtime(block_hash=block_hash)
 
         constant_list = []
 
@@ -506,7 +506,7 @@ class SubstrateInterface:
 
     def get_metadata_constant(self, module_name, constant_name, block_hash=None):
 
-        self.init_runtime_request(block_hash=block_hash)
+        self.init_runtime(block_hash=block_hash)
 
         for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
 
@@ -520,7 +520,7 @@ class SubstrateInterface:
 
     def get_metadata_storage_functions(self, block_hash=None):
 
-        self.init_runtime_request(block_hash=block_hash)
+        self.init_runtime(block_hash=block_hash)
 
         storage_list = []
 
@@ -539,7 +539,7 @@ class SubstrateInterface:
 
     def get_metadata_storage_function(self, module_name, storage_name, block_hash=None):
 
-        self.init_runtime_request(block_hash=block_hash)
+        self.init_runtime(block_hash=block_hash)
 
         for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
             if module.name == module_name and module.storage:
@@ -553,7 +553,7 @@ class SubstrateInterface:
 
     def get_metadata_errors(self, block_hash=None):
 
-        self.init_runtime_request(block_hash=block_hash)
+        self.init_runtime(block_hash=block_hash)
 
         error_list = []
 
@@ -570,7 +570,7 @@ class SubstrateInterface:
 
     def get_metadata_error(self, module_name, error_name, block_hash=None):
 
-        self.init_runtime_request(block_hash=block_hash)
+        self.init_runtime(block_hash=block_hash)
 
         for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
             if module.name == module_name and module.errors:
@@ -582,7 +582,7 @@ class SubstrateInterface:
 
     def get_runtime_block(self, block_hash=None, block_id=None):
 
-        self.init_runtime_request(block_hash=block_hash, block_id=block_id)
+        self.init_runtime(block_hash=block_hash, block_id=block_id)
 
         response = self.rpc_request("chain_getBlock", [block_hash]).get('result')
 
@@ -602,6 +602,18 @@ class SubstrateInterface:
             response['block']['header']["digest"]["logs"][idx] = log_digest.value
 
         return response
+
+    def decode_scale(self, type_string, scale_bytes, block_hash=None):
+        self.init_runtime(block_hash=block_hash)
+
+        obj = ScaleDecoder.get_decoder_class(type_string, ScaleBytes(scale_bytes), metadata=self.metadata_decoder)
+        return obj.decode()
+
+    def encode_scale(self, type_string, value, block_hash=None):
+        self.init_runtime(block_hash=block_hash)
+
+        obj = ScaleDecoder.get_decoder_class(type_string)
+        return str(obj.encode(value))
 
     # Serializing helper function
 
