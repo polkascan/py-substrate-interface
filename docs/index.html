@@ -1,0 +1,3012 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.7.4" />
+<title>substrateinterface API documentation</title>
+<meta name="description" content="" />
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>substrateinterface</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python"># Python Substrate Interface
+#
+# Copyright 2018-2019 openAware BV (NL).
+# This file is part of Polkascan.
+#
+# Polkascan is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Polkascan is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Polkascan. If not, see &lt;http://www.gnu.org/licenses/&gt;.
+
+import binascii
+import json
+import requests
+
+from scalecodec import ScaleBytes
+from scalecodec.base import ScaleDecoder, RuntimeConfiguration
+from scalecodec.block import ExtrinsicsDecoder, EventsDecoder, LogDigest
+from scalecodec.metadata import MetadataDecoder
+from scalecodec.type_registry import load_type_registry_preset
+
+from .utils.hasher import blake2_256, two_x64_concat
+from .exceptions import SubstrateRequestException
+from .constants import *
+from .utils.ss58 import ss58_decode
+
+
+class SubstrateInterface:
+
+    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None, metadata_version=4):
+
+        if type_registry or type_registry_preset:
+
+            RuntimeConfiguration().update_type_registry(load_type_registry_preset(&#34;default&#34;))
+
+            if type_registry:
+                # Load type registries in runtime configuration
+                RuntimeConfiguration().update_type_registry(type_registry)
+            if type_registry_preset:
+                # Load type registries in runtime configuration
+                RuntimeConfiguration().update_type_registry(load_type_registry_preset(type_registry_preset))
+
+        self.request_id = 1
+        self.url = url
+        self.address_type = address_type or 42
+
+        self.mock_extrinsics = None
+        self._version = None
+        self.default_headers = {
+            &#39;content-type&#39;: &#34;application/json&#34;,
+            &#39;cache-control&#39;: &#34;no-cache&#34;
+        }
+
+        self.metadata_decoder = None
+        self.runtime_version = None
+        self.block_hash = None
+
+        self.metadata_cache = {}
+        self.type_registry_cache = {}
+
+    def rpc_request(self, method, params):
+
+        payload = {
+            &#34;jsonrpc&#34;: &#34;2.0&#34;,
+            &#34;method&#34;: method,
+            &#34;params&#34;: params,
+            &#34;id&#34;: self.request_id
+        }
+
+        response = requests.request(&#34;POST&#34;, self.url, data=json.dumps(payload), headers=self.default_headers)
+
+        if response.status_code != 200:
+            raise SubstrateRequestException(&#34;RPC request failed with HTTP status code {}&#34;.format(response.status_code))
+
+        json_body = response.json()
+
+        return json_body
+
+    def get_system_name(self):
+        response = self.rpc_request(&#34;system_name&#34;, [])
+        return response.get(&#39;result&#39;)
+
+    def get_version(self):
+        if not self._version:
+            response = self.rpc_request(&#34;system_version&#34;, [])
+            self._version = response.get(&#39;result&#39;)
+        return self._version
+
+    def get_chain_head(self):
+        response = self.rpc_request(&#34;chain_getHead&#34;, [])
+        return response.get(&#39;result&#39;)
+
+    def get_chain_finalised_head(self):
+        response = self.rpc_request(&#34;chain_getFinalisedHead&#34;, [])
+        return response.get(&#39;result&#39;)
+
+    def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
+
+        if block_id:
+            block_hash = self.get_block_hash(block_id)
+
+        response = self.rpc_request(&#34;chain_getBlock&#34;, [block_hash]).get(&#39;result&#39;)
+
+        if self.mock_extrinsics:
+            # Extend extrinsics with mock_extrinsics for e.g. performance tests
+            response[&#39;block&#39;][&#39;extrinsics&#39;].extend(self.mock_extrinsics)
+
+        # Decode extrinsics
+        if metadata_decoder:
+
+            response[&#39;block&#39;][&#39;header&#39;][&#39;number&#39;] = int(response[&#39;block&#39;][&#39;header&#39;][&#39;number&#39;], 16)
+
+            for idx, extrinsic_data in enumerate(response[&#39;block&#39;][&#39;extrinsics&#39;]):
+                extrinsic_decoder = ExtrinsicsDecoder(
+                    data=ScaleBytes(extrinsic_data),
+                    metadata=metadata_decoder
+                )
+                extrinsic_decoder.decode()
+                response[&#39;block&#39;][&#39;extrinsics&#39;][idx] = extrinsic_decoder.value
+
+            for idx, log_data in enumerate(response[&#39;block&#39;][&#39;header&#39;][&#34;digest&#34;][&#34;logs&#34;]):
+                log_digest = LogDigest(ScaleBytes(log_data))
+                log_digest.decode()
+                response[&#39;block&#39;][&#39;header&#39;][&#34;digest&#34;][&#34;logs&#34;][idx] = log_digest.value
+
+        return response
+
+    def get_block_hash(self, block_id):
+        return self.rpc_request(&#34;chain_getBlockHash&#34;, [block_id]).get(&#39;result&#39;)
+
+    def get_block_header(self, block_hash):
+        response = self.rpc_request(&#34;chain_getHeader&#34;, [block_hash])
+        return response.get(&#39;result&#39;)
+
+    def get_block_number(self, block_hash):
+        response = self.rpc_request(&#34;chain_getHeader&#34;, [block_hash])
+        return int(response[&#39;result&#39;][&#39;number&#39;], 16)
+
+    def get_block_metadata(self, block_hash=None, decode=True):
+        params = None
+        if block_hash:
+            params = [block_hash]
+        response = self.rpc_request(&#34;state_getMetadata&#34;, params)
+
+        if decode:
+            metadata_decoder = MetadataDecoder(ScaleBytes(response.get(&#39;result&#39;)))
+            metadata_decoder.decode()
+
+            return metadata_decoder
+
+        return response
+
+    def get_storage(self, block_hash, module, function, params=None, return_scale_type=None, hasher=None,
+                    spec_version_id=&#39;default&#39;, metadata=None, metadata_version=None):
+        &#34;&#34;&#34;
+        Retrieves the storage for given module, function and optional parameters at given block
+        :param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
+        :param metadata:
+        :param spec_version_id:
+        :param hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
+        :param return_scale_type: Scale type string to interprete result
+        :param block_hash:
+        :param module:
+        :param function:
+        :param params:
+        :return:
+        &#34;&#34;&#34;
+
+        storage_hash = self.generate_storage_hash(
+            storage_module=module,
+            storage_function=function,
+            params=params,
+            hasher=hasher,
+            metadata_version=metadata_version
+        )
+        response = self.rpc_request(&#34;state_getStorageAt&#34;, [storage_hash, block_hash])
+
+        if &#39;result&#39; in response:
+
+            if return_scale_type and response.get(&#39;result&#39;):
+                obj = ScaleDecoder.get_decoder_class(
+                    return_scale_type,
+                    ScaleBytes(response.get(&#39;result&#39;)),
+                    metadata=metadata
+                )
+                return obj.decode()
+            else:
+                return response.get(&#39;result&#39;)
+        else:
+            raise SubstrateRequestException(&#34;Error occurred during retrieval of events&#34;)
+
+    def get_storage_by_key(self, block_hash, storage_key):
+
+        response = self.rpc_request(&#34;state_getStorageAt&#34;, [storage_key, block_hash])
+        if &#39;result&#39; in response:
+            return response.get(&#39;result&#39;)
+        else:
+            raise SubstrateRequestException(&#34;Error occurred during retrieval of events&#34;)
+
+    def get_block_events(self, block_hash, metadata_decoder=None):
+
+        if metadata_decoder and metadata_decoder.version.index &gt;= 9:
+            storage_hash = STORAGE_HASH_SYSTEM_EVENTS_V9
+        else:
+            storage_hash = STORAGE_HASH_SYSTEM_EVENTS
+
+        response = self.rpc_request(&#34;state_getStorageAt&#34;, [storage_hash, block_hash])
+
+        if response.get(&#39;result&#39;):
+
+            if metadata_decoder:
+
+                # Process events
+                events_decoder = EventsDecoder(
+                    data=ScaleBytes(response.get(&#39;result&#39;)),
+                    metadata=metadata_decoder
+                )
+                events_decoder.decode()
+
+                return events_decoder
+
+            else:
+                return response
+        else:
+            raise SubstrateRequestException(&#34;Error occurred during retrieval of events&#34;)
+
+    def get_block_runtime_version(self, block_hash):
+        response = self.rpc_request(&#34;chain_getRuntimeVersion&#34;, [block_hash])
+        return response.get(&#39;result&#39;)
+
+    def generate_storage_hash(self, storage_module, storage_function, params=None, hasher=None, metadata_version=None):
+        &#34;&#34;&#34;
+        Generate a storage key for given module/function
+        :param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
+        :param hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
+        :param storage_module:
+        :param storage_function:
+        :param params: Parameters of the storage function, provided in scale encoded hex-bytes
+        :return:
+        &#34;&#34;&#34;
+
+        if metadata_version and metadata_version &gt;= 9:
+            storage_hash = two_x64_concat(storage_module.encode()) + two_x64_concat(storage_function.encode())
+            if params:
+
+                if type(params) is not list:
+                    params = [params]
+
+                params_key = bytes()
+
+                for param in params:
+                    if type(param) is str:
+                        params_key += binascii.unhexlify(param)
+                    elif type(param) is ScaleBytes:
+                        params_key += param.data
+                    elif isinstance(param, ScaleDecoder):
+                        params_key += param.data.data
+
+                if not hasher:
+                    hasher = &#39;Twox64Concat&#39;
+
+                if hasher == &#39;Blake2_256&#39;:
+                    storage_hash += blake2_256(params_key)
+
+                elif hasher == &#39;Twox64Concat&#39;:
+                    storage_hash += two_x64_concat(params_key)
+
+            return &#39;0x{}&#39;.format(storage_hash)
+
+        else:
+            storage_hash = storage_module.encode() + b&#34; &#34; + storage_function.encode()
+
+            if params:
+                storage_hash += binascii.unhexlify(params)
+
+            # Determine hasher function
+            if not hasher:
+                hasher = &#39;Twox64Concat&#39;
+
+            if hasher == &#39;Blake2_256&#39;:
+                return &#34;0x{}&#34;.format(blake2_256(storage_hash))
+
+            elif hasher == &#39;Twox64Concat&#39;:
+                return &#34;0x{}&#34;.format(two_x64_concat(storage_hash))
+
+    def convert_storage_parameter(self, scale_type, value):
+        if scale_type == &#39;AccountId&#39;:
+            if value[0:2] != &#39;0x&#39;:
+                return &#39;0x{}&#39;.format(ss58_decode(value, self.address_type))
+
+        return value
+
+    # Runtime functions used by Substrate API
+
+    def init_runtime(self, block_hash=None, block_id=None):
+
+        if block_id and block_hash:
+            raise ValueError(&#39;Cannot provide block_hash and block_id at the same time&#39;)
+
+        if block_id:
+            block_hash = self.get_block_hash(block_id)
+
+        self.block_hash = block_hash
+
+        self.runtime_version = self.get_block_runtime_version(block_hash=self.block_hash).get(&#34;specVersion&#34;)
+
+        # Set active runtime version
+        RuntimeConfiguration().set_active_spec_version_id(self.runtime_version)
+
+        if self.runtime_version in self.metadata_cache:
+            # Get metadata from cache
+            self.metadata_decoder = self.metadata_cache[self.runtime_version]
+        else:
+            self.metadata_decoder = self.get_block_metadata(block_hash=self.block_hash, decode=True)
+
+            # Update metadata cache
+            self.metadata_cache[self.runtime_version] = self.metadata_decoder
+
+    def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
+        &#34;&#34;&#34;
+        Retrieves the storage for given module, function and optional parameters at given block
+        :param metadata:
+        :param module:
+        :param storage_function:
+        :param params: list of params, can be list of Scalebytes
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
+
+        self.init_runtime(block_hash=block_hash)
+
+        # Search storage call in metadata
+        for metadata_module in self.metadata_decoder.metadata.modules:
+            if metadata_module.name == module:
+                if metadata_module.storage:
+                    for storage_item in metadata_module.storage.items:
+                        if storage_item.name == storage_function:
+
+                            if &#39;PlainType&#39; in storage_item.type:
+                                hasher = &#39;Twox64Concat&#39;
+                                return_scale_type = storage_item.type.get(&#39;PlainType&#39;)
+                                if params:
+                                    raise ValueError(&#39;Storage call of type &#34;PlainType&#34; doesn\&#39;t accept params&#39;)
+
+                            elif &#39;MapType&#39; in storage_item.type:
+
+                                map_type = storage_item.type.get(&#39;MapType&#39;)
+                                hasher = map_type.get(&#39;hasher&#39;)
+                                return_scale_type = map_type.get(&#39;value&#39;)
+
+                                if len(params) != 1:
+                                    raise ValueError(&#39;Storage call of type &#34;MapType&#34; requires 1 parameter&#39;)
+
+                                # Encode parameter
+                                params[0] = self.convert_storage_parameter(map_type[&#39;key&#39;], params[0])
+                                param_obj = ScaleDecoder.get_decoder_class(map_type[&#39;key&#39;])
+                                params[0] = param_obj.encode(params[0])
+
+                            else:
+                                raise NotImplementedError(&#34;Storage type not implemented&#34;)
+
+                            storage_hash = self.generate_storage_hash(
+                                storage_module=module,
+                                storage_function=storage_function,
+                                params=params,
+                                hasher=hasher,
+                                metadata_version=self.metadata_decoder.version.index
+                            )
+
+                            response = self.rpc_request(&#34;state_getStorageAt&#34;, [storage_hash, block_hash])
+
+                            if &#39;result&#39; in response:
+
+                                if return_scale_type and response.get(&#39;result&#39;):
+                                    obj = ScaleDecoder.get_decoder_class(
+                                        return_scale_type,
+                                        ScaleBytes(response.get(&#39;result&#39;)),
+                                        metadata=self.metadata_decoder
+                                    )
+                                    response[&#39;result&#39;] = obj.decode()
+
+                            return response
+
+    def get_runtime_metadata(self, block_hash=None):
+        params = None
+        if block_hash:
+            params = [block_hash]
+        response = self.rpc_request(&#34;state_getMetadata&#34;, params)
+
+        if &#39;result&#39; in response:
+            metadata_decoder = MetadataDecoder(ScaleBytes(response.get(&#39;result&#39;)))
+            response[&#39;result&#39;] = metadata_decoder.decode()
+
+        return response
+
+    def compose_call(self, call_module, call_function, call_params=(), block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        extrinsic = ExtrinsicsDecoder(metadata=self.metadata_decoder, address_type=self.address_type)
+
+        payload = extrinsic.encode({
+            &#39;call_module&#39;: call_module,
+            &#39;call_function&#39;: call_function,
+            &#39;call_args&#39;: call_params
+        })
+
+        return str(payload)
+
+    def process_metadata_typestring(self, type_string):
+
+        decoder_class_obj = None
+
+        if self.runtime_version not in self.type_registry_cache:
+            self.type_registry_cache[self.runtime_version] = {}
+        print(&#39;==============================================\nType string&#39;, type_string)
+        # Check if already added
+        if type_string in self.type_registry_cache[self.runtime_version]:
+            return self.type_registry_cache[self.runtime_version][type_string][&#39;decoder_class&#39;]
+
+        # Try to get decoder class
+        decoder_class = RuntimeConfiguration().get_decoder_class(type_string)
+
+        print(&#39;Decoding class&#39;, decoder_class)
+
+        if not decoder_class:
+
+            # Not in type registry, try get hard coded decoder classes
+            try:
+                decoder_class_obj = ScaleDecoder.get_decoder_class(type_string)
+                decoder_class = decoder_class_obj.__class__
+                print(&#39;ScaleDecoder&#39;, decoder_class.__name__)
+            except NotImplementedError as e:
+                decoder_class = None
+
+
+        # # Try to get subclass if not root level &#39;ScaleType&#39;
+        # if len(decoder_class.__mro__) &gt; 1 and decoder_class.__mro__[1].__name__ != &#39;ScaleType&#39;:
+        #     print(&#39;super class&#39;, decoder_class.__mro__[1].__name__)
+        #     import pdb;
+        #     pdb.set_trace()
+        #     decoder_class = self.process_metadata_typestring(decoder_class.__mro__[1].__name__)
+
+        # Process classes that contain subtypes (e.g. Option&lt;ChangesTrieConfiguration&gt;)
+        if decoder_class_obj and decoder_class_obj.sub_type:
+            self.process_metadata_typestring(decoder_class_obj.sub_type)
+
+        # Process classes that contain type_mapping (e.g. Struct and Enum)
+        if decoder_class and hasattr(decoder_class, &#39;type_mapping&#39;) and decoder_class.type_mapping:
+            print(&#39;type mapping&#39;, decoder_class.type_mapping)
+            for key, data_type in decoder_class.type_mapping:
+                self.process_metadata_typestring(data_type)
+
+        if decoder_class:
+            decoder_class_name = decoder_class.__name__
+        else:
+            decoder_class_name = None
+
+        self.type_registry_cache[self.runtime_version][type_string] = {
+            &#34;type_string&#34;: type_string,
+            &#34;decoder_class&#34;: decoder_class_name
+        }
+        print(&#39;final decoder class&#39;, type_string, decoder_class)
+
+        return decoder_class
+
+    def get_type_registry(self, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        for module in self.metadata_decoder.metadata.modules:
+
+            # Storage backwards compt check
+            if module.storage and isinstance(module.storage, list):
+                storage_functions = module.storage
+            elif module.storage and isinstance(getattr(module.storage, &#39;value&#39;), dict):
+                storage_functions = module.storage.items
+            else:
+                storage_functions = []
+
+            if len(module.calls or []) &gt; 0:
+                for idx, call in enumerate(module.calls):
+                    for arg in call.args:
+                        self.process_metadata_typestring(arg.type)
+
+            if len(module.events or []) &gt; 0:
+                for event_index, event in enumerate(module.events):
+
+                    for arg_index, arg in enumerate(event.args):
+                        self.process_metadata_typestring(arg)
+
+            if len(storage_functions) &gt; 0:
+                for idx, storage in enumerate(storage_functions):
+
+                    # Determine type
+                    type_key1 = None
+                    type_key2 = None
+                    type_value = None
+
+                    if storage.type.get(&#39;PlainType&#39;):
+                        type_value = storage.type.get(&#39;PlainType&#39;)
+
+                    elif storage.type.get(&#39;MapType&#39;):
+                        type_key1 = storage.type[&#39;MapType&#39;].get(&#39;key&#39;)
+                        type_value = storage.type[&#39;MapType&#39;].get(&#39;value&#39;)
+
+                    elif storage.type.get(&#39;DoubleMapType&#39;):
+                        type_key1 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key1&#39;)
+                        type_key2 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key2&#39;)
+                        type_value = storage.type[&#39;DoubleMapType&#39;].get(&#39;value&#39;)
+
+                    self.process_metadata_typestring(type_value)
+
+                    if type_key1:
+                        self.process_metadata_typestring(type_key1)
+
+                    if type_key2:
+                        self.process_metadata_typestring(type_key2)
+
+            if len(module.constants or []) &gt; 0:
+                for idx, constant in enumerate(module.constants):
+
+                    # Check if types already registered in database
+                    self.process_metadata_typestring(constant.type)
+
+        return self.type_registry_cache[self.runtime_version]
+
+    def get_metadata_modules(self, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        return [{
+            &#39;metadata_index&#39;: idx,
+            &#39;module_id&#39;: module.get_identifier(),
+            &#39;name&#39;: module.name,
+            &#39;prefix&#39;: module.prefix,
+            &#39;spec_version&#39;: self.runtime_version,
+            &#39;count_call_functions&#39;: len(module.calls or []),
+            &#39;count_storage_functions&#39;: len(module.calls or []),
+            &#39;count_events&#39;: len(module.events or []),
+            &#39;count_constants&#39;: len(module.constants or []),
+            &#39;count_errors&#39;: len(module.errors or []),
+        } for idx, module in enumerate(self.metadata_decoder.metadata.modules)]
+
+    def get_metadata_call_functions(self, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        call_list = []
+
+        for call_index, (module, call) in self.metadata_decoder.call_index.items():
+            call_list.append(
+                self.serialize_module_call(
+                    module, call, self.runtime_version, call_index
+                )
+            )
+        return call_list
+
+    def get_metadata_call_function(self, module_name, call_function_name, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        result = None
+
+        for call_index, (module, call) in self.metadata_decoder.call_index.items():
+            if module.name == module_name and \
+                    call.get_identifier() == call_function_name:
+                result = self.serialize_module_call(
+                    module, call, self.runtime_version, call_index
+                )
+                break
+
+        return result
+
+    def get_metadata_events(self, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        event_list = []
+
+        for event_index, (module, event) in self.metadata_decoder.event_index.items():
+            event_list.append(
+                self.serialize_module_event(
+                    module, event, self.runtime_version, event_index
+                )
+            )
+
+        return event_list
+
+    def get_metadata_event(self, module_name, event_name, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        for event_index, (module, event) in self.metadata_decoder.event_index.items():
+            if module.name == module_name and \
+                    event.name == event_name:
+                return self.serialize_module_event(
+                    module, event, self.runtime_version, event_index
+                )
+
+    def get_metadata_constants(self, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        constant_list = []
+
+        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+            for constant in module.constants or []:
+                constant_list.append(
+                    self.serialize_constant(
+                        constant, module, self.runtime_version
+                    )
+                )
+
+        return constant_list
+
+    def get_metadata_constant(self, module_name, constant_name, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+
+            if module_name == module.name and module.constants:
+
+                for constant in module.constants:
+                    if constant_name == constant.name:
+                        return self.serialize_constant(
+                            constant, module, self.runtime_version
+                        )
+
+    def get_metadata_storage_functions(self, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        storage_list = []
+
+        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+            if module.storage:
+                for storage in module.storage.items:
+                    storage_list.append(
+                        self.serialize_storage_item(
+                            storage_item=storage,
+                            module=module,
+                            spec_version_id=self.runtime_version
+                        )
+                    )
+
+        return storage_list
+
+    def get_metadata_storage_function(self, module_name, storage_name, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+            if module.name == module_name and module.storage:
+                for storage in module.storage.items:
+                    if storage.name == storage_name:
+                        return self.serialize_storage_item(
+                            storage_item=storage,
+                            module=module,
+                            spec_version_id=self.runtime_version
+                        )
+
+    def get_metadata_errors(self, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        error_list = []
+
+        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+            if module.errors:
+                for error in module.errors:
+                    error_list.append(
+                        self.serialize_module_error(
+                            module=module, error=error, spec_version=self.runtime_version
+                        )
+                    )
+
+        return error_list
+
+    def get_metadata_error(self, module_name, error_name, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+            if module.name == module_name and module.errors:
+                for error in module.errors:
+                    if error_name == error.name:
+                        return self.serialize_module_error(
+                            module=module, error=error, spec_version=self.runtime_version
+                        )
+
+    def get_runtime_block(self, block_hash=None, block_id=None):
+
+        self.init_runtime(block_hash=block_hash, block_id=block_id)
+
+        response = self.rpc_request(&#34;chain_getBlock&#34;, [block_hash]).get(&#39;result&#39;)
+
+        response[&#39;block&#39;][&#39;header&#39;][&#39;number&#39;] = int(response[&#39;block&#39;][&#39;header&#39;][&#39;number&#39;], 16)
+
+        for idx, extrinsic_data in enumerate(response[&#39;block&#39;][&#39;extrinsics&#39;]):
+            extrinsic_decoder = ExtrinsicsDecoder(
+                data=ScaleBytes(extrinsic_data),
+                metadata=self.metadata_decoder
+            )
+            extrinsic_decoder.decode()
+            response[&#39;block&#39;][&#39;extrinsics&#39;][idx] = extrinsic_decoder.value
+
+        for idx, log_data in enumerate(response[&#39;block&#39;][&#39;header&#39;][&#34;digest&#34;][&#34;logs&#34;]):
+            log_digest = LogDigest(ScaleBytes(log_data))
+            log_digest.decode()
+            response[&#39;block&#39;][&#39;header&#39;][&#34;digest&#34;][&#34;logs&#34;][idx] = log_digest.value
+
+        return response
+
+    def decode_scale(self, type_string, scale_bytes, block_hash=None):
+        self.init_runtime(block_hash=block_hash)
+
+        obj = ScaleDecoder.get_decoder_class(type_string, ScaleBytes(scale_bytes), metadata=self.metadata_decoder)
+        return obj.decode()
+
+    def encode_scale(self, type_string, value, block_hash=None):
+        self.init_runtime(block_hash=block_hash)
+
+        obj = ScaleDecoder.get_decoder_class(type_string)
+        return str(obj.encode(value))
+
+    # Serializing helper function
+
+    def serialize_storage_item(self, storage_item, module, spec_version_id):
+        storage_dict = {
+            &#34;storage_name&#34;: storage_item.name,
+            &#34;storage_modifier&#34;: storage_item.modifier,
+            &#34;storage_fallback_scale&#34;: storage_item.fallback,
+            &#34;storage_fallback&#34;: None,
+            &#34;documentation&#34;: &#39;\n&#39;.join(storage_item.docs),
+            &#34;module_id&#34;: module.get_identifier(),
+            &#34;module_prefix&#34;: module.prefix,
+            &#34;module_name&#34;: module.name,
+            &#34;spec_version&#34;: spec_version_id,
+            &#34;type_key1&#34;: None,
+            &#34;type_key2&#34;: None,
+            &#34;type_hasher_key1&#34;: None,
+            &#34;type_hasher_key2&#34;: None,
+            &#34;type_value&#34;: None,
+            &#34;type_is_linked&#34;: None
+        }
+
+        type_class, type_info = next(iter(storage_item.type.items()))
+
+        storage_dict[&#34;type_class&#34;] = type_class
+
+        if type_class == &#39;PlainType&#39;:
+            storage_dict[&#34;type_value&#34;] = type_info
+
+        elif type_class == &#39;MapType&#39;:
+            storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
+            storage_dict[&#34;type_key1&#34;] = type_info[&#34;key&#34;]
+            storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
+            storage_dict[&#34;type_is_linked&#34;] = type_info[&#34;isLinked&#34;]
+
+        elif type_class == &#39;DoubleMapType&#39;:
+
+            storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
+            storage_dict[&#34;type_key1&#34;] = type_info[&#34;key1&#34;]
+            storage_dict[&#34;type_key2&#34;] = type_info[&#34;key2&#34;]
+            storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
+            storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;key2Hasher&#34;]
+
+        if storage_item.fallback != &#39;0x00&#39;:
+            # Decode fallback
+            try:
+                fallback_obj = ScaleDecoder.get_decoder_class(storage_dict[&#34;type_value&#34;],
+                                                              ScaleBytes(storage_item.fallback))
+                storage_dict[&#34;storage_fallback&#34;] = fallback_obj.decode()
+            except Exception:
+                storage_dict[&#34;storage_fallback&#34;] = &#39;[decoding error]&#39;
+
+        return storage_dict
+
+    def serialize_constant(self, constant, module, spec_version_id):
+        try:
+            value_obj = ScaleDecoder.get_decoder_class(constant.type,
+                                                       ScaleBytes(constant.constant_value))
+            constant_decoded_value = value_obj.decode()
+        except Exception:
+            constant_decoded_value = &#39;[decoding error]&#39;
+
+        return {
+            &#34;constant_name&#34;: constant.name,
+            &#34;constant_type&#34;: constant.type,
+            &#34;constant_value&#34;: constant_decoded_value,
+            &#34;constant_value_scale&#34;: constant.constant_value,
+            &#34;documentation&#34;: &#39;\n&#39;.join(constant.docs),
+            &#34;module_id&#34;: module.get_identifier(),
+            &#34;module_prefix&#34;: module.prefix,
+            &#34;module_name&#34;: module.name,
+            &#34;spec_version&#34;: spec_version_id
+        }
+
+    def serialize_module_call(self, module, call, spec_version, call_index):
+        return {
+            &#34;call_id&#34;: call.get_identifier(),
+            &#34;call_name&#34;: call.name,
+            &#34;call_args&#34;: [call_arg.value for call_arg in call.args],
+            &#34;lookup&#34;: &#39;0x{}&#39;.format(call_index),
+            &#34;documentation&#34;: &#39;\n&#39;.join(call.docs),
+            &#34;module_id&#34;: module.get_identifier(),
+            &#34;module_prefix&#34;: module.prefix,
+            &#34;module_name&#34;: module.name,
+            &#34;spec_version&#34;: spec_version
+        }
+
+    def serialize_module_event(self, module, event, spec_version, event_index):
+        return {
+            &#34;event_id&#34;: event.name,
+            &#34;event_name&#34;: event.name,
+            &#34;event_args&#34;: [
+                  {
+                    &#34;event_arg_index&#34;: idx,
+                    &#34;type&#34;: arg
+                  } for idx, arg in enumerate(event.args)
+                ],
+            &#34;lookup&#34;: &#39;0x{}&#39;.format(event_index),
+            &#34;documentation&#34;: &#39;\n&#39;.join(event.docs),
+            &#34;module_id&#34;: module.get_identifier(),
+            &#34;module_prefix&#34;: module.prefix,
+            &#34;module_name&#34;: module.name,
+            &#34;spec_version&#34;: spec_version
+        }
+
+    def serialize_module_error(self, module, error, spec_version):
+        return {
+            &#34;error_name&#34;: error.name,
+            &#34;documentation&#34;: &#39;\n&#39;.join(error.docs),
+            &#34;module_id&#34;: module.get_identifier(),
+            &#34;module_prefix&#34;: module.prefix,
+            &#34;module_name&#34;: module.name,
+            &#34;spec_version&#34;: spec_version
+        }</code></pre>
+</details>
+</section>
+<section>
+<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+<dl>
+<dt><code class="name"><a title="substrateinterface.constants" href="constants.html">substrateinterface.constants</a></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt><code class="name"><a title="substrateinterface.exceptions" href="exceptions.html">substrateinterface.exceptions</a></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt><code class="name"><a title="substrateinterface.utils" href="utils/index.html">substrateinterface.utils</a></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="substrateinterface.SubstrateInterface"><code class="flex name class">
+<span>class <span class="ident">SubstrateInterface</span></span>
+<span>(</span><span>url, address_type=None, type_registry=None, type_registry_preset=None, metadata_version=4)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SubstrateInterface:
+
+    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None, metadata_version=4):
+
+        if type_registry or type_registry_preset:
+
+            RuntimeConfiguration().update_type_registry(load_type_registry_preset(&#34;default&#34;))
+
+            if type_registry:
+                # Load type registries in runtime configuration
+                RuntimeConfiguration().update_type_registry(type_registry)
+            if type_registry_preset:
+                # Load type registries in runtime configuration
+                RuntimeConfiguration().update_type_registry(load_type_registry_preset(type_registry_preset))
+
+        self.request_id = 1
+        self.url = url
+        self.address_type = address_type or 42
+
+        self.mock_extrinsics = None
+        self._version = None
+        self.default_headers = {
+            &#39;content-type&#39;: &#34;application/json&#34;,
+            &#39;cache-control&#39;: &#34;no-cache&#34;
+        }
+
+        self.metadata_decoder = None
+        self.runtime_version = None
+        self.block_hash = None
+
+        self.metadata_cache = {}
+        self.type_registry_cache = {}
+
+    def rpc_request(self, method, params):
+
+        payload = {
+            &#34;jsonrpc&#34;: &#34;2.0&#34;,
+            &#34;method&#34;: method,
+            &#34;params&#34;: params,
+            &#34;id&#34;: self.request_id
+        }
+
+        response = requests.request(&#34;POST&#34;, self.url, data=json.dumps(payload), headers=self.default_headers)
+
+        if response.status_code != 200:
+            raise SubstrateRequestException(&#34;RPC request failed with HTTP status code {}&#34;.format(response.status_code))
+
+        json_body = response.json()
+
+        return json_body
+
+    def get_system_name(self):
+        response = self.rpc_request(&#34;system_name&#34;, [])
+        return response.get(&#39;result&#39;)
+
+    def get_version(self):
+        if not self._version:
+            response = self.rpc_request(&#34;system_version&#34;, [])
+            self._version = response.get(&#39;result&#39;)
+        return self._version
+
+    def get_chain_head(self):
+        response = self.rpc_request(&#34;chain_getHead&#34;, [])
+        return response.get(&#39;result&#39;)
+
+    def get_chain_finalised_head(self):
+        response = self.rpc_request(&#34;chain_getFinalisedHead&#34;, [])
+        return response.get(&#39;result&#39;)
+
+    def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
+
+        if block_id:
+            block_hash = self.get_block_hash(block_id)
+
+        response = self.rpc_request(&#34;chain_getBlock&#34;, [block_hash]).get(&#39;result&#39;)
+
+        if self.mock_extrinsics:
+            # Extend extrinsics with mock_extrinsics for e.g. performance tests
+            response[&#39;block&#39;][&#39;extrinsics&#39;].extend(self.mock_extrinsics)
+
+        # Decode extrinsics
+        if metadata_decoder:
+
+            response[&#39;block&#39;][&#39;header&#39;][&#39;number&#39;] = int(response[&#39;block&#39;][&#39;header&#39;][&#39;number&#39;], 16)
+
+            for idx, extrinsic_data in enumerate(response[&#39;block&#39;][&#39;extrinsics&#39;]):
+                extrinsic_decoder = ExtrinsicsDecoder(
+                    data=ScaleBytes(extrinsic_data),
+                    metadata=metadata_decoder
+                )
+                extrinsic_decoder.decode()
+                response[&#39;block&#39;][&#39;extrinsics&#39;][idx] = extrinsic_decoder.value
+
+            for idx, log_data in enumerate(response[&#39;block&#39;][&#39;header&#39;][&#34;digest&#34;][&#34;logs&#34;]):
+                log_digest = LogDigest(ScaleBytes(log_data))
+                log_digest.decode()
+                response[&#39;block&#39;][&#39;header&#39;][&#34;digest&#34;][&#34;logs&#34;][idx] = log_digest.value
+
+        return response
+
+    def get_block_hash(self, block_id):
+        return self.rpc_request(&#34;chain_getBlockHash&#34;, [block_id]).get(&#39;result&#39;)
+
+    def get_block_header(self, block_hash):
+        response = self.rpc_request(&#34;chain_getHeader&#34;, [block_hash])
+        return response.get(&#39;result&#39;)
+
+    def get_block_number(self, block_hash):
+        response = self.rpc_request(&#34;chain_getHeader&#34;, [block_hash])
+        return int(response[&#39;result&#39;][&#39;number&#39;], 16)
+
+    def get_block_metadata(self, block_hash=None, decode=True):
+        params = None
+        if block_hash:
+            params = [block_hash]
+        response = self.rpc_request(&#34;state_getMetadata&#34;, params)
+
+        if decode:
+            metadata_decoder = MetadataDecoder(ScaleBytes(response.get(&#39;result&#39;)))
+            metadata_decoder.decode()
+
+            return metadata_decoder
+
+        return response
+
+    def get_storage(self, block_hash, module, function, params=None, return_scale_type=None, hasher=None,
+                    spec_version_id=&#39;default&#39;, metadata=None, metadata_version=None):
+        &#34;&#34;&#34;
+        Retrieves the storage for given module, function and optional parameters at given block
+        :param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
+        :param metadata:
+        :param spec_version_id:
+        :param hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
+        :param return_scale_type: Scale type string to interprete result
+        :param block_hash:
+        :param module:
+        :param function:
+        :param params:
+        :return:
+        &#34;&#34;&#34;
+
+        storage_hash = self.generate_storage_hash(
+            storage_module=module,
+            storage_function=function,
+            params=params,
+            hasher=hasher,
+            metadata_version=metadata_version
+        )
+        response = self.rpc_request(&#34;state_getStorageAt&#34;, [storage_hash, block_hash])
+
+        if &#39;result&#39; in response:
+
+            if return_scale_type and response.get(&#39;result&#39;):
+                obj = ScaleDecoder.get_decoder_class(
+                    return_scale_type,
+                    ScaleBytes(response.get(&#39;result&#39;)),
+                    metadata=metadata
+                )
+                return obj.decode()
+            else:
+                return response.get(&#39;result&#39;)
+        else:
+            raise SubstrateRequestException(&#34;Error occurred during retrieval of events&#34;)
+
+    def get_storage_by_key(self, block_hash, storage_key):
+
+        response = self.rpc_request(&#34;state_getStorageAt&#34;, [storage_key, block_hash])
+        if &#39;result&#39; in response:
+            return response.get(&#39;result&#39;)
+        else:
+            raise SubstrateRequestException(&#34;Error occurred during retrieval of events&#34;)
+
+    def get_block_events(self, block_hash, metadata_decoder=None):
+
+        if metadata_decoder and metadata_decoder.version.index &gt;= 9:
+            storage_hash = STORAGE_HASH_SYSTEM_EVENTS_V9
+        else:
+            storage_hash = STORAGE_HASH_SYSTEM_EVENTS
+
+        response = self.rpc_request(&#34;state_getStorageAt&#34;, [storage_hash, block_hash])
+
+        if response.get(&#39;result&#39;):
+
+            if metadata_decoder:
+
+                # Process events
+                events_decoder = EventsDecoder(
+                    data=ScaleBytes(response.get(&#39;result&#39;)),
+                    metadata=metadata_decoder
+                )
+                events_decoder.decode()
+
+                return events_decoder
+
+            else:
+                return response
+        else:
+            raise SubstrateRequestException(&#34;Error occurred during retrieval of events&#34;)
+
+    def get_block_runtime_version(self, block_hash):
+        response = self.rpc_request(&#34;chain_getRuntimeVersion&#34;, [block_hash])
+        return response.get(&#39;result&#39;)
+
+    def generate_storage_hash(self, storage_module, storage_function, params=None, hasher=None, metadata_version=None):
+        &#34;&#34;&#34;
+        Generate a storage key for given module/function
+        :param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
+        :param hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
+        :param storage_module:
+        :param storage_function:
+        :param params: Parameters of the storage function, provided in scale encoded hex-bytes
+        :return:
+        &#34;&#34;&#34;
+
+        if metadata_version and metadata_version &gt;= 9:
+            storage_hash = two_x64_concat(storage_module.encode()) + two_x64_concat(storage_function.encode())
+            if params:
+
+                if type(params) is not list:
+                    params = [params]
+
+                params_key = bytes()
+
+                for param in params:
+                    if type(param) is str:
+                        params_key += binascii.unhexlify(param)
+                    elif type(param) is ScaleBytes:
+                        params_key += param.data
+                    elif isinstance(param, ScaleDecoder):
+                        params_key += param.data.data
+
+                if not hasher:
+                    hasher = &#39;Twox64Concat&#39;
+
+                if hasher == &#39;Blake2_256&#39;:
+                    storage_hash += blake2_256(params_key)
+
+                elif hasher == &#39;Twox64Concat&#39;:
+                    storage_hash += two_x64_concat(params_key)
+
+            return &#39;0x{}&#39;.format(storage_hash)
+
+        else:
+            storage_hash = storage_module.encode() + b&#34; &#34; + storage_function.encode()
+
+            if params:
+                storage_hash += binascii.unhexlify(params)
+
+            # Determine hasher function
+            if not hasher:
+                hasher = &#39;Twox64Concat&#39;
+
+            if hasher == &#39;Blake2_256&#39;:
+                return &#34;0x{}&#34;.format(blake2_256(storage_hash))
+
+            elif hasher == &#39;Twox64Concat&#39;:
+                return &#34;0x{}&#34;.format(two_x64_concat(storage_hash))
+
+    def convert_storage_parameter(self, scale_type, value):
+        if scale_type == &#39;AccountId&#39;:
+            if value[0:2] != &#39;0x&#39;:
+                return &#39;0x{}&#39;.format(ss58_decode(value, self.address_type))
+
+        return value
+
+    # Runtime functions used by Substrate API
+
+    def init_runtime(self, block_hash=None, block_id=None):
+
+        if block_id and block_hash:
+            raise ValueError(&#39;Cannot provide block_hash and block_id at the same time&#39;)
+
+        if block_id:
+            block_hash = self.get_block_hash(block_id)
+
+        self.block_hash = block_hash
+
+        self.runtime_version = self.get_block_runtime_version(block_hash=self.block_hash).get(&#34;specVersion&#34;)
+
+        # Set active runtime version
+        RuntimeConfiguration().set_active_spec_version_id(self.runtime_version)
+
+        if self.runtime_version in self.metadata_cache:
+            # Get metadata from cache
+            self.metadata_decoder = self.metadata_cache[self.runtime_version]
+        else:
+            self.metadata_decoder = self.get_block_metadata(block_hash=self.block_hash, decode=True)
+
+            # Update metadata cache
+            self.metadata_cache[self.runtime_version] = self.metadata_decoder
+
+    def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
+        &#34;&#34;&#34;
+        Retrieves the storage for given module, function and optional parameters at given block
+        :param metadata:
+        :param module:
+        :param storage_function:
+        :param params: list of params, can be list of Scalebytes
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
+
+        self.init_runtime(block_hash=block_hash)
+
+        # Search storage call in metadata
+        for metadata_module in self.metadata_decoder.metadata.modules:
+            if metadata_module.name == module:
+                if metadata_module.storage:
+                    for storage_item in metadata_module.storage.items:
+                        if storage_item.name == storage_function:
+
+                            if &#39;PlainType&#39; in storage_item.type:
+                                hasher = &#39;Twox64Concat&#39;
+                                return_scale_type = storage_item.type.get(&#39;PlainType&#39;)
+                                if params:
+                                    raise ValueError(&#39;Storage call of type &#34;PlainType&#34; doesn\&#39;t accept params&#39;)
+
+                            elif &#39;MapType&#39; in storage_item.type:
+
+                                map_type = storage_item.type.get(&#39;MapType&#39;)
+                                hasher = map_type.get(&#39;hasher&#39;)
+                                return_scale_type = map_type.get(&#39;value&#39;)
+
+                                if len(params) != 1:
+                                    raise ValueError(&#39;Storage call of type &#34;MapType&#34; requires 1 parameter&#39;)
+
+                                # Encode parameter
+                                params[0] = self.convert_storage_parameter(map_type[&#39;key&#39;], params[0])
+                                param_obj = ScaleDecoder.get_decoder_class(map_type[&#39;key&#39;])
+                                params[0] = param_obj.encode(params[0])
+
+                            else:
+                                raise NotImplementedError(&#34;Storage type not implemented&#34;)
+
+                            storage_hash = self.generate_storage_hash(
+                                storage_module=module,
+                                storage_function=storage_function,
+                                params=params,
+                                hasher=hasher,
+                                metadata_version=self.metadata_decoder.version.index
+                            )
+
+                            response = self.rpc_request(&#34;state_getStorageAt&#34;, [storage_hash, block_hash])
+
+                            if &#39;result&#39; in response:
+
+                                if return_scale_type and response.get(&#39;result&#39;):
+                                    obj = ScaleDecoder.get_decoder_class(
+                                        return_scale_type,
+                                        ScaleBytes(response.get(&#39;result&#39;)),
+                                        metadata=self.metadata_decoder
+                                    )
+                                    response[&#39;result&#39;] = obj.decode()
+
+                            return response
+
+    def get_runtime_metadata(self, block_hash=None):
+        params = None
+        if block_hash:
+            params = [block_hash]
+        response = self.rpc_request(&#34;state_getMetadata&#34;, params)
+
+        if &#39;result&#39; in response:
+            metadata_decoder = MetadataDecoder(ScaleBytes(response.get(&#39;result&#39;)))
+            response[&#39;result&#39;] = metadata_decoder.decode()
+
+        return response
+
+    def compose_call(self, call_module, call_function, call_params=(), block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        extrinsic = ExtrinsicsDecoder(metadata=self.metadata_decoder, address_type=self.address_type)
+
+        payload = extrinsic.encode({
+            &#39;call_module&#39;: call_module,
+            &#39;call_function&#39;: call_function,
+            &#39;call_args&#39;: call_params
+        })
+
+        return str(payload)
+
+    def process_metadata_typestring(self, type_string):
+
+        decoder_class_obj = None
+
+        if self.runtime_version not in self.type_registry_cache:
+            self.type_registry_cache[self.runtime_version] = {}
+        print(&#39;==============================================\nType string&#39;, type_string)
+        # Check if already added
+        if type_string in self.type_registry_cache[self.runtime_version]:
+            return self.type_registry_cache[self.runtime_version][type_string][&#39;decoder_class&#39;]
+
+        # Try to get decoder class
+        decoder_class = RuntimeConfiguration().get_decoder_class(type_string)
+
+        print(&#39;Decoding class&#39;, decoder_class)
+
+        if not decoder_class:
+
+            # Not in type registry, try get hard coded decoder classes
+            try:
+                decoder_class_obj = ScaleDecoder.get_decoder_class(type_string)
+                decoder_class = decoder_class_obj.__class__
+                print(&#39;ScaleDecoder&#39;, decoder_class.__name__)
+            except NotImplementedError as e:
+                decoder_class = None
+
+
+        # # Try to get subclass if not root level &#39;ScaleType&#39;
+        # if len(decoder_class.__mro__) &gt; 1 and decoder_class.__mro__[1].__name__ != &#39;ScaleType&#39;:
+        #     print(&#39;super class&#39;, decoder_class.__mro__[1].__name__)
+        #     import pdb;
+        #     pdb.set_trace()
+        #     decoder_class = self.process_metadata_typestring(decoder_class.__mro__[1].__name__)
+
+        # Process classes that contain subtypes (e.g. Option&lt;ChangesTrieConfiguration&gt;)
+        if decoder_class_obj and decoder_class_obj.sub_type:
+            self.process_metadata_typestring(decoder_class_obj.sub_type)
+
+        # Process classes that contain type_mapping (e.g. Struct and Enum)
+        if decoder_class and hasattr(decoder_class, &#39;type_mapping&#39;) and decoder_class.type_mapping:
+            print(&#39;type mapping&#39;, decoder_class.type_mapping)
+            for key, data_type in decoder_class.type_mapping:
+                self.process_metadata_typestring(data_type)
+
+        if decoder_class:
+            decoder_class_name = decoder_class.__name__
+        else:
+            decoder_class_name = None
+
+        self.type_registry_cache[self.runtime_version][type_string] = {
+            &#34;type_string&#34;: type_string,
+            &#34;decoder_class&#34;: decoder_class_name
+        }
+        print(&#39;final decoder class&#39;, type_string, decoder_class)
+
+        return decoder_class
+
+    def get_type_registry(self, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        for module in self.metadata_decoder.metadata.modules:
+
+            # Storage backwards compt check
+            if module.storage and isinstance(module.storage, list):
+                storage_functions = module.storage
+            elif module.storage and isinstance(getattr(module.storage, &#39;value&#39;), dict):
+                storage_functions = module.storage.items
+            else:
+                storage_functions = []
+
+            if len(module.calls or []) &gt; 0:
+                for idx, call in enumerate(module.calls):
+                    for arg in call.args:
+                        self.process_metadata_typestring(arg.type)
+
+            if len(module.events or []) &gt; 0:
+                for event_index, event in enumerate(module.events):
+
+                    for arg_index, arg in enumerate(event.args):
+                        self.process_metadata_typestring(arg)
+
+            if len(storage_functions) &gt; 0:
+                for idx, storage in enumerate(storage_functions):
+
+                    # Determine type
+                    type_key1 = None
+                    type_key2 = None
+                    type_value = None
+
+                    if storage.type.get(&#39;PlainType&#39;):
+                        type_value = storage.type.get(&#39;PlainType&#39;)
+
+                    elif storage.type.get(&#39;MapType&#39;):
+                        type_key1 = storage.type[&#39;MapType&#39;].get(&#39;key&#39;)
+                        type_value = storage.type[&#39;MapType&#39;].get(&#39;value&#39;)
+
+                    elif storage.type.get(&#39;DoubleMapType&#39;):
+                        type_key1 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key1&#39;)
+                        type_key2 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key2&#39;)
+                        type_value = storage.type[&#39;DoubleMapType&#39;].get(&#39;value&#39;)
+
+                    self.process_metadata_typestring(type_value)
+
+                    if type_key1:
+                        self.process_metadata_typestring(type_key1)
+
+                    if type_key2:
+                        self.process_metadata_typestring(type_key2)
+
+            if len(module.constants or []) &gt; 0:
+                for idx, constant in enumerate(module.constants):
+
+                    # Check if types already registered in database
+                    self.process_metadata_typestring(constant.type)
+
+        return self.type_registry_cache[self.runtime_version]
+
+    def get_metadata_modules(self, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        return [{
+            &#39;metadata_index&#39;: idx,
+            &#39;module_id&#39;: module.get_identifier(),
+            &#39;name&#39;: module.name,
+            &#39;prefix&#39;: module.prefix,
+            &#39;spec_version&#39;: self.runtime_version,
+            &#39;count_call_functions&#39;: len(module.calls or []),
+            &#39;count_storage_functions&#39;: len(module.calls or []),
+            &#39;count_events&#39;: len(module.events or []),
+            &#39;count_constants&#39;: len(module.constants or []),
+            &#39;count_errors&#39;: len(module.errors or []),
+        } for idx, module in enumerate(self.metadata_decoder.metadata.modules)]
+
+    def get_metadata_call_functions(self, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        call_list = []
+
+        for call_index, (module, call) in self.metadata_decoder.call_index.items():
+            call_list.append(
+                self.serialize_module_call(
+                    module, call, self.runtime_version, call_index
+                )
+            )
+        return call_list
+
+    def get_metadata_call_function(self, module_name, call_function_name, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        result = None
+
+        for call_index, (module, call) in self.metadata_decoder.call_index.items():
+            if module.name == module_name and \
+                    call.get_identifier() == call_function_name:
+                result = self.serialize_module_call(
+                    module, call, self.runtime_version, call_index
+                )
+                break
+
+        return result
+
+    def get_metadata_events(self, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        event_list = []
+
+        for event_index, (module, event) in self.metadata_decoder.event_index.items():
+            event_list.append(
+                self.serialize_module_event(
+                    module, event, self.runtime_version, event_index
+                )
+            )
+
+        return event_list
+
+    def get_metadata_event(self, module_name, event_name, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        for event_index, (module, event) in self.metadata_decoder.event_index.items():
+            if module.name == module_name and \
+                    event.name == event_name:
+                return self.serialize_module_event(
+                    module, event, self.runtime_version, event_index
+                )
+
+    def get_metadata_constants(self, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        constant_list = []
+
+        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+            for constant in module.constants or []:
+                constant_list.append(
+                    self.serialize_constant(
+                        constant, module, self.runtime_version
+                    )
+                )
+
+        return constant_list
+
+    def get_metadata_constant(self, module_name, constant_name, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+
+            if module_name == module.name and module.constants:
+
+                for constant in module.constants:
+                    if constant_name == constant.name:
+                        return self.serialize_constant(
+                            constant, module, self.runtime_version
+                        )
+
+    def get_metadata_storage_functions(self, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        storage_list = []
+
+        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+            if module.storage:
+                for storage in module.storage.items:
+                    storage_list.append(
+                        self.serialize_storage_item(
+                            storage_item=storage,
+                            module=module,
+                            spec_version_id=self.runtime_version
+                        )
+                    )
+
+        return storage_list
+
+    def get_metadata_storage_function(self, module_name, storage_name, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+            if module.name == module_name and module.storage:
+                for storage in module.storage.items:
+                    if storage.name == storage_name:
+                        return self.serialize_storage_item(
+                            storage_item=storage,
+                            module=module,
+                            spec_version_id=self.runtime_version
+                        )
+
+    def get_metadata_errors(self, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        error_list = []
+
+        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+            if module.errors:
+                for error in module.errors:
+                    error_list.append(
+                        self.serialize_module_error(
+                            module=module, error=error, spec_version=self.runtime_version
+                        )
+                    )
+
+        return error_list
+
+    def get_metadata_error(self, module_name, error_name, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+            if module.name == module_name and module.errors:
+                for error in module.errors:
+                    if error_name == error.name:
+                        return self.serialize_module_error(
+                            module=module, error=error, spec_version=self.runtime_version
+                        )
+
+    def get_runtime_block(self, block_hash=None, block_id=None):
+
+        self.init_runtime(block_hash=block_hash, block_id=block_id)
+
+        response = self.rpc_request(&#34;chain_getBlock&#34;, [block_hash]).get(&#39;result&#39;)
+
+        response[&#39;block&#39;][&#39;header&#39;][&#39;number&#39;] = int(response[&#39;block&#39;][&#39;header&#39;][&#39;number&#39;], 16)
+
+        for idx, extrinsic_data in enumerate(response[&#39;block&#39;][&#39;extrinsics&#39;]):
+            extrinsic_decoder = ExtrinsicsDecoder(
+                data=ScaleBytes(extrinsic_data),
+                metadata=self.metadata_decoder
+            )
+            extrinsic_decoder.decode()
+            response[&#39;block&#39;][&#39;extrinsics&#39;][idx] = extrinsic_decoder.value
+
+        for idx, log_data in enumerate(response[&#39;block&#39;][&#39;header&#39;][&#34;digest&#34;][&#34;logs&#34;]):
+            log_digest = LogDigest(ScaleBytes(log_data))
+            log_digest.decode()
+            response[&#39;block&#39;][&#39;header&#39;][&#34;digest&#34;][&#34;logs&#34;][idx] = log_digest.value
+
+        return response
+
+    def decode_scale(self, type_string, scale_bytes, block_hash=None):
+        self.init_runtime(block_hash=block_hash)
+
+        obj = ScaleDecoder.get_decoder_class(type_string, ScaleBytes(scale_bytes), metadata=self.metadata_decoder)
+        return obj.decode()
+
+    def encode_scale(self, type_string, value, block_hash=None):
+        self.init_runtime(block_hash=block_hash)
+
+        obj = ScaleDecoder.get_decoder_class(type_string)
+        return str(obj.encode(value))
+
+    # Serializing helper function
+
+    def serialize_storage_item(self, storage_item, module, spec_version_id):
+        storage_dict = {
+            &#34;storage_name&#34;: storage_item.name,
+            &#34;storage_modifier&#34;: storage_item.modifier,
+            &#34;storage_fallback_scale&#34;: storage_item.fallback,
+            &#34;storage_fallback&#34;: None,
+            &#34;documentation&#34;: &#39;\n&#39;.join(storage_item.docs),
+            &#34;module_id&#34;: module.get_identifier(),
+            &#34;module_prefix&#34;: module.prefix,
+            &#34;module_name&#34;: module.name,
+            &#34;spec_version&#34;: spec_version_id,
+            &#34;type_key1&#34;: None,
+            &#34;type_key2&#34;: None,
+            &#34;type_hasher_key1&#34;: None,
+            &#34;type_hasher_key2&#34;: None,
+            &#34;type_value&#34;: None,
+            &#34;type_is_linked&#34;: None
+        }
+
+        type_class, type_info = next(iter(storage_item.type.items()))
+
+        storage_dict[&#34;type_class&#34;] = type_class
+
+        if type_class == &#39;PlainType&#39;:
+            storage_dict[&#34;type_value&#34;] = type_info
+
+        elif type_class == &#39;MapType&#39;:
+            storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
+            storage_dict[&#34;type_key1&#34;] = type_info[&#34;key&#34;]
+            storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
+            storage_dict[&#34;type_is_linked&#34;] = type_info[&#34;isLinked&#34;]
+
+        elif type_class == &#39;DoubleMapType&#39;:
+
+            storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
+            storage_dict[&#34;type_key1&#34;] = type_info[&#34;key1&#34;]
+            storage_dict[&#34;type_key2&#34;] = type_info[&#34;key2&#34;]
+            storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
+            storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;key2Hasher&#34;]
+
+        if storage_item.fallback != &#39;0x00&#39;:
+            # Decode fallback
+            try:
+                fallback_obj = ScaleDecoder.get_decoder_class(storage_dict[&#34;type_value&#34;],
+                                                              ScaleBytes(storage_item.fallback))
+                storage_dict[&#34;storage_fallback&#34;] = fallback_obj.decode()
+            except Exception:
+                storage_dict[&#34;storage_fallback&#34;] = &#39;[decoding error]&#39;
+
+        return storage_dict
+
+    def serialize_constant(self, constant, module, spec_version_id):
+        try:
+            value_obj = ScaleDecoder.get_decoder_class(constant.type,
+                                                       ScaleBytes(constant.constant_value))
+            constant_decoded_value = value_obj.decode()
+        except Exception:
+            constant_decoded_value = &#39;[decoding error]&#39;
+
+        return {
+            &#34;constant_name&#34;: constant.name,
+            &#34;constant_type&#34;: constant.type,
+            &#34;constant_value&#34;: constant_decoded_value,
+            &#34;constant_value_scale&#34;: constant.constant_value,
+            &#34;documentation&#34;: &#39;\n&#39;.join(constant.docs),
+            &#34;module_id&#34;: module.get_identifier(),
+            &#34;module_prefix&#34;: module.prefix,
+            &#34;module_name&#34;: module.name,
+            &#34;spec_version&#34;: spec_version_id
+        }
+
+    def serialize_module_call(self, module, call, spec_version, call_index):
+        return {
+            &#34;call_id&#34;: call.get_identifier(),
+            &#34;call_name&#34;: call.name,
+            &#34;call_args&#34;: [call_arg.value for call_arg in call.args],
+            &#34;lookup&#34;: &#39;0x{}&#39;.format(call_index),
+            &#34;documentation&#34;: &#39;\n&#39;.join(call.docs),
+            &#34;module_id&#34;: module.get_identifier(),
+            &#34;module_prefix&#34;: module.prefix,
+            &#34;module_name&#34;: module.name,
+            &#34;spec_version&#34;: spec_version
+        }
+
+    def serialize_module_event(self, module, event, spec_version, event_index):
+        return {
+            &#34;event_id&#34;: event.name,
+            &#34;event_name&#34;: event.name,
+            &#34;event_args&#34;: [
+                  {
+                    &#34;event_arg_index&#34;: idx,
+                    &#34;type&#34;: arg
+                  } for idx, arg in enumerate(event.args)
+                ],
+            &#34;lookup&#34;: &#39;0x{}&#39;.format(event_index),
+            &#34;documentation&#34;: &#39;\n&#39;.join(event.docs),
+            &#34;module_id&#34;: module.get_identifier(),
+            &#34;module_prefix&#34;: module.prefix,
+            &#34;module_name&#34;: module.name,
+            &#34;spec_version&#34;: spec_version
+        }
+
+    def serialize_module_error(self, module, error, spec_version):
+        return {
+            &#34;error_name&#34;: error.name,
+            &#34;documentation&#34;: &#39;\n&#39;.join(error.docs),
+            &#34;module_id&#34;: module.get_identifier(),
+            &#34;module_prefix&#34;: module.prefix,
+            &#34;module_name&#34;: module.name,
+            &#34;spec_version&#34;: spec_version
+        }</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="substrateinterface.SubstrateInterface.compose_call"><code class="name flex">
+<span>def <span class="ident">compose_call</span></span>(<span>self, call_module, call_function, call_params=(), block_hash=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compose_call(self, call_module, call_function, call_params=(), block_hash=None):
+
+    self.init_runtime(block_hash=block_hash)
+
+    extrinsic = ExtrinsicsDecoder(metadata=self.metadata_decoder, address_type=self.address_type)
+
+    payload = extrinsic.encode({
+        &#39;call_module&#39;: call_module,
+        &#39;call_function&#39;: call_function,
+        &#39;call_args&#39;: call_params
+    })
+
+    return str(payload)</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.convert_storage_parameter"><code class="name flex">
+<span>def <span class="ident">convert_storage_parameter</span></span>(<span>self, scale_type, value)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def convert_storage_parameter(self, scale_type, value):
+    if scale_type == &#39;AccountId&#39;:
+        if value[0:2] != &#39;0x&#39;:
+            return &#39;0x{}&#39;.format(ss58_decode(value, self.address_type))
+
+    return value</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.decode_scale"><code class="name flex">
+<span>def <span class="ident">decode_scale</span></span>(<span>self, type_string, scale_bytes, block_hash=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def decode_scale(self, type_string, scale_bytes, block_hash=None):
+    self.init_runtime(block_hash=block_hash)
+
+    obj = ScaleDecoder.get_decoder_class(type_string, ScaleBytes(scale_bytes), metadata=self.metadata_decoder)
+    return obj.decode()</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.encode_scale"><code class="name flex">
+<span>def <span class="ident">encode_scale</span></span>(<span>self, type_string, value, block_hash=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def encode_scale(self, type_string, value, block_hash=None):
+    self.init_runtime(block_hash=block_hash)
+
+    obj = ScaleDecoder.get_decoder_class(type_string)
+    return str(obj.encode(value))</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.generate_storage_hash"><code class="name flex">
+<span>def <span class="ident">generate_storage_hash</span></span>(<span>self, storage_module, storage_function, params=None, hasher=None, metadata_version=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Generate a storage key for given module/function
+:param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
+:param hasher: Hashing method used to determine storage key, defaults to 'Twox64Concat' if not provided
+:param storage_module:
+:param storage_function:
+:param params: Parameters of the storage function, provided in scale encoded hex-bytes
+:return:</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_storage_hash(self, storage_module, storage_function, params=None, hasher=None, metadata_version=None):
+    &#34;&#34;&#34;
+    Generate a storage key for given module/function
+    :param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
+    :param hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
+    :param storage_module:
+    :param storage_function:
+    :param params: Parameters of the storage function, provided in scale encoded hex-bytes
+    :return:
+    &#34;&#34;&#34;
+
+    if metadata_version and metadata_version &gt;= 9:
+        storage_hash = two_x64_concat(storage_module.encode()) + two_x64_concat(storage_function.encode())
+        if params:
+
+            if type(params) is not list:
+                params = [params]
+
+            params_key = bytes()
+
+            for param in params:
+                if type(param) is str:
+                    params_key += binascii.unhexlify(param)
+                elif type(param) is ScaleBytes:
+                    params_key += param.data
+                elif isinstance(param, ScaleDecoder):
+                    params_key += param.data.data
+
+            if not hasher:
+                hasher = &#39;Twox64Concat&#39;
+
+            if hasher == &#39;Blake2_256&#39;:
+                storage_hash += blake2_256(params_key)
+
+            elif hasher == &#39;Twox64Concat&#39;:
+                storage_hash += two_x64_concat(params_key)
+
+        return &#39;0x{}&#39;.format(storage_hash)
+
+    else:
+        storage_hash = storage_module.encode() + b&#34; &#34; + storage_function.encode()
+
+        if params:
+            storage_hash += binascii.unhexlify(params)
+
+        # Determine hasher function
+        if not hasher:
+            hasher = &#39;Twox64Concat&#39;
+
+        if hasher == &#39;Blake2_256&#39;:
+            return &#34;0x{}&#34;.format(blake2_256(storage_hash))
+
+        elif hasher == &#39;Twox64Concat&#39;:
+            return &#34;0x{}&#34;.format(two_x64_concat(storage_hash))</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_block_events"><code class="name flex">
+<span>def <span class="ident">get_block_events</span></span>(<span>self, block_hash, metadata_decoder=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_block_events(self, block_hash, metadata_decoder=None):
+
+    if metadata_decoder and metadata_decoder.version.index &gt;= 9:
+        storage_hash = STORAGE_HASH_SYSTEM_EVENTS_V9
+    else:
+        storage_hash = STORAGE_HASH_SYSTEM_EVENTS
+
+    response = self.rpc_request(&#34;state_getStorageAt&#34;, [storage_hash, block_hash])
+
+    if response.get(&#39;result&#39;):
+
+        if metadata_decoder:
+
+            # Process events
+            events_decoder = EventsDecoder(
+                data=ScaleBytes(response.get(&#39;result&#39;)),
+                metadata=metadata_decoder
+            )
+            events_decoder.decode()
+
+            return events_decoder
+
+        else:
+            return response
+    else:
+        raise SubstrateRequestException(&#34;Error occurred during retrieval of events&#34;)</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_block_hash"><code class="name flex">
+<span>def <span class="ident">get_block_hash</span></span>(<span>self, block_id)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_block_hash(self, block_id):
+    return self.rpc_request(&#34;chain_getBlockHash&#34;, [block_id]).get(&#39;result&#39;)</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_block_header"><code class="name flex">
+<span>def <span class="ident">get_block_header</span></span>(<span>self, block_hash)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_block_header(self, block_hash):
+    response = self.rpc_request(&#34;chain_getHeader&#34;, [block_hash])
+    return response.get(&#39;result&#39;)</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_block_metadata"><code class="name flex">
+<span>def <span class="ident">get_block_metadata</span></span>(<span>self, block_hash=None, decode=True)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_block_metadata(self, block_hash=None, decode=True):
+    params = None
+    if block_hash:
+        params = [block_hash]
+    response = self.rpc_request(&#34;state_getMetadata&#34;, params)
+
+    if decode:
+        metadata_decoder = MetadataDecoder(ScaleBytes(response.get(&#39;result&#39;)))
+        metadata_decoder.decode()
+
+        return metadata_decoder
+
+    return response</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_block_number"><code class="name flex">
+<span>def <span class="ident">get_block_number</span></span>(<span>self, block_hash)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_block_number(self, block_hash):
+    response = self.rpc_request(&#34;chain_getHeader&#34;, [block_hash])
+    return int(response[&#39;result&#39;][&#39;number&#39;], 16)</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_block_runtime_version"><code class="name flex">
+<span>def <span class="ident">get_block_runtime_version</span></span>(<span>self, block_hash)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_block_runtime_version(self, block_hash):
+    response = self.rpc_request(&#34;chain_getRuntimeVersion&#34;, [block_hash])
+    return response.get(&#39;result&#39;)</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_chain_block"><code class="name flex">
+<span>def <span class="ident">get_chain_block</span></span>(<span>self, block_hash=None, block_id=None, metadata_decoder=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
+
+    if block_id:
+        block_hash = self.get_block_hash(block_id)
+
+    response = self.rpc_request(&#34;chain_getBlock&#34;, [block_hash]).get(&#39;result&#39;)
+
+    if self.mock_extrinsics:
+        # Extend extrinsics with mock_extrinsics for e.g. performance tests
+        response[&#39;block&#39;][&#39;extrinsics&#39;].extend(self.mock_extrinsics)
+
+    # Decode extrinsics
+    if metadata_decoder:
+
+        response[&#39;block&#39;][&#39;header&#39;][&#39;number&#39;] = int(response[&#39;block&#39;][&#39;header&#39;][&#39;number&#39;], 16)
+
+        for idx, extrinsic_data in enumerate(response[&#39;block&#39;][&#39;extrinsics&#39;]):
+            extrinsic_decoder = ExtrinsicsDecoder(
+                data=ScaleBytes(extrinsic_data),
+                metadata=metadata_decoder
+            )
+            extrinsic_decoder.decode()
+            response[&#39;block&#39;][&#39;extrinsics&#39;][idx] = extrinsic_decoder.value
+
+        for idx, log_data in enumerate(response[&#39;block&#39;][&#39;header&#39;][&#34;digest&#34;][&#34;logs&#34;]):
+            log_digest = LogDigest(ScaleBytes(log_data))
+            log_digest.decode()
+            response[&#39;block&#39;][&#39;header&#39;][&#34;digest&#34;][&#34;logs&#34;][idx] = log_digest.value
+
+    return response</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_chain_finalised_head"><code class="name flex">
+<span>def <span class="ident">get_chain_finalised_head</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_chain_finalised_head(self):
+    response = self.rpc_request(&#34;chain_getFinalisedHead&#34;, [])
+    return response.get(&#39;result&#39;)</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_chain_head"><code class="name flex">
+<span>def <span class="ident">get_chain_head</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_chain_head(self):
+    response = self.rpc_request(&#34;chain_getHead&#34;, [])
+    return response.get(&#39;result&#39;)</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_metadata_call_function"><code class="name flex">
+<span>def <span class="ident">get_metadata_call_function</span></span>(<span>self, module_name, call_function_name, block_hash=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_metadata_call_function(self, module_name, call_function_name, block_hash=None):
+
+    self.init_runtime(block_hash=block_hash)
+
+    result = None
+
+    for call_index, (module, call) in self.metadata_decoder.call_index.items():
+        if module.name == module_name and \
+                call.get_identifier() == call_function_name:
+            result = self.serialize_module_call(
+                module, call, self.runtime_version, call_index
+            )
+            break
+
+    return result</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_metadata_call_functions"><code class="name flex">
+<span>def <span class="ident">get_metadata_call_functions</span></span>(<span>self, block_hash=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_metadata_call_functions(self, block_hash=None):
+
+    self.init_runtime(block_hash=block_hash)
+
+    call_list = []
+
+    for call_index, (module, call) in self.metadata_decoder.call_index.items():
+        call_list.append(
+            self.serialize_module_call(
+                module, call, self.runtime_version, call_index
+            )
+        )
+    return call_list</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_metadata_constant"><code class="name flex">
+<span>def <span class="ident">get_metadata_constant</span></span>(<span>self, module_name, constant_name, block_hash=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_metadata_constant(self, module_name, constant_name, block_hash=None):
+
+    self.init_runtime(block_hash=block_hash)
+
+    for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+
+        if module_name == module.name and module.constants:
+
+            for constant in module.constants:
+                if constant_name == constant.name:
+                    return self.serialize_constant(
+                        constant, module, self.runtime_version
+                    )</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_metadata_constants"><code class="name flex">
+<span>def <span class="ident">get_metadata_constants</span></span>(<span>self, block_hash=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_metadata_constants(self, block_hash=None):
+
+    self.init_runtime(block_hash=block_hash)
+
+    constant_list = []
+
+    for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+        for constant in module.constants or []:
+            constant_list.append(
+                self.serialize_constant(
+                    constant, module, self.runtime_version
+                )
+            )
+
+    return constant_list</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_metadata_error"><code class="name flex">
+<span>def <span class="ident">get_metadata_error</span></span>(<span>self, module_name, error_name, block_hash=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_metadata_error(self, module_name, error_name, block_hash=None):
+
+    self.init_runtime(block_hash=block_hash)
+
+    for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+        if module.name == module_name and module.errors:
+            for error in module.errors:
+                if error_name == error.name:
+                    return self.serialize_module_error(
+                        module=module, error=error, spec_version=self.runtime_version
+                    )</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_metadata_errors"><code class="name flex">
+<span>def <span class="ident">get_metadata_errors</span></span>(<span>self, block_hash=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_metadata_errors(self, block_hash=None):
+
+    self.init_runtime(block_hash=block_hash)
+
+    error_list = []
+
+    for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+        if module.errors:
+            for error in module.errors:
+                error_list.append(
+                    self.serialize_module_error(
+                        module=module, error=error, spec_version=self.runtime_version
+                    )
+                )
+
+    return error_list</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_metadata_event"><code class="name flex">
+<span>def <span class="ident">get_metadata_event</span></span>(<span>self, module_name, event_name, block_hash=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_metadata_event(self, module_name, event_name, block_hash=None):
+
+    self.init_runtime(block_hash=block_hash)
+
+    for event_index, (module, event) in self.metadata_decoder.event_index.items():
+        if module.name == module_name and \
+                event.name == event_name:
+            return self.serialize_module_event(
+                module, event, self.runtime_version, event_index
+            )</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_metadata_events"><code class="name flex">
+<span>def <span class="ident">get_metadata_events</span></span>(<span>self, block_hash=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_metadata_events(self, block_hash=None):
+
+    self.init_runtime(block_hash=block_hash)
+
+    event_list = []
+
+    for event_index, (module, event) in self.metadata_decoder.event_index.items():
+        event_list.append(
+            self.serialize_module_event(
+                module, event, self.runtime_version, event_index
+            )
+        )
+
+    return event_list</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_metadata_modules"><code class="name flex">
+<span>def <span class="ident">get_metadata_modules</span></span>(<span>self, block_hash=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_metadata_modules(self, block_hash=None):
+
+    self.init_runtime(block_hash=block_hash)
+
+    return [{
+        &#39;metadata_index&#39;: idx,
+        &#39;module_id&#39;: module.get_identifier(),
+        &#39;name&#39;: module.name,
+        &#39;prefix&#39;: module.prefix,
+        &#39;spec_version&#39;: self.runtime_version,
+        &#39;count_call_functions&#39;: len(module.calls or []),
+        &#39;count_storage_functions&#39;: len(module.calls or []),
+        &#39;count_events&#39;: len(module.events or []),
+        &#39;count_constants&#39;: len(module.constants or []),
+        &#39;count_errors&#39;: len(module.errors or []),
+    } for idx, module in enumerate(self.metadata_decoder.metadata.modules)]</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_metadata_storage_function"><code class="name flex">
+<span>def <span class="ident">get_metadata_storage_function</span></span>(<span>self, module_name, storage_name, block_hash=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_metadata_storage_function(self, module_name, storage_name, block_hash=None):
+
+    self.init_runtime(block_hash=block_hash)
+
+    for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+        if module.name == module_name and module.storage:
+            for storage in module.storage.items:
+                if storage.name == storage_name:
+                    return self.serialize_storage_item(
+                        storage_item=storage,
+                        module=module,
+                        spec_version_id=self.runtime_version
+                    )</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_metadata_storage_functions"><code class="name flex">
+<span>def <span class="ident">get_metadata_storage_functions</span></span>(<span>self, block_hash=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_metadata_storage_functions(self, block_hash=None):
+
+    self.init_runtime(block_hash=block_hash)
+
+    storage_list = []
+
+    for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+        if module.storage:
+            for storage in module.storage.items:
+                storage_list.append(
+                    self.serialize_storage_item(
+                        storage_item=storage,
+                        module=module,
+                        spec_version_id=self.runtime_version
+                    )
+                )
+
+    return storage_list</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_runtime_block"><code class="name flex">
+<span>def <span class="ident">get_runtime_block</span></span>(<span>self, block_hash=None, block_id=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_runtime_block(self, block_hash=None, block_id=None):
+
+    self.init_runtime(block_hash=block_hash, block_id=block_id)
+
+    response = self.rpc_request(&#34;chain_getBlock&#34;, [block_hash]).get(&#39;result&#39;)
+
+    response[&#39;block&#39;][&#39;header&#39;][&#39;number&#39;] = int(response[&#39;block&#39;][&#39;header&#39;][&#39;number&#39;], 16)
+
+    for idx, extrinsic_data in enumerate(response[&#39;block&#39;][&#39;extrinsics&#39;]):
+        extrinsic_decoder = ExtrinsicsDecoder(
+            data=ScaleBytes(extrinsic_data),
+            metadata=self.metadata_decoder
+        )
+        extrinsic_decoder.decode()
+        response[&#39;block&#39;][&#39;extrinsics&#39;][idx] = extrinsic_decoder.value
+
+    for idx, log_data in enumerate(response[&#39;block&#39;][&#39;header&#39;][&#34;digest&#34;][&#34;logs&#34;]):
+        log_digest = LogDigest(ScaleBytes(log_data))
+        log_digest.decode()
+        response[&#39;block&#39;][&#39;header&#39;][&#34;digest&#34;][&#34;logs&#34;][idx] = log_digest.value
+
+    return response</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_runtime_metadata"><code class="name flex">
+<span>def <span class="ident">get_runtime_metadata</span></span>(<span>self, block_hash=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_runtime_metadata(self, block_hash=None):
+    params = None
+    if block_hash:
+        params = [block_hash]
+    response = self.rpc_request(&#34;state_getMetadata&#34;, params)
+
+    if &#39;result&#39; in response:
+        metadata_decoder = MetadataDecoder(ScaleBytes(response.get(&#39;result&#39;)))
+        response[&#39;result&#39;] = metadata_decoder.decode()
+
+    return response</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_runtime_state"><code class="name flex">
+<span>def <span class="ident">get_runtime_state</span></span>(<span>self, module, storage_function, params=None, block_hash=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Retrieves the storage for given module, function and optional parameters at given block
+:param metadata:
+:param module:
+:param storage_function:
+:param params: list of params, can be list of Scalebytes
+:param block_hash:
+:return:</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
+    &#34;&#34;&#34;
+    Retrieves the storage for given module, function and optional parameters at given block
+    :param metadata:
+    :param module:
+    :param storage_function:
+    :param params: list of params, can be list of Scalebytes
+    :param block_hash:
+    :return:
+    &#34;&#34;&#34;
+
+    self.init_runtime(block_hash=block_hash)
+
+    # Search storage call in metadata
+    for metadata_module in self.metadata_decoder.metadata.modules:
+        if metadata_module.name == module:
+            if metadata_module.storage:
+                for storage_item in metadata_module.storage.items:
+                    if storage_item.name == storage_function:
+
+                        if &#39;PlainType&#39; in storage_item.type:
+                            hasher = &#39;Twox64Concat&#39;
+                            return_scale_type = storage_item.type.get(&#39;PlainType&#39;)
+                            if params:
+                                raise ValueError(&#39;Storage call of type &#34;PlainType&#34; doesn\&#39;t accept params&#39;)
+
+                        elif &#39;MapType&#39; in storage_item.type:
+
+                            map_type = storage_item.type.get(&#39;MapType&#39;)
+                            hasher = map_type.get(&#39;hasher&#39;)
+                            return_scale_type = map_type.get(&#39;value&#39;)
+
+                            if len(params) != 1:
+                                raise ValueError(&#39;Storage call of type &#34;MapType&#34; requires 1 parameter&#39;)
+
+                            # Encode parameter
+                            params[0] = self.convert_storage_parameter(map_type[&#39;key&#39;], params[0])
+                            param_obj = ScaleDecoder.get_decoder_class(map_type[&#39;key&#39;])
+                            params[0] = param_obj.encode(params[0])
+
+                        else:
+                            raise NotImplementedError(&#34;Storage type not implemented&#34;)
+
+                        storage_hash = self.generate_storage_hash(
+                            storage_module=module,
+                            storage_function=storage_function,
+                            params=params,
+                            hasher=hasher,
+                            metadata_version=self.metadata_decoder.version.index
+                        )
+
+                        response = self.rpc_request(&#34;state_getStorageAt&#34;, [storage_hash, block_hash])
+
+                        if &#39;result&#39; in response:
+
+                            if return_scale_type and response.get(&#39;result&#39;):
+                                obj = ScaleDecoder.get_decoder_class(
+                                    return_scale_type,
+                                    ScaleBytes(response.get(&#39;result&#39;)),
+                                    metadata=self.metadata_decoder
+                                )
+                                response[&#39;result&#39;] = obj.decode()
+
+                        return response</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_storage"><code class="name flex">
+<span>def <span class="ident">get_storage</span></span>(<span>self, block_hash, module, function, params=None, return_scale_type=None, hasher=None, spec_version_id='default', metadata=None, metadata_version=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Retrieves the storage for given module, function and optional parameters at given block
+:param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
+:param metadata:
+:param spec_version_id:
+:param hasher: Hashing method used to determine storage key, defaults to 'Twox64Concat' if not provided
+:param return_scale_type: Scale type string to interprete result
+:param block_hash:
+:param module:
+:param function:
+:param params:
+:return:</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_storage(self, block_hash, module, function, params=None, return_scale_type=None, hasher=None,
+                spec_version_id=&#39;default&#39;, metadata=None, metadata_version=None):
+    &#34;&#34;&#34;
+    Retrieves the storage for given module, function and optional parameters at given block
+    :param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
+    :param metadata:
+    :param spec_version_id:
+    :param hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
+    :param return_scale_type: Scale type string to interprete result
+    :param block_hash:
+    :param module:
+    :param function:
+    :param params:
+    :return:
+    &#34;&#34;&#34;
+
+    storage_hash = self.generate_storage_hash(
+        storage_module=module,
+        storage_function=function,
+        params=params,
+        hasher=hasher,
+        metadata_version=metadata_version
+    )
+    response = self.rpc_request(&#34;state_getStorageAt&#34;, [storage_hash, block_hash])
+
+    if &#39;result&#39; in response:
+
+        if return_scale_type and response.get(&#39;result&#39;):
+            obj = ScaleDecoder.get_decoder_class(
+                return_scale_type,
+                ScaleBytes(response.get(&#39;result&#39;)),
+                metadata=metadata
+            )
+            return obj.decode()
+        else:
+            return response.get(&#39;result&#39;)
+    else:
+        raise SubstrateRequestException(&#34;Error occurred during retrieval of events&#34;)</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_storage_by_key"><code class="name flex">
+<span>def <span class="ident">get_storage_by_key</span></span>(<span>self, block_hash, storage_key)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_storage_by_key(self, block_hash, storage_key):
+
+    response = self.rpc_request(&#34;state_getStorageAt&#34;, [storage_key, block_hash])
+    if &#39;result&#39; in response:
+        return response.get(&#39;result&#39;)
+    else:
+        raise SubstrateRequestException(&#34;Error occurred during retrieval of events&#34;)</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_system_name"><code class="name flex">
+<span>def <span class="ident">get_system_name</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_system_name(self):
+    response = self.rpc_request(&#34;system_name&#34;, [])
+    return response.get(&#39;result&#39;)</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_type_registry"><code class="name flex">
+<span>def <span class="ident">get_type_registry</span></span>(<span>self, block_hash=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_type_registry(self, block_hash=None):
+
+    self.init_runtime(block_hash=block_hash)
+
+    for module in self.metadata_decoder.metadata.modules:
+
+        # Storage backwards compt check
+        if module.storage and isinstance(module.storage, list):
+            storage_functions = module.storage
+        elif module.storage and isinstance(getattr(module.storage, &#39;value&#39;), dict):
+            storage_functions = module.storage.items
+        else:
+            storage_functions = []
+
+        if len(module.calls or []) &gt; 0:
+            for idx, call in enumerate(module.calls):
+                for arg in call.args:
+                    self.process_metadata_typestring(arg.type)
+
+        if len(module.events or []) &gt; 0:
+            for event_index, event in enumerate(module.events):
+
+                for arg_index, arg in enumerate(event.args):
+                    self.process_metadata_typestring(arg)
+
+        if len(storage_functions) &gt; 0:
+            for idx, storage in enumerate(storage_functions):
+
+                # Determine type
+                type_key1 = None
+                type_key2 = None
+                type_value = None
+
+                if storage.type.get(&#39;PlainType&#39;):
+                    type_value = storage.type.get(&#39;PlainType&#39;)
+
+                elif storage.type.get(&#39;MapType&#39;):
+                    type_key1 = storage.type[&#39;MapType&#39;].get(&#39;key&#39;)
+                    type_value = storage.type[&#39;MapType&#39;].get(&#39;value&#39;)
+
+                elif storage.type.get(&#39;DoubleMapType&#39;):
+                    type_key1 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key1&#39;)
+                    type_key2 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key2&#39;)
+                    type_value = storage.type[&#39;DoubleMapType&#39;].get(&#39;value&#39;)
+
+                self.process_metadata_typestring(type_value)
+
+                if type_key1:
+                    self.process_metadata_typestring(type_key1)
+
+                if type_key2:
+                    self.process_metadata_typestring(type_key2)
+
+        if len(module.constants or []) &gt; 0:
+            for idx, constant in enumerate(module.constants):
+
+                # Check if types already registered in database
+                self.process_metadata_typestring(constant.type)
+
+    return self.type_registry_cache[self.runtime_version]</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_version"><code class="name flex">
+<span>def <span class="ident">get_version</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_version(self):
+    if not self._version:
+        response = self.rpc_request(&#34;system_version&#34;, [])
+        self._version = response.get(&#39;result&#39;)
+    return self._version</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.init_runtime"><code class="name flex">
+<span>def <span class="ident">init_runtime</span></span>(<span>self, block_hash=None, block_id=None)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def init_runtime(self, block_hash=None, block_id=None):
+
+    if block_id and block_hash:
+        raise ValueError(&#39;Cannot provide block_hash and block_id at the same time&#39;)
+
+    if block_id:
+        block_hash = self.get_block_hash(block_id)
+
+    self.block_hash = block_hash
+
+    self.runtime_version = self.get_block_runtime_version(block_hash=self.block_hash).get(&#34;specVersion&#34;)
+
+    # Set active runtime version
+    RuntimeConfiguration().set_active_spec_version_id(self.runtime_version)
+
+    if self.runtime_version in self.metadata_cache:
+        # Get metadata from cache
+        self.metadata_decoder = self.metadata_cache[self.runtime_version]
+    else:
+        self.metadata_decoder = self.get_block_metadata(block_hash=self.block_hash, decode=True)
+
+        # Update metadata cache
+        self.metadata_cache[self.runtime_version] = self.metadata_decoder</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.process_metadata_typestring"><code class="name flex">
+<span>def <span class="ident">process_metadata_typestring</span></span>(<span>self, type_string)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def process_metadata_typestring(self, type_string):
+
+    decoder_class_obj = None
+
+    if self.runtime_version not in self.type_registry_cache:
+        self.type_registry_cache[self.runtime_version] = {}
+    print(&#39;==============================================\nType string&#39;, type_string)
+    # Check if already added
+    if type_string in self.type_registry_cache[self.runtime_version]:
+        return self.type_registry_cache[self.runtime_version][type_string][&#39;decoder_class&#39;]
+
+    # Try to get decoder class
+    decoder_class = RuntimeConfiguration().get_decoder_class(type_string)
+
+    print(&#39;Decoding class&#39;, decoder_class)
+
+    if not decoder_class:
+
+        # Not in type registry, try get hard coded decoder classes
+        try:
+            decoder_class_obj = ScaleDecoder.get_decoder_class(type_string)
+            decoder_class = decoder_class_obj.__class__
+            print(&#39;ScaleDecoder&#39;, decoder_class.__name__)
+        except NotImplementedError as e:
+            decoder_class = None
+
+
+    # # Try to get subclass if not root level &#39;ScaleType&#39;
+    # if len(decoder_class.__mro__) &gt; 1 and decoder_class.__mro__[1].__name__ != &#39;ScaleType&#39;:
+    #     print(&#39;super class&#39;, decoder_class.__mro__[1].__name__)
+    #     import pdb;
+    #     pdb.set_trace()
+    #     decoder_class = self.process_metadata_typestring(decoder_class.__mro__[1].__name__)
+
+    # Process classes that contain subtypes (e.g. Option&lt;ChangesTrieConfiguration&gt;)
+    if decoder_class_obj and decoder_class_obj.sub_type:
+        self.process_metadata_typestring(decoder_class_obj.sub_type)
+
+    # Process classes that contain type_mapping (e.g. Struct and Enum)
+    if decoder_class and hasattr(decoder_class, &#39;type_mapping&#39;) and decoder_class.type_mapping:
+        print(&#39;type mapping&#39;, decoder_class.type_mapping)
+        for key, data_type in decoder_class.type_mapping:
+            self.process_metadata_typestring(data_type)
+
+    if decoder_class:
+        decoder_class_name = decoder_class.__name__
+    else:
+        decoder_class_name = None
+
+    self.type_registry_cache[self.runtime_version][type_string] = {
+        &#34;type_string&#34;: type_string,
+        &#34;decoder_class&#34;: decoder_class_name
+    }
+    print(&#39;final decoder class&#39;, type_string, decoder_class)
+
+    return decoder_class</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.rpc_request"><code class="name flex">
+<span>def <span class="ident">rpc_request</span></span>(<span>self, method, params)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def rpc_request(self, method, params):
+
+    payload = {
+        &#34;jsonrpc&#34;: &#34;2.0&#34;,
+        &#34;method&#34;: method,
+        &#34;params&#34;: params,
+        &#34;id&#34;: self.request_id
+    }
+
+    response = requests.request(&#34;POST&#34;, self.url, data=json.dumps(payload), headers=self.default_headers)
+
+    if response.status_code != 200:
+        raise SubstrateRequestException(&#34;RPC request failed with HTTP status code {}&#34;.format(response.status_code))
+
+    json_body = response.json()
+
+    return json_body</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.serialize_constant"><code class="name flex">
+<span>def <span class="ident">serialize_constant</span></span>(<span>self, constant, module, spec_version_id)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def serialize_constant(self, constant, module, spec_version_id):
+    try:
+        value_obj = ScaleDecoder.get_decoder_class(constant.type,
+                                                   ScaleBytes(constant.constant_value))
+        constant_decoded_value = value_obj.decode()
+    except Exception:
+        constant_decoded_value = &#39;[decoding error]&#39;
+
+    return {
+        &#34;constant_name&#34;: constant.name,
+        &#34;constant_type&#34;: constant.type,
+        &#34;constant_value&#34;: constant_decoded_value,
+        &#34;constant_value_scale&#34;: constant.constant_value,
+        &#34;documentation&#34;: &#39;\n&#39;.join(constant.docs),
+        &#34;module_id&#34;: module.get_identifier(),
+        &#34;module_prefix&#34;: module.prefix,
+        &#34;module_name&#34;: module.name,
+        &#34;spec_version&#34;: spec_version_id
+    }</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.serialize_module_call"><code class="name flex">
+<span>def <span class="ident">serialize_module_call</span></span>(<span>self, module, call, spec_version, call_index)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def serialize_module_call(self, module, call, spec_version, call_index):
+    return {
+        &#34;call_id&#34;: call.get_identifier(),
+        &#34;call_name&#34;: call.name,
+        &#34;call_args&#34;: [call_arg.value for call_arg in call.args],
+        &#34;lookup&#34;: &#39;0x{}&#39;.format(call_index),
+        &#34;documentation&#34;: &#39;\n&#39;.join(call.docs),
+        &#34;module_id&#34;: module.get_identifier(),
+        &#34;module_prefix&#34;: module.prefix,
+        &#34;module_name&#34;: module.name,
+        &#34;spec_version&#34;: spec_version
+    }</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.serialize_module_error"><code class="name flex">
+<span>def <span class="ident">serialize_module_error</span></span>(<span>self, module, error, spec_version)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def serialize_module_error(self, module, error, spec_version):
+    return {
+        &#34;error_name&#34;: error.name,
+        &#34;documentation&#34;: &#39;\n&#39;.join(error.docs),
+        &#34;module_id&#34;: module.get_identifier(),
+        &#34;module_prefix&#34;: module.prefix,
+        &#34;module_name&#34;: module.name,
+        &#34;spec_version&#34;: spec_version
+    }</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.serialize_module_event"><code class="name flex">
+<span>def <span class="ident">serialize_module_event</span></span>(<span>self, module, event, spec_version, event_index)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def serialize_module_event(self, module, event, spec_version, event_index):
+    return {
+        &#34;event_id&#34;: event.name,
+        &#34;event_name&#34;: event.name,
+        &#34;event_args&#34;: [
+              {
+                &#34;event_arg_index&#34;: idx,
+                &#34;type&#34;: arg
+              } for idx, arg in enumerate(event.args)
+            ],
+        &#34;lookup&#34;: &#39;0x{}&#39;.format(event_index),
+        &#34;documentation&#34;: &#39;\n&#39;.join(event.docs),
+        &#34;module_id&#34;: module.get_identifier(),
+        &#34;module_prefix&#34;: module.prefix,
+        &#34;module_name&#34;: module.name,
+        &#34;spec_version&#34;: spec_version
+    }</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.serialize_storage_item"><code class="name flex">
+<span>def <span class="ident">serialize_storage_item</span></span>(<span>self, storage_item, module, spec_version_id)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def serialize_storage_item(self, storage_item, module, spec_version_id):
+    storage_dict = {
+        &#34;storage_name&#34;: storage_item.name,
+        &#34;storage_modifier&#34;: storage_item.modifier,
+        &#34;storage_fallback_scale&#34;: storage_item.fallback,
+        &#34;storage_fallback&#34;: None,
+        &#34;documentation&#34;: &#39;\n&#39;.join(storage_item.docs),
+        &#34;module_id&#34;: module.get_identifier(),
+        &#34;module_prefix&#34;: module.prefix,
+        &#34;module_name&#34;: module.name,
+        &#34;spec_version&#34;: spec_version_id,
+        &#34;type_key1&#34;: None,
+        &#34;type_key2&#34;: None,
+        &#34;type_hasher_key1&#34;: None,
+        &#34;type_hasher_key2&#34;: None,
+        &#34;type_value&#34;: None,
+        &#34;type_is_linked&#34;: None
+    }
+
+    type_class, type_info = next(iter(storage_item.type.items()))
+
+    storage_dict[&#34;type_class&#34;] = type_class
+
+    if type_class == &#39;PlainType&#39;:
+        storage_dict[&#34;type_value&#34;] = type_info
+
+    elif type_class == &#39;MapType&#39;:
+        storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
+        storage_dict[&#34;type_key1&#34;] = type_info[&#34;key&#34;]
+        storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
+        storage_dict[&#34;type_is_linked&#34;] = type_info[&#34;isLinked&#34;]
+
+    elif type_class == &#39;DoubleMapType&#39;:
+
+        storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
+        storage_dict[&#34;type_key1&#34;] = type_info[&#34;key1&#34;]
+        storage_dict[&#34;type_key2&#34;] = type_info[&#34;key2&#34;]
+        storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
+        storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;key2Hasher&#34;]
+
+    if storage_item.fallback != &#39;0x00&#39;:
+        # Decode fallback
+        try:
+            fallback_obj = ScaleDecoder.get_decoder_class(storage_dict[&#34;type_value&#34;],
+                                                          ScaleBytes(storage_item.fallback))
+            storage_dict[&#34;storage_fallback&#34;] = fallback_obj.decode()
+        except Exception:
+            storage_dict[&#34;storage_fallback&#34;] = &#39;[decoding error]&#39;
+
+    return storage_dict</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3><a href="#header-submodules">Sub-modules</a></h3>
+<ul>
+<li><code><a title="substrateinterface.constants" href="constants.html">substrateinterface.constants</a></code></li>
+<li><code><a title="substrateinterface.exceptions" href="exceptions.html">substrateinterface.exceptions</a></code></li>
+<li><code><a title="substrateinterface.utils" href="utils/index.html">substrateinterface.utils</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="substrateinterface.SubstrateInterface" href="#substrateinterface.SubstrateInterface">SubstrateInterface</a></code></h4>
+<ul class="">
+<li><code><a title="substrateinterface.SubstrateInterface.compose_call" href="#substrateinterface.SubstrateInterface.compose_call">compose_call</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.convert_storage_parameter" href="#substrateinterface.SubstrateInterface.convert_storage_parameter">convert_storage_parameter</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.decode_scale" href="#substrateinterface.SubstrateInterface.decode_scale">decode_scale</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.encode_scale" href="#substrateinterface.SubstrateInterface.encode_scale">encode_scale</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.generate_storage_hash" href="#substrateinterface.SubstrateInterface.generate_storage_hash">generate_storage_hash</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_block_events" href="#substrateinterface.SubstrateInterface.get_block_events">get_block_events</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_block_hash" href="#substrateinterface.SubstrateInterface.get_block_hash">get_block_hash</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_block_header" href="#substrateinterface.SubstrateInterface.get_block_header">get_block_header</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_block_metadata" href="#substrateinterface.SubstrateInterface.get_block_metadata">get_block_metadata</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_block_number" href="#substrateinterface.SubstrateInterface.get_block_number">get_block_number</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_block_runtime_version" href="#substrateinterface.SubstrateInterface.get_block_runtime_version">get_block_runtime_version</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_chain_block" href="#substrateinterface.SubstrateInterface.get_chain_block">get_chain_block</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_chain_finalised_head" href="#substrateinterface.SubstrateInterface.get_chain_finalised_head">get_chain_finalised_head</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_chain_head" href="#substrateinterface.SubstrateInterface.get_chain_head">get_chain_head</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_metadata_call_function" href="#substrateinterface.SubstrateInterface.get_metadata_call_function">get_metadata_call_function</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_metadata_call_functions" href="#substrateinterface.SubstrateInterface.get_metadata_call_functions">get_metadata_call_functions</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_metadata_constant" href="#substrateinterface.SubstrateInterface.get_metadata_constant">get_metadata_constant</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_metadata_constants" href="#substrateinterface.SubstrateInterface.get_metadata_constants">get_metadata_constants</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_metadata_error" href="#substrateinterface.SubstrateInterface.get_metadata_error">get_metadata_error</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_metadata_errors" href="#substrateinterface.SubstrateInterface.get_metadata_errors">get_metadata_errors</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_metadata_event" href="#substrateinterface.SubstrateInterface.get_metadata_event">get_metadata_event</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_metadata_events" href="#substrateinterface.SubstrateInterface.get_metadata_events">get_metadata_events</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_metadata_modules" href="#substrateinterface.SubstrateInterface.get_metadata_modules">get_metadata_modules</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_metadata_storage_function" href="#substrateinterface.SubstrateInterface.get_metadata_storage_function">get_metadata_storage_function</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_metadata_storage_functions" href="#substrateinterface.SubstrateInterface.get_metadata_storage_functions">get_metadata_storage_functions</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_runtime_block" href="#substrateinterface.SubstrateInterface.get_runtime_block">get_runtime_block</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_runtime_metadata" href="#substrateinterface.SubstrateInterface.get_runtime_metadata">get_runtime_metadata</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_runtime_state" href="#substrateinterface.SubstrateInterface.get_runtime_state">get_runtime_state</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_storage" href="#substrateinterface.SubstrateInterface.get_storage">get_storage</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_storage_by_key" href="#substrateinterface.SubstrateInterface.get_storage_by_key">get_storage_by_key</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_system_name" href="#substrateinterface.SubstrateInterface.get_system_name">get_system_name</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_type_registry" href="#substrateinterface.SubstrateInterface.get_type_registry">get_type_registry</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_version" href="#substrateinterface.SubstrateInterface.get_version">get_version</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.init_runtime" href="#substrateinterface.SubstrateInterface.init_runtime">init_runtime</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.process_metadata_typestring" href="#substrateinterface.SubstrateInterface.process_metadata_typestring">process_metadata_typestring</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.rpc_request" href="#substrateinterface.SubstrateInterface.rpc_request">rpc_request</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.serialize_constant" href="#substrateinterface.SubstrateInterface.serialize_constant">serialize_constant</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.serialize_module_call" href="#substrateinterface.SubstrateInterface.serialize_module_call">serialize_module_call</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.serialize_module_error" href="#substrateinterface.SubstrateInterface.serialize_module_error">serialize_module_error</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.serialize_module_event" href="#substrateinterface.SubstrateInterface.serialize_module_event">serialize_module_event</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.serialize_storage_item" href="#substrateinterface.SubstrateInterface.serialize_storage_item">serialize_storage_item</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.4</a>.</p>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
+</body>
+</html>
