@@ -15,10 +15,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Polkascan. If not, see <http://www.gnu.org/licenses/>.
-
+import asyncio
 import binascii
 import json
 import requests
+import websockets
 
 from scalecodec import ScaleBytes
 from scalecodec.base import ScaleDecoder, RuntimeConfiguration
@@ -49,6 +50,9 @@ class SubstrateInterface:
 
         self.request_id = 1
         self.url = url
+
+        self._ws_result = None
+
         self.address_type = address_type or 42
 
         self.mock_extrinsics = None
@@ -61,7 +65,16 @@ class SubstrateInterface:
         self.metadata_decoder = None
         self.runtime_version = None
         self.block_hash = None
+
         self.metadata_cache = {}
+        self.type_registry_cache = {}
+
+    async def ws_request(self, payload):
+        async with websockets.connect(
+                self.url
+        ) as websocket:
+            await websocket.send(json.dumps(payload))
+            self._ws_result = json.loads(await websocket.recv())
 
     def rpc_request(self, method, params):
 
@@ -72,12 +85,17 @@ class SubstrateInterface:
             "id": self.request_id
         }
 
-        response = requests.request("POST", self.url, data=json.dumps(payload), headers=self.default_headers)
+        if self.url[0:6] == 'wss://' or self.url[0:5] == 'ws://':
+            asyncio.get_event_loop().run_until_complete(self.ws_request(payload))
+            json_body = self._ws_result
 
-        if response.status_code != 200:
-            raise SubstrateRequestException("RPC request failed with HTTP status code {}".format(response.status_code))
+        else:
+            response = requests.request("POST", self.url, data=json.dumps(payload), headers=self.default_headers)
 
-        json_body = response.json()
+            if response.status_code != 200:
+                raise SubstrateRequestException("RPC request failed with HTTP status code {}".format(response.status_code))
+
+            json_body = response.json()
 
         return json_body
 
@@ -728,4 +746,3 @@ class SubstrateInterface:
             "module_name": module.name,
             "spec_version": spec_version
         }
-

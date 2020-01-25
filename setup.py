@@ -146,8 +146,18 @@ setup(
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['requests', 'urllib3', 'xxhash==1.3.0',
-                      'scalecodec@https://github.com/polkascan/py-scale-codec/tarball/master#egg=scalecodec'],
+    install_requires=[
+        'asyncio==3.4.3',
+        'websockets==8.1',
+        'base58==1.0.3',
+        'certifi==2019.3.9',
+        'chardet==3.0.4',
+        'idna==2.8',
+        'requests==2.21.0',
+        'urllib3==1.24.2',
+        'xxhash==1.3.0',
+        'scalecodec@https://github.com/polkascan/py-scale-codec/tarball/master#egg=scalecodec'
+    ],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"

@@ -1,3 +1,5 @@
+asyncio==3.4.3
+websockets==8.1
 base58==1.0.3
 certifi==2019.3.9
 chardet==3.0.4
