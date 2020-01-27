@@ -404,6 +404,13 @@ class SubstrateInterface:
 
                             return response
 
+    def get_runtime_events(self, block_hash=None):
+        return self.get_runtime_state(
+            module="System",
+            storage_function="Events",
+            block_hash=block_hash
+        )
+
     def get_runtime_metadata(self, block_hash=None):
         params = None
         if block_hash:
@@ -430,8 +437,137 @@ class SubstrateInterface:
 
         return str(payload)
 
-    def get_type_registry(self):
-        raise NotImplementedError()
+    def process_metadata_typestring(self, type_string):
+
+        decoder_class_obj = None
+
+        type_info = {
+            "type_string": type_string,
+            "decoder_class": None,
+            "is_primitive_runtime": None,
+            "is_primitive_core": False,
+            "spec_version": self.runtime_version
+        }
+
+        if self.runtime_version not in self.type_registry_cache:
+            self.type_registry_cache[self.runtime_version] = {}
+
+        # Check if already added
+        if type_string in self.type_registry_cache[self.runtime_version]:
+            return self.type_registry_cache[self.runtime_version][type_string]['decoder_class']
+
+        # Try to get decoder class
+        decoder_class = RuntimeConfiguration().get_decoder_class(type_string)
+
+        if not decoder_class:
+
+            # Not in type registry, try get hard coded decoder classes
+            try:
+                decoder_class_obj = ScaleDecoder.get_decoder_class(type_string)
+                decoder_class = decoder_class_obj.__class__
+            except NotImplementedError as e:
+                decoder_class = None
+
+        # Process classes that contain subtypes (e.g. Option<ChangesTrieConfiguration>)
+        if decoder_class_obj and decoder_class_obj.sub_type:
+            type_info["is_primitive_runtime"] = False
+            self.process_metadata_typestring(decoder_class_obj.sub_type)
+
+        # Process classes that contain type_mapping (e.g. Struct and Enum)
+        if decoder_class and hasattr(decoder_class, 'type_mapping') and decoder_class.type_mapping:
+
+            if type_string[0] == '(':
+                type_info["is_primitive_runtime"] = False
+
+            for key, data_type in decoder_class.type_mapping:
+                self.process_metadata_typestring(data_type)
+
+        # Try to get superclass as actual decoding class if not root level 'ScaleType'
+        if decoder_class and len(decoder_class.__mro__) > 1 and decoder_class.__mro__[1].__name__ != 'ScaleType':
+            decoder_class = decoder_class.__mro__[1]
+
+        if decoder_class:
+            type_info['decoder_class'] = decoder_class.__name__
+
+            if type_info["is_primitive_runtime"] is None:
+                type_info["is_primitive_runtime"] = True
+
+            if type_info["is_primitive_runtime"] and type_string.lower() in ScaleDecoder.PRIMITIVES:
+                type_info["is_primitive_core"] = True
+        else:
+            type_info["is_primitive_runtime"] = None
+            type_info["is_primitive_core"] = None
+
+        self.type_registry_cache[self.runtime_version][type_string] = type_info
+
+        return decoder_class
+
+    def get_type_registry(self, block_hash=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        if self.runtime_version not in self.type_registry_cache:
+
+            for module in self.metadata_decoder.metadata.modules:
+
+                # Storage backwards compt check
+                if module.storage and isinstance(module.storage, list):
+                    storage_functions = module.storage
+                elif module.storage and isinstance(getattr(module.storage, 'value'), dict):
+                    storage_functions = module.storage.items
+                else:
+                    storage_functions = []
+
+                if len(module.calls or []) > 0:
+                    for idx, call in enumerate(module.calls):
+                        for arg in call.args:
+                            self.process_metadata_typestring(arg.type)
+
+                if len(module.events or []) > 0:
+                    for event_index, event in enumerate(module.events):
+
+                        for arg_index, arg in enumerate(event.args):
+                            self.process_metadata_typestring(arg)
+
+                if len(storage_functions) > 0:
+                    for idx, storage in enumerate(storage_functions):
+
+                        # Determine type
+                        type_key1 = None
+                        type_key2 = None
+                        type_value = None
+
+                        if storage.type.get('PlainType'):
+                            type_value = storage.type.get('PlainType')
+
+                        elif storage.type.get('MapType'):
+                            type_key1 = storage.type['MapType'].get('key')
+                            type_value = storage.type['MapType'].get('value')
+
+                        elif storage.type.get('DoubleMapType'):
+                            type_key1 = storage.type['DoubleMapType'].get('key1')
+                            type_key2 = storage.type['DoubleMapType'].get('key2')
+                            type_value = storage.type['DoubleMapType'].get('value')
+
+                        self.process_metadata_typestring(type_value)
+
+                        if type_key1:
+                            self.process_metadata_typestring(type_key1)
+
+                        if type_key2:
+                            self.process_metadata_typestring(type_key2)
+
+                if len(module.constants or []) > 0:
+                    for idx, constant in enumerate(module.constants):
+
+                        # Check if types already registered in database
+                        self.process_metadata_typestring(constant.type)
+
+        return self.type_registry_cache[self.runtime_version]
+
+    def get_type_definition(self, type_string, block_hash=None):
+        type_registry = self.get_type_registry(block_hash=block_hash)
+        return type_registry.get(type_string)
 
     def get_metadata_modules(self, block_hash=None):
 
