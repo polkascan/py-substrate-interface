@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.7.4" />
 <title>substrateinterface.utils.hasher API documentation</title>
-<meta name="description" content="" />
+<meta name="description" content="Helper functions used to calculate keys for Substrate storage items" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
@@ -20,6 +20,7 @@
 <h1 class="title">Module <code>substrateinterface.utils.hasher</code></h1>
 </header>
 <section id="section-intro">
+<p>Helper functions used to calculate keys for Substrate storage items</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -41,15 +42,30 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Polkascan. If not, see &lt;http://www.gnu.org/licenses/&gt;.
+
+&#34;&#34;&#34; Helper functions used to calculate keys for Substrate storage items
+&#34;&#34;&#34;
+
 from hashlib import blake2b
 import xxhash
 
 
 def blake2_256(data):
+    &#34;&#34;&#34;
+    Helper function to calculate a 32 bytes Blake2b hash for provided data, used as key for Substrate storage items
+    :param data:
+    :return:
+    &#34;&#34;&#34;
     return blake2b(data, digest_size=32).digest().hex()
 
 
 def two_x64_concat(data):
+    &#34;&#34;&#34;
+    Helper function to calculate a 2 concatenated xxh64 hash for provided data, used as key for several Substrate
+    storage items
+    :param data:
+    :return:
+    &#34;&#34;&#34;
     storage_key1 = bytearray(xxhash.xxh64(data, seed=0).digest())
     storage_key1.reverse()
 
@@ -70,12 +86,19 @@ def two_x64_concat(data):
 <span>def <span class="ident">blake2_256</span></span>(<span>data)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Helper function to calculate a 32 bytes Blake2b hash for provided data, used as key for Substrate storage items
+:param data:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def blake2_256(data):
+    &#34;&#34;&#34;
+    Helper function to calculate a 32 bytes Blake2b hash for provided data, used as key for Substrate storage items
+    :param data:
+    :return:
+    &#34;&#34;&#34;
     return blake2b(data, digest_size=32).digest().hex()</code></pre>
 </details>
 </dd>
@@ -83,12 +106,21 @@ def two_x64_concat(data):
 <span>def <span class="ident">two_x64_concat</span></span>(<span>data)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Helper function to calculate a 2 concatenated xxh64 hash for provided data, used as key for several Substrate
+storage items
+:param data:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def two_x64_concat(data):
+    &#34;&#34;&#34;
+    Helper function to calculate a 2 concatenated xxh64 hash for provided data, used as key for several Substrate
+    storage items
+    :param data:
+    :return:
+    &#34;&#34;&#34;
     storage_key1 = bytearray(xxhash.xxh64(data, seed=0).digest())
     storage_key1.reverse()
 

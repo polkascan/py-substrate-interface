@@ -26,7 +26,7 @@
 </summary>
 <pre><code class="python"># Python Substrate Interface
 #
-# Copyright 2018-2019 openAware BV (NL).
+# Copyright 2018-2020 openAware BV (NL).
 # This file is part of Polkascan.
 #
 # Polkascan is free software: you can redistribute it and/or modify
@@ -42,9 +42,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Polkascan. If not, see &lt;http://www.gnu.org/licenses/&gt;.
 
+import asyncio
 import binascii
 import json
 import requests
+import websockets
 
 from scalecodec import ScaleBytes
 from scalecodec.base import ScaleDecoder, RuntimeConfiguration
@@ -61,7 +63,15 @@ from .utils.ss58 import ss58_decode
 class SubstrateInterface:
 
     def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None, metadata_version=4):
-
+        &#34;&#34;&#34;
+        A specialized class in interfacing with a Substrate node.
+        :param url: the URL to the substrate node, either in format http(s)://127.0.0.1:9933 or ws(s)://127.0.0.1:9944
+        :param address_type: The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults
+        to 42, for Kusama the address type is 2
+        :param type_registry: A dict containing the custom type registry in format: {&#39;types&#39;: {&#39;customType&#39;: &#39;u32&#39;},..}
+        :param type_registry_preset: The name of the predefined type registry shipped with the SCALE codec, e.g. kusama
+        :param metadata_version: DEPRECATED
+        &#34;&#34;&#34;
         if type_registry or type_registry_preset:
 
             RuntimeConfiguration().update_type_registry(load_type_registry_preset(&#34;default&#34;))
@@ -75,6 +85,9 @@ class SubstrateInterface:
 
         self.request_id = 1
         self.url = url
+
+        self._ws_result = None
+
         self.address_type = address_type or 42
 
         self.mock_extrinsics = None
@@ -91,8 +104,26 @@ class SubstrateInterface:
         self.metadata_cache = {}
         self.type_registry_cache = {}
 
-    def rpc_request(self, method, params):
+    async def ws_request(self, payload):
+        &#34;&#34;&#34;
+        Internal method to handle the request if url is a websocket address (wss:// or ws://)
+        :param payload: a dict that contains the JSONRPC payload of the request
+        :return: This method doesn&#39;t return but sets the `_ws_result` object variable with the result
+        &#34;&#34;&#34;
+        async with websockets.connect(
+                self.url
+        ) as websocket:
+            await websocket.send(json.dumps(payload))
+            self._ws_result = json.loads(await websocket.recv())
 
+    def rpc_request(self, method, params):
+        &#34;&#34;&#34;
+        Method that handles the actual RPC request to the Substrate node. The other implemented functions eventually
+        use this method to perform the request.
+        :param method: method of the JSONRPC request
+        :param params: a list containing the parameters of the JSONRPC request
+        :return: a dict with the parsed result of the request.
+        &#34;&#34;&#34;
         payload = {
             &#34;jsonrpc&#34;: &#34;2.0&#34;,
             &#34;method&#34;: method,
@@ -100,34 +131,62 @@ class SubstrateInterface:
             &#34;id&#34;: self.request_id
         }
 
-        response = requests.request(&#34;POST&#34;, self.url, data=json.dumps(payload), headers=self.default_headers)
+        if self.url[0:6] == &#39;wss://&#39; or self.url[0:5] == &#39;ws://&#39;:
+            asyncio.get_event_loop().run_until_complete(self.ws_request(payload))
+            json_body = self._ws_result
 
-        if response.status_code != 200:
-            raise SubstrateRequestException(&#34;RPC request failed with HTTP status code {}&#34;.format(response.status_code))
+        else:
+            response = requests.request(&#34;POST&#34;, self.url, data=json.dumps(payload), headers=self.default_headers)
 
-        json_body = response.json()
+            if response.status_code != 200:
+                raise SubstrateRequestException(&#34;RPC request failed with HTTP status code {}&#34;.format(response.status_code))
+
+            json_body = response.json()
 
         return json_body
 
     def get_system_name(self):
+        &#34;&#34;&#34;
+        A pass-though to existing JSONRPC method `system_name`
+        :return:
+        &#34;&#34;&#34;
         response = self.rpc_request(&#34;system_name&#34;, [])
         return response.get(&#39;result&#39;)
 
     def get_version(self):
+        &#34;&#34;&#34;
+        A pass-though to existing JSONRPC method `system_version`
+        :return:
+        &#34;&#34;&#34;
         if not self._version:
             response = self.rpc_request(&#34;system_version&#34;, [])
             self._version = response.get(&#39;result&#39;)
         return self._version
 
     def get_chain_head(self):
+        &#34;&#34;&#34;
+        A pass-though to existing JSONRPC method `chain_getHead`
+        :return:
+        &#34;&#34;&#34;
         response = self.rpc_request(&#34;chain_getHead&#34;, [])
         return response.get(&#39;result&#39;)
 
     def get_chain_finalised_head(self):
+        &#34;&#34;&#34;
+        A pass-though to existing JSONRPC method `chain_getFinalisedHead`
+        :return:
+        &#34;&#34;&#34;
         response = self.rpc_request(&#34;chain_getFinalisedHead&#34;, [])
         return response.get(&#39;result&#39;)
 
     def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
+        &#34;&#34;&#34;
+        A pass-though to existing JSONRPC method `chain_getBlock`. For a decoded version see `get_runtime_block()`
+        :param block_hash:
+        :param block_id:
+        :param metadata_decoder:
+        :return:
+        &#34;&#34;&#34;
 
         if block_id:
             block_hash = self.get_block_hash(block_id)
@@ -159,17 +218,38 @@ class SubstrateInterface:
         return response
 
     def get_block_hash(self, block_id):
+        &#34;&#34;&#34;
+        A pass-though to existing JSONRPC method `chain_getBlockHash`
+        :param block_id:
+        :return:
+        &#34;&#34;&#34;
         return self.rpc_request(&#34;chain_getBlockHash&#34;, [block_id]).get(&#39;result&#39;)
 
     def get_block_header(self, block_hash):
+        &#34;&#34;&#34;
+        A pass-though to existing JSONRPC method `chain_getHeader`
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         response = self.rpc_request(&#34;chain_getHeader&#34;, [block_hash])
         return response.get(&#39;result&#39;)
 
     def get_block_number(self, block_hash):
+        &#34;&#34;&#34;
+        A convenience method to get the block number for given block_hash
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         response = self.rpc_request(&#34;chain_getHeader&#34;, [block_hash])
         return int(response[&#39;result&#39;][&#39;number&#39;], 16)
 
     def get_block_metadata(self, block_hash=None, decode=True):
+        &#34;&#34;&#34;
+        A pass-though to existing JSONRPC method `state_getMetadata`. For a decoded version see `get_runtime_metadata()`
+        :param block_hash:
+        :param decode:
+        :return:
+        &#34;&#34;&#34;
         params = None
         if block_hash:
             params = [block_hash]
@@ -189,7 +269,7 @@ class SubstrateInterface:
         Retrieves the storage for given module, function and optional parameters at given block
         :param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
         :param metadata:
-        :param spec_version_id:
+        :param spec_version_id: DEPRECATED
         :param hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
         :param return_scale_type: Scale type string to interprete result
         :param block_hash:
@@ -223,6 +303,12 @@ class SubstrateInterface:
             raise SubstrateRequestException(&#34;Error occurred during retrieval of events&#34;)
 
     def get_storage_by_key(self, block_hash, storage_key):
+        &#34;&#34;&#34;
+        A pass-though to existing JSONRPC method `state_getStorageAt`
+        :param block_hash:
+        :param storage_key:
+        :return:
+        &#34;&#34;&#34;
 
         response = self.rpc_request(&#34;state_getStorageAt&#34;, [storage_key, block_hash])
         if &#39;result&#39; in response:
@@ -231,6 +317,12 @@ class SubstrateInterface:
             raise SubstrateRequestException(&#34;Error occurred during retrieval of events&#34;)
 
     def get_block_events(self, block_hash, metadata_decoder=None):
+        &#34;&#34;&#34;
+        A convenience method to fetch the undecoded events from storage
+        :param block_hash:
+        :param metadata_decoder:
+        :return:
+        &#34;&#34;&#34;
 
         if metadata_decoder and metadata_decoder.version.index &gt;= 9:
             storage_hash = STORAGE_HASH_SYSTEM_EVENTS_V9
@@ -258,6 +350,11 @@ class SubstrateInterface:
             raise SubstrateRequestException(&#34;Error occurred during retrieval of events&#34;)
 
     def get_block_runtime_version(self, block_hash):
+        &#34;&#34;&#34;
+        Retrieve the runtime version id of given block_hash
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         response = self.rpc_request(&#34;chain_getRuntimeVersion&#34;, [block_hash])
         return response.get(&#39;result&#39;)
 
@@ -326,6 +423,17 @@ class SubstrateInterface:
     # Runtime functions used by Substrate API
 
     def init_runtime(self, block_hash=None, block_id=None):
+        &#34;&#34;&#34;
+        This method is used by all other methods that deals with metadata and types defined in the type registry.
+        It optionally retrieves the block_hash when block_id is given and sets the applicable metadata for that
+        block_hash. Also it applies all the versioned types at the time of the block_hash.
+
+        Because parsing of metadata and type registry is quite heavy, the result will be cached per runtime id.
+        In the future there could be support for caching backends like Redis to make this cache more persistent.
+        :param block_hash:
+        :param block_id:
+        :return:
+        &#34;&#34;&#34;
 
         if block_id and block_hash:
             raise ValueError(&#39;Cannot provide block_hash and block_id at the same time&#39;)
@@ -351,12 +459,11 @@ class SubstrateInterface:
 
     def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
         &#34;&#34;&#34;
-        Retrieves the storage for given module, function and optional parameters at given block
-        :param metadata:
-        :param module:
+        Retrieves the storage entry for given module, function and optional parameters at given block hash
+        :param module: The module name in the metadata, e.g. Balances or Account
         :param storage_function:
-        :param params: list of params, can be list of Scalebytes
-        :param block_hash:
+        :param params: list of params, in the decoded format of the applicable ScaleTypes
+        :param block_hash: Optional block hash, when left to None the chain tip will be used
         :return:
         &#34;&#34;&#34;
 
@@ -381,7 +488,7 @@ class SubstrateInterface:
                                 hasher = map_type.get(&#39;hasher&#39;)
                                 return_scale_type = map_type.get(&#39;value&#39;)
 
-                                if len(params) != 1:
+                                if not params or len(params) != 1:
                                     raise ValueError(&#39;Storage call of type &#34;MapType&#34; requires 1 parameter&#39;)
 
                                 # Encode parameter
@@ -414,7 +521,24 @@ class SubstrateInterface:
 
                             return response
 
+    def get_runtime_events(self, block_hash=None):
+        &#34;&#34;&#34;
+        Convenience method to get events for a certain block (storage call for module &#39;System&#39; and function &#39;Events&#39;)
+        :param block_hash:
+        :return collection of events
+        &#34;&#34;&#34;
+        return self.get_runtime_state(
+            module=&#34;System&#34;,
+            storage_function=&#34;Events&#34;,
+            block_hash=block_hash
+        )
+
     def get_runtime_metadata(self, block_hash=None):
+        &#34;&#34;&#34;
+        Retrieves and decodes the metadata for given block or chaintip if block_hash is omitted.
+        :param block_hash:
+        :return: MetadataDecoder
+        &#34;&#34;&#34;
         params = None
         if block_hash:
             params = [block_hash]
@@ -427,7 +551,18 @@ class SubstrateInterface:
         return response
 
     def compose_call(self, call_module, call_function, call_params=(), block_hash=None):
-
+        &#34;&#34;&#34;
+        Composes a call payload which can be used as an unsigned extrinsic or a proposal.
+        :param call_module: e.g. Balances
+        :param call_function: e.g. transfer
+        :param call_params: This is a dict containing the params of the call, e.g.
+            `{
+                &#39;dest&#39;: &#39;EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk&#39;,
+                &#39;value&#39;: 1000000000000
+            }`
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
         extrinsic = ExtrinsicsDecoder(metadata=self.metadata_decoder, address_type=self.address_type)
@@ -441,12 +576,37 @@ class SubstrateInterface:
         return str(payload)
 
     def process_metadata_typestring(self, type_string):
+        &#34;&#34;&#34;
 
+        Process how given type_string is decoded with active runtime and type registry
+
+        :param type_string: RUST variable type, e.g. Vec&lt;Address&gt;
+        :return: dict of properties for given type_string
+
+        E.g.
+
+        `{
+            &#34;type_string&#34;: &#34;Vec&lt;Address&gt;&#34;,
+            &#34;decoder_class&#34;: &#34;Vec&#34;,
+            &#34;is_primitive_runtime&#34;: false,
+            &#34;is_primitive_core&#34;: false,
+            &#34;spec_version&#34;: 1030
+        }`
+
+        &#34;&#34;&#34;
         decoder_class_obj = None
+
+        type_info = {
+            &#34;type_string&#34;: type_string,
+            &#34;decoder_class&#34;: None,
+            &#34;is_primitive_runtime&#34;: None,
+            &#34;is_primitive_core&#34;: False,
+            &#34;spec_version&#34;: self.runtime_version
+        }
 
         if self.runtime_version not in self.type_registry_cache:
             self.type_registry_cache[self.runtime_version] = {}
-        print(&#39;==============================================\nType string&#39;, type_string)
+
         # Check if already added
         if type_string in self.type_registry_cache[self.runtime_version]:
             return self.type_registry_cache[self.runtime_version][type_string][&#39;decoder_class&#39;]
@@ -454,112 +614,133 @@ class SubstrateInterface:
         # Try to get decoder class
         decoder_class = RuntimeConfiguration().get_decoder_class(type_string)
 
-        print(&#39;Decoding class&#39;, decoder_class)
-
         if not decoder_class:
 
             # Not in type registry, try get hard coded decoder classes
             try:
                 decoder_class_obj = ScaleDecoder.get_decoder_class(type_string)
                 decoder_class = decoder_class_obj.__class__
-                print(&#39;ScaleDecoder&#39;, decoder_class.__name__)
             except NotImplementedError as e:
                 decoder_class = None
 
-
-        # # Try to get subclass if not root level &#39;ScaleType&#39;
-        # if len(decoder_class.__mro__) &gt; 1 and decoder_class.__mro__[1].__name__ != &#39;ScaleType&#39;:
-        #     print(&#39;super class&#39;, decoder_class.__mro__[1].__name__)
-        #     import pdb;
-        #     pdb.set_trace()
-        #     decoder_class = self.process_metadata_typestring(decoder_class.__mro__[1].__name__)
-
         # Process classes that contain subtypes (e.g. Option&lt;ChangesTrieConfiguration&gt;)
         if decoder_class_obj and decoder_class_obj.sub_type:
+            type_info[&#34;is_primitive_runtime&#34;] = False
             self.process_metadata_typestring(decoder_class_obj.sub_type)
 
         # Process classes that contain type_mapping (e.g. Struct and Enum)
         if decoder_class and hasattr(decoder_class, &#39;type_mapping&#39;) and decoder_class.type_mapping:
-            print(&#39;type mapping&#39;, decoder_class.type_mapping)
+
+            if type_string[0] == &#39;(&#39;:
+                type_info[&#34;is_primitive_runtime&#34;] = False
+
             for key, data_type in decoder_class.type_mapping:
                 self.process_metadata_typestring(data_type)
 
-        if decoder_class:
-            decoder_class_name = decoder_class.__name__
-        else:
-            decoder_class_name = None
+        # Try to get superclass as actual decoding class if not root level &#39;ScaleType&#39;
+        if decoder_class and len(decoder_class.__mro__) &gt; 1 and decoder_class.__mro__[1].__name__ != &#39;ScaleType&#39;:
+            decoder_class = decoder_class.__mro__[1]
 
-        self.type_registry_cache[self.runtime_version][type_string] = {
-            &#34;type_string&#34;: type_string,
-            &#34;decoder_class&#34;: decoder_class_name
-        }
-        print(&#39;final decoder class&#39;, type_string, decoder_class)
+        if decoder_class:
+            type_info[&#39;decoder_class&#39;] = decoder_class.__name__
+
+            if type_info[&#34;is_primitive_runtime&#34;] is None:
+                type_info[&#34;is_primitive_runtime&#34;] = True
+
+            if type_info[&#34;is_primitive_runtime&#34;] and type_string.lower() in ScaleDecoder.PRIMITIVES:
+                type_info[&#34;is_primitive_core&#34;] = True
+        else:
+            type_info[&#34;is_primitive_runtime&#34;] = None
+            type_info[&#34;is_primitive_core&#34;] = None
+
+        self.type_registry_cache[self.runtime_version][type_string] = type_info
 
         return decoder_class
 
     def get_type_registry(self, block_hash=None):
-
+        &#34;&#34;&#34;
+        Generates an exhaustive list of which RUST types exist in the runtime specified at given block_hash (or
+        chaintip if block_hash is omitted)
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
-        for module in self.metadata_decoder.metadata.modules:
+        if self.runtime_version not in self.type_registry_cache:
 
-            # Storage backwards compt check
-            if module.storage and isinstance(module.storage, list):
-                storage_functions = module.storage
-            elif module.storage and isinstance(getattr(module.storage, &#39;value&#39;), dict):
-                storage_functions = module.storage.items
-            else:
-                storage_functions = []
+            for module in self.metadata_decoder.metadata.modules:
 
-            if len(module.calls or []) &gt; 0:
-                for idx, call in enumerate(module.calls):
-                    for arg in call.args:
-                        self.process_metadata_typestring(arg.type)
+                # Storage backwards compt check
+                if module.storage and isinstance(module.storage, list):
+                    storage_functions = module.storage
+                elif module.storage and isinstance(getattr(module.storage, &#39;value&#39;), dict):
+                    storage_functions = module.storage.items
+                else:
+                    storage_functions = []
 
-            if len(module.events or []) &gt; 0:
-                for event_index, event in enumerate(module.events):
+                if len(module.calls or []) &gt; 0:
+                    for idx, call in enumerate(module.calls):
+                        for arg in call.args:
+                            self.process_metadata_typestring(arg.type)
 
-                    for arg_index, arg in enumerate(event.args):
-                        self.process_metadata_typestring(arg)
+                if len(module.events or []) &gt; 0:
+                    for event_index, event in enumerate(module.events):
 
-            if len(storage_functions) &gt; 0:
-                for idx, storage in enumerate(storage_functions):
+                        for arg_index, arg in enumerate(event.args):
+                            self.process_metadata_typestring(arg)
 
-                    # Determine type
-                    type_key1 = None
-                    type_key2 = None
-                    type_value = None
+                if len(storage_functions) &gt; 0:
+                    for idx, storage in enumerate(storage_functions):
 
-                    if storage.type.get(&#39;PlainType&#39;):
-                        type_value = storage.type.get(&#39;PlainType&#39;)
+                        # Determine type
+                        type_key1 = None
+                        type_key2 = None
+                        type_value = None
 
-                    elif storage.type.get(&#39;MapType&#39;):
-                        type_key1 = storage.type[&#39;MapType&#39;].get(&#39;key&#39;)
-                        type_value = storage.type[&#39;MapType&#39;].get(&#39;value&#39;)
+                        if storage.type.get(&#39;PlainType&#39;):
+                            type_value = storage.type.get(&#39;PlainType&#39;)
 
-                    elif storage.type.get(&#39;DoubleMapType&#39;):
-                        type_key1 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key1&#39;)
-                        type_key2 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key2&#39;)
-                        type_value = storage.type[&#39;DoubleMapType&#39;].get(&#39;value&#39;)
+                        elif storage.type.get(&#39;MapType&#39;):
+                            type_key1 = storage.type[&#39;MapType&#39;].get(&#39;key&#39;)
+                            type_value = storage.type[&#39;MapType&#39;].get(&#39;value&#39;)
 
-                    self.process_metadata_typestring(type_value)
+                        elif storage.type.get(&#39;DoubleMapType&#39;):
+                            type_key1 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key1&#39;)
+                            type_key2 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key2&#39;)
+                            type_value = storage.type[&#39;DoubleMapType&#39;].get(&#39;value&#39;)
 
-                    if type_key1:
-                        self.process_metadata_typestring(type_key1)
+                        self.process_metadata_typestring(type_value)
 
-                    if type_key2:
-                        self.process_metadata_typestring(type_key2)
+                        if type_key1:
+                            self.process_metadata_typestring(type_key1)
 
-            if len(module.constants or []) &gt; 0:
-                for idx, constant in enumerate(module.constants):
+                        if type_key2:
+                            self.process_metadata_typestring(type_key2)
 
-                    # Check if types already registered in database
-                    self.process_metadata_typestring(constant.type)
+                if len(module.constants or []) &gt; 0:
+                    for idx, constant in enumerate(module.constants):
+
+                        # Check if types already registered in database
+                        self.process_metadata_typestring(constant.type)
 
         return self.type_registry_cache[self.runtime_version]
 
-    def get_metadata_modules(self, block_hash=None):
+    def get_type_definition(self, type_string, block_hash=None):
+        &#34;&#34;&#34;
+        Retrieves decoding specifications of given type_string
+        :param type_string:
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
+        type_registry = self.get_type_registry(block_hash=block_hash)
+        return type_registry.get(type_string)
 
+    def get_metadata_modules(self, block_hash=None):
+        &#34;&#34;&#34;
+        Retrieves a list of modules in metadata for given block_hash (or chaintip if block_hash is omitted)
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
         return [{
@@ -576,7 +757,11 @@ class SubstrateInterface:
         } for idx, module in enumerate(self.metadata_decoder.metadata.modules)]
 
     def get_metadata_call_functions(self, block_hash=None):
-
+        &#34;&#34;&#34;
+        Retrieves a list of all call functions in metadata active for given block_hash (or chaintip if block_hash is omitted)
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
         call_list = []
@@ -590,7 +775,14 @@ class SubstrateInterface:
         return call_list
 
     def get_metadata_call_function(self, module_name, call_function_name, block_hash=None):
-
+        &#34;&#34;&#34;
+        Retrieves the details of a call function given module name, call function name and block_hash
+        (or chaintip if block_hash is omitted)
+        :param module_name:
+        :param call_function_name:
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
         result = None
@@ -606,6 +798,11 @@ class SubstrateInterface:
         return result
 
     def get_metadata_events(self, block_hash=None):
+        &#34;&#34;&#34;
+        Retrieves a list of all events in metadata active for given block_hash (or chaintip if block_hash is omitted)
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
 
@@ -621,6 +818,14 @@ class SubstrateInterface:
         return event_list
 
     def get_metadata_event(self, module_name, event_name, block_hash=None):
+        &#34;&#34;&#34;
+        Retrieves the details of an event for given module name, call function name and block_hash
+        (or chaintip if block_hash is omitted)
+        :param module_name:
+        :param event_name:
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
 
@@ -632,6 +837,11 @@ class SubstrateInterface:
                 )
 
     def get_metadata_constants(self, block_hash=None):
+        &#34;&#34;&#34;
+        Retrieves a list of all constants in metadata active at given block_hash (or chaintip if block_hash is omitted)
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
 
@@ -648,6 +858,14 @@ class SubstrateInterface:
         return constant_list
 
     def get_metadata_constant(self, module_name, constant_name, block_hash=None):
+        &#34;&#34;&#34;
+        Retrieves the details of a constant for given module name, call function name and block_hash
+        (or chaintip if block_hash is omitted)
+        :param module_name:
+        :param constant_name:
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
 
@@ -662,7 +880,12 @@ class SubstrateInterface:
                         )
 
     def get_metadata_storage_functions(self, block_hash=None):
-
+        &#34;&#34;&#34;
+        Retrieves a list of all storage functions in metadata active at given block_hash (or chaintip if block_hash is
+        omitted)
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
         storage_list = []
@@ -681,7 +904,13 @@ class SubstrateInterface:
         return storage_list
 
     def get_metadata_storage_function(self, module_name, storage_name, block_hash=None):
-
+        &#34;&#34;&#34;
+        Retrieves the details of a storage function for given module name, call function name and block_hash
+        :param module_name:
+        :param storage_name:
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
         for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
@@ -695,6 +924,11 @@ class SubstrateInterface:
                         )
 
     def get_metadata_errors(self, block_hash=None):
+        &#34;&#34;&#34;
+        Retrieves a list of all errors in metadata active at given block_hash (or chaintip if block_hash is omitted)
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
 
@@ -712,7 +946,13 @@ class SubstrateInterface:
         return error_list
 
     def get_metadata_error(self, module_name, error_name, block_hash=None):
-
+        &#34;&#34;&#34;
+        Retrieves the details of an error for given module name, call function name and block_hash
+        :param module_name:
+        :param error_name:
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
         for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
@@ -724,7 +964,12 @@ class SubstrateInterface:
                         )
 
     def get_runtime_block(self, block_hash=None, block_id=None):
-
+        &#34;&#34;&#34;
+        Retrieves a block with method `chain_getBlock` and in addition decodes extrinsics and log items
+        :param block_hash:
+        :param block_id:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash, block_id=block_id)
 
         response = self.rpc_request(&#34;chain_getBlock&#34;, [block_hash]).get(&#39;result&#39;)
@@ -747,12 +992,29 @@ class SubstrateInterface:
         return response
 
     def decode_scale(self, type_string, scale_bytes, block_hash=None):
+        &#34;&#34;&#34;
+        Helper function to decode arbitrary SCALE-bytes (e.g. 0x02000000) according to given RUST type_string
+        (e.g. BlockNumber). The relevant versioning information of the type (if defined) will be applied if block_hash
+        is set
+        :param type_string:
+        :param scale_bytes:
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
         obj = ScaleDecoder.get_decoder_class(type_string, ScaleBytes(scale_bytes), metadata=self.metadata_decoder)
         return obj.decode()
 
     def encode_scale(self, type_string, value, block_hash=None):
+        &#34;&#34;&#34;
+        Helper function to encode arbitrary data into SCALE-bytes for given RUST type_string
+
+        :param type_string:
+        :param value:
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
         obj = ScaleDecoder.get_decoder_class(type_string)
@@ -761,6 +1023,13 @@ class SubstrateInterface:
     # Serializing helper function
 
     def serialize_storage_item(self, storage_item, module, spec_version_id):
+        &#34;&#34;&#34;
+        Helper function to serialize a storage item
+        :param storage_item:
+        :param module:
+        :param spec_version_id:
+        :return:
+        &#34;&#34;&#34;
         storage_dict = {
             &#34;storage_name&#34;: storage_item.name,
             &#34;storage_modifier&#34;: storage_item.modifier,
@@ -812,6 +1081,13 @@ class SubstrateInterface:
         return storage_dict
 
     def serialize_constant(self, constant, module, spec_version_id):
+        &#34;&#34;&#34;
+        Helper function to serialize a constant
+        :param constant:
+        :param module:
+        :param spec_version_id:
+        :return:
+        &#34;&#34;&#34;
         try:
             value_obj = ScaleDecoder.get_decoder_class(constant.type,
                                                        ScaleBytes(constant.constant_value))
@@ -832,6 +1108,14 @@ class SubstrateInterface:
         }
 
     def serialize_module_call(self, module, call, spec_version, call_index):
+        &#34;&#34;&#34;
+        Helper function to serialize a call function
+        :param module:
+        :param call:
+        :param spec_version:
+        :param call_index:
+        :return:
+        &#34;&#34;&#34;
         return {
             &#34;call_id&#34;: call.get_identifier(),
             &#34;call_name&#34;: call.name,
@@ -845,6 +1129,14 @@ class SubstrateInterface:
         }
 
     def serialize_module_event(self, module, event, spec_version, event_index):
+        &#34;&#34;&#34;
+        Helper function to serialize an event
+        :param module:
+        :param event:
+        :param spec_version:
+        :param event_index:
+        :return:
+        &#34;&#34;&#34;
         return {
             &#34;event_id&#34;: event.name,
             &#34;event_name&#34;: event.name,
@@ -863,6 +1155,13 @@ class SubstrateInterface:
         }
 
     def serialize_module_error(self, module, error, spec_version):
+        &#34;&#34;&#34;
+        Helper function to serialize an error
+        :param module:
+        :param error:
+        :param spec_version:
+        :return:
+        &#34;&#34;&#34;
         return {
             &#34;error_name&#34;: error.name,
             &#34;documentation&#34;: &#39;\n&#39;.join(error.docs),
@@ -902,7 +1201,13 @@ class SubstrateInterface:
 <span>(</span><span>url, address_type=None, type_registry=None, type_registry_preset=None, metadata_version=4)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>A specialized class in interfacing with a Substrate node.
+:param url: the URL to the substrate node, either in format http(s)://127.0.0.1:9933 or ws(s)://127.0.0.1:9944
+:param address_type: The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults
+to 42, for Kusama the address type is 2
+:param type_registry: A dict containing the custom type registry in format: {'types': {'customType': 'u32'},..}
+:param type_registry_preset: The name of the predefined type registry shipped with the SCALE codec, e.g. kusama
+:param metadata_version: DEPRECATED</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -910,7 +1215,15 @@ class SubstrateInterface:
 <pre><code class="python">class SubstrateInterface:
 
     def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None, metadata_version=4):
-
+        &#34;&#34;&#34;
+        A specialized class in interfacing with a Substrate node.
+        :param url: the URL to the substrate node, either in format http(s)://127.0.0.1:9933 or ws(s)://127.0.0.1:9944
+        :param address_type: The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults
+        to 42, for Kusama the address type is 2
+        :param type_registry: A dict containing the custom type registry in format: {&#39;types&#39;: {&#39;customType&#39;: &#39;u32&#39;},..}
+        :param type_registry_preset: The name of the predefined type registry shipped with the SCALE codec, e.g. kusama
+        :param metadata_version: DEPRECATED
+        &#34;&#34;&#34;
         if type_registry or type_registry_preset:
 
             RuntimeConfiguration().update_type_registry(load_type_registry_preset(&#34;default&#34;))
@@ -924,6 +1237,9 @@ class SubstrateInterface:
 
         self.request_id = 1
         self.url = url
+
+        self._ws_result = None
+
         self.address_type = address_type or 42
 
         self.mock_extrinsics = None
@@ -940,8 +1256,26 @@ class SubstrateInterface:
         self.metadata_cache = {}
         self.type_registry_cache = {}
 
-    def rpc_request(self, method, params):
+    async def ws_request(self, payload):
+        &#34;&#34;&#34;
+        Internal method to handle the request if url is a websocket address (wss:// or ws://)
+        :param payload: a dict that contains the JSONRPC payload of the request
+        :return: This method doesn&#39;t return but sets the `_ws_result` object variable with the result
+        &#34;&#34;&#34;
+        async with websockets.connect(
+                self.url
+        ) as websocket:
+            await websocket.send(json.dumps(payload))
+            self._ws_result = json.loads(await websocket.recv())
 
+    def rpc_request(self, method, params):
+        &#34;&#34;&#34;
+        Method that handles the actual RPC request to the Substrate node. The other implemented functions eventually
+        use this method to perform the request.
+        :param method: method of the JSONRPC request
+        :param params: a list containing the parameters of the JSONRPC request
+        :return: a dict with the parsed result of the request.
+        &#34;&#34;&#34;
         payload = {
             &#34;jsonrpc&#34;: &#34;2.0&#34;,
             &#34;method&#34;: method,
@@ -949,34 +1283,62 @@ class SubstrateInterface:
             &#34;id&#34;: self.request_id
         }
 
-        response = requests.request(&#34;POST&#34;, self.url, data=json.dumps(payload), headers=self.default_headers)
+        if self.url[0:6] == &#39;wss://&#39; or self.url[0:5] == &#39;ws://&#39;:
+            asyncio.get_event_loop().run_until_complete(self.ws_request(payload))
+            json_body = self._ws_result
 
-        if response.status_code != 200:
-            raise SubstrateRequestException(&#34;RPC request failed with HTTP status code {}&#34;.format(response.status_code))
+        else:
+            response = requests.request(&#34;POST&#34;, self.url, data=json.dumps(payload), headers=self.default_headers)
 
-        json_body = response.json()
+            if response.status_code != 200:
+                raise SubstrateRequestException(&#34;RPC request failed with HTTP status code {}&#34;.format(response.status_code))
+
+            json_body = response.json()
 
         return json_body
 
     def get_system_name(self):
+        &#34;&#34;&#34;
+        A pass-though to existing JSONRPC method `system_name`
+        :return:
+        &#34;&#34;&#34;
         response = self.rpc_request(&#34;system_name&#34;, [])
         return response.get(&#39;result&#39;)
 
     def get_version(self):
+        &#34;&#34;&#34;
+        A pass-though to existing JSONRPC method `system_version`
+        :return:
+        &#34;&#34;&#34;
         if not self._version:
             response = self.rpc_request(&#34;system_version&#34;, [])
             self._version = response.get(&#39;result&#39;)
         return self._version
 
     def get_chain_head(self):
+        &#34;&#34;&#34;
+        A pass-though to existing JSONRPC method `chain_getHead`
+        :return:
+        &#34;&#34;&#34;
         response = self.rpc_request(&#34;chain_getHead&#34;, [])
         return response.get(&#39;result&#39;)
 
     def get_chain_finalised_head(self):
+        &#34;&#34;&#34;
+        A pass-though to existing JSONRPC method `chain_getFinalisedHead`
+        :return:
+        &#34;&#34;&#34;
         response = self.rpc_request(&#34;chain_getFinalisedHead&#34;, [])
         return response.get(&#39;result&#39;)
 
     def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
+        &#34;&#34;&#34;
+        A pass-though to existing JSONRPC method `chain_getBlock`. For a decoded version see `get_runtime_block()`
+        :param block_hash:
+        :param block_id:
+        :param metadata_decoder:
+        :return:
+        &#34;&#34;&#34;
 
         if block_id:
             block_hash = self.get_block_hash(block_id)
@@ -1008,17 +1370,38 @@ class SubstrateInterface:
         return response
 
     def get_block_hash(self, block_id):
+        &#34;&#34;&#34;
+        A pass-though to existing JSONRPC method `chain_getBlockHash`
+        :param block_id:
+        :return:
+        &#34;&#34;&#34;
         return self.rpc_request(&#34;chain_getBlockHash&#34;, [block_id]).get(&#39;result&#39;)
 
     def get_block_header(self, block_hash):
+        &#34;&#34;&#34;
+        A pass-though to existing JSONRPC method `chain_getHeader`
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         response = self.rpc_request(&#34;chain_getHeader&#34;, [block_hash])
         return response.get(&#39;result&#39;)
 
     def get_block_number(self, block_hash):
+        &#34;&#34;&#34;
+        A convenience method to get the block number for given block_hash
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         response = self.rpc_request(&#34;chain_getHeader&#34;, [block_hash])
         return int(response[&#39;result&#39;][&#39;number&#39;], 16)
 
     def get_block_metadata(self, block_hash=None, decode=True):
+        &#34;&#34;&#34;
+        A pass-though to existing JSONRPC method `state_getMetadata`. For a decoded version see `get_runtime_metadata()`
+        :param block_hash:
+        :param decode:
+        :return:
+        &#34;&#34;&#34;
         params = None
         if block_hash:
             params = [block_hash]
@@ -1038,7 +1421,7 @@ class SubstrateInterface:
         Retrieves the storage for given module, function and optional parameters at given block
         :param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
         :param metadata:
-        :param spec_version_id:
+        :param spec_version_id: DEPRECATED
         :param hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
         :param return_scale_type: Scale type string to interprete result
         :param block_hash:
@@ -1072,6 +1455,12 @@ class SubstrateInterface:
             raise SubstrateRequestException(&#34;Error occurred during retrieval of events&#34;)
 
     def get_storage_by_key(self, block_hash, storage_key):
+        &#34;&#34;&#34;
+        A pass-though to existing JSONRPC method `state_getStorageAt`
+        :param block_hash:
+        :param storage_key:
+        :return:
+        &#34;&#34;&#34;
 
         response = self.rpc_request(&#34;state_getStorageAt&#34;, [storage_key, block_hash])
         if &#39;result&#39; in response:
@@ -1080,6 +1469,12 @@ class SubstrateInterface:
             raise SubstrateRequestException(&#34;Error occurred during retrieval of events&#34;)
 
     def get_block_events(self, block_hash, metadata_decoder=None):
+        &#34;&#34;&#34;
+        A convenience method to fetch the undecoded events from storage
+        :param block_hash:
+        :param metadata_decoder:
+        :return:
+        &#34;&#34;&#34;
 
         if metadata_decoder and metadata_decoder.version.index &gt;= 9:
             storage_hash = STORAGE_HASH_SYSTEM_EVENTS_V9
@@ -1107,6 +1502,11 @@ class SubstrateInterface:
             raise SubstrateRequestException(&#34;Error occurred during retrieval of events&#34;)
 
     def get_block_runtime_version(self, block_hash):
+        &#34;&#34;&#34;
+        Retrieve the runtime version id of given block_hash
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         response = self.rpc_request(&#34;chain_getRuntimeVersion&#34;, [block_hash])
         return response.get(&#39;result&#39;)
 
@@ -1175,6 +1575,17 @@ class SubstrateInterface:
     # Runtime functions used by Substrate API
 
     def init_runtime(self, block_hash=None, block_id=None):
+        &#34;&#34;&#34;
+        This method is used by all other methods that deals with metadata and types defined in the type registry.
+        It optionally retrieves the block_hash when block_id is given and sets the applicable metadata for that
+        block_hash. Also it applies all the versioned types at the time of the block_hash.
+
+        Because parsing of metadata and type registry is quite heavy, the result will be cached per runtime id.
+        In the future there could be support for caching backends like Redis to make this cache more persistent.
+        :param block_hash:
+        :param block_id:
+        :return:
+        &#34;&#34;&#34;
 
         if block_id and block_hash:
             raise ValueError(&#39;Cannot provide block_hash and block_id at the same time&#39;)
@@ -1200,12 +1611,11 @@ class SubstrateInterface:
 
     def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
         &#34;&#34;&#34;
-        Retrieves the storage for given module, function and optional parameters at given block
-        :param metadata:
-        :param module:
+        Retrieves the storage entry for given module, function and optional parameters at given block hash
+        :param module: The module name in the metadata, e.g. Balances or Account
         :param storage_function:
-        :param params: list of params, can be list of Scalebytes
-        :param block_hash:
+        :param params: list of params, in the decoded format of the applicable ScaleTypes
+        :param block_hash: Optional block hash, when left to None the chain tip will be used
         :return:
         &#34;&#34;&#34;
 
@@ -1230,7 +1640,7 @@ class SubstrateInterface:
                                 hasher = map_type.get(&#39;hasher&#39;)
                                 return_scale_type = map_type.get(&#39;value&#39;)
 
-                                if len(params) != 1:
+                                if not params or len(params) != 1:
                                     raise ValueError(&#39;Storage call of type &#34;MapType&#34; requires 1 parameter&#39;)
 
                                 # Encode parameter
@@ -1263,7 +1673,24 @@ class SubstrateInterface:
 
                             return response
 
+    def get_runtime_events(self, block_hash=None):
+        &#34;&#34;&#34;
+        Convenience method to get events for a certain block (storage call for module &#39;System&#39; and function &#39;Events&#39;)
+        :param block_hash:
+        :return collection of events
+        &#34;&#34;&#34;
+        return self.get_runtime_state(
+            module=&#34;System&#34;,
+            storage_function=&#34;Events&#34;,
+            block_hash=block_hash
+        )
+
     def get_runtime_metadata(self, block_hash=None):
+        &#34;&#34;&#34;
+        Retrieves and decodes the metadata for given block or chaintip if block_hash is omitted.
+        :param block_hash:
+        :return: MetadataDecoder
+        &#34;&#34;&#34;
         params = None
         if block_hash:
             params = [block_hash]
@@ -1276,7 +1703,18 @@ class SubstrateInterface:
         return response
 
     def compose_call(self, call_module, call_function, call_params=(), block_hash=None):
-
+        &#34;&#34;&#34;
+        Composes a call payload which can be used as an unsigned extrinsic or a proposal.
+        :param call_module: e.g. Balances
+        :param call_function: e.g. transfer
+        :param call_params: This is a dict containing the params of the call, e.g.
+            `{
+                &#39;dest&#39;: &#39;EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk&#39;,
+                &#39;value&#39;: 1000000000000
+            }`
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
         extrinsic = ExtrinsicsDecoder(metadata=self.metadata_decoder, address_type=self.address_type)
@@ -1290,12 +1728,37 @@ class SubstrateInterface:
         return str(payload)
 
     def process_metadata_typestring(self, type_string):
+        &#34;&#34;&#34;
 
+        Process how given type_string is decoded with active runtime and type registry
+
+        :param type_string: RUST variable type, e.g. Vec&lt;Address&gt;
+        :return: dict of properties for given type_string
+
+        E.g.
+
+        `{
+            &#34;type_string&#34;: &#34;Vec&lt;Address&gt;&#34;,
+            &#34;decoder_class&#34;: &#34;Vec&#34;,
+            &#34;is_primitive_runtime&#34;: false,
+            &#34;is_primitive_core&#34;: false,
+            &#34;spec_version&#34;: 1030
+        }`
+
+        &#34;&#34;&#34;
         decoder_class_obj = None
+
+        type_info = {
+            &#34;type_string&#34;: type_string,
+            &#34;decoder_class&#34;: None,
+            &#34;is_primitive_runtime&#34;: None,
+            &#34;is_primitive_core&#34;: False,
+            &#34;spec_version&#34;: self.runtime_version
+        }
 
         if self.runtime_version not in self.type_registry_cache:
             self.type_registry_cache[self.runtime_version] = {}
-        print(&#39;==============================================\nType string&#39;, type_string)
+
         # Check if already added
         if type_string in self.type_registry_cache[self.runtime_version]:
             return self.type_registry_cache[self.runtime_version][type_string][&#39;decoder_class&#39;]
@@ -1303,112 +1766,133 @@ class SubstrateInterface:
         # Try to get decoder class
         decoder_class = RuntimeConfiguration().get_decoder_class(type_string)
 
-        print(&#39;Decoding class&#39;, decoder_class)
-
         if not decoder_class:
 
             # Not in type registry, try get hard coded decoder classes
             try:
                 decoder_class_obj = ScaleDecoder.get_decoder_class(type_string)
                 decoder_class = decoder_class_obj.__class__
-                print(&#39;ScaleDecoder&#39;, decoder_class.__name__)
             except NotImplementedError as e:
                 decoder_class = None
 
-
-        # # Try to get subclass if not root level &#39;ScaleType&#39;
-        # if len(decoder_class.__mro__) &gt; 1 and decoder_class.__mro__[1].__name__ != &#39;ScaleType&#39;:
-        #     print(&#39;super class&#39;, decoder_class.__mro__[1].__name__)
-        #     import pdb;
-        #     pdb.set_trace()
-        #     decoder_class = self.process_metadata_typestring(decoder_class.__mro__[1].__name__)
-
         # Process classes that contain subtypes (e.g. Option&lt;ChangesTrieConfiguration&gt;)
         if decoder_class_obj and decoder_class_obj.sub_type:
+            type_info[&#34;is_primitive_runtime&#34;] = False
             self.process_metadata_typestring(decoder_class_obj.sub_type)
 
         # Process classes that contain type_mapping (e.g. Struct and Enum)
         if decoder_class and hasattr(decoder_class, &#39;type_mapping&#39;) and decoder_class.type_mapping:
-            print(&#39;type mapping&#39;, decoder_class.type_mapping)
+
+            if type_string[0] == &#39;(&#39;:
+                type_info[&#34;is_primitive_runtime&#34;] = False
+
             for key, data_type in decoder_class.type_mapping:
                 self.process_metadata_typestring(data_type)
 
-        if decoder_class:
-            decoder_class_name = decoder_class.__name__
-        else:
-            decoder_class_name = None
+        # Try to get superclass as actual decoding class if not root level &#39;ScaleType&#39;
+        if decoder_class and len(decoder_class.__mro__) &gt; 1 and decoder_class.__mro__[1].__name__ != &#39;ScaleType&#39;:
+            decoder_class = decoder_class.__mro__[1]
 
-        self.type_registry_cache[self.runtime_version][type_string] = {
-            &#34;type_string&#34;: type_string,
-            &#34;decoder_class&#34;: decoder_class_name
-        }
-        print(&#39;final decoder class&#39;, type_string, decoder_class)
+        if decoder_class:
+            type_info[&#39;decoder_class&#39;] = decoder_class.__name__
+
+            if type_info[&#34;is_primitive_runtime&#34;] is None:
+                type_info[&#34;is_primitive_runtime&#34;] = True
+
+            if type_info[&#34;is_primitive_runtime&#34;] and type_string.lower() in ScaleDecoder.PRIMITIVES:
+                type_info[&#34;is_primitive_core&#34;] = True
+        else:
+            type_info[&#34;is_primitive_runtime&#34;] = None
+            type_info[&#34;is_primitive_core&#34;] = None
+
+        self.type_registry_cache[self.runtime_version][type_string] = type_info
 
         return decoder_class
 
     def get_type_registry(self, block_hash=None):
-
+        &#34;&#34;&#34;
+        Generates an exhaustive list of which RUST types exist in the runtime specified at given block_hash (or
+        chaintip if block_hash is omitted)
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
-        for module in self.metadata_decoder.metadata.modules:
+        if self.runtime_version not in self.type_registry_cache:
 
-            # Storage backwards compt check
-            if module.storage and isinstance(module.storage, list):
-                storage_functions = module.storage
-            elif module.storage and isinstance(getattr(module.storage, &#39;value&#39;), dict):
-                storage_functions = module.storage.items
-            else:
-                storage_functions = []
+            for module in self.metadata_decoder.metadata.modules:
 
-            if len(module.calls or []) &gt; 0:
-                for idx, call in enumerate(module.calls):
-                    for arg in call.args:
-                        self.process_metadata_typestring(arg.type)
+                # Storage backwards compt check
+                if module.storage and isinstance(module.storage, list):
+                    storage_functions = module.storage
+                elif module.storage and isinstance(getattr(module.storage, &#39;value&#39;), dict):
+                    storage_functions = module.storage.items
+                else:
+                    storage_functions = []
 
-            if len(module.events or []) &gt; 0:
-                for event_index, event in enumerate(module.events):
+                if len(module.calls or []) &gt; 0:
+                    for idx, call in enumerate(module.calls):
+                        for arg in call.args:
+                            self.process_metadata_typestring(arg.type)
 
-                    for arg_index, arg in enumerate(event.args):
-                        self.process_metadata_typestring(arg)
+                if len(module.events or []) &gt; 0:
+                    for event_index, event in enumerate(module.events):
 
-            if len(storage_functions) &gt; 0:
-                for idx, storage in enumerate(storage_functions):
+                        for arg_index, arg in enumerate(event.args):
+                            self.process_metadata_typestring(arg)
 
-                    # Determine type
-                    type_key1 = None
-                    type_key2 = None
-                    type_value = None
+                if len(storage_functions) &gt; 0:
+                    for idx, storage in enumerate(storage_functions):
 
-                    if storage.type.get(&#39;PlainType&#39;):
-                        type_value = storage.type.get(&#39;PlainType&#39;)
+                        # Determine type
+                        type_key1 = None
+                        type_key2 = None
+                        type_value = None
 
-                    elif storage.type.get(&#39;MapType&#39;):
-                        type_key1 = storage.type[&#39;MapType&#39;].get(&#39;key&#39;)
-                        type_value = storage.type[&#39;MapType&#39;].get(&#39;value&#39;)
+                        if storage.type.get(&#39;PlainType&#39;):
+                            type_value = storage.type.get(&#39;PlainType&#39;)
 
-                    elif storage.type.get(&#39;DoubleMapType&#39;):
-                        type_key1 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key1&#39;)
-                        type_key2 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key2&#39;)
-                        type_value = storage.type[&#39;DoubleMapType&#39;].get(&#39;value&#39;)
+                        elif storage.type.get(&#39;MapType&#39;):
+                            type_key1 = storage.type[&#39;MapType&#39;].get(&#39;key&#39;)
+                            type_value = storage.type[&#39;MapType&#39;].get(&#39;value&#39;)
 
-                    self.process_metadata_typestring(type_value)
+                        elif storage.type.get(&#39;DoubleMapType&#39;):
+                            type_key1 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key1&#39;)
+                            type_key2 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key2&#39;)
+                            type_value = storage.type[&#39;DoubleMapType&#39;].get(&#39;value&#39;)
 
-                    if type_key1:
-                        self.process_metadata_typestring(type_key1)
+                        self.process_metadata_typestring(type_value)
 
-                    if type_key2:
-                        self.process_metadata_typestring(type_key2)
+                        if type_key1:
+                            self.process_metadata_typestring(type_key1)
 
-            if len(module.constants or []) &gt; 0:
-                for idx, constant in enumerate(module.constants):
+                        if type_key2:
+                            self.process_metadata_typestring(type_key2)
 
-                    # Check if types already registered in database
-                    self.process_metadata_typestring(constant.type)
+                if len(module.constants or []) &gt; 0:
+                    for idx, constant in enumerate(module.constants):
+
+                        # Check if types already registered in database
+                        self.process_metadata_typestring(constant.type)
 
         return self.type_registry_cache[self.runtime_version]
 
-    def get_metadata_modules(self, block_hash=None):
+    def get_type_definition(self, type_string, block_hash=None):
+        &#34;&#34;&#34;
+        Retrieves decoding specifications of given type_string
+        :param type_string:
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
+        type_registry = self.get_type_registry(block_hash=block_hash)
+        return type_registry.get(type_string)
 
+    def get_metadata_modules(self, block_hash=None):
+        &#34;&#34;&#34;
+        Retrieves a list of modules in metadata for given block_hash (or chaintip if block_hash is omitted)
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
         return [{
@@ -1425,7 +1909,11 @@ class SubstrateInterface:
         } for idx, module in enumerate(self.metadata_decoder.metadata.modules)]
 
     def get_metadata_call_functions(self, block_hash=None):
-
+        &#34;&#34;&#34;
+        Retrieves a list of all call functions in metadata active for given block_hash (or chaintip if block_hash is omitted)
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
         call_list = []
@@ -1439,7 +1927,14 @@ class SubstrateInterface:
         return call_list
 
     def get_metadata_call_function(self, module_name, call_function_name, block_hash=None):
-
+        &#34;&#34;&#34;
+        Retrieves the details of a call function given module name, call function name and block_hash
+        (or chaintip if block_hash is omitted)
+        :param module_name:
+        :param call_function_name:
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
         result = None
@@ -1455,6 +1950,11 @@ class SubstrateInterface:
         return result
 
     def get_metadata_events(self, block_hash=None):
+        &#34;&#34;&#34;
+        Retrieves a list of all events in metadata active for given block_hash (or chaintip if block_hash is omitted)
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
 
@@ -1470,6 +1970,14 @@ class SubstrateInterface:
         return event_list
 
     def get_metadata_event(self, module_name, event_name, block_hash=None):
+        &#34;&#34;&#34;
+        Retrieves the details of an event for given module name, call function name and block_hash
+        (or chaintip if block_hash is omitted)
+        :param module_name:
+        :param event_name:
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
 
@@ -1481,6 +1989,11 @@ class SubstrateInterface:
                 )
 
     def get_metadata_constants(self, block_hash=None):
+        &#34;&#34;&#34;
+        Retrieves a list of all constants in metadata active at given block_hash (or chaintip if block_hash is omitted)
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
 
@@ -1497,6 +2010,14 @@ class SubstrateInterface:
         return constant_list
 
     def get_metadata_constant(self, module_name, constant_name, block_hash=None):
+        &#34;&#34;&#34;
+        Retrieves the details of a constant for given module name, call function name and block_hash
+        (or chaintip if block_hash is omitted)
+        :param module_name:
+        :param constant_name:
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
 
@@ -1511,7 +2032,12 @@ class SubstrateInterface:
                         )
 
     def get_metadata_storage_functions(self, block_hash=None):
-
+        &#34;&#34;&#34;
+        Retrieves a list of all storage functions in metadata active at given block_hash (or chaintip if block_hash is
+        omitted)
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
         storage_list = []
@@ -1530,7 +2056,13 @@ class SubstrateInterface:
         return storage_list
 
     def get_metadata_storage_function(self, module_name, storage_name, block_hash=None):
-
+        &#34;&#34;&#34;
+        Retrieves the details of a storage function for given module name, call function name and block_hash
+        :param module_name:
+        :param storage_name:
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
         for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
@@ -1544,6 +2076,11 @@ class SubstrateInterface:
                         )
 
     def get_metadata_errors(self, block_hash=None):
+        &#34;&#34;&#34;
+        Retrieves a list of all errors in metadata active at given block_hash (or chaintip if block_hash is omitted)
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
 
@@ -1561,7 +2098,13 @@ class SubstrateInterface:
         return error_list
 
     def get_metadata_error(self, module_name, error_name, block_hash=None):
-
+        &#34;&#34;&#34;
+        Retrieves the details of an error for given module name, call function name and block_hash
+        :param module_name:
+        :param error_name:
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
         for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
@@ -1573,7 +2116,12 @@ class SubstrateInterface:
                         )
 
     def get_runtime_block(self, block_hash=None, block_id=None):
-
+        &#34;&#34;&#34;
+        Retrieves a block with method `chain_getBlock` and in addition decodes extrinsics and log items
+        :param block_hash:
+        :param block_id:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash, block_id=block_id)
 
         response = self.rpc_request(&#34;chain_getBlock&#34;, [block_hash]).get(&#39;result&#39;)
@@ -1596,12 +2144,29 @@ class SubstrateInterface:
         return response
 
     def decode_scale(self, type_string, scale_bytes, block_hash=None):
+        &#34;&#34;&#34;
+        Helper function to decode arbitrary SCALE-bytes (e.g. 0x02000000) according to given RUST type_string
+        (e.g. BlockNumber). The relevant versioning information of the type (if defined) will be applied if block_hash
+        is set
+        :param type_string:
+        :param scale_bytes:
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
         obj = ScaleDecoder.get_decoder_class(type_string, ScaleBytes(scale_bytes), metadata=self.metadata_decoder)
         return obj.decode()
 
     def encode_scale(self, type_string, value, block_hash=None):
+        &#34;&#34;&#34;
+        Helper function to encode arbitrary data into SCALE-bytes for given RUST type_string
+
+        :param type_string:
+        :param value:
+        :param block_hash:
+        :return:
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
         obj = ScaleDecoder.get_decoder_class(type_string)
@@ -1610,6 +2175,13 @@ class SubstrateInterface:
     # Serializing helper function
 
     def serialize_storage_item(self, storage_item, module, spec_version_id):
+        &#34;&#34;&#34;
+        Helper function to serialize a storage item
+        :param storage_item:
+        :param module:
+        :param spec_version_id:
+        :return:
+        &#34;&#34;&#34;
         storage_dict = {
             &#34;storage_name&#34;: storage_item.name,
             &#34;storage_modifier&#34;: storage_item.modifier,
@@ -1661,6 +2233,13 @@ class SubstrateInterface:
         return storage_dict
 
     def serialize_constant(self, constant, module, spec_version_id):
+        &#34;&#34;&#34;
+        Helper function to serialize a constant
+        :param constant:
+        :param module:
+        :param spec_version_id:
+        :return:
+        &#34;&#34;&#34;
         try:
             value_obj = ScaleDecoder.get_decoder_class(constant.type,
                                                        ScaleBytes(constant.constant_value))
@@ -1681,6 +2260,14 @@ class SubstrateInterface:
         }
 
     def serialize_module_call(self, module, call, spec_version, call_index):
+        &#34;&#34;&#34;
+        Helper function to serialize a call function
+        :param module:
+        :param call:
+        :param spec_version:
+        :param call_index:
+        :return:
+        &#34;&#34;&#34;
         return {
             &#34;call_id&#34;: call.get_identifier(),
             &#34;call_name&#34;: call.name,
@@ -1694,6 +2281,14 @@ class SubstrateInterface:
         }
 
     def serialize_module_event(self, module, event, spec_version, event_index):
+        &#34;&#34;&#34;
+        Helper function to serialize an event
+        :param module:
+        :param event:
+        :param spec_version:
+        :param event_index:
+        :return:
+        &#34;&#34;&#34;
         return {
             &#34;event_id&#34;: event.name,
             &#34;event_name&#34;: event.name,
@@ -1712,6 +2307,13 @@ class SubstrateInterface:
         }
 
     def serialize_module_error(self, module, error, spec_version):
+        &#34;&#34;&#34;
+        Helper function to serialize an error
+        :param module:
+        :param error:
+        :param spec_version:
+        :return:
+        &#34;&#34;&#34;
         return {
             &#34;error_name&#34;: error.name,
             &#34;documentation&#34;: &#39;\n&#39;.join(error.docs),
@@ -1727,13 +2329,33 @@ class SubstrateInterface:
 <span>def <span class="ident">compose_call</span></span>(<span>self, call_module, call_function, call_params=(), block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Composes a call payload which can be used as an unsigned extrinsic or a proposal.
+:param call_module: e.g. Balances
+:param call_function: e.g. transfer
+:param call_params: This is a dict containing the params of the call, e.g.
+<code>{
+'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
+'value': 1000000000000
+}</code>
+:param block_hash:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def compose_call(self, call_module, call_function, call_params=(), block_hash=None):
-
+    &#34;&#34;&#34;
+    Composes a call payload which can be used as an unsigned extrinsic or a proposal.
+    :param call_module: e.g. Balances
+    :param call_function: e.g. transfer
+    :param call_params: This is a dict containing the params of the call, e.g.
+        `{
+            &#39;dest&#39;: &#39;EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk&#39;,
+            &#39;value&#39;: 1000000000000
+        }`
+    :param block_hash:
+    :return:
+    &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
     extrinsic = ExtrinsicsDecoder(metadata=self.metadata_decoder, address_type=self.address_type)
@@ -1768,12 +2390,27 @@ class SubstrateInterface:
 <span>def <span class="ident">decode_scale</span></span>(<span>self, type_string, scale_bytes, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Helper function to decode arbitrary SCALE-bytes (e.g. 0x02000000) according to given RUST type_string
+(e.g. BlockNumber). The relevant versioning information of the type (if defined) will be applied if block_hash
+is set
+:param type_string:
+:param scale_bytes:
+:param block_hash:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def decode_scale(self, type_string, scale_bytes, block_hash=None):
+    &#34;&#34;&#34;
+    Helper function to decode arbitrary SCALE-bytes (e.g. 0x02000000) according to given RUST type_string
+    (e.g. BlockNumber). The relevant versioning information of the type (if defined) will be applied if block_hash
+    is set
+    :param type_string:
+    :param scale_bytes:
+    :param block_hash:
+    :return:
+    &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
     obj = ScaleDecoder.get_decoder_class(type_string, ScaleBytes(scale_bytes), metadata=self.metadata_decoder)
@@ -1784,12 +2421,24 @@ class SubstrateInterface:
 <span>def <span class="ident">encode_scale</span></span>(<span>self, type_string, value, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Helper function to encode arbitrary data into SCALE-bytes for given RUST type_string</p>
+<p>:param type_string:
+:param value:
+:param block_hash:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def encode_scale(self, type_string, value, block_hash=None):
+    &#34;&#34;&#34;
+    Helper function to encode arbitrary data into SCALE-bytes for given RUST type_string
+
+    :param type_string:
+    :param value:
+    :param block_hash:
+    :return:
+    &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
     obj = ScaleDecoder.get_decoder_class(type_string)
@@ -1871,12 +2520,21 @@ class SubstrateInterface:
 <span>def <span class="ident">get_block_events</span></span>(<span>self, block_hash, metadata_decoder=None)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>A convenience method to fetch the undecoded events from storage
+:param block_hash:
+:param metadata_decoder:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_block_events(self, block_hash, metadata_decoder=None):
+    &#34;&#34;&#34;
+    A convenience method to fetch the undecoded events from storage
+    :param block_hash:
+    :param metadata_decoder:
+    :return:
+    &#34;&#34;&#34;
 
     if metadata_decoder and metadata_decoder.version.index &gt;= 9:
         storage_hash = STORAGE_HASH_SYSTEM_EVENTS_V9
@@ -1908,12 +2566,19 @@ class SubstrateInterface:
 <span>def <span class="ident">get_block_hash</span></span>(<span>self, block_id)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>A pass-though to existing JSONRPC method <code>chain_getBlockHash</code>
+:param block_id:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_block_hash(self, block_id):
+    &#34;&#34;&#34;
+    A pass-though to existing JSONRPC method `chain_getBlockHash`
+    :param block_id:
+    :return:
+    &#34;&#34;&#34;
     return self.rpc_request(&#34;chain_getBlockHash&#34;, [block_id]).get(&#39;result&#39;)</code></pre>
 </details>
 </dd>
@@ -1921,12 +2586,19 @@ class SubstrateInterface:
 <span>def <span class="ident">get_block_header</span></span>(<span>self, block_hash)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>A pass-though to existing JSONRPC method <code>chain_getHeader</code>
+:param block_hash:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_block_header(self, block_hash):
+    &#34;&#34;&#34;
+    A pass-though to existing JSONRPC method `chain_getHeader`
+    :param block_hash:
+    :return:
+    &#34;&#34;&#34;
     response = self.rpc_request(&#34;chain_getHeader&#34;, [block_hash])
     return response.get(&#39;result&#39;)</code></pre>
 </details>
@@ -1935,12 +2607,21 @@ class SubstrateInterface:
 <span>def <span class="ident">get_block_metadata</span></span>(<span>self, block_hash=None, decode=True)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>A pass-though to existing JSONRPC method <code>state_getMetadata</code>. For a decoded version see <code>get_runtime_metadata()</code>
+:param block_hash:
+:param decode:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_block_metadata(self, block_hash=None, decode=True):
+    &#34;&#34;&#34;
+    A pass-though to existing JSONRPC method `state_getMetadata`. For a decoded version see `get_runtime_metadata()`
+    :param block_hash:
+    :param decode:
+    :return:
+    &#34;&#34;&#34;
     params = None
     if block_hash:
         params = [block_hash]
@@ -1959,12 +2640,19 @@ class SubstrateInterface:
 <span>def <span class="ident">get_block_number</span></span>(<span>self, block_hash)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>A convenience method to get the block number for given block_hash
+:param block_hash:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_block_number(self, block_hash):
+    &#34;&#34;&#34;
+    A convenience method to get the block number for given block_hash
+    :param block_hash:
+    :return:
+    &#34;&#34;&#34;
     response = self.rpc_request(&#34;chain_getHeader&#34;, [block_hash])
     return int(response[&#39;result&#39;][&#39;number&#39;], 16)</code></pre>
 </details>
@@ -1973,12 +2661,19 @@ class SubstrateInterface:
 <span>def <span class="ident">get_block_runtime_version</span></span>(<span>self, block_hash)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Retrieve the runtime version id of given block_hash
+:param block_hash:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_block_runtime_version(self, block_hash):
+    &#34;&#34;&#34;
+    Retrieve the runtime version id of given block_hash
+    :param block_hash:
+    :return:
+    &#34;&#34;&#34;
     response = self.rpc_request(&#34;chain_getRuntimeVersion&#34;, [block_hash])
     return response.get(&#39;result&#39;)</code></pre>
 </details>
@@ -1987,12 +2682,23 @@ class SubstrateInterface:
 <span>def <span class="ident">get_chain_block</span></span>(<span>self, block_hash=None, block_id=None, metadata_decoder=None)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>A pass-though to existing JSONRPC method <code>chain_getBlock</code>. For a decoded version see <code>get_runtime_block()</code>
+:param block_hash:
+:param block_id:
+:param metadata_decoder:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
+    &#34;&#34;&#34;
+    A pass-though to existing JSONRPC method `chain_getBlock`. For a decoded version see `get_runtime_block()`
+    :param block_hash:
+    :param block_id:
+    :param metadata_decoder:
+    :return:
+    &#34;&#34;&#34;
 
     if block_id:
         block_hash = self.get_block_hash(block_id)
@@ -2028,12 +2734,17 @@ class SubstrateInterface:
 <span>def <span class="ident">get_chain_finalised_head</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>A pass-though to existing JSONRPC method <code>chain_getFinalisedHead</code>
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_chain_finalised_head(self):
+    &#34;&#34;&#34;
+    A pass-though to existing JSONRPC method `chain_getFinalisedHead`
+    :return:
+    &#34;&#34;&#34;
     response = self.rpc_request(&#34;chain_getFinalisedHead&#34;, [])
     return response.get(&#39;result&#39;)</code></pre>
 </details>
@@ -2042,12 +2753,17 @@ class SubstrateInterface:
 <span>def <span class="ident">get_chain_head</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>A pass-though to existing JSONRPC method <code>chain_getHead</code>
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_chain_head(self):
+    &#34;&#34;&#34;
+    A pass-though to existing JSONRPC method `chain_getHead`
+    :return:
+    &#34;&#34;&#34;
     response = self.rpc_request(&#34;chain_getHead&#34;, [])
     return response.get(&#39;result&#39;)</code></pre>
 </details>
@@ -2056,13 +2772,25 @@ class SubstrateInterface:
 <span>def <span class="ident">get_metadata_call_function</span></span>(<span>self, module_name, call_function_name, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Retrieves the details of a call function given module name, call function name and block_hash
+(or chaintip if block_hash is omitted)
+:param module_name:
+:param call_function_name:
+:param block_hash:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_metadata_call_function(self, module_name, call_function_name, block_hash=None):
-
+    &#34;&#34;&#34;
+    Retrieves the details of a call function given module name, call function name and block_hash
+    (or chaintip if block_hash is omitted)
+    :param module_name:
+    :param call_function_name:
+    :param block_hash:
+    :return:
+    &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
     result = None
@@ -2082,13 +2810,19 @@ class SubstrateInterface:
 <span>def <span class="ident">get_metadata_call_functions</span></span>(<span>self, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Retrieves a list of all call functions in metadata active for given block_hash (or chaintip if block_hash is omitted)
+:param block_hash:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_metadata_call_functions(self, block_hash=None):
-
+    &#34;&#34;&#34;
+    Retrieves a list of all call functions in metadata active for given block_hash (or chaintip if block_hash is omitted)
+    :param block_hash:
+    :return:
+    &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
     call_list = []
@@ -2106,12 +2840,25 @@ class SubstrateInterface:
 <span>def <span class="ident">get_metadata_constant</span></span>(<span>self, module_name, constant_name, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Retrieves the details of a constant for given module name, call function name and block_hash
+(or chaintip if block_hash is omitted)
+:param module_name:
+:param constant_name:
+:param block_hash:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_metadata_constant(self, module_name, constant_name, block_hash=None):
+    &#34;&#34;&#34;
+    Retrieves the details of a constant for given module name, call function name and block_hash
+    (or chaintip if block_hash is omitted)
+    :param module_name:
+    :param constant_name:
+    :param block_hash:
+    :return:
+    &#34;&#34;&#34;
 
     self.init_runtime(block_hash=block_hash)
 
@@ -2130,12 +2877,19 @@ class SubstrateInterface:
 <span>def <span class="ident">get_metadata_constants</span></span>(<span>self, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Retrieves a list of all constants in metadata active at given block_hash (or chaintip if block_hash is omitted)
+:param block_hash:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_metadata_constants(self, block_hash=None):
+    &#34;&#34;&#34;
+    Retrieves a list of all constants in metadata active at given block_hash (or chaintip if block_hash is omitted)
+    :param block_hash:
+    :return:
+    &#34;&#34;&#34;
 
     self.init_runtime(block_hash=block_hash)
 
@@ -2156,13 +2910,23 @@ class SubstrateInterface:
 <span>def <span class="ident">get_metadata_error</span></span>(<span>self, module_name, error_name, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Retrieves the details of an error for given module name, call function name and block_hash
+:param module_name:
+:param error_name:
+:param block_hash:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_metadata_error(self, module_name, error_name, block_hash=None):
-
+    &#34;&#34;&#34;
+    Retrieves the details of an error for given module name, call function name and block_hash
+    :param module_name:
+    :param error_name:
+    :param block_hash:
+    :return:
+    &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
     for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
@@ -2178,12 +2942,19 @@ class SubstrateInterface:
 <span>def <span class="ident">get_metadata_errors</span></span>(<span>self, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Retrieves a list of all errors in metadata active at given block_hash (or chaintip if block_hash is omitted)
+:param block_hash:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_metadata_errors(self, block_hash=None):
+    &#34;&#34;&#34;
+    Retrieves a list of all errors in metadata active at given block_hash (or chaintip if block_hash is omitted)
+    :param block_hash:
+    :return:
+    &#34;&#34;&#34;
 
     self.init_runtime(block_hash=block_hash)
 
@@ -2205,12 +2976,25 @@ class SubstrateInterface:
 <span>def <span class="ident">get_metadata_event</span></span>(<span>self, module_name, event_name, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Retrieves the details of an event for given module name, call function name and block_hash
+(or chaintip if block_hash is omitted)
+:param module_name:
+:param event_name:
+:param block_hash:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_metadata_event(self, module_name, event_name, block_hash=None):
+    &#34;&#34;&#34;
+    Retrieves the details of an event for given module name, call function name and block_hash
+    (or chaintip if block_hash is omitted)
+    :param module_name:
+    :param event_name:
+    :param block_hash:
+    :return:
+    &#34;&#34;&#34;
 
     self.init_runtime(block_hash=block_hash)
 
@@ -2226,12 +3010,19 @@ class SubstrateInterface:
 <span>def <span class="ident">get_metadata_events</span></span>(<span>self, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Retrieves a list of all events in metadata active for given block_hash (or chaintip if block_hash is omitted)
+:param block_hash:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_metadata_events(self, block_hash=None):
+    &#34;&#34;&#34;
+    Retrieves a list of all events in metadata active for given block_hash (or chaintip if block_hash is omitted)
+    :param block_hash:
+    :return:
+    &#34;&#34;&#34;
 
     self.init_runtime(block_hash=block_hash)
 
@@ -2251,13 +3042,19 @@ class SubstrateInterface:
 <span>def <span class="ident">get_metadata_modules</span></span>(<span>self, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Retrieves a list of modules in metadata for given block_hash (or chaintip if block_hash is omitted)
+:param block_hash:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_metadata_modules(self, block_hash=None):
-
+    &#34;&#34;&#34;
+    Retrieves a list of modules in metadata for given block_hash (or chaintip if block_hash is omitted)
+    :param block_hash:
+    :return:
+    &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
     return [{
@@ -2278,13 +3075,23 @@ class SubstrateInterface:
 <span>def <span class="ident">get_metadata_storage_function</span></span>(<span>self, module_name, storage_name, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Retrieves the details of a storage function for given module name, call function name and block_hash
+:param module_name:
+:param storage_name:
+:param block_hash:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_metadata_storage_function(self, module_name, storage_name, block_hash=None):
-
+    &#34;&#34;&#34;
+    Retrieves the details of a storage function for given module name, call function name and block_hash
+    :param module_name:
+    :param storage_name:
+    :param block_hash:
+    :return:
+    &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
     for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
@@ -2302,13 +3109,21 @@ class SubstrateInterface:
 <span>def <span class="ident">get_metadata_storage_functions</span></span>(<span>self, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Retrieves a list of all storage functions in metadata active at given block_hash (or chaintip if block_hash is
+omitted)
+:param block_hash:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_metadata_storage_functions(self, block_hash=None):
-
+    &#34;&#34;&#34;
+    Retrieves a list of all storage functions in metadata active at given block_hash (or chaintip if block_hash is
+    omitted)
+    :param block_hash:
+    :return:
+    &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
     storage_list = []
@@ -2331,13 +3146,21 @@ class SubstrateInterface:
 <span>def <span class="ident">get_runtime_block</span></span>(<span>self, block_hash=None, block_id=None)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Retrieves a block with method <code>chain_getBlock</code> and in addition decodes extrinsics and log items
+:param block_hash:
+:param block_id:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_runtime_block(self, block_hash=None, block_id=None):
-
+    &#34;&#34;&#34;
+    Retrieves a block with method `chain_getBlock` and in addition decodes extrinsics and log items
+    :param block_hash:
+    :param block_id:
+    :return:
+    &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash, block_id=block_id)
 
     response = self.rpc_request(&#34;chain_getBlock&#34;, [block_hash]).get(&#39;result&#39;)
@@ -2360,16 +3183,47 @@ class SubstrateInterface:
     return response</code></pre>
 </details>
 </dd>
+<dt id="substrateinterface.SubstrateInterface.get_runtime_events"><code class="name flex">
+<span>def <span class="ident">get_runtime_events</span></span>(<span>self, block_hash=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Convenience method to get events for a certain block (storage call for module 'System' and function 'Events')
+:param block_hash:
+:return collection of events</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_runtime_events(self, block_hash=None):
+    &#34;&#34;&#34;
+    Convenience method to get events for a certain block (storage call for module &#39;System&#39; and function &#39;Events&#39;)
+    :param block_hash:
+    :return collection of events
+    &#34;&#34;&#34;
+    return self.get_runtime_state(
+        module=&#34;System&#34;,
+        storage_function=&#34;Events&#34;,
+        block_hash=block_hash
+    )</code></pre>
+</details>
+</dd>
 <dt id="substrateinterface.SubstrateInterface.get_runtime_metadata"><code class="name flex">
 <span>def <span class="ident">get_runtime_metadata</span></span>(<span>self, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Retrieves and decodes the metadata for given block or chaintip if block_hash is omitted.
+:param block_hash:
+:return: MetadataDecoder</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_runtime_metadata(self, block_hash=None):
+    &#34;&#34;&#34;
+    Retrieves and decodes the metadata for given block or chaintip if block_hash is omitted.
+    :param block_hash:
+    :return: MetadataDecoder
+    &#34;&#34;&#34;
     params = None
     if block_hash:
         params = [block_hash]
@@ -2386,12 +3240,11 @@ class SubstrateInterface:
 <span>def <span class="ident">get_runtime_state</span></span>(<span>self, module, storage_function, params=None, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Retrieves the storage for given module, function and optional parameters at given block
-:param metadata:
-:param module:
+<section class="desc"><p>Retrieves the storage entry for given module, function and optional parameters at given block hash
+:param module: The module name in the metadata, e.g. Balances or Account
 :param storage_function:
-:param params: list of params, can be list of Scalebytes
-:param block_hash:
+:param params: list of params, in the decoded format of the applicable ScaleTypes
+:param block_hash: Optional block hash, when left to None the chain tip will be used
 :return:</p></section>
 <details class="source">
 <summary>
@@ -2399,12 +3252,11 @@ class SubstrateInterface:
 </summary>
 <pre><code class="python">def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
     &#34;&#34;&#34;
-    Retrieves the storage for given module, function and optional parameters at given block
-    :param metadata:
-    :param module:
+    Retrieves the storage entry for given module, function and optional parameters at given block hash
+    :param module: The module name in the metadata, e.g. Balances or Account
     :param storage_function:
-    :param params: list of params, can be list of Scalebytes
-    :param block_hash:
+    :param params: list of params, in the decoded format of the applicable ScaleTypes
+    :param block_hash: Optional block hash, when left to None the chain tip will be used
     :return:
     &#34;&#34;&#34;
 
@@ -2429,7 +3281,7 @@ class SubstrateInterface:
                             hasher = map_type.get(&#39;hasher&#39;)
                             return_scale_type = map_type.get(&#39;value&#39;)
 
-                            if len(params) != 1:
+                            if not params or len(params) != 1:
                                 raise ValueError(&#39;Storage call of type &#34;MapType&#34; requires 1 parameter&#39;)
 
                             # Encode parameter
@@ -2470,7 +3322,7 @@ class SubstrateInterface:
 <section class="desc"><p>Retrieves the storage for given module, function and optional parameters at given block
 :param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
 :param metadata:
-:param spec_version_id:
+:param spec_version_id: DEPRECATED
 :param hasher: Hashing method used to determine storage key, defaults to 'Twox64Concat' if not provided
 :param return_scale_type: Scale type string to interprete result
 :param block_hash:
@@ -2488,7 +3340,7 @@ class SubstrateInterface:
     Retrieves the storage for given module, function and optional parameters at given block
     :param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
     :param metadata:
-    :param spec_version_id:
+    :param spec_version_id: DEPRECATED
     :param hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
     :param return_scale_type: Scale type string to interprete result
     :param block_hash:
@@ -2526,12 +3378,21 @@ class SubstrateInterface:
 <span>def <span class="ident">get_storage_by_key</span></span>(<span>self, block_hash, storage_key)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>A pass-though to existing JSONRPC method <code>state_getStorageAt</code>
+:param block_hash:
+:param storage_key:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_storage_by_key(self, block_hash, storage_key):
+    &#34;&#34;&#34;
+    A pass-though to existing JSONRPC method `state_getStorageAt`
+    :param block_hash:
+    :param storage_key:
+    :return:
+    &#34;&#34;&#34;
 
     response = self.rpc_request(&#34;state_getStorageAt&#34;, [storage_key, block_hash])
     if &#39;result&#39; in response:
@@ -2544,83 +3405,121 @@ class SubstrateInterface:
 <span>def <span class="ident">get_system_name</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>A pass-though to existing JSONRPC method <code>system_name</code>
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_system_name(self):
+    &#34;&#34;&#34;
+    A pass-though to existing JSONRPC method `system_name`
+    :return:
+    &#34;&#34;&#34;
     response = self.rpc_request(&#34;system_name&#34;, [])
     return response.get(&#39;result&#39;)</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_type_definition"><code class="name flex">
+<span>def <span class="ident">get_type_definition</span></span>(<span>self, type_string, block_hash=None)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Retrieves decoding specifications of given type_string
+:param type_string:
+:param block_hash:
+:return:</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_type_definition(self, type_string, block_hash=None):
+    &#34;&#34;&#34;
+    Retrieves decoding specifications of given type_string
+    :param type_string:
+    :param block_hash:
+    :return:
+    &#34;&#34;&#34;
+    type_registry = self.get_type_registry(block_hash=block_hash)
+    return type_registry.get(type_string)</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.get_type_registry"><code class="name flex">
 <span>def <span class="ident">get_type_registry</span></span>(<span>self, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Generates an exhaustive list of which RUST types exist in the runtime specified at given block_hash (or
+chaintip if block_hash is omitted)
+:param block_hash:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_type_registry(self, block_hash=None):
-
+    &#34;&#34;&#34;
+    Generates an exhaustive list of which RUST types exist in the runtime specified at given block_hash (or
+    chaintip if block_hash is omitted)
+    :param block_hash:
+    :return:
+    &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
-    for module in self.metadata_decoder.metadata.modules:
+    if self.runtime_version not in self.type_registry_cache:
 
-        # Storage backwards compt check
-        if module.storage and isinstance(module.storage, list):
-            storage_functions = module.storage
-        elif module.storage and isinstance(getattr(module.storage, &#39;value&#39;), dict):
-            storage_functions = module.storage.items
-        else:
-            storage_functions = []
+        for module in self.metadata_decoder.metadata.modules:
 
-        if len(module.calls or []) &gt; 0:
-            for idx, call in enumerate(module.calls):
-                for arg in call.args:
-                    self.process_metadata_typestring(arg.type)
+            # Storage backwards compt check
+            if module.storage and isinstance(module.storage, list):
+                storage_functions = module.storage
+            elif module.storage and isinstance(getattr(module.storage, &#39;value&#39;), dict):
+                storage_functions = module.storage.items
+            else:
+                storage_functions = []
 
-        if len(module.events or []) &gt; 0:
-            for event_index, event in enumerate(module.events):
+            if len(module.calls or []) &gt; 0:
+                for idx, call in enumerate(module.calls):
+                    for arg in call.args:
+                        self.process_metadata_typestring(arg.type)
 
-                for arg_index, arg in enumerate(event.args):
-                    self.process_metadata_typestring(arg)
+            if len(module.events or []) &gt; 0:
+                for event_index, event in enumerate(module.events):
 
-        if len(storage_functions) &gt; 0:
-            for idx, storage in enumerate(storage_functions):
+                    for arg_index, arg in enumerate(event.args):
+                        self.process_metadata_typestring(arg)
 
-                # Determine type
-                type_key1 = None
-                type_key2 = None
-                type_value = None
+            if len(storage_functions) &gt; 0:
+                for idx, storage in enumerate(storage_functions):
 
-                if storage.type.get(&#39;PlainType&#39;):
-                    type_value = storage.type.get(&#39;PlainType&#39;)
+                    # Determine type
+                    type_key1 = None
+                    type_key2 = None
+                    type_value = None
 
-                elif storage.type.get(&#39;MapType&#39;):
-                    type_key1 = storage.type[&#39;MapType&#39;].get(&#39;key&#39;)
-                    type_value = storage.type[&#39;MapType&#39;].get(&#39;value&#39;)
+                    if storage.type.get(&#39;PlainType&#39;):
+                        type_value = storage.type.get(&#39;PlainType&#39;)
 
-                elif storage.type.get(&#39;DoubleMapType&#39;):
-                    type_key1 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key1&#39;)
-                    type_key2 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key2&#39;)
-                    type_value = storage.type[&#39;DoubleMapType&#39;].get(&#39;value&#39;)
+                    elif storage.type.get(&#39;MapType&#39;):
+                        type_key1 = storage.type[&#39;MapType&#39;].get(&#39;key&#39;)
+                        type_value = storage.type[&#39;MapType&#39;].get(&#39;value&#39;)
 
-                self.process_metadata_typestring(type_value)
+                    elif storage.type.get(&#39;DoubleMapType&#39;):
+                        type_key1 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key1&#39;)
+                        type_key2 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key2&#39;)
+                        type_value = storage.type[&#39;DoubleMapType&#39;].get(&#39;value&#39;)
 
-                if type_key1:
-                    self.process_metadata_typestring(type_key1)
+                    self.process_metadata_typestring(type_value)
 
-                if type_key2:
-                    self.process_metadata_typestring(type_key2)
+                    if type_key1:
+                        self.process_metadata_typestring(type_key1)
 
-        if len(module.constants or []) &gt; 0:
-            for idx, constant in enumerate(module.constants):
+                    if type_key2:
+                        self.process_metadata_typestring(type_key2)
 
-                # Check if types already registered in database
-                self.process_metadata_typestring(constant.type)
+            if len(module.constants or []) &gt; 0:
+                for idx, constant in enumerate(module.constants):
+
+                    # Check if types already registered in database
+                    self.process_metadata_typestring(constant.type)
 
     return self.type_registry_cache[self.runtime_version]</code></pre>
 </details>
@@ -2629,12 +3528,17 @@ class SubstrateInterface:
 <span>def <span class="ident">get_version</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>A pass-though to existing JSONRPC method <code>system_version</code>
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_version(self):
+    &#34;&#34;&#34;
+    A pass-though to existing JSONRPC method `system_version`
+    :return:
+    &#34;&#34;&#34;
     if not self._version:
         response = self.rpc_request(&#34;system_version&#34;, [])
         self._version = response.get(&#39;result&#39;)
@@ -2645,12 +3549,30 @@ class SubstrateInterface:
 <span>def <span class="ident">init_runtime</span></span>(<span>self, block_hash=None, block_id=None)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>This method is used by all other methods that deals with metadata and types defined in the type registry.
+It optionally retrieves the block_hash when block_id is given and sets the applicable metadata for that
+block_hash. Also it applies all the versioned types at the time of the block_hash.</p>
+<p>Because parsing of metadata and type registry is quite heavy, the result will be cached per runtime id.
+In the future there could be support for caching backends like Redis to make this cache more persistent.
+:param block_hash:
+:param block_id:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def init_runtime(self, block_hash=None, block_id=None):
+    &#34;&#34;&#34;
+    This method is used by all other methods that deals with metadata and types defined in the type registry.
+    It optionally retrieves the block_hash when block_id is given and sets the applicable metadata for that
+    block_hash. Also it applies all the versioned types at the time of the block_hash.
+
+    Because parsing of metadata and type registry is quite heavy, the result will be cached per runtime id.
+    In the future there could be support for caching backends like Redis to make this cache more persistent.
+    :param block_hash:
+    :param block_id:
+    :return:
+    &#34;&#34;&#34;
 
     if block_id and block_hash:
         raise ValueError(&#39;Cannot provide block_hash and block_id at the same time&#39;)
@@ -2679,18 +3601,53 @@ class SubstrateInterface:
 <span>def <span class="ident">process_metadata_typestring</span></span>(<span>self, type_string)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Process how given type_string is decoded with active runtime and type registry</p>
+<p>:param type_string: RUST variable type, e.g. Vec<Address>
+:return: dict of properties for given type_string</p>
+<p>E.g.</p>
+<p><code>{
+"type_string": "Vec&lt;Address&gt;",
+"decoder_class": "Vec",
+"is_primitive_runtime": false,
+"is_primitive_core": false,
+"spec_version": 1030
+}</code></p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def process_metadata_typestring(self, type_string):
+    &#34;&#34;&#34;
 
+    Process how given type_string is decoded with active runtime and type registry
+
+    :param type_string: RUST variable type, e.g. Vec&lt;Address&gt;
+    :return: dict of properties for given type_string
+
+    E.g.
+
+    `{
+        &#34;type_string&#34;: &#34;Vec&lt;Address&gt;&#34;,
+        &#34;decoder_class&#34;: &#34;Vec&#34;,
+        &#34;is_primitive_runtime&#34;: false,
+        &#34;is_primitive_core&#34;: false,
+        &#34;spec_version&#34;: 1030
+    }`
+
+    &#34;&#34;&#34;
     decoder_class_obj = None
+
+    type_info = {
+        &#34;type_string&#34;: type_string,
+        &#34;decoder_class&#34;: None,
+        &#34;is_primitive_runtime&#34;: None,
+        &#34;is_primitive_core&#34;: False,
+        &#34;spec_version&#34;: self.runtime_version
+    }
 
     if self.runtime_version not in self.type_registry_cache:
         self.type_registry_cache[self.runtime_version] = {}
-    print(&#39;==============================================\nType string&#39;, type_string)
+
     # Check if already added
     if type_string in self.type_registry_cache[self.runtime_version]:
         return self.type_registry_cache[self.runtime_version][type_string][&#39;decoder_class&#39;]
@@ -2698,46 +3655,46 @@ class SubstrateInterface:
     # Try to get decoder class
     decoder_class = RuntimeConfiguration().get_decoder_class(type_string)
 
-    print(&#39;Decoding class&#39;, decoder_class)
-
     if not decoder_class:
 
         # Not in type registry, try get hard coded decoder classes
         try:
             decoder_class_obj = ScaleDecoder.get_decoder_class(type_string)
             decoder_class = decoder_class_obj.__class__
-            print(&#39;ScaleDecoder&#39;, decoder_class.__name__)
         except NotImplementedError as e:
             decoder_class = None
 
-
-    # # Try to get subclass if not root level &#39;ScaleType&#39;
-    # if len(decoder_class.__mro__) &gt; 1 and decoder_class.__mro__[1].__name__ != &#39;ScaleType&#39;:
-    #     print(&#39;super class&#39;, decoder_class.__mro__[1].__name__)
-    #     import pdb;
-    #     pdb.set_trace()
-    #     decoder_class = self.process_metadata_typestring(decoder_class.__mro__[1].__name__)
-
     # Process classes that contain subtypes (e.g. Option&lt;ChangesTrieConfiguration&gt;)
     if decoder_class_obj and decoder_class_obj.sub_type:
+        type_info[&#34;is_primitive_runtime&#34;] = False
         self.process_metadata_typestring(decoder_class_obj.sub_type)
 
     # Process classes that contain type_mapping (e.g. Struct and Enum)
     if decoder_class and hasattr(decoder_class, &#39;type_mapping&#39;) and decoder_class.type_mapping:
-        print(&#39;type mapping&#39;, decoder_class.type_mapping)
+
+        if type_string[0] == &#39;(&#39;:
+            type_info[&#34;is_primitive_runtime&#34;] = False
+
         for key, data_type in decoder_class.type_mapping:
             self.process_metadata_typestring(data_type)
 
-    if decoder_class:
-        decoder_class_name = decoder_class.__name__
-    else:
-        decoder_class_name = None
+    # Try to get superclass as actual decoding class if not root level &#39;ScaleType&#39;
+    if decoder_class and len(decoder_class.__mro__) &gt; 1 and decoder_class.__mro__[1].__name__ != &#39;ScaleType&#39;:
+        decoder_class = decoder_class.__mro__[1]
 
-    self.type_registry_cache[self.runtime_version][type_string] = {
-        &#34;type_string&#34;: type_string,
-        &#34;decoder_class&#34;: decoder_class_name
-    }
-    print(&#39;final decoder class&#39;, type_string, decoder_class)
+    if decoder_class:
+        type_info[&#39;decoder_class&#39;] = decoder_class.__name__
+
+        if type_info[&#34;is_primitive_runtime&#34;] is None:
+            type_info[&#34;is_primitive_runtime&#34;] = True
+
+        if type_info[&#34;is_primitive_runtime&#34;] and type_string.lower() in ScaleDecoder.PRIMITIVES:
+            type_info[&#34;is_primitive_core&#34;] = True
+    else:
+        type_info[&#34;is_primitive_runtime&#34;] = None
+        type_info[&#34;is_primitive_core&#34;] = None
+
+    self.type_registry_cache[self.runtime_version][type_string] = type_info
 
     return decoder_class</code></pre>
 </details>
@@ -2746,13 +3703,23 @@ class SubstrateInterface:
 <span>def <span class="ident">rpc_request</span></span>(<span>self, method, params)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Method that handles the actual RPC request to the Substrate node. The other implemented functions eventually
+use this method to perform the request.
+:param method: method of the JSONRPC request
+:param params: a list containing the parameters of the JSONRPC request
+:return: a dict with the parsed result of the request.</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def rpc_request(self, method, params):
-
+    &#34;&#34;&#34;
+    Method that handles the actual RPC request to the Substrate node. The other implemented functions eventually
+    use this method to perform the request.
+    :param method: method of the JSONRPC request
+    :param params: a list containing the parameters of the JSONRPC request
+    :return: a dict with the parsed result of the request.
+    &#34;&#34;&#34;
     payload = {
         &#34;jsonrpc&#34;: &#34;2.0&#34;,
         &#34;method&#34;: method,
@@ -2760,12 +3727,17 @@ class SubstrateInterface:
         &#34;id&#34;: self.request_id
     }
 
-    response = requests.request(&#34;POST&#34;, self.url, data=json.dumps(payload), headers=self.default_headers)
+    if self.url[0:6] == &#39;wss://&#39; or self.url[0:5] == &#39;ws://&#39;:
+        asyncio.get_event_loop().run_until_complete(self.ws_request(payload))
+        json_body = self._ws_result
 
-    if response.status_code != 200:
-        raise SubstrateRequestException(&#34;RPC request failed with HTTP status code {}&#34;.format(response.status_code))
+    else:
+        response = requests.request(&#34;POST&#34;, self.url, data=json.dumps(payload), headers=self.default_headers)
 
-    json_body = response.json()
+        if response.status_code != 200:
+            raise SubstrateRequestException(&#34;RPC request failed with HTTP status code {}&#34;.format(response.status_code))
+
+        json_body = response.json()
 
     return json_body</code></pre>
 </details>
@@ -2774,12 +3746,23 @@ class SubstrateInterface:
 <span>def <span class="ident">serialize_constant</span></span>(<span>self, constant, module, spec_version_id)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Helper function to serialize a constant
+:param constant:
+:param module:
+:param spec_version_id:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def serialize_constant(self, constant, module, spec_version_id):
+    &#34;&#34;&#34;
+    Helper function to serialize a constant
+    :param constant:
+    :param module:
+    :param spec_version_id:
+    :return:
+    &#34;&#34;&#34;
     try:
         value_obj = ScaleDecoder.get_decoder_class(constant.type,
                                                    ScaleBytes(constant.constant_value))
@@ -2804,12 +3787,25 @@ class SubstrateInterface:
 <span>def <span class="ident">serialize_module_call</span></span>(<span>self, module, call, spec_version, call_index)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Helper function to serialize a call function
+:param module:
+:param call:
+:param spec_version:
+:param call_index:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def serialize_module_call(self, module, call, spec_version, call_index):
+    &#34;&#34;&#34;
+    Helper function to serialize a call function
+    :param module:
+    :param call:
+    :param spec_version:
+    :param call_index:
+    :return:
+    &#34;&#34;&#34;
     return {
         &#34;call_id&#34;: call.get_identifier(),
         &#34;call_name&#34;: call.name,
@@ -2827,12 +3823,23 @@ class SubstrateInterface:
 <span>def <span class="ident">serialize_module_error</span></span>(<span>self, module, error, spec_version)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Helper function to serialize an error
+:param module:
+:param error:
+:param spec_version:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def serialize_module_error(self, module, error, spec_version):
+    &#34;&#34;&#34;
+    Helper function to serialize an error
+    :param module:
+    :param error:
+    :param spec_version:
+    :return:
+    &#34;&#34;&#34;
     return {
         &#34;error_name&#34;: error.name,
         &#34;documentation&#34;: &#39;\n&#39;.join(error.docs),
@@ -2847,12 +3854,25 @@ class SubstrateInterface:
 <span>def <span class="ident">serialize_module_event</span></span>(<span>self, module, event, spec_version, event_index)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Helper function to serialize an event
+:param module:
+:param event:
+:param spec_version:
+:param event_index:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def serialize_module_event(self, module, event, spec_version, event_index):
+    &#34;&#34;&#34;
+    Helper function to serialize an event
+    :param module:
+    :param event:
+    :param spec_version:
+    :param event_index:
+    :return:
+    &#34;&#34;&#34;
     return {
         &#34;event_id&#34;: event.name,
         &#34;event_name&#34;: event.name,
@@ -2875,12 +3895,23 @@ class SubstrateInterface:
 <span>def <span class="ident">serialize_storage_item</span></span>(<span>self, storage_item, module, spec_version_id)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Helper function to serialize a storage item
+:param storage_item:
+:param module:
+:param spec_version_id:
+:return:</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def serialize_storage_item(self, storage_item, module, spec_version_id):
+    &#34;&#34;&#34;
+    Helper function to serialize a storage item
+    :param storage_item:
+    :param module:
+    :param spec_version_id:
+    :return:
+    &#34;&#34;&#34;
     storage_dict = {
         &#34;storage_name&#34;: storage_item.name,
         &#34;storage_modifier&#34;: storage_item.modifier,
@@ -2932,6 +3963,30 @@ class SubstrateInterface:
     return storage_dict</code></pre>
 </details>
 </dd>
+<dt id="substrateinterface.SubstrateInterface.ws_request"><code class="name flex">
+<span>async def <span class="ident">ws_request</span></span>(<span>self, payload)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Internal method to handle the request if url is a websocket address (wss:// or ws://)
+:param payload: a dict that contains the JSONRPC payload of the request
+:return: This method doesn't return but sets the <code>_ws_result</code> object variable with the result</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">async def ws_request(self, payload):
+    &#34;&#34;&#34;
+    Internal method to handle the request if url is a websocket address (wss:// or ws://)
+    :param payload: a dict that contains the JSONRPC payload of the request
+    :return: This method doesn&#39;t return but sets the `_ws_result` object variable with the result
+    &#34;&#34;&#34;
+    async with websockets.connect(
+            self.url
+    ) as websocket:
+        await websocket.send(json.dumps(payload))
+        self._ws_result = json.loads(await websocket.recv())</code></pre>
+</details>
+</dd>
 </dl>
 </dd>
 </dl>
@@ -2981,11 +4036,13 @@ class SubstrateInterface:
 <li><code><a title="substrateinterface.SubstrateInterface.get_metadata_storage_function" href="#substrateinterface.SubstrateInterface.get_metadata_storage_function">get_metadata_storage_function</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_metadata_storage_functions" href="#substrateinterface.SubstrateInterface.get_metadata_storage_functions">get_metadata_storage_functions</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_runtime_block" href="#substrateinterface.SubstrateInterface.get_runtime_block">get_runtime_block</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_runtime_events" href="#substrateinterface.SubstrateInterface.get_runtime_events">get_runtime_events</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_runtime_metadata" href="#substrateinterface.SubstrateInterface.get_runtime_metadata">get_runtime_metadata</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_runtime_state" href="#substrateinterface.SubstrateInterface.get_runtime_state">get_runtime_state</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_storage" href="#substrateinterface.SubstrateInterface.get_storage">get_storage</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_storage_by_key" href="#substrateinterface.SubstrateInterface.get_storage_by_key">get_storage_by_key</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_system_name" href="#substrateinterface.SubstrateInterface.get_system_name">get_system_name</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_type_definition" href="#substrateinterface.SubstrateInterface.get_type_definition">get_type_definition</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_type_registry" href="#substrateinterface.SubstrateInterface.get_type_registry">get_type_registry</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_version" href="#substrateinterface.SubstrateInterface.get_version">get_version</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.init_runtime" href="#substrateinterface.SubstrateInterface.init_runtime">init_runtime</a></code></li>
@@ -2996,6 +4053,7 @@ class SubstrateInterface:
 <li><code><a title="substrateinterface.SubstrateInterface.serialize_module_error" href="#substrateinterface.SubstrateInterface.serialize_module_error">serialize_module_error</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.serialize_module_event" href="#substrateinterface.SubstrateInterface.serialize_module_event">serialize_module_event</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.serialize_storage_item" href="#substrateinterface.SubstrateInterface.serialize_storage_item">serialize_storage_item</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.ws_request" href="#substrateinterface.SubstrateInterface.ws_request">ws_request</a></code></li>
 </ul>
 </li>
 </ul>

@@ -2,7 +2,9 @@
 Python Substrate Interface Library
 
 ## Description
-This library specializes in interfacing with a Substrate node.
+This library specializes in interfacing with a Substrate node, providing additional convenience methods to deal with
+SCALE encoding/decoding (the default output and input format of the Substrate JSONRPC), metadata parsing, type registry 
+management and versioning of types.
 
 ## Documentation
 https://polkascan.github.io/py-substrate-interface/
@@ -61,6 +63,8 @@ for extrinsic in result['block']['extrinsics']:
 
 
 ### Make a storage call
+The modules and storage functions are provided in the metadata (see `substrate.get_metadata_storage_functions()`), 
+parameters will be automatically converted to SCALE-bytes (also including decoding of SS58 addresses).   
 
 ```python
 print("\n\nCurrent balance: {} DOT".format(
@@ -88,7 +92,7 @@ print("Balance @ {}: {} DOT".format(
 
 ### Compose call
 
-Py-substrate-interface will also let you compose calls you can use as an unsigned extrinsic or as a proposal
+Py-substrate-interface will also let you compose calls you can use as an unsigned extrinsic or as a proposal:
 
 ```python
 payload = substrate.compose_call(

@@ -30,6 +30,12 @@ from scalecodec.types import U8, U16, U32, U64
 
 
 def ss58_decode(address, valid_address_type=42):
+    """
+    Decodes given SS58 encoded address to an account ID
+    :param address: e.g. EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk
+    :param valid_address_type: e.g. 2 for Kusama
+    :return:
+    """
     checksum_prefix = b'SS58PRE'
 
     ss58_format = base58.b58decode(address)
@@ -66,6 +72,12 @@ def ss58_decode(address, valid_address_type=42):
 
 
 def ss58_encode(address, address_type=42):
+    """
+    Encodes an account ID to an Substrate address according to provided address_type
+    :param address:
+    :param address_type:
+    :return:
+    """
     checksum_prefix = b'SS58PRE'
 
     if type(address) is bytes or type(address) is bytearray:
@@ -89,6 +101,12 @@ def ss58_encode(address, address_type=42):
 
 
 def ss58_encode_account_index(account_index, address_type=42):
+    """
+    Encodes an AccountIndex to an Substrate address according to provided address_type
+    :param account_index:
+    :param address_type:
+    :return:
+    """
 
     if 0 <= account_index <= 2**8 - 1:
         account_idx_encoder = U8()
@@ -105,7 +123,12 @@ def ss58_encode_account_index(account_index, address_type=42):
 
 
 def ss58_decode_account_index(address, valid_address_type=42):
-
+    """
+    Decodes given SS58 encoded address to an AccountIndex
+    :param address:
+    :param valid_address_type:
+    :return:
+    """
     account_index_bytes = ss58_decode(address, valid_address_type)
 
     if len(account_index_bytes) == 2:
