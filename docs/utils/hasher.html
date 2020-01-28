@@ -53,8 +53,14 @@ import xxhash
 def blake2_256(data):
     &#34;&#34;&#34;
     Helper function to calculate a 32 bytes Blake2b hash for provided data, used as key for Substrate storage items
-    :param data:
-    :return:
+
+    Parameters
+    ----------
+    data
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     return blake2b(data, digest_size=32).digest().hex()
 
@@ -62,9 +68,14 @@ def blake2_256(data):
 def two_x64_concat(data):
     &#34;&#34;&#34;
     Helper function to calculate a 2 concatenated xxh64 hash for provided data, used as key for several Substrate
-    storage items
-    :param data:
-    :return:
+
+    Parameters
+    ----------
+    data
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     storage_key1 = bytearray(xxhash.xxh64(data, seed=0).digest())
     storage_key1.reverse()
@@ -86,9 +97,13 @@ def two_x64_concat(data):
 <span>def <span class="ident">blake2_256</span></span>(<span>data)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Helper function to calculate a 32 bytes Blake2b hash for provided data, used as key for Substrate storage items
-:param data:
-:return:</p></section>
+<section class="desc"><p>Helper function to calculate a 32 bytes Blake2b hash for provided data, used as key for Substrate storage items</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>data</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -96,8 +111,14 @@ def two_x64_concat(data):
 <pre><code class="python">def blake2_256(data):
     &#34;&#34;&#34;
     Helper function to calculate a 32 bytes Blake2b hash for provided data, used as key for Substrate storage items
-    :param data:
-    :return:
+
+    Parameters
+    ----------
+    data
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     return blake2b(data, digest_size=32).digest().hex()</code></pre>
 </details>
@@ -106,10 +127,13 @@ def two_x64_concat(data):
 <span>def <span class="ident">two_x64_concat</span></span>(<span>data)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Helper function to calculate a 2 concatenated xxh64 hash for provided data, used as key for several Substrate
-storage items
-:param data:
-:return:</p></section>
+<section class="desc"><p>Helper function to calculate a 2 concatenated xxh64 hash for provided data, used as key for several Substrate</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>data</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -117,9 +141,14 @@ storage items
 <pre><code class="python">def two_x64_concat(data):
     &#34;&#34;&#34;
     Helper function to calculate a 2 concatenated xxh64 hash for provided data, used as key for several Substrate
-    storage items
-    :param data:
-    :return:
+
+    Parameters
+    ----------
+    data
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     storage_key1 = bytearray(xxhash.xxh64(data, seed=0).digest())
     storage_key1.reverse()

@@ -65,12 +65,14 @@ class SubstrateInterface:
     def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None, metadata_version=4):
         &#34;&#34;&#34;
         A specialized class in interfacing with a Substrate node.
-        :param url: the URL to the substrate node, either in format http(s)://127.0.0.1:9933 or ws(s)://127.0.0.1:9944
-        :param address_type: The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults
-        to 42, for Kusama the address type is 2
-        :param type_registry: A dict containing the custom type registry in format: {&#39;types&#39;: {&#39;customType&#39;: &#39;u32&#39;},..}
-        :param type_registry_preset: The name of the predefined type registry shipped with the SCALE codec, e.g. kusama
-        :param metadata_version: DEPRECATED
+
+        Parameters
+        ----------
+        url: the URL to the substrate node, either in format https://127.0.0.1:9933 or wss://127.0.0.1:9944
+        address_type: : The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults to 42, for Kusama the address type is 2
+        type_registry: A dict containing the custom type registry in format: {&#39;types&#39;: {&#39;customType&#39;: &#39;u32&#39;},..}
+        type_registry_preset: The name of the predefined type registry shipped with the SCALE-codec, e.g. kusama
+        metadata_version: DEPRECATED
         &#34;&#34;&#34;
         if type_registry or type_registry_preset:
 
@@ -107,8 +109,14 @@ class SubstrateInterface:
     async def ws_request(self, payload):
         &#34;&#34;&#34;
         Internal method to handle the request if url is a websocket address (wss:// or ws://)
-        :param payload: a dict that contains the JSONRPC payload of the request
-        :return: This method doesn&#39;t return but sets the `_ws_result` object variable with the result
+
+        Parameters
+        ----------
+        payload: a dict that contains the JSONRPC payload of the request
+
+        Returns
+        -------
+        This method doesn&#39;t return but sets the `_ws_result` object variable with the result
         &#34;&#34;&#34;
         async with websockets.connect(
                 self.url
@@ -120,9 +128,15 @@ class SubstrateInterface:
         &#34;&#34;&#34;
         Method that handles the actual RPC request to the Substrate node. The other implemented functions eventually
         use this method to perform the request.
-        :param method: method of the JSONRPC request
-        :param params: a list containing the parameters of the JSONRPC request
-        :return: a dict with the parsed result of the request.
+
+        Parameters
+        ----------
+        method: method of the JSONRPC request
+        params: a list containing the parameters of the JSONRPC request
+
+        Returns
+        -------
+        a dict with the parsed result of the request.
         &#34;&#34;&#34;
         payload = {
             &#34;jsonrpc&#34;: &#34;2.0&#34;,
@@ -148,7 +162,10 @@ class SubstrateInterface:
     def get_system_name(self):
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `system_name`
-        :return:
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         response = self.rpc_request(&#34;system_name&#34;, [])
         return response.get(&#39;result&#39;)
@@ -156,7 +173,10 @@ class SubstrateInterface:
     def get_version(self):
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `system_version`
-        :return:
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         if not self._version:
             response = self.rpc_request(&#34;system_version&#34;, [])
@@ -166,7 +186,10 @@ class SubstrateInterface:
     def get_chain_head(self):
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `chain_getHead`
-        :return:
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         response = self.rpc_request(&#34;chain_getHead&#34;, [])
         return response.get(&#39;result&#39;)
@@ -174,7 +197,10 @@ class SubstrateInterface:
     def get_chain_finalised_head(self):
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `chain_getFinalisedHead`
-        :return:
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         response = self.rpc_request(&#34;chain_getFinalisedHead&#34;, [])
         return response.get(&#39;result&#39;)
@@ -182,10 +208,16 @@ class SubstrateInterface:
     def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `chain_getBlock`. For a decoded version see `get_runtime_block()`
-        :param block_hash:
-        :param block_id:
-        :param metadata_decoder:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+        block_id
+        metadata_decoder
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
 
         if block_id:
@@ -220,16 +252,28 @@ class SubstrateInterface:
     def get_block_hash(self, block_id):
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `chain_getBlockHash`
-        :param block_id:
-        :return:
+
+        Parameters
+        ----------
+        block_id
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         return self.rpc_request(&#34;chain_getBlockHash&#34;, [block_id]).get(&#39;result&#39;)
 
     def get_block_header(self, block_hash):
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `chain_getHeader`
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         response = self.rpc_request(&#34;chain_getHeader&#34;, [block_hash])
         return response.get(&#39;result&#39;)
@@ -237,8 +281,14 @@ class SubstrateInterface:
     def get_block_number(self, block_hash):
         &#34;&#34;&#34;
         A convenience method to get the block number for given block_hash
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         response = self.rpc_request(&#34;chain_getHeader&#34;, [block_hash])
         return int(response[&#39;result&#39;][&#39;number&#39;], 16)
@@ -246,9 +296,15 @@ class SubstrateInterface:
     def get_block_metadata(self, block_hash=None, decode=True):
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `state_getMetadata`. For a decoded version see `get_runtime_metadata()`
-        :param block_hash:
-        :param decode:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+        decode: DEPRECATED use `get_runtime_metadata()` for decoded version
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         params = None
         if block_hash:
@@ -266,19 +322,26 @@ class SubstrateInterface:
     def get_storage(self, block_hash, module, function, params=None, return_scale_type=None, hasher=None,
                     spec_version_id=&#39;default&#39;, metadata=None, metadata_version=None):
         &#34;&#34;&#34;
-        Retrieves the storage for given module, function and optional parameters at given block
-        :param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
-        :param metadata:
-        :param spec_version_id: DEPRECATED
-        :param hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
-        :param return_scale_type: Scale type string to interprete result
-        :param block_hash:
-        :param module:
-        :param function:
-        :param params:
-        :return:
-        &#34;&#34;&#34;
+        Retrieves the storage entry for given module, function and optional parameters at given block.
 
+        DEPRECATED: use `get_runtime_state()`
+
+        Parameters
+        ----------
+        block_hash
+        module
+        function
+        params
+        return_scale_type: Scale type string to interprete result
+        hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
+        spec_version_id: DEPRECATED
+        metadata
+        metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
+
+        Returns
+        -------
+
+        &#34;&#34;&#34;
         storage_hash = self.generate_storage_hash(
             storage_module=module,
             storage_function=function,
@@ -305,9 +368,15 @@ class SubstrateInterface:
     def get_storage_by_key(self, block_hash, storage_key):
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `state_getStorageAt`
-        :param block_hash:
-        :param storage_key:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+        storage_key
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
 
         response = self.rpc_request(&#34;state_getStorageAt&#34;, [storage_key, block_hash])
@@ -319,9 +388,15 @@ class SubstrateInterface:
     def get_block_events(self, block_hash, metadata_decoder=None):
         &#34;&#34;&#34;
         A convenience method to fetch the undecoded events from storage
-        :param block_hash:
-        :param metadata_decoder:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+        metadata_decoder
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
 
         if metadata_decoder and metadata_decoder.version.index &gt;= 9:
@@ -352,8 +427,13 @@ class SubstrateInterface:
     def get_block_runtime_version(self, block_hash):
         &#34;&#34;&#34;
         Retrieve the runtime version id of given block_hash
-        :param block_hash:
-        :return:
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         response = self.rpc_request(&#34;chain_getRuntimeVersion&#34;, [block_hash])
         return response.get(&#39;result&#39;)
@@ -361,12 +441,18 @@ class SubstrateInterface:
     def generate_storage_hash(self, storage_module, storage_function, params=None, hasher=None, metadata_version=None):
         &#34;&#34;&#34;
         Generate a storage key for given module/function
-        :param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
-        :param hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
-        :param storage_module:
-        :param storage_function:
-        :param params: Parameters of the storage function, provided in scale encoded hex-bytes
-        :return:
+
+        Parameters
+        ----------
+        storage_module
+        storage_function
+        params: Parameters of the storage function, provided in scale encoded hex-bytes
+        hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
+        metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
 
         if metadata_version and metadata_version &gt;= 9:
@@ -430,9 +516,15 @@ class SubstrateInterface:
 
         Because parsing of metadata and type registry is quite heavy, the result will be cached per runtime id.
         In the future there could be support for caching backends like Redis to make this cache more persistent.
-        :param block_hash:
-        :param block_id:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+        block_id
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
 
         if block_id and block_hash:
@@ -460,11 +552,17 @@ class SubstrateInterface:
     def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
         &#34;&#34;&#34;
         Retrieves the storage entry for given module, function and optional parameters at given block hash
-        :param module: The module name in the metadata, e.g. Balances or Account
-        :param storage_function:
-        :param params: list of params, in the decoded format of the applicable ScaleTypes
-        :param block_hash: Optional block hash, when left to None the chain tip will be used
-        :return:
+
+        Parameters
+        ----------
+        module: The module name in the metadata, e.g. Balances or Account
+        storage_function: The storage function name, e.g. FreeBalance or AccountNonce
+        params: list of params, in the decoded format of the applicable ScaleTypes
+        block_hash: Optional block hash, when left to None the chain tip will be used
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
@@ -524,8 +622,14 @@ class SubstrateInterface:
     def get_runtime_events(self, block_hash=None):
         &#34;&#34;&#34;
         Convenience method to get events for a certain block (storage call for module &#39;System&#39; and function &#39;Events&#39;)
-        :param block_hash:
-        :return collection of events
+
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+        Collection of events
         &#34;&#34;&#34;
         return self.get_runtime_state(
             module=&#34;System&#34;,
@@ -536,8 +640,14 @@ class SubstrateInterface:
     def get_runtime_metadata(self, block_hash=None):
         &#34;&#34;&#34;
         Retrieves and decodes the metadata for given block or chaintip if block_hash is omitted.
-        :param block_hash:
-        :return: MetadataDecoder
+
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         params = None
         if block_hash:
@@ -553,15 +663,17 @@ class SubstrateInterface:
     def compose_call(self, call_module, call_function, call_params=(), block_hash=None):
         &#34;&#34;&#34;
         Composes a call payload which can be used as an unsigned extrinsic or a proposal.
-        :param call_module: e.g. Balances
-        :param call_function: e.g. transfer
-        :param call_params: This is a dict containing the params of the call, e.g.
-            `{
-                &#39;dest&#39;: &#39;EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk&#39;,
-                &#39;value&#39;: 1000000000000
-            }`
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        call_module: Name of the runtime module e.g. Balances
+        call_function: Name of the call function e.g. transfer
+        call_params: This is a dict containing the params of the call. e.g. `{&#39;dest&#39;: &#39;EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk&#39;, &#39;value&#39;: 1000000000000}`
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -577,11 +689,16 @@ class SubstrateInterface:
 
     def process_metadata_typestring(self, type_string):
         &#34;&#34;&#34;
-
         Process how given type_string is decoded with active runtime and type registry
 
-        :param type_string: RUST variable type, e.g. Vec&lt;Address&gt;
-        :return: dict of properties for given type_string
+        Parameters
+        ----------
+        type_string: RUST variable type, e.g. Vec&lt;Address&gt;
+
+        Returns
+        -------
+
+        dict of properties for given type_string
 
         E.g.
 
@@ -661,8 +778,14 @@ class SubstrateInterface:
         &#34;&#34;&#34;
         Generates an exhaustive list of which RUST types exist in the runtime specified at given block_hash (or
         chaintip if block_hash is omitted)
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        block_hash: Chaintip will be used if block_hash is omitted
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -728,9 +851,15 @@ class SubstrateInterface:
     def get_type_definition(self, type_string, block_hash=None):
         &#34;&#34;&#34;
         Retrieves decoding specifications of given type_string
-        :param type_string:
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        type_string: RUST variable type, e.g. Vec&lt;Address&gt;
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         type_registry = self.get_type_registry(block_hash=block_hash)
         return type_registry.get(type_string)
@@ -738,8 +867,14 @@ class SubstrateInterface:
     def get_metadata_modules(self, block_hash=None):
         &#34;&#34;&#34;
         Retrieves a list of modules in metadata for given block_hash (or chaintip if block_hash is omitted)
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -759,8 +894,14 @@ class SubstrateInterface:
     def get_metadata_call_functions(self, block_hash=None):
         &#34;&#34;&#34;
         Retrieves a list of all call functions in metadata active for given block_hash (or chaintip if block_hash is omitted)
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -778,10 +919,16 @@ class SubstrateInterface:
         &#34;&#34;&#34;
         Retrieves the details of a call function given module name, call function name and block_hash
         (or chaintip if block_hash is omitted)
-        :param module_name:
-        :param call_function_name:
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        module_name
+        call_function_name
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -800,8 +947,14 @@ class SubstrateInterface:
     def get_metadata_events(self, block_hash=None):
         &#34;&#34;&#34;
         Retrieves a list of all events in metadata active for given block_hash (or chaintip if block_hash is omitted)
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
@@ -821,10 +974,16 @@ class SubstrateInterface:
         &#34;&#34;&#34;
         Retrieves the details of an event for given module name, call function name and block_hash
         (or chaintip if block_hash is omitted)
-        :param module_name:
-        :param event_name:
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        module_name
+        event_name
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
@@ -839,8 +998,14 @@ class SubstrateInterface:
     def get_metadata_constants(self, block_hash=None):
         &#34;&#34;&#34;
         Retrieves a list of all constants in metadata active at given block_hash (or chaintip if block_hash is omitted)
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
@@ -861,10 +1026,16 @@ class SubstrateInterface:
         &#34;&#34;&#34;
         Retrieves the details of a constant for given module name, call function name and block_hash
         (or chaintip if block_hash is omitted)
-        :param module_name:
-        :param constant_name:
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        module_name
+        constant_name
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
@@ -883,8 +1054,14 @@ class SubstrateInterface:
         &#34;&#34;&#34;
         Retrieves a list of all storage functions in metadata active at given block_hash (or chaintip if block_hash is
         omitted)
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -906,10 +1083,16 @@ class SubstrateInterface:
     def get_metadata_storage_function(self, module_name, storage_name, block_hash=None):
         &#34;&#34;&#34;
         Retrieves the details of a storage function for given module name, call function name and block_hash
-        :param module_name:
-        :param storage_name:
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        module_name
+        storage_name
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -926,10 +1109,15 @@ class SubstrateInterface:
     def get_metadata_errors(self, block_hash=None):
         &#34;&#34;&#34;
         Retrieves a list of all errors in metadata active at given block_hash (or chaintip if block_hash is omitted)
-        :param block_hash:
-        :return:
-        &#34;&#34;&#34;
 
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
         error_list = []
@@ -948,10 +1136,16 @@ class SubstrateInterface:
     def get_metadata_error(self, module_name, error_name, block_hash=None):
         &#34;&#34;&#34;
         Retrieves the details of an error for given module name, call function name and block_hash
-        :param module_name:
-        :param error_name:
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        module_name
+        error_name
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -966,9 +1160,15 @@ class SubstrateInterface:
     def get_runtime_block(self, block_hash=None, block_id=None):
         &#34;&#34;&#34;
         Retrieves a block with method `chain_getBlock` and in addition decodes extrinsics and log items
-        :param block_hash:
-        :param block_id:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+        block_id
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash, block_id=block_id)
 
@@ -996,10 +1196,16 @@ class SubstrateInterface:
         Helper function to decode arbitrary SCALE-bytes (e.g. 0x02000000) according to given RUST type_string
         (e.g. BlockNumber). The relevant versioning information of the type (if defined) will be applied if block_hash
         is set
-        :param type_string:
-        :param scale_bytes:
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        type_string
+        scale_bytes
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -1010,10 +1216,15 @@ class SubstrateInterface:
         &#34;&#34;&#34;
         Helper function to encode arbitrary data into SCALE-bytes for given RUST type_string
 
-        :param type_string:
-        :param value:
-        :param block_hash:
-        :return:
+        Parameters
+        ----------
+        type_string
+        value
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -1025,10 +1236,16 @@ class SubstrateInterface:
     def serialize_storage_item(self, storage_item, module, spec_version_id):
         &#34;&#34;&#34;
         Helper function to serialize a storage item
-        :param storage_item:
-        :param module:
-        :param spec_version_id:
-        :return:
+
+        Parameters
+        ----------
+        storage_item
+        module
+        spec_version_id
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         storage_dict = {
             &#34;storage_name&#34;: storage_item.name,
@@ -1083,10 +1300,16 @@ class SubstrateInterface:
     def serialize_constant(self, constant, module, spec_version_id):
         &#34;&#34;&#34;
         Helper function to serialize a constant
-        :param constant:
-        :param module:
-        :param spec_version_id:
-        :return:
+
+        Parameters
+        ----------
+        constant
+        module
+        spec_version_id
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         try:
             value_obj = ScaleDecoder.get_decoder_class(constant.type,
@@ -1110,11 +1333,17 @@ class SubstrateInterface:
     def serialize_module_call(self, module, call, spec_version, call_index):
         &#34;&#34;&#34;
         Helper function to serialize a call function
-        :param module:
-        :param call:
-        :param spec_version:
-        :param call_index:
-        :return:
+
+        Parameters
+        ----------
+        module
+        call
+        spec_version
+        call_index
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         return {
             &#34;call_id&#34;: call.get_identifier(),
@@ -1131,11 +1360,17 @@ class SubstrateInterface:
     def serialize_module_event(self, module, event, spec_version, event_index):
         &#34;&#34;&#34;
         Helper function to serialize an event
-        :param module:
-        :param event:
-        :param spec_version:
-        :param event_index:
-        :return:
+
+        Parameters
+        ----------
+        module
+        event
+        spec_version
+        event_index
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         return {
             &#34;event_id&#34;: event.name,
@@ -1157,10 +1392,16 @@ class SubstrateInterface:
     def serialize_module_error(self, module, error, spec_version):
         &#34;&#34;&#34;
         Helper function to serialize an error
-        :param module:
-        :param error:
-        :param spec_version:
-        :return:
+
+        Parameters
+        ----------
+        module
+        error
+        spec_version
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         return {
             &#34;error_name&#34;: error.name,
@@ -1201,13 +1442,20 @@ class SubstrateInterface:
 <span>(</span><span>url, address_type=None, type_registry=None, type_registry_preset=None, metadata_version=4)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>A specialized class in interfacing with a Substrate node.
-:param url: the URL to the substrate node, either in format http(s)://127.0.0.1:9933 or ws(s)://127.0.0.1:9944
-:param address_type: The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults
-to 42, for Kusama the address type is 2
-:param type_registry: A dict containing the custom type registry in format: {'types': {'customType': 'u32'},..}
-:param type_registry_preset: The name of the predefined type registry shipped with the SCALE codec, e.g. kusama
-:param metadata_version: DEPRECATED</p></section>
+<section class="desc"><p>A specialized class in interfacing with a Substrate node.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>url</code></strong> :&ensp;<code>the</code> <code>URL</code> <code>to</code> <code>the</code> <code>substrate</code> <code>node</code>, <code>either</code> <code>in</code> <code>format</code> &lt;<code>https</code>://<code>127.0.0.1</code>:<code>9933</code>&gt; or <code>wss</code>://<code>127.0.0.1</code>:<code>9944</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>address_type</code></strong> :&ensp;: <code>The</code> <code>address</code> <code>type</code> <code>which</code> <code>account</code> <code>IDs</code> <code>will</code> <code>be</code> <code>SS58</code>-<code>encoded</code> <code>to</code> <code>Substrate</code> <code>addresses.</code> <code>Defaults</code> <code>to</code> <code>42</code>, <code>for</code> <code>Kusama</code> <code>the</code> <code>address</code> <code>type</code> <code>is</code> <code>2</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>type_registry</code></strong> :&ensp;<code>A</code> <code>dict</code> <code>containing</code> <code>the</code> <code>custom</code> <code>type</code> <code>registry</code> <code>in</code> <code>format</code>: {<code>'types'</code>: {<code>'customType'</code>: <code>'u32'</code>},<code>..</code>}</dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>type_registry_preset</code></strong> :&ensp;<code>The</code> <code>name</code> of <code>the</code> <code>predefined</code> <code>type</code> <code>registry</code> <code>shipped</code> <code>with</code> <code>the</code> <code>SCALE</code>-<code>codec</code>, <code>e.g.</code> <code>kusama</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>metadata_version</code></strong> :&ensp;<code>DEPRECATED</code></dt>
+<dd>&nbsp;</dd>
+</dl></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1217,12 +1465,14 @@ to 42, for Kusama the address type is 2
     def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None, metadata_version=4):
         &#34;&#34;&#34;
         A specialized class in interfacing with a Substrate node.
-        :param url: the URL to the substrate node, either in format http(s)://127.0.0.1:9933 or ws(s)://127.0.0.1:9944
-        :param address_type: The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults
-        to 42, for Kusama the address type is 2
-        :param type_registry: A dict containing the custom type registry in format: {&#39;types&#39;: {&#39;customType&#39;: &#39;u32&#39;},..}
-        :param type_registry_preset: The name of the predefined type registry shipped with the SCALE codec, e.g. kusama
-        :param metadata_version: DEPRECATED
+
+        Parameters
+        ----------
+        url: the URL to the substrate node, either in format https://127.0.0.1:9933 or wss://127.0.0.1:9944
+        address_type: : The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults to 42, for Kusama the address type is 2
+        type_registry: A dict containing the custom type registry in format: {&#39;types&#39;: {&#39;customType&#39;: &#39;u32&#39;},..}
+        type_registry_preset: The name of the predefined type registry shipped with the SCALE-codec, e.g. kusama
+        metadata_version: DEPRECATED
         &#34;&#34;&#34;
         if type_registry or type_registry_preset:
 
@@ -1259,8 +1509,14 @@ to 42, for Kusama the address type is 2
     async def ws_request(self, payload):
         &#34;&#34;&#34;
         Internal method to handle the request if url is a websocket address (wss:// or ws://)
-        :param payload: a dict that contains the JSONRPC payload of the request
-        :return: This method doesn&#39;t return but sets the `_ws_result` object variable with the result
+
+        Parameters
+        ----------
+        payload: a dict that contains the JSONRPC payload of the request
+
+        Returns
+        -------
+        This method doesn&#39;t return but sets the `_ws_result` object variable with the result
         &#34;&#34;&#34;
         async with websockets.connect(
                 self.url
@@ -1272,9 +1528,15 @@ to 42, for Kusama the address type is 2
         &#34;&#34;&#34;
         Method that handles the actual RPC request to the Substrate node. The other implemented functions eventually
         use this method to perform the request.
-        :param method: method of the JSONRPC request
-        :param params: a list containing the parameters of the JSONRPC request
-        :return: a dict with the parsed result of the request.
+
+        Parameters
+        ----------
+        method: method of the JSONRPC request
+        params: a list containing the parameters of the JSONRPC request
+
+        Returns
+        -------
+        a dict with the parsed result of the request.
         &#34;&#34;&#34;
         payload = {
             &#34;jsonrpc&#34;: &#34;2.0&#34;,
@@ -1300,7 +1562,10 @@ to 42, for Kusama the address type is 2
     def get_system_name(self):
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `system_name`
-        :return:
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         response = self.rpc_request(&#34;system_name&#34;, [])
         return response.get(&#39;result&#39;)
@@ -1308,7 +1573,10 @@ to 42, for Kusama the address type is 2
     def get_version(self):
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `system_version`
-        :return:
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         if not self._version:
             response = self.rpc_request(&#34;system_version&#34;, [])
@@ -1318,7 +1586,10 @@ to 42, for Kusama the address type is 2
     def get_chain_head(self):
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `chain_getHead`
-        :return:
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         response = self.rpc_request(&#34;chain_getHead&#34;, [])
         return response.get(&#39;result&#39;)
@@ -1326,7 +1597,10 @@ to 42, for Kusama the address type is 2
     def get_chain_finalised_head(self):
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `chain_getFinalisedHead`
-        :return:
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         response = self.rpc_request(&#34;chain_getFinalisedHead&#34;, [])
         return response.get(&#39;result&#39;)
@@ -1334,10 +1608,16 @@ to 42, for Kusama the address type is 2
     def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `chain_getBlock`. For a decoded version see `get_runtime_block()`
-        :param block_hash:
-        :param block_id:
-        :param metadata_decoder:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+        block_id
+        metadata_decoder
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
 
         if block_id:
@@ -1372,16 +1652,28 @@ to 42, for Kusama the address type is 2
     def get_block_hash(self, block_id):
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `chain_getBlockHash`
-        :param block_id:
-        :return:
+
+        Parameters
+        ----------
+        block_id
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         return self.rpc_request(&#34;chain_getBlockHash&#34;, [block_id]).get(&#39;result&#39;)
 
     def get_block_header(self, block_hash):
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `chain_getHeader`
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         response = self.rpc_request(&#34;chain_getHeader&#34;, [block_hash])
         return response.get(&#39;result&#39;)
@@ -1389,8 +1681,14 @@ to 42, for Kusama the address type is 2
     def get_block_number(self, block_hash):
         &#34;&#34;&#34;
         A convenience method to get the block number for given block_hash
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         response = self.rpc_request(&#34;chain_getHeader&#34;, [block_hash])
         return int(response[&#39;result&#39;][&#39;number&#39;], 16)
@@ -1398,9 +1696,15 @@ to 42, for Kusama the address type is 2
     def get_block_metadata(self, block_hash=None, decode=True):
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `state_getMetadata`. For a decoded version see `get_runtime_metadata()`
-        :param block_hash:
-        :param decode:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+        decode: DEPRECATED use `get_runtime_metadata()` for decoded version
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         params = None
         if block_hash:
@@ -1418,19 +1722,26 @@ to 42, for Kusama the address type is 2
     def get_storage(self, block_hash, module, function, params=None, return_scale_type=None, hasher=None,
                     spec_version_id=&#39;default&#39;, metadata=None, metadata_version=None):
         &#34;&#34;&#34;
-        Retrieves the storage for given module, function and optional parameters at given block
-        :param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
-        :param metadata:
-        :param spec_version_id: DEPRECATED
-        :param hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
-        :param return_scale_type: Scale type string to interprete result
-        :param block_hash:
-        :param module:
-        :param function:
-        :param params:
-        :return:
-        &#34;&#34;&#34;
+        Retrieves the storage entry for given module, function and optional parameters at given block.
 
+        DEPRECATED: use `get_runtime_state()`
+
+        Parameters
+        ----------
+        block_hash
+        module
+        function
+        params
+        return_scale_type: Scale type string to interprete result
+        hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
+        spec_version_id: DEPRECATED
+        metadata
+        metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
+
+        Returns
+        -------
+
+        &#34;&#34;&#34;
         storage_hash = self.generate_storage_hash(
             storage_module=module,
             storage_function=function,
@@ -1457,9 +1768,15 @@ to 42, for Kusama the address type is 2
     def get_storage_by_key(self, block_hash, storage_key):
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `state_getStorageAt`
-        :param block_hash:
-        :param storage_key:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+        storage_key
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
 
         response = self.rpc_request(&#34;state_getStorageAt&#34;, [storage_key, block_hash])
@@ -1471,9 +1788,15 @@ to 42, for Kusama the address type is 2
     def get_block_events(self, block_hash, metadata_decoder=None):
         &#34;&#34;&#34;
         A convenience method to fetch the undecoded events from storage
-        :param block_hash:
-        :param metadata_decoder:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+        metadata_decoder
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
 
         if metadata_decoder and metadata_decoder.version.index &gt;= 9:
@@ -1504,8 +1827,13 @@ to 42, for Kusama the address type is 2
     def get_block_runtime_version(self, block_hash):
         &#34;&#34;&#34;
         Retrieve the runtime version id of given block_hash
-        :param block_hash:
-        :return:
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         response = self.rpc_request(&#34;chain_getRuntimeVersion&#34;, [block_hash])
         return response.get(&#39;result&#39;)
@@ -1513,12 +1841,18 @@ to 42, for Kusama the address type is 2
     def generate_storage_hash(self, storage_module, storage_function, params=None, hasher=None, metadata_version=None):
         &#34;&#34;&#34;
         Generate a storage key for given module/function
-        :param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
-        :param hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
-        :param storage_module:
-        :param storage_function:
-        :param params: Parameters of the storage function, provided in scale encoded hex-bytes
-        :return:
+
+        Parameters
+        ----------
+        storage_module
+        storage_function
+        params: Parameters of the storage function, provided in scale encoded hex-bytes
+        hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
+        metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
 
         if metadata_version and metadata_version &gt;= 9:
@@ -1582,9 +1916,15 @@ to 42, for Kusama the address type is 2
 
         Because parsing of metadata and type registry is quite heavy, the result will be cached per runtime id.
         In the future there could be support for caching backends like Redis to make this cache more persistent.
-        :param block_hash:
-        :param block_id:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+        block_id
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
 
         if block_id and block_hash:
@@ -1612,11 +1952,17 @@ to 42, for Kusama the address type is 2
     def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
         &#34;&#34;&#34;
         Retrieves the storage entry for given module, function and optional parameters at given block hash
-        :param module: The module name in the metadata, e.g. Balances or Account
-        :param storage_function:
-        :param params: list of params, in the decoded format of the applicable ScaleTypes
-        :param block_hash: Optional block hash, when left to None the chain tip will be used
-        :return:
+
+        Parameters
+        ----------
+        module: The module name in the metadata, e.g. Balances or Account
+        storage_function: The storage function name, e.g. FreeBalance or AccountNonce
+        params: list of params, in the decoded format of the applicable ScaleTypes
+        block_hash: Optional block hash, when left to None the chain tip will be used
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
@@ -1676,8 +2022,14 @@ to 42, for Kusama the address type is 2
     def get_runtime_events(self, block_hash=None):
         &#34;&#34;&#34;
         Convenience method to get events for a certain block (storage call for module &#39;System&#39; and function &#39;Events&#39;)
-        :param block_hash:
-        :return collection of events
+
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+        Collection of events
         &#34;&#34;&#34;
         return self.get_runtime_state(
             module=&#34;System&#34;,
@@ -1688,8 +2040,14 @@ to 42, for Kusama the address type is 2
     def get_runtime_metadata(self, block_hash=None):
         &#34;&#34;&#34;
         Retrieves and decodes the metadata for given block or chaintip if block_hash is omitted.
-        :param block_hash:
-        :return: MetadataDecoder
+
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         params = None
         if block_hash:
@@ -1705,15 +2063,17 @@ to 42, for Kusama the address type is 2
     def compose_call(self, call_module, call_function, call_params=(), block_hash=None):
         &#34;&#34;&#34;
         Composes a call payload which can be used as an unsigned extrinsic or a proposal.
-        :param call_module: e.g. Balances
-        :param call_function: e.g. transfer
-        :param call_params: This is a dict containing the params of the call, e.g.
-            `{
-                &#39;dest&#39;: &#39;EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk&#39;,
-                &#39;value&#39;: 1000000000000
-            }`
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        call_module: Name of the runtime module e.g. Balances
+        call_function: Name of the call function e.g. transfer
+        call_params: This is a dict containing the params of the call. e.g. `{&#39;dest&#39;: &#39;EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk&#39;, &#39;value&#39;: 1000000000000}`
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -1729,11 +2089,16 @@ to 42, for Kusama the address type is 2
 
     def process_metadata_typestring(self, type_string):
         &#34;&#34;&#34;
-
         Process how given type_string is decoded with active runtime and type registry
 
-        :param type_string: RUST variable type, e.g. Vec&lt;Address&gt;
-        :return: dict of properties for given type_string
+        Parameters
+        ----------
+        type_string: RUST variable type, e.g. Vec&lt;Address&gt;
+
+        Returns
+        -------
+
+        dict of properties for given type_string
 
         E.g.
 
@@ -1813,8 +2178,14 @@ to 42, for Kusama the address type is 2
         &#34;&#34;&#34;
         Generates an exhaustive list of which RUST types exist in the runtime specified at given block_hash (or
         chaintip if block_hash is omitted)
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        block_hash: Chaintip will be used if block_hash is omitted
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -1880,9 +2251,15 @@ to 42, for Kusama the address type is 2
     def get_type_definition(self, type_string, block_hash=None):
         &#34;&#34;&#34;
         Retrieves decoding specifications of given type_string
-        :param type_string:
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        type_string: RUST variable type, e.g. Vec&lt;Address&gt;
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         type_registry = self.get_type_registry(block_hash=block_hash)
         return type_registry.get(type_string)
@@ -1890,8 +2267,14 @@ to 42, for Kusama the address type is 2
     def get_metadata_modules(self, block_hash=None):
         &#34;&#34;&#34;
         Retrieves a list of modules in metadata for given block_hash (or chaintip if block_hash is omitted)
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -1911,8 +2294,14 @@ to 42, for Kusama the address type is 2
     def get_metadata_call_functions(self, block_hash=None):
         &#34;&#34;&#34;
         Retrieves a list of all call functions in metadata active for given block_hash (or chaintip if block_hash is omitted)
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -1930,10 +2319,16 @@ to 42, for Kusama the address type is 2
         &#34;&#34;&#34;
         Retrieves the details of a call function given module name, call function name and block_hash
         (or chaintip if block_hash is omitted)
-        :param module_name:
-        :param call_function_name:
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        module_name
+        call_function_name
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -1952,8 +2347,14 @@ to 42, for Kusama the address type is 2
     def get_metadata_events(self, block_hash=None):
         &#34;&#34;&#34;
         Retrieves a list of all events in metadata active for given block_hash (or chaintip if block_hash is omitted)
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
@@ -1973,10 +2374,16 @@ to 42, for Kusama the address type is 2
         &#34;&#34;&#34;
         Retrieves the details of an event for given module name, call function name and block_hash
         (or chaintip if block_hash is omitted)
-        :param module_name:
-        :param event_name:
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        module_name
+        event_name
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
@@ -1991,8 +2398,14 @@ to 42, for Kusama the address type is 2
     def get_metadata_constants(self, block_hash=None):
         &#34;&#34;&#34;
         Retrieves a list of all constants in metadata active at given block_hash (or chaintip if block_hash is omitted)
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
@@ -2013,10 +2426,16 @@ to 42, for Kusama the address type is 2
         &#34;&#34;&#34;
         Retrieves the details of a constant for given module name, call function name and block_hash
         (or chaintip if block_hash is omitted)
-        :param module_name:
-        :param constant_name:
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        module_name
+        constant_name
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
@@ -2035,8 +2454,14 @@ to 42, for Kusama the address type is 2
         &#34;&#34;&#34;
         Retrieves a list of all storage functions in metadata active at given block_hash (or chaintip if block_hash is
         omitted)
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -2058,10 +2483,16 @@ to 42, for Kusama the address type is 2
     def get_metadata_storage_function(self, module_name, storage_name, block_hash=None):
         &#34;&#34;&#34;
         Retrieves the details of a storage function for given module name, call function name and block_hash
-        :param module_name:
-        :param storage_name:
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        module_name
+        storage_name
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -2078,10 +2509,15 @@ to 42, for Kusama the address type is 2
     def get_metadata_errors(self, block_hash=None):
         &#34;&#34;&#34;
         Retrieves a list of all errors in metadata active at given block_hash (or chaintip if block_hash is omitted)
-        :param block_hash:
-        :return:
-        &#34;&#34;&#34;
 
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+
+        &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
         error_list = []
@@ -2100,10 +2536,16 @@ to 42, for Kusama the address type is 2
     def get_metadata_error(self, module_name, error_name, block_hash=None):
         &#34;&#34;&#34;
         Retrieves the details of an error for given module name, call function name and block_hash
-        :param module_name:
-        :param error_name:
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        module_name
+        error_name
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -2118,9 +2560,15 @@ to 42, for Kusama the address type is 2
     def get_runtime_block(self, block_hash=None, block_id=None):
         &#34;&#34;&#34;
         Retrieves a block with method `chain_getBlock` and in addition decodes extrinsics and log items
-        :param block_hash:
-        :param block_id:
-        :return:
+
+        Parameters
+        ----------
+        block_hash
+        block_id
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash, block_id=block_id)
 
@@ -2148,10 +2596,16 @@ to 42, for Kusama the address type is 2
         Helper function to decode arbitrary SCALE-bytes (e.g. 0x02000000) according to given RUST type_string
         (e.g. BlockNumber). The relevant versioning information of the type (if defined) will be applied if block_hash
         is set
-        :param type_string:
-        :param scale_bytes:
-        :param block_hash:
-        :return:
+
+        Parameters
+        ----------
+        type_string
+        scale_bytes
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -2162,10 +2616,15 @@ to 42, for Kusama the address type is 2
         &#34;&#34;&#34;
         Helper function to encode arbitrary data into SCALE-bytes for given RUST type_string
 
-        :param type_string:
-        :param value:
-        :param block_hash:
-        :return:
+        Parameters
+        ----------
+        type_string
+        value
+        block_hash
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -2177,10 +2636,16 @@ to 42, for Kusama the address type is 2
     def serialize_storage_item(self, storage_item, module, spec_version_id):
         &#34;&#34;&#34;
         Helper function to serialize a storage item
-        :param storage_item:
-        :param module:
-        :param spec_version_id:
-        :return:
+
+        Parameters
+        ----------
+        storage_item
+        module
+        spec_version_id
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         storage_dict = {
             &#34;storage_name&#34;: storage_item.name,
@@ -2235,10 +2700,16 @@ to 42, for Kusama the address type is 2
     def serialize_constant(self, constant, module, spec_version_id):
         &#34;&#34;&#34;
         Helper function to serialize a constant
-        :param constant:
-        :param module:
-        :param spec_version_id:
-        :return:
+
+        Parameters
+        ----------
+        constant
+        module
+        spec_version_id
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         try:
             value_obj = ScaleDecoder.get_decoder_class(constant.type,
@@ -2262,11 +2733,17 @@ to 42, for Kusama the address type is 2
     def serialize_module_call(self, module, call, spec_version, call_index):
         &#34;&#34;&#34;
         Helper function to serialize a call function
-        :param module:
-        :param call:
-        :param spec_version:
-        :param call_index:
-        :return:
+
+        Parameters
+        ----------
+        module
+        call
+        spec_version
+        call_index
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         return {
             &#34;call_id&#34;: call.get_identifier(),
@@ -2283,11 +2760,17 @@ to 42, for Kusama the address type is 2
     def serialize_module_event(self, module, event, spec_version, event_index):
         &#34;&#34;&#34;
         Helper function to serialize an event
-        :param module:
-        :param event:
-        :param spec_version:
-        :param event_index:
-        :return:
+
+        Parameters
+        ----------
+        module
+        event
+        spec_version
+        event_index
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         return {
             &#34;event_id&#34;: event.name,
@@ -2309,10 +2792,16 @@ to 42, for Kusama the address type is 2
     def serialize_module_error(self, module, error, spec_version):
         &#34;&#34;&#34;
         Helper function to serialize an error
-        :param module:
-        :param error:
-        :param spec_version:
-        :return:
+
+        Parameters
+        ----------
+        module
+        error
+        spec_version
+
+        Returns
+        -------
+
         &#34;&#34;&#34;
         return {
             &#34;error_name&#34;: error.name,
@@ -2329,16 +2818,19 @@ to 42, for Kusama the address type is 2
 <span>def <span class="ident">compose_call</span></span>(<span>self, call_module, call_function, call_params=(), block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Composes a call payload which can be used as an unsigned extrinsic or a proposal.
-:param call_module: e.g. Balances
-:param call_function: e.g. transfer
-:param call_params: This is a dict containing the params of the call, e.g.
-<code>{
-'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
-'value': 1000000000000
-}</code>
-:param block_hash:
-:return:</p></section>
+<section class="desc"><p>Composes a call payload which can be used as an unsigned extrinsic or a proposal.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>call_module</code></strong> :&ensp;<code>Name</code> of <code>the</code> <code>runtime</code> <code>module</code> <code>e.g.</code> <code>Balances</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>call_function</code></strong> :&ensp;<code>Name</code> of <code>the</code> <code>call</code> <code>function</code> <code>e.g.</code> <code>transfer</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>call_params</code></strong> :&ensp;<code>This</code> <code>is</code> <code>a</code> <code>dict</code> <code>containing</code> <code>the</code> <code>params</code> of <code>the</code> <code>call.</code> <code>e.g.</code> <code>{</code>'dest'<code>:</code>'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk'<code>,</code>'value'<code>:</code>1000000000000<code>}</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2346,15 +2838,17 @@ to 42, for Kusama the address type is 2
 <pre><code class="python">def compose_call(self, call_module, call_function, call_params=(), block_hash=None):
     &#34;&#34;&#34;
     Composes a call payload which can be used as an unsigned extrinsic or a proposal.
-    :param call_module: e.g. Balances
-    :param call_function: e.g. transfer
-    :param call_params: This is a dict containing the params of the call, e.g.
-        `{
-            &#39;dest&#39;: &#39;EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk&#39;,
-            &#39;value&#39;: 1000000000000
-        }`
-    :param block_hash:
-    :return:
+
+    Parameters
+    ----------
+    call_module: Name of the runtime module e.g. Balances
+    call_function: Name of the call function e.g. transfer
+    call_params: This is a dict containing the params of the call. e.g. `{&#39;dest&#39;: &#39;EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk&#39;, &#39;value&#39;: 1000000000000}`
+    block_hash
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
@@ -2392,11 +2886,17 @@ to 42, for Kusama the address type is 2
 <dd>
 <section class="desc"><p>Helper function to decode arbitrary SCALE-bytes (e.g. 0x02000000) according to given RUST type_string
 (e.g. BlockNumber). The relevant versioning information of the type (if defined) will be applied if block_hash
-is set
-:param type_string:
-:param scale_bytes:
-:param block_hash:
-:return:</p></section>
+is set</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>type_string</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>scale_bytes</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2406,10 +2906,16 @@ is set
     Helper function to decode arbitrary SCALE-bytes (e.g. 0x02000000) according to given RUST type_string
     (e.g. BlockNumber). The relevant versioning information of the type (if defined) will be applied if block_hash
     is set
-    :param type_string:
-    :param scale_bytes:
-    :param block_hash:
-    :return:
+
+    Parameters
+    ----------
+    type_string
+    scale_bytes
+    block_hash
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
@@ -2422,10 +2928,16 @@ is set
 </code></dt>
 <dd>
 <section class="desc"><p>Helper function to encode arbitrary data into SCALE-bytes for given RUST type_string</p>
-<p>:param type_string:
-:param value:
-:param block_hash:
-:return:</p></section>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>type_string</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>value</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2434,10 +2946,15 @@ is set
     &#34;&#34;&#34;
     Helper function to encode arbitrary data into SCALE-bytes for given RUST type_string
 
-    :param type_string:
-    :param value:
-    :param block_hash:
-    :return:
+    Parameters
+    ----------
+    type_string
+    value
+    block_hash
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
@@ -2449,13 +2966,21 @@ is set
 <span>def <span class="ident">generate_storage_hash</span></span>(<span>self, storage_module, storage_function, params=None, hasher=None, metadata_version=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Generate a storage key for given module/function
-:param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
-:param hasher: Hashing method used to determine storage key, defaults to 'Twox64Concat' if not provided
-:param storage_module:
-:param storage_function:
-:param params: Parameters of the storage function, provided in scale encoded hex-bytes
-:return:</p></section>
+<section class="desc"><p>Generate a storage key for given module/function</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>storage_module</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>storage_function</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>params</code></strong> :&ensp;<code>Parameters</code> of <code>the</code> <code>storage</code> <code>function</code>, <code>provided</code> <code>in</code> <code>scale</code> <code>encoded</code> <code>hex</code>-<code>bytes</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>hasher</code></strong> :&ensp;<code>Hashing</code> <code>method</code> <code>used</code> <code>to</code> <code>determine</code> <code>storage</code> <code>key</code>, <code>defaults</code> <code>to</code> <code>'Twox64Concat'</code> <code>if</code> <code>not</code> <code>provided</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>metadata_version</code></strong> :&ensp;<code>Version</code> <code>index</code> of <code>Metadata</code>, <code>e.g.</code> <code>9</code> <code>for</code> <code>MetadataV9</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2463,12 +2988,18 @@ is set
 <pre><code class="python">def generate_storage_hash(self, storage_module, storage_function, params=None, hasher=None, metadata_version=None):
     &#34;&#34;&#34;
     Generate a storage key for given module/function
-    :param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
-    :param hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
-    :param storage_module:
-    :param storage_function:
-    :param params: Parameters of the storage function, provided in scale encoded hex-bytes
-    :return:
+
+    Parameters
+    ----------
+    storage_module
+    storage_function
+    params: Parameters of the storage function, provided in scale encoded hex-bytes
+    hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
+    metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
 
     if metadata_version and metadata_version &gt;= 9:
@@ -2520,10 +3051,15 @@ is set
 <span>def <span class="ident">get_block_events</span></span>(<span>self, block_hash, metadata_decoder=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>A convenience method to fetch the undecoded events from storage
-:param block_hash:
-:param metadata_decoder:
-:return:</p></section>
+<section class="desc"><p>A convenience method to fetch the undecoded events from storage</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>metadata_decoder</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2531,9 +3067,15 @@ is set
 <pre><code class="python">def get_block_events(self, block_hash, metadata_decoder=None):
     &#34;&#34;&#34;
     A convenience method to fetch the undecoded events from storage
-    :param block_hash:
-    :param metadata_decoder:
-    :return:
+
+    Parameters
+    ----------
+    block_hash
+    metadata_decoder
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
 
     if metadata_decoder and metadata_decoder.version.index &gt;= 9:
@@ -2566,9 +3108,13 @@ is set
 <span>def <span class="ident">get_block_hash</span></span>(<span>self, block_id)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>A pass-though to existing JSONRPC method <code>chain_getBlockHash</code>
-:param block_id:
-:return:</p></section>
+<section class="desc"><p>A pass-though to existing JSONRPC method <code>chain_getBlockHash</code></p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_id</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2576,8 +3122,14 @@ is set
 <pre><code class="python">def get_block_hash(self, block_id):
     &#34;&#34;&#34;
     A pass-though to existing JSONRPC method `chain_getBlockHash`
-    :param block_id:
-    :return:
+
+    Parameters
+    ----------
+    block_id
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     return self.rpc_request(&#34;chain_getBlockHash&#34;, [block_id]).get(&#39;result&#39;)</code></pre>
 </details>
@@ -2586,9 +3138,13 @@ is set
 <span>def <span class="ident">get_block_header</span></span>(<span>self, block_hash)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>A pass-though to existing JSONRPC method <code>chain_getHeader</code>
-:param block_hash:
-:return:</p></section>
+<section class="desc"><p>A pass-though to existing JSONRPC method <code>chain_getHeader</code></p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2596,8 +3152,14 @@ is set
 <pre><code class="python">def get_block_header(self, block_hash):
     &#34;&#34;&#34;
     A pass-though to existing JSONRPC method `chain_getHeader`
-    :param block_hash:
-    :return:
+
+    Parameters
+    ----------
+    block_hash
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     response = self.rpc_request(&#34;chain_getHeader&#34;, [block_hash])
     return response.get(&#39;result&#39;)</code></pre>
@@ -2607,10 +3169,15 @@ is set
 <span>def <span class="ident">get_block_metadata</span></span>(<span>self, block_hash=None, decode=True)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>A pass-though to existing JSONRPC method <code>state_getMetadata</code>. For a decoded version see <code>get_runtime_metadata()</code>
-:param block_hash:
-:param decode:
-:return:</p></section>
+<section class="desc"><p>A pass-though to existing JSONRPC method <code>state_getMetadata</code>. For a decoded version see <code>get_runtime_metadata()</code></p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>decode</code></strong> :&ensp;<code>DEPRECATED</code> <code>use</code> <code>`get_runtime_metadata</code>()<code></code>for<code></code>decoded<code></code>version`</dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2618,9 +3185,15 @@ is set
 <pre><code class="python">def get_block_metadata(self, block_hash=None, decode=True):
     &#34;&#34;&#34;
     A pass-though to existing JSONRPC method `state_getMetadata`. For a decoded version see `get_runtime_metadata()`
-    :param block_hash:
-    :param decode:
-    :return:
+
+    Parameters
+    ----------
+    block_hash
+    decode: DEPRECATED use `get_runtime_metadata()` for decoded version
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     params = None
     if block_hash:
@@ -2640,9 +3213,13 @@ is set
 <span>def <span class="ident">get_block_number</span></span>(<span>self, block_hash)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>A convenience method to get the block number for given block_hash
-:param block_hash:
-:return:</p></section>
+<section class="desc"><p>A convenience method to get the block number for given block_hash</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2650,8 +3227,14 @@ is set
 <pre><code class="python">def get_block_number(self, block_hash):
     &#34;&#34;&#34;
     A convenience method to get the block number for given block_hash
-    :param block_hash:
-    :return:
+
+    Parameters
+    ----------
+    block_hash
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     response = self.rpc_request(&#34;chain_getHeader&#34;, [block_hash])
     return int(response[&#39;result&#39;][&#39;number&#39;], 16)</code></pre>
@@ -2662,8 +3245,13 @@ is set
 </code></dt>
 <dd>
 <section class="desc"><p>Retrieve the runtime version id of given block_hash
-:param block_hash:
-:return:</p></section>
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2671,8 +3259,13 @@ is set
 <pre><code class="python">def get_block_runtime_version(self, block_hash):
     &#34;&#34;&#34;
     Retrieve the runtime version id of given block_hash
-    :param block_hash:
-    :return:
+    Parameters
+    ----------
+    block_hash
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     response = self.rpc_request(&#34;chain_getRuntimeVersion&#34;, [block_hash])
     return response.get(&#39;result&#39;)</code></pre>
@@ -2682,11 +3275,17 @@ is set
 <span>def <span class="ident">get_chain_block</span></span>(<span>self, block_hash=None, block_id=None, metadata_decoder=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>A pass-though to existing JSONRPC method <code>chain_getBlock</code>. For a decoded version see <code>get_runtime_block()</code>
-:param block_hash:
-:param block_id:
-:param metadata_decoder:
-:return:</p></section>
+<section class="desc"><p>A pass-though to existing JSONRPC method <code>chain_getBlock</code>. For a decoded version see <code>get_runtime_block()</code></p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>block_id</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>metadata_decoder</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2694,10 +3293,16 @@ is set
 <pre><code class="python">def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
     &#34;&#34;&#34;
     A pass-though to existing JSONRPC method `chain_getBlock`. For a decoded version see `get_runtime_block()`
-    :param block_hash:
-    :param block_id:
-    :param metadata_decoder:
-    :return:
+
+    Parameters
+    ----------
+    block_hash
+    block_id
+    metadata_decoder
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
 
     if block_id:
@@ -2734,8 +3339,8 @@ is set
 <span>def <span class="ident">get_chain_finalised_head</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>A pass-though to existing JSONRPC method <code>chain_getFinalisedHead</code>
-:return:</p></section>
+<section class="desc"><p>A pass-though to existing JSONRPC method <code>chain_getFinalisedHead</code></p>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2743,7 +3348,10 @@ is set
 <pre><code class="python">def get_chain_finalised_head(self):
     &#34;&#34;&#34;
     A pass-though to existing JSONRPC method `chain_getFinalisedHead`
-    :return:
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     response = self.rpc_request(&#34;chain_getFinalisedHead&#34;, [])
     return response.get(&#39;result&#39;)</code></pre>
@@ -2753,8 +3361,8 @@ is set
 <span>def <span class="ident">get_chain_head</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>A pass-though to existing JSONRPC method <code>chain_getHead</code>
-:return:</p></section>
+<section class="desc"><p>A pass-though to existing JSONRPC method <code>chain_getHead</code></p>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2762,7 +3370,10 @@ is set
 <pre><code class="python">def get_chain_head(self):
     &#34;&#34;&#34;
     A pass-though to existing JSONRPC method `chain_getHead`
-    :return:
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     response = self.rpc_request(&#34;chain_getHead&#34;, [])
     return response.get(&#39;result&#39;)</code></pre>
@@ -2773,11 +3384,17 @@ is set
 </code></dt>
 <dd>
 <section class="desc"><p>Retrieves the details of a call function given module name, call function name and block_hash
-(or chaintip if block_hash is omitted)
-:param module_name:
-:param call_function_name:
-:param block_hash:
-:return:</p></section>
+(or chaintip if block_hash is omitted)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>module_name</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>call_function_name</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2786,10 +3403,16 @@ is set
     &#34;&#34;&#34;
     Retrieves the details of a call function given module name, call function name and block_hash
     (or chaintip if block_hash is omitted)
-    :param module_name:
-    :param call_function_name:
-    :param block_hash:
-    :return:
+
+    Parameters
+    ----------
+    module_name
+    call_function_name
+    block_hash
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
@@ -2810,9 +3433,13 @@ is set
 <span>def <span class="ident">get_metadata_call_functions</span></span>(<span>self, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Retrieves a list of all call functions in metadata active for given block_hash (or chaintip if block_hash is omitted)
-:param block_hash:
-:return:</p></section>
+<section class="desc"><p>Retrieves a list of all call functions in metadata active for given block_hash (or chaintip if block_hash is omitted)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2820,8 +3447,14 @@ is set
 <pre><code class="python">def get_metadata_call_functions(self, block_hash=None):
     &#34;&#34;&#34;
     Retrieves a list of all call functions in metadata active for given block_hash (or chaintip if block_hash is omitted)
-    :param block_hash:
-    :return:
+
+    Parameters
+    ----------
+    block_hash
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
@@ -2841,11 +3474,17 @@ is set
 </code></dt>
 <dd>
 <section class="desc"><p>Retrieves the details of a constant for given module name, call function name and block_hash
-(or chaintip if block_hash is omitted)
-:param module_name:
-:param constant_name:
-:param block_hash:
-:return:</p></section>
+(or chaintip if block_hash is omitted)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>module_name</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>constant_name</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2854,10 +3493,16 @@ is set
     &#34;&#34;&#34;
     Retrieves the details of a constant for given module name, call function name and block_hash
     (or chaintip if block_hash is omitted)
-    :param module_name:
-    :param constant_name:
-    :param block_hash:
-    :return:
+
+    Parameters
+    ----------
+    module_name
+    constant_name
+    block_hash
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
 
     self.init_runtime(block_hash=block_hash)
@@ -2877,9 +3522,13 @@ is set
 <span>def <span class="ident">get_metadata_constants</span></span>(<span>self, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Retrieves a list of all constants in metadata active at given block_hash (or chaintip if block_hash is omitted)
-:param block_hash:
-:return:</p></section>
+<section class="desc"><p>Retrieves a list of all constants in metadata active at given block_hash (or chaintip if block_hash is omitted)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2887,8 +3536,14 @@ is set
 <pre><code class="python">def get_metadata_constants(self, block_hash=None):
     &#34;&#34;&#34;
     Retrieves a list of all constants in metadata active at given block_hash (or chaintip if block_hash is omitted)
-    :param block_hash:
-    :return:
+
+    Parameters
+    ----------
+    block_hash
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
 
     self.init_runtime(block_hash=block_hash)
@@ -2910,11 +3565,17 @@ is set
 <span>def <span class="ident">get_metadata_error</span></span>(<span>self, module_name, error_name, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Retrieves the details of an error for given module name, call function name and block_hash
-:param module_name:
-:param error_name:
-:param block_hash:
-:return:</p></section>
+<section class="desc"><p>Retrieves the details of an error for given module name, call function name and block_hash</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>module_name</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>error_name</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2922,10 +3583,16 @@ is set
 <pre><code class="python">def get_metadata_error(self, module_name, error_name, block_hash=None):
     &#34;&#34;&#34;
     Retrieves the details of an error for given module name, call function name and block_hash
-    :param module_name:
-    :param error_name:
-    :param block_hash:
-    :return:
+
+    Parameters
+    ----------
+    module_name
+    error_name
+    block_hash
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
@@ -2942,9 +3609,13 @@ is set
 <span>def <span class="ident">get_metadata_errors</span></span>(<span>self, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Retrieves a list of all errors in metadata active at given block_hash (or chaintip if block_hash is omitted)
-:param block_hash:
-:return:</p></section>
+<section class="desc"><p>Retrieves a list of all errors in metadata active at given block_hash (or chaintip if block_hash is omitted)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2952,10 +3623,15 @@ is set
 <pre><code class="python">def get_metadata_errors(self, block_hash=None):
     &#34;&#34;&#34;
     Retrieves a list of all errors in metadata active at given block_hash (or chaintip if block_hash is omitted)
-    :param block_hash:
-    :return:
-    &#34;&#34;&#34;
 
+    Parameters
+    ----------
+    block_hash
+
+    Returns
+    -------
+
+    &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
     error_list = []
@@ -2977,11 +3653,17 @@ is set
 </code></dt>
 <dd>
 <section class="desc"><p>Retrieves the details of an event for given module name, call function name and block_hash
-(or chaintip if block_hash is omitted)
-:param module_name:
-:param event_name:
-:param block_hash:
-:return:</p></section>
+(or chaintip if block_hash is omitted)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>module_name</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>event_name</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2990,10 +3672,16 @@ is set
     &#34;&#34;&#34;
     Retrieves the details of an event for given module name, call function name and block_hash
     (or chaintip if block_hash is omitted)
-    :param module_name:
-    :param event_name:
-    :param block_hash:
-    :return:
+
+    Parameters
+    ----------
+    module_name
+    event_name
+    block_hash
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
 
     self.init_runtime(block_hash=block_hash)
@@ -3010,9 +3698,13 @@ is set
 <span>def <span class="ident">get_metadata_events</span></span>(<span>self, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Retrieves a list of all events in metadata active for given block_hash (or chaintip if block_hash is omitted)
-:param block_hash:
-:return:</p></section>
+<section class="desc"><p>Retrieves a list of all events in metadata active for given block_hash (or chaintip if block_hash is omitted)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3020,8 +3712,14 @@ is set
 <pre><code class="python">def get_metadata_events(self, block_hash=None):
     &#34;&#34;&#34;
     Retrieves a list of all events in metadata active for given block_hash (or chaintip if block_hash is omitted)
-    :param block_hash:
-    :return:
+
+    Parameters
+    ----------
+    block_hash
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
 
     self.init_runtime(block_hash=block_hash)
@@ -3042,9 +3740,13 @@ is set
 <span>def <span class="ident">get_metadata_modules</span></span>(<span>self, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Retrieves a list of modules in metadata for given block_hash (or chaintip if block_hash is omitted)
-:param block_hash:
-:return:</p></section>
+<section class="desc"><p>Retrieves a list of modules in metadata for given block_hash (or chaintip if block_hash is omitted)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3052,8 +3754,14 @@ is set
 <pre><code class="python">def get_metadata_modules(self, block_hash=None):
     &#34;&#34;&#34;
     Retrieves a list of modules in metadata for given block_hash (or chaintip if block_hash is omitted)
-    :param block_hash:
-    :return:
+
+    Parameters
+    ----------
+    block_hash
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
@@ -3075,11 +3783,17 @@ is set
 <span>def <span class="ident">get_metadata_storage_function</span></span>(<span>self, module_name, storage_name, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Retrieves the details of a storage function for given module name, call function name and block_hash
-:param module_name:
-:param storage_name:
-:param block_hash:
-:return:</p></section>
+<section class="desc"><p>Retrieves the details of a storage function for given module name, call function name and block_hash</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>module_name</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>storage_name</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3087,10 +3801,16 @@ is set
 <pre><code class="python">def get_metadata_storage_function(self, module_name, storage_name, block_hash=None):
     &#34;&#34;&#34;
     Retrieves the details of a storage function for given module name, call function name and block_hash
-    :param module_name:
-    :param storage_name:
-    :param block_hash:
-    :return:
+
+    Parameters
+    ----------
+    module_name
+    storage_name
+    block_hash
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
@@ -3110,9 +3830,13 @@ is set
 </code></dt>
 <dd>
 <section class="desc"><p>Retrieves a list of all storage functions in metadata active at given block_hash (or chaintip if block_hash is
-omitted)
-:param block_hash:
-:return:</p></section>
+omitted)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3121,8 +3845,14 @@ omitted)
     &#34;&#34;&#34;
     Retrieves a list of all storage functions in metadata active at given block_hash (or chaintip if block_hash is
     omitted)
-    :param block_hash:
-    :return:
+
+    Parameters
+    ----------
+    block_hash
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
@@ -3146,10 +3876,15 @@ omitted)
 <span>def <span class="ident">get_runtime_block</span></span>(<span>self, block_hash=None, block_id=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Retrieves a block with method <code>chain_getBlock</code> and in addition decodes extrinsics and log items
-:param block_hash:
-:param block_id:
-:return:</p></section>
+<section class="desc"><p>Retrieves a block with method <code>chain_getBlock</code> and in addition decodes extrinsics and log items</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>block_id</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3157,9 +3892,15 @@ omitted)
 <pre><code class="python">def get_runtime_block(self, block_hash=None, block_id=None):
     &#34;&#34;&#34;
     Retrieves a block with method `chain_getBlock` and in addition decodes extrinsics and log items
-    :param block_hash:
-    :param block_id:
-    :return:
+
+    Parameters
+    ----------
+    block_hash
+    block_id
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash, block_id=block_id)
 
@@ -3187,9 +3928,17 @@ omitted)
 <span>def <span class="ident">get_runtime_events</span></span>(<span>self, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Convenience method to get events for a certain block (storage call for module 'System' and function 'Events')
-:param block_hash:
-:return collection of events</p></section>
+<section class="desc"><p>Convenience method to get events for a certain block (storage call for module 'System' and function 'Events')</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Collection</code> of <code>events</code></dt>
+<dd>&nbsp;</dd>
+</dl></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3197,8 +3946,14 @@ omitted)
 <pre><code class="python">def get_runtime_events(self, block_hash=None):
     &#34;&#34;&#34;
     Convenience method to get events for a certain block (storage call for module &#39;System&#39; and function &#39;Events&#39;)
-    :param block_hash:
-    :return collection of events
+
+    Parameters
+    ----------
+    block_hash
+
+    Returns
+    -------
+    Collection of events
     &#34;&#34;&#34;
     return self.get_runtime_state(
         module=&#34;System&#34;,
@@ -3211,9 +3966,13 @@ omitted)
 <span>def <span class="ident">get_runtime_metadata</span></span>(<span>self, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Retrieves and decodes the metadata for given block or chaintip if block_hash is omitted.
-:param block_hash:
-:return: MetadataDecoder</p></section>
+<section class="desc"><p>Retrieves and decodes the metadata for given block or chaintip if block_hash is omitted.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3221,8 +3980,14 @@ omitted)
 <pre><code class="python">def get_runtime_metadata(self, block_hash=None):
     &#34;&#34;&#34;
     Retrieves and decodes the metadata for given block or chaintip if block_hash is omitted.
-    :param block_hash:
-    :return: MetadataDecoder
+
+    Parameters
+    ----------
+    block_hash
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     params = None
     if block_hash:
@@ -3240,12 +4005,19 @@ omitted)
 <span>def <span class="ident">get_runtime_state</span></span>(<span>self, module, storage_function, params=None, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Retrieves the storage entry for given module, function and optional parameters at given block hash
-:param module: The module name in the metadata, e.g. Balances or Account
-:param storage_function:
-:param params: list of params, in the decoded format of the applicable ScaleTypes
-:param block_hash: Optional block hash, when left to None the chain tip will be used
-:return:</p></section>
+<section class="desc"><p>Retrieves the storage entry for given module, function and optional parameters at given block hash</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>module</code></strong> :&ensp;<code>The</code> <code>module</code> <code>name</code> <code>in</code> <code>the</code> <code>metadata</code>, <code>e.g.</code> <code>Balances</code> or <code>Account</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>storage_function</code></strong> :&ensp;<code>The</code> <code>storage</code> <code>function</code> <code>name</code>, <code>e.g.</code> <code>FreeBalance</code> or <code>AccountNonce</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>params</code></strong> :&ensp;<code>list</code> of <code>params</code>, <code>in</code> <code>the</code> <code>decoded</code> <code>format</code> of <code>the</code> <code>applicable</code> <code>ScaleTypes</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>block_hash</code></strong> :&ensp;<code>Optional</code> <code>block</code> <code>hash</code>, <code>when</code> <code>left</code> <code>to</code> <code>None</code> <code>the</code> <code>chain</code> <code>tip</code> <code>will</code> <code>be</code> <code>used</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3253,11 +4025,17 @@ omitted)
 <pre><code class="python">def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
     &#34;&#34;&#34;
     Retrieves the storage entry for given module, function and optional parameters at given block hash
-    :param module: The module name in the metadata, e.g. Balances or Account
-    :param storage_function:
-    :param params: list of params, in the decoded format of the applicable ScaleTypes
-    :param block_hash: Optional block hash, when left to None the chain tip will be used
-    :return:
+
+    Parameters
+    ----------
+    module: The module name in the metadata, e.g. Balances or Account
+    storage_function: The storage function name, e.g. FreeBalance or AccountNonce
+    params: list of params, in the decoded format of the applicable ScaleTypes
+    block_hash: Optional block hash, when left to None the chain tip will be used
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
 
     self.init_runtime(block_hash=block_hash)
@@ -3319,17 +4097,30 @@ omitted)
 <span>def <span class="ident">get_storage</span></span>(<span>self, block_hash, module, function, params=None, return_scale_type=None, hasher=None, spec_version_id='default', metadata=None, metadata_version=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Retrieves the storage for given module, function and optional parameters at given block
-:param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
-:param metadata:
-:param spec_version_id: DEPRECATED
-:param hasher: Hashing method used to determine storage key, defaults to 'Twox64Concat' if not provided
-:param return_scale_type: Scale type string to interprete result
-:param block_hash:
-:param module:
-:param function:
-:param params:
-:return:</p></section>
+<section class="desc"><p>Retrieves the storage entry for given module, function and optional parameters at given block.</p>
+<p>DEPRECATED: use <code>get_runtime_state()</code></p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>module</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>function</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>params</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>return_scale_type</code></strong> :&ensp;<code>Scale</code> <code>type</code> <code>string</code> <code>to</code> <code>interprete</code> <code>result</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>hasher</code></strong> :&ensp;<code>Hashing</code> <code>method</code> <code>used</code> <code>to</code> <code>determine</code> <code>storage</code> <code>key</code>, <code>defaults</code> <code>to</code> <code>'Twox64Concat'</code> <code>if</code> <code>not</code> <code>provided</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>spec_version_id</code></strong> :&ensp;<code>DEPRECATED</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>metadata</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>metadata_version</code></strong> :&ensp;<code>Version</code> <code>index</code> of <code>Metadata</code>, <code>e.g.</code> <code>9</code> <code>for</code> <code>MetadataV9</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3337,19 +4128,26 @@ omitted)
 <pre><code class="python">def get_storage(self, block_hash, module, function, params=None, return_scale_type=None, hasher=None,
                 spec_version_id=&#39;default&#39;, metadata=None, metadata_version=None):
     &#34;&#34;&#34;
-    Retrieves the storage for given module, function and optional parameters at given block
-    :param metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
-    :param metadata:
-    :param spec_version_id: DEPRECATED
-    :param hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
-    :param return_scale_type: Scale type string to interprete result
-    :param block_hash:
-    :param module:
-    :param function:
-    :param params:
-    :return:
-    &#34;&#34;&#34;
+    Retrieves the storage entry for given module, function and optional parameters at given block.
 
+    DEPRECATED: use `get_runtime_state()`
+
+    Parameters
+    ----------
+    block_hash
+    module
+    function
+    params
+    return_scale_type: Scale type string to interprete result
+    hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
+    spec_version_id: DEPRECATED
+    metadata
+    metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
+
+    Returns
+    -------
+
+    &#34;&#34;&#34;
     storage_hash = self.generate_storage_hash(
         storage_module=module,
         storage_function=function,
@@ -3378,10 +4176,15 @@ omitted)
 <span>def <span class="ident">get_storage_by_key</span></span>(<span>self, block_hash, storage_key)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>A pass-though to existing JSONRPC method <code>state_getStorageAt</code>
-:param block_hash:
-:param storage_key:
-:return:</p></section>
+<section class="desc"><p>A pass-though to existing JSONRPC method <code>state_getStorageAt</code></p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>storage_key</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3389,9 +4192,15 @@ omitted)
 <pre><code class="python">def get_storage_by_key(self, block_hash, storage_key):
     &#34;&#34;&#34;
     A pass-though to existing JSONRPC method `state_getStorageAt`
-    :param block_hash:
-    :param storage_key:
-    :return:
+
+    Parameters
+    ----------
+    block_hash
+    storage_key
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
 
     response = self.rpc_request(&#34;state_getStorageAt&#34;, [storage_key, block_hash])
@@ -3405,8 +4214,8 @@ omitted)
 <span>def <span class="ident">get_system_name</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>A pass-though to existing JSONRPC method <code>system_name</code>
-:return:</p></section>
+<section class="desc"><p>A pass-though to existing JSONRPC method <code>system_name</code></p>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3414,7 +4223,10 @@ omitted)
 <pre><code class="python">def get_system_name(self):
     &#34;&#34;&#34;
     A pass-though to existing JSONRPC method `system_name`
-    :return:
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     response = self.rpc_request(&#34;system_name&#34;, [])
     return response.get(&#39;result&#39;)</code></pre>
@@ -3424,10 +4236,15 @@ omitted)
 <span>def <span class="ident">get_type_definition</span></span>(<span>self, type_string, block_hash=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Retrieves decoding specifications of given type_string
-:param type_string:
-:param block_hash:
-:return:</p></section>
+<section class="desc"><p>Retrieves decoding specifications of given type_string</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>type_string</code></strong> :&ensp;<code>RUST</code> <code>variable</code> <code>type</code>, <code>e.g.</code> <code>Vec</code>&lt;<code>Address</code>&gt;</dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3435,9 +4252,15 @@ omitted)
 <pre><code class="python">def get_type_definition(self, type_string, block_hash=None):
     &#34;&#34;&#34;
     Retrieves decoding specifications of given type_string
-    :param type_string:
-    :param block_hash:
-    :return:
+
+    Parameters
+    ----------
+    type_string: RUST variable type, e.g. Vec&lt;Address&gt;
+    block_hash
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     type_registry = self.get_type_registry(block_hash=block_hash)
     return type_registry.get(type_string)</code></pre>
@@ -3448,9 +4271,13 @@ omitted)
 </code></dt>
 <dd>
 <section class="desc"><p>Generates an exhaustive list of which RUST types exist in the runtime specified at given block_hash (or
-chaintip if block_hash is omitted)
-:param block_hash:
-:return:</p></section>
+chaintip if block_hash is omitted)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong> :&ensp;<code>Chaintip</code> <code>will</code> <code>be</code> <code>used</code> <code>if</code> <code>block_hash</code> <code>is</code> <code>omitted</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3459,8 +4286,14 @@ chaintip if block_hash is omitted)
     &#34;&#34;&#34;
     Generates an exhaustive list of which RUST types exist in the runtime specified at given block_hash (or
     chaintip if block_hash is omitted)
-    :param block_hash:
-    :return:
+
+    Parameters
+    ----------
+    block_hash: Chaintip will be used if block_hash is omitted
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
@@ -3528,8 +4361,8 @@ chaintip if block_hash is omitted)
 <span>def <span class="ident">get_version</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>A pass-though to existing JSONRPC method <code>system_version</code>
-:return:</p></section>
+<section class="desc"><p>A pass-though to existing JSONRPC method <code>system_version</code></p>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3537,7 +4370,10 @@ chaintip if block_hash is omitted)
 <pre><code class="python">def get_version(self):
     &#34;&#34;&#34;
     A pass-though to existing JSONRPC method `system_version`
-    :return:
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     if not self._version:
         response = self.rpc_request(&#34;system_version&#34;, [])
@@ -3553,10 +4389,15 @@ chaintip if block_hash is omitted)
 It optionally retrieves the block_hash when block_id is given and sets the applicable metadata for that
 block_hash. Also it applies all the versioned types at the time of the block_hash.</p>
 <p>Because parsing of metadata and type registry is quite heavy, the result will be cached per runtime id.
-In the future there could be support for caching backends like Redis to make this cache more persistent.
-:param block_hash:
-:param block_id:
-:return:</p></section>
+In the future there could be support for caching backends like Redis to make this cache more persistent.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>block_id</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3569,9 +4410,15 @@ In the future there could be support for caching backends like Redis to make thi
 
     Because parsing of metadata and type registry is quite heavy, the result will be cached per runtime id.
     In the future there could be support for caching backends like Redis to make this cache more persistent.
-    :param block_hash:
-    :param block_id:
-    :return:
+
+    Parameters
+    ----------
+    block_hash
+    block_id
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
 
     if block_id and block_hash:
@@ -3602,8 +4449,16 @@ In the future there could be support for caching backends like Redis to make thi
 </code></dt>
 <dd>
 <section class="desc"><p>Process how given type_string is decoded with active runtime and type registry</p>
-<p>:param type_string: RUST variable type, e.g. Vec<Address>
-:return: dict of properties for given type_string</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>type_string</code></strong> :&ensp;<code>RUST</code> <code>variable</code> <code>type</code>, <code>e.g.</code> <code>Vec</code>&lt;<code>Address</code>&gt;</dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict</code> of <code>properties</code> <code>for</code> <code>given</code> <code>type_string</code></dt>
+<dd>&nbsp;</dd>
+</dl>
 <p>E.g.</p>
 <p><code>{
 "type_string": "Vec&lt;Address&gt;",
@@ -3618,11 +4473,16 @@ In the future there could be support for caching backends like Redis to make thi
 </summary>
 <pre><code class="python">def process_metadata_typestring(self, type_string):
     &#34;&#34;&#34;
-
     Process how given type_string is decoded with active runtime and type registry
 
-    :param type_string: RUST variable type, e.g. Vec&lt;Address&gt;
-    :return: dict of properties for given type_string
+    Parameters
+    ----------
+    type_string: RUST variable type, e.g. Vec&lt;Address&gt;
+
+    Returns
+    -------
+
+    dict of properties for given type_string
 
     E.g.
 
@@ -3704,10 +4564,16 @@ In the future there could be support for caching backends like Redis to make thi
 </code></dt>
 <dd>
 <section class="desc"><p>Method that handles the actual RPC request to the Substrate node. The other implemented functions eventually
-use this method to perform the request.
-:param method: method of the JSONRPC request
-:param params: a list containing the parameters of the JSONRPC request
-:return: a dict with the parsed result of the request.</p></section>
+use this method to perform the request.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>method</code></strong> :&ensp;<code>method</code> of <code>the</code> <code>JSONRPC</code> <code>request</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>params</code></strong> :&ensp;<code>a</code> <code>list</code> <code>containing</code> <code>the</code> <code>parameters</code> of <code>the</code> <code>JSONRPC</code> <code>request</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>a dict with the parsed result of the request.</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3716,9 +4582,15 @@ use this method to perform the request.
     &#34;&#34;&#34;
     Method that handles the actual RPC request to the Substrate node. The other implemented functions eventually
     use this method to perform the request.
-    :param method: method of the JSONRPC request
-    :param params: a list containing the parameters of the JSONRPC request
-    :return: a dict with the parsed result of the request.
+
+    Parameters
+    ----------
+    method: method of the JSONRPC request
+    params: a list containing the parameters of the JSONRPC request
+
+    Returns
+    -------
+    a dict with the parsed result of the request.
     &#34;&#34;&#34;
     payload = {
         &#34;jsonrpc&#34;: &#34;2.0&#34;,
@@ -3746,11 +4618,17 @@ use this method to perform the request.
 <span>def <span class="ident">serialize_constant</span></span>(<span>self, constant, module, spec_version_id)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Helper function to serialize a constant
-:param constant:
-:param module:
-:param spec_version_id:
-:return:</p></section>
+<section class="desc"><p>Helper function to serialize a constant</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>constant</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>module</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>spec_version_id</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3758,10 +4636,16 @@ use this method to perform the request.
 <pre><code class="python">def serialize_constant(self, constant, module, spec_version_id):
     &#34;&#34;&#34;
     Helper function to serialize a constant
-    :param constant:
-    :param module:
-    :param spec_version_id:
-    :return:
+
+    Parameters
+    ----------
+    constant
+    module
+    spec_version_id
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     try:
         value_obj = ScaleDecoder.get_decoder_class(constant.type,
@@ -3787,12 +4671,19 @@ use this method to perform the request.
 <span>def <span class="ident">serialize_module_call</span></span>(<span>self, module, call, spec_version, call_index)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Helper function to serialize a call function
-:param module:
-:param call:
-:param spec_version:
-:param call_index:
-:return:</p></section>
+<section class="desc"><p>Helper function to serialize a call function</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>module</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>call</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>spec_version</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>call_index</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3800,11 +4691,17 @@ use this method to perform the request.
 <pre><code class="python">def serialize_module_call(self, module, call, spec_version, call_index):
     &#34;&#34;&#34;
     Helper function to serialize a call function
-    :param module:
-    :param call:
-    :param spec_version:
-    :param call_index:
-    :return:
+
+    Parameters
+    ----------
+    module
+    call
+    spec_version
+    call_index
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     return {
         &#34;call_id&#34;: call.get_identifier(),
@@ -3823,11 +4720,17 @@ use this method to perform the request.
 <span>def <span class="ident">serialize_module_error</span></span>(<span>self, module, error, spec_version)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Helper function to serialize an error
-:param module:
-:param error:
-:param spec_version:
-:return:</p></section>
+<section class="desc"><p>Helper function to serialize an error</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>module</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>error</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>spec_version</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3835,10 +4738,16 @@ use this method to perform the request.
 <pre><code class="python">def serialize_module_error(self, module, error, spec_version):
     &#34;&#34;&#34;
     Helper function to serialize an error
-    :param module:
-    :param error:
-    :param spec_version:
-    :return:
+
+    Parameters
+    ----------
+    module
+    error
+    spec_version
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     return {
         &#34;error_name&#34;: error.name,
@@ -3854,12 +4763,19 @@ use this method to perform the request.
 <span>def <span class="ident">serialize_module_event</span></span>(<span>self, module, event, spec_version, event_index)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Helper function to serialize an event
-:param module:
-:param event:
-:param spec_version:
-:param event_index:
-:return:</p></section>
+<section class="desc"><p>Helper function to serialize an event</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>module</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>event</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>spec_version</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>event_index</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3867,11 +4783,17 @@ use this method to perform the request.
 <pre><code class="python">def serialize_module_event(self, module, event, spec_version, event_index):
     &#34;&#34;&#34;
     Helper function to serialize an event
-    :param module:
-    :param event:
-    :param spec_version:
-    :param event_index:
-    :return:
+
+    Parameters
+    ----------
+    module
+    event
+    spec_version
+    event_index
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     return {
         &#34;event_id&#34;: event.name,
@@ -3895,11 +4817,17 @@ use this method to perform the request.
 <span>def <span class="ident">serialize_storage_item</span></span>(<span>self, storage_item, module, spec_version_id)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Helper function to serialize a storage item
-:param storage_item:
-:param module:
-:param spec_version_id:
-:return:</p></section>
+<section class="desc"><p>Helper function to serialize a storage item</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>storage_item</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>module</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>spec_version_id</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3907,10 +4835,16 @@ use this method to perform the request.
 <pre><code class="python">def serialize_storage_item(self, storage_item, module, spec_version_id):
     &#34;&#34;&#34;
     Helper function to serialize a storage item
-    :param storage_item:
-    :param module:
-    :param spec_version_id:
-    :return:
+
+    Parameters
+    ----------
+    storage_item
+    module
+    spec_version_id
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     storage_dict = {
         &#34;storage_name&#34;: storage_item.name,
@@ -3967,9 +4901,14 @@ use this method to perform the request.
 <span>async def <span class="ident">ws_request</span></span>(<span>self, payload)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Internal method to handle the request if url is a websocket address (wss:// or ws://)
-:param payload: a dict that contains the JSONRPC payload of the request
-:return: This method doesn't return but sets the <code>_ws_result</code> object variable with the result</p></section>
+<section class="desc"><p>Internal method to handle the request if url is a websocket address (wss:// or ws://)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>payload</code></strong> :&ensp;<code>a</code> <code>dict</code> <code>that</code> <code>contains</code> <code>the</code> <code>JSONRPC</code> <code>payload</code> of <code>the</code> <code>request</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>This method doesn't return but sets the <code>_ws_result</code> object variable with the result</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3977,8 +4916,14 @@ use this method to perform the request.
 <pre><code class="python">async def ws_request(self, payload):
     &#34;&#34;&#34;
     Internal method to handle the request if url is a websocket address (wss:// or ws://)
-    :param payload: a dict that contains the JSONRPC payload of the request
-    :return: This method doesn&#39;t return but sets the `_ws_result` object variable with the result
+
+    Parameters
+    ----------
+    payload: a dict that contains the JSONRPC payload of the request
+
+    Returns
+    -------
+    This method doesn&#39;t return but sets the `_ws_result` object variable with the result
     &#34;&#34;&#34;
     async with websockets.connect(
             self.url

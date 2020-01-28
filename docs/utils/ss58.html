@@ -61,9 +61,14 @@ from scalecodec.types import U8, U16, U32, U64
 def ss58_decode(address, valid_address_type=42):
     &#34;&#34;&#34;
     Decodes given SS58 encoded address to an account ID
-    :param address: e.g. EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk
-    :param valid_address_type: e.g. 2 for Kusama
-    :return:
+    Parameters
+    ----------
+    address: e.g. EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk
+    valid_address_type
+
+    Returns
+    -------
+    Decoded string AccountId
     &#34;&#34;&#34;
     checksum_prefix = b&#39;SS58PRE&#39;
 
@@ -103,9 +108,15 @@ def ss58_decode(address, valid_address_type=42):
 def ss58_encode(address, address_type=42):
     &#34;&#34;&#34;
     Encodes an account ID to an Substrate address according to provided address_type
-    :param address:
-    :param address_type:
-    :return:
+
+    Parameters
+    ----------
+    address
+    address_type
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     checksum_prefix = b&#39;SS58PRE&#39;
 
@@ -132,9 +143,15 @@ def ss58_encode(address, address_type=42):
 def ss58_encode_account_index(account_index, address_type=42):
     &#34;&#34;&#34;
     Encodes an AccountIndex to an Substrate address according to provided address_type
-    :param account_index:
-    :param address_type:
-    :return:
+
+    Parameters
+    ----------
+    account_index
+    address_type
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
 
     if 0 &lt;= account_index &lt;= 2**8 - 1:
@@ -154,9 +171,15 @@ def ss58_encode_account_index(account_index, address_type=42):
 def ss58_decode_account_index(address, valid_address_type=42):
     &#34;&#34;&#34;
     Decodes given SS58 encoded address to an AccountIndex
-    :param address:
-    :param valid_address_type:
-    :return:
+
+    Parameters
+    ----------
+    address
+    valid_address_type
+
+    Returns
+    -------
+    Decoded int AccountIndex
     &#34;&#34;&#34;
     account_index_bytes = ss58_decode(address, valid_address_type)
 
@@ -184,9 +207,19 @@ def ss58_decode_account_index(address, valid_address_type=42):
 </code></dt>
 <dd>
 <section class="desc"><p>Decodes given SS58 encoded address to an account ID
-:param address: e.g. EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk
-:param valid_address_type: e.g. 2 for Kusama
-:return:</p></section>
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>address</code></strong> :&ensp;<code>e.g.</code> <code>EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>valid_address_type</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Decoded</code> <code>string</code> <code>AccountId</code></dt>
+<dd>&nbsp;</dd>
+</dl></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -194,9 +227,14 @@ def ss58_decode_account_index(address, valid_address_type=42):
 <pre><code class="python">def ss58_decode(address, valid_address_type=42):
     &#34;&#34;&#34;
     Decodes given SS58 encoded address to an account ID
-    :param address: e.g. EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk
-    :param valid_address_type: e.g. 2 for Kusama
-    :return:
+    Parameters
+    ----------
+    address: e.g. EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk
+    valid_address_type
+
+    Returns
+    -------
+    Decoded string AccountId
     &#34;&#34;&#34;
     checksum_prefix = b&#39;SS58PRE&#39;
 
@@ -237,10 +275,19 @@ def ss58_decode_account_index(address, valid_address_type=42):
 <span>def <span class="ident">ss58_decode_account_index</span></span>(<span>address, valid_address_type=42)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Decodes given SS58 encoded address to an AccountIndex
-:param address:
-:param valid_address_type:
-:return:</p></section>
+<section class="desc"><p>Decodes given SS58 encoded address to an AccountIndex</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>address</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>valid_address_type</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Decoded</code> <code>int</code> <code>AccountIndex</code></dt>
+<dd>&nbsp;</dd>
+</dl></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -248,9 +295,15 @@ def ss58_decode_account_index(address, valid_address_type=42):
 <pre><code class="python">def ss58_decode_account_index(address, valid_address_type=42):
     &#34;&#34;&#34;
     Decodes given SS58 encoded address to an AccountIndex
-    :param address:
-    :param valid_address_type:
-    :return:
+
+    Parameters
+    ----------
+    address
+    valid_address_type
+
+    Returns
+    -------
+    Decoded int AccountIndex
     &#34;&#34;&#34;
     account_index_bytes = ss58_decode(address, valid_address_type)
 
@@ -270,10 +323,15 @@ def ss58_decode_account_index(address, valid_address_type=42):
 <span>def <span class="ident">ss58_encode</span></span>(<span>address, address_type=42)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Encodes an account ID to an Substrate address according to provided address_type
-:param address:
-:param address_type:
-:return:</p></section>
+<section class="desc"><p>Encodes an account ID to an Substrate address according to provided address_type</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>address</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>address_type</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -281,9 +339,15 @@ def ss58_decode_account_index(address, valid_address_type=42):
 <pre><code class="python">def ss58_encode(address, address_type=42):
     &#34;&#34;&#34;
     Encodes an account ID to an Substrate address according to provided address_type
-    :param address:
-    :param address_type:
-    :return:
+
+    Parameters
+    ----------
+    address
+    address_type
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
     checksum_prefix = b&#39;SS58PRE&#39;
 
@@ -311,10 +375,15 @@ def ss58_decode_account_index(address, valid_address_type=42):
 <span>def <span class="ident">ss58_encode_account_index</span></span>(<span>account_index, address_type=42)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Encodes an AccountIndex to an Substrate address according to provided address_type
-:param account_index:
-:param address_type:
-:return:</p></section>
+<section class="desc"><p>Encodes an AccountIndex to an Substrate address according to provided address_type</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>account_index</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>address_type</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -322,9 +391,15 @@ def ss58_decode_account_index(address, valid_address_type=42):
 <pre><code class="python">def ss58_encode_account_index(account_index, address_type=42):
     &#34;&#34;&#34;
     Encodes an AccountIndex to an Substrate address according to provided address_type
-    :param account_index:
-    :param address_type:
-    :return:
+
+    Parameters
+    ----------
+    account_index
+    address_type
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
 
     if 0 &lt;= account_index &lt;= 2**8 - 1:

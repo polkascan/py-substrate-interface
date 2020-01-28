@@ -26,8 +26,14 @@ import xxhash
 def blake2_256(data):
     """
     Helper function to calculate a 32 bytes Blake2b hash for provided data, used as key for Substrate storage items
-    :param data:
-    :return:
+
+    Parameters
+    ----------
+    data
+
+    Returns
+    -------
+
     """
     return blake2b(data, digest_size=32).digest().hex()
 
@@ -35,9 +41,14 @@ def blake2_256(data):
 def two_x64_concat(data):
     """
     Helper function to calculate a 2 concatenated xxh64 hash for provided data, used as key for several Substrate
-    storage items
-    :param data:
-    :return:
+
+    Parameters
+    ----------
+    data
+
+    Returns
+    -------
+
     """
     storage_key1 = bytearray(xxhash.xxh64(data, seed=0).digest())
     storage_key1.reverse()
