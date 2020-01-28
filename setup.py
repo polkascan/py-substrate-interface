@@ -156,7 +156,7 @@ setup(
         'requests==2.21.0',
         'urllib3==1.24.2',
         'xxhash==1.3.0',
-        'scalecodec@https://github.com/polkascan/py-scale-codec/tarball/master#egg=scalecodec'
+        'scalecodec@https://github.com/polkascan/py-scale-codec/tarball/0.9.0#egg=scalecodec'
     ],
 
     # List additional groups of dependencies here (e.g. development
