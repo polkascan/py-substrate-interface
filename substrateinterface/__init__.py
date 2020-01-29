@@ -36,7 +36,8 @@ from .utils.ss58 import ss58_decode
 
 class SubstrateInterface:
 
-    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None, metadata_version=4):
+    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None, metadata_version=4,
+                 cache_region=None):
         """
         A specialized class in interfacing with a Substrate node.
 
@@ -47,7 +48,9 @@ class SubstrateInterface:
         type_registry: A dict containing the custom type registry in format: {'types': {'customType': 'u32'},..}
         type_registry_preset: The name of the predefined type registry shipped with the SCALE-codec, e.g. kusama
         metadata_version: DEPRECATED
+        cache_region: a Dogpile cache region as a central store for the metadata cache
         """
+        self.cache_region = cache_region
         if type_registry or type_registry_preset:
 
             RuntimeConfiguration().update_type_registry(load_type_registry_preset("default"))
@@ -514,6 +517,11 @@ class SubstrateInterface:
         # Set active runtime version
         RuntimeConfiguration().set_active_spec_version_id(self.runtime_version)
 
+        if self.runtime_version not in self.metadata_cache and self.cache_region:
+            cached_metadata = self.cache_region.get('METADATA_{}'.format(self.runtime_version))
+            if cached_metadata:
+                self.metadata_cache[self.runtime_version] = cached_metadata
+
         if self.runtime_version in self.metadata_cache:
             # Get metadata from cache
             self.metadata_decoder = self.metadata_cache[self.runtime_version]
@@ -522,6 +530,9 @@ class SubstrateInterface:
 
             # Update metadata cache
             self.metadata_cache[self.runtime_version] = self.metadata_decoder
+
+            if self.cache_region:
+                self.cache_region.set('METADATA_{}'.format(self.runtime_version), self.metadata_decoder)
 
     def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
         """
