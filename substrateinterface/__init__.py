@@ -83,6 +83,12 @@ class SubstrateInterface:
         self.metadata_cache = {}
         self.type_registry_cache = {}
 
+        self.debug = False
+
+    def debug_message(self, message):
+        if self.debug:
+            print('DEBUG', message)
+
     async def ws_request(self, payload):
         """
         Internal method to handle the request if url is a websocket address (wss:// or ws://)
@@ -121,6 +127,8 @@ class SubstrateInterface:
             "params": params,
             "id": self.request_id
         }
+
+        self.debug_message('RPC request "{}"'.format(method))
 
         if self.url[0:6] == 'wss://' or self.url[0:5] == 'ws://':
             asyncio.get_event_loop().run_until_complete(self.ws_request(payload))
@@ -518,20 +526,25 @@ class SubstrateInterface:
         RuntimeConfiguration().set_active_spec_version_id(self.runtime_version)
 
         if self.runtime_version not in self.metadata_cache and self.cache_region:
+            # Try to retrieve metadata from Dogpile cache
             cached_metadata = self.cache_region.get('METADATA_{}'.format(self.runtime_version))
             if cached_metadata:
+                self.debug_message('Retrieved metadata for {} from Redis'.format(self.runtime_version))
                 self.metadata_cache[self.runtime_version] = cached_metadata
 
         if self.runtime_version in self.metadata_cache:
             # Get metadata from cache
+            self.debug_message('Retrieved metadata for {} from memory'.format(self.runtime_version))
             self.metadata_decoder = self.metadata_cache[self.runtime_version]
         else:
             self.metadata_decoder = self.get_block_metadata(block_hash=self.block_hash, decode=True)
+            self.debug_message('Retrieved metadata for {} from Substrate node'.format(self.runtime_version))
 
             # Update metadata cache
             self.metadata_cache[self.runtime_version] = self.metadata_decoder
 
             if self.cache_region:
+                self.debug_message('Stored metadata for {} in Redis'.format(self.runtime_version))
                 self.cache_region.set('METADATA_{}'.format(self.runtime_version), self.metadata_decoder)
 
     def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
