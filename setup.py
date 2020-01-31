@@ -43,7 +43,7 @@ setup(
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.9.0',  # Required
+    version='0.9.1',  # Required
 
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
@@ -154,7 +154,7 @@ setup(
         'requests==2.22.0',
         'urllib3==1.25.3',
         'xxhash==1.3.0',
-        'scalecodec@https://github.com/polkascan/py-scale-codec/tarball/0.9.0#egg=scalecodec'
+        'scalecodec>=0.9.1'
     ],
 
     # List additional groups of dependencies here (e.g. development
