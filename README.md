@@ -1,19 +1,10 @@
 # Python Substrate Interface
-.. image:: https://api.travis-ci.org/polkascan/py-substrate-interface.svg?branch=master
-    :target: https://travis-ci.org/polkascan/py-substrate-interface
-    :alt: Travis CI Build Status
-    
-.. image:: https://img.shields.io/pypi/v/substrateinterface.svg
-    :target: https://pypi.org/project/substrateinterface/
-    :alt: Latest Version
+ 
+[![Travis CI Build Status](https://api.travis-ci.org/polkascan/py-substrate-interface.svg?branch=master)](https://travis-ci.org/polkascan/py-substrate-interface)
+[![Latest Version](https://img.shields.io/pypi/v/substrateinterface.svg)](https://pypi.org/project/substrateinterface/) 
+[![Supported Python versions](https://img.shields.io/pypi/pyversions/substrateinterface.svg)](https://pypi.org/project/substrateinterface/)
+[![License](https://img.shields.io/pypi/l/substrateinterface.svg)](https://github.com/polkascan/py-substrate-interface/blob/master/LICENSE)
 
-.. image:: https://img.shields.io/pypi/pyversions/substrateinterface.svg
-    :target: https://pypi.org/project/substrateinterface/
-    :alt: Supported Python versions
-
-.. image:: https://img.shields.io/pypi/l/substrateinterface.svg
-    :target: https://pypi.org/project/substrateinterface/
-    :alt: License
     
 Python Substrate Interface Library
 
