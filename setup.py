@@ -153,7 +153,7 @@ setup(
         'idna==2.8',
         'requests==2.22.0',
         'urllib3==1.25.3',
-        'xxhash==1.3.0',
+        'xxhash==1.4.3',
         'scalecodec>=0.9.1'
     ],
 
