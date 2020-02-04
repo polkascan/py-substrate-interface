@@ -45,6 +45,8 @@
 import asyncio
 import binascii
 import json
+import re
+
 import requests
 import websockets
 
@@ -62,7 +64,7 @@ from .utils.ss58 import ss58_decode
 
 class SubstrateInterface:
 
-    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None, metadata_version=4):
+    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None, cache_region=None):
         &#34;&#34;&#34;
         A specialized class in interfacing with a Substrate node.
 
@@ -72,8 +74,9 @@ class SubstrateInterface:
         address_type: : The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults to 42, for Kusama the address type is 2
         type_registry: A dict containing the custom type registry in format: {&#39;types&#39;: {&#39;customType&#39;: &#39;u32&#39;},..}
         type_registry_preset: The name of the predefined type registry shipped with the SCALE-codec, e.g. kusama
-        metadata_version: DEPRECATED
+        cache_region: a Dogpile cache region as a central store for the metadata cache
         &#34;&#34;&#34;
+        self.cache_region = cache_region
         if type_registry or type_registry_preset:
 
             RuntimeConfiguration().update_type_registry(load_type_registry_preset(&#34;default&#34;))
@@ -105,6 +108,12 @@ class SubstrateInterface:
 
         self.metadata_cache = {}
         self.type_registry_cache = {}
+
+        self.debug = False
+
+    def debug_message(self, message):
+        if self.debug:
+            print(&#39;DEBUG&#39;, message)
 
     async def ws_request(self, payload):
         &#34;&#34;&#34;
@@ -144,6 +153,8 @@ class SubstrateInterface:
             &#34;params&#34;: params,
             &#34;id&#34;: self.request_id
         }
+
+        self.debug_message(&#39;RPC request &#34;{}&#34;&#39;.format(method))
 
         if self.url[0:6] == &#39;wss://&#39; or self.url[0:5] == &#39;ws://&#39;:
             asyncio.get_event_loop().run_until_complete(self.ws_request(payload))
@@ -540,14 +551,27 @@ class SubstrateInterface:
         # Set active runtime version
         RuntimeConfiguration().set_active_spec_version_id(self.runtime_version)
 
+        if self.runtime_version not in self.metadata_cache and self.cache_region:
+            # Try to retrieve metadata from Dogpile cache
+            cached_metadata = self.cache_region.get(&#39;METADATA_{}&#39;.format(self.runtime_version))
+            if cached_metadata:
+                self.debug_message(&#39;Retrieved metadata for {} from Redis&#39;.format(self.runtime_version))
+                self.metadata_cache[self.runtime_version] = cached_metadata
+
         if self.runtime_version in self.metadata_cache:
             # Get metadata from cache
+            self.debug_message(&#39;Retrieved metadata for {} from memory&#39;.format(self.runtime_version))
             self.metadata_decoder = self.metadata_cache[self.runtime_version]
         else:
             self.metadata_decoder = self.get_block_metadata(block_hash=self.block_hash, decode=True)
+            self.debug_message(&#39;Retrieved metadata for {} from Substrate node&#39;.format(self.runtime_version))
 
             # Update metadata cache
             self.metadata_cache[self.runtime_version] = self.metadata_decoder
+
+            if self.cache_region:
+                self.debug_message(&#39;Stored metadata for {} in Redis&#39;.format(self.runtime_version))
+                self.cache_region.set(&#39;METADATA_{}&#39;.format(self.runtime_version), self.metadata_decoder)
 
     def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
         &#34;&#34;&#34;
@@ -725,8 +749,8 @@ class SubstrateInterface:
             self.type_registry_cache[self.runtime_version] = {}
 
         # Check if already added
-        if type_string in self.type_registry_cache[self.runtime_version]:
-            return self.type_registry_cache[self.runtime_version][type_string][&#39;decoder_class&#39;]
+        if type_string.lower() in self.type_registry_cache[self.runtime_version]:
+            return self.type_registry_cache[self.runtime_version][type_string.lower()][&#39;decoder_class&#39;]
 
         # Try to get decoder class
         decoder_class = RuntimeConfiguration().get_decoder_class(type_string)
@@ -743,7 +767,12 @@ class SubstrateInterface:
         # Process classes that contain subtypes (e.g. Option&lt;ChangesTrieConfiguration&gt;)
         if decoder_class_obj and decoder_class_obj.sub_type:
             type_info[&#34;is_primitive_runtime&#34;] = False
-            self.process_metadata_typestring(decoder_class_obj.sub_type)
+
+            # Try to split on &#39;,&#39; (e.g. ActiveRecovery&lt;BlockNumber, BalanceOf, AccountId&gt;)
+            if not re.search(&#39;[&lt;()&gt;]&#39;, decoder_class_obj.sub_type):
+                for element in decoder_class_obj.sub_type.split(&#39;,&#39;):
+                    if element not in [&#39;T&#39;, &#39;I&#39;]:
+                        self.process_metadata_typestring(element.strip())
 
         # Process classes that contain type_mapping (e.g. Struct and Enum)
         if decoder_class and hasattr(decoder_class, &#39;type_mapping&#39;) and decoder_class.type_mapping:
@@ -770,7 +799,7 @@ class SubstrateInterface:
             type_info[&#34;is_primitive_runtime&#34;] = None
             type_info[&#34;is_primitive_core&#34;] = None
 
-        self.type_registry_cache[self.runtime_version][type_string] = type_info
+        self.type_registry_cache[self.runtime_version][type_string.lower()] = type_info
 
         return decoder_class
 
@@ -1439,7 +1468,7 @@ class SubstrateInterface:
 <dl>
 <dt id="substrateinterface.SubstrateInterface"><code class="flex name class">
 <span>class <span class="ident">SubstrateInterface</span></span>
-<span>(</span><span>url, address_type=None, type_registry=None, type_registry_preset=None, metadata_version=4)</span>
+<span>(</span><span>url, address_type=None, type_registry=None, type_registry_preset=None, cache_region=None)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>A specialized class in interfacing with a Substrate node.</p>
@@ -1453,7 +1482,7 @@ class SubstrateInterface:
 <dd>&nbsp;</dd>
 <dt><strong><code>type_registry_preset</code></strong> :&ensp;<code>The</code> <code>name</code> of <code>the</code> <code>predefined</code> <code>type</code> <code>registry</code> <code>shipped</code> <code>with</code> <code>the</code> <code>SCALE</code>-<code>codec</code>, <code>e.g.</code> <code>kusama</code></dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>metadata_version</code></strong> :&ensp;<code>DEPRECATED</code></dt>
+<dt><strong><code>cache_region</code></strong> :&ensp;<code>a</code> <code>Dogpile</code> <code>cache</code> <code>region</code> <code>as</code> <code>a</code> <code>central</code> <code>store</code> <code>for</code> <code>the</code> <code>metadata</code> <code>cache</code></dt>
 <dd>&nbsp;</dd>
 </dl></section>
 <details class="source">
@@ -1462,7 +1491,7 @@ class SubstrateInterface:
 </summary>
 <pre><code class="python">class SubstrateInterface:
 
-    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None, metadata_version=4):
+    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None, cache_region=None):
         &#34;&#34;&#34;
         A specialized class in interfacing with a Substrate node.
 
@@ -1472,8 +1501,9 @@ class SubstrateInterface:
         address_type: : The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults to 42, for Kusama the address type is 2
         type_registry: A dict containing the custom type registry in format: {&#39;types&#39;: {&#39;customType&#39;: &#39;u32&#39;},..}
         type_registry_preset: The name of the predefined type registry shipped with the SCALE-codec, e.g. kusama
-        metadata_version: DEPRECATED
+        cache_region: a Dogpile cache region as a central store for the metadata cache
         &#34;&#34;&#34;
+        self.cache_region = cache_region
         if type_registry or type_registry_preset:
 
             RuntimeConfiguration().update_type_registry(load_type_registry_preset(&#34;default&#34;))
@@ -1505,6 +1535,12 @@ class SubstrateInterface:
 
         self.metadata_cache = {}
         self.type_registry_cache = {}
+
+        self.debug = False
+
+    def debug_message(self, message):
+        if self.debug:
+            print(&#39;DEBUG&#39;, message)
 
     async def ws_request(self, payload):
         &#34;&#34;&#34;
@@ -1544,6 +1580,8 @@ class SubstrateInterface:
             &#34;params&#34;: params,
             &#34;id&#34;: self.request_id
         }
+
+        self.debug_message(&#39;RPC request &#34;{}&#34;&#39;.format(method))
 
         if self.url[0:6] == &#39;wss://&#39; or self.url[0:5] == &#39;ws://&#39;:
             asyncio.get_event_loop().run_until_complete(self.ws_request(payload))
@@ -1940,14 +1978,27 @@ class SubstrateInterface:
         # Set active runtime version
         RuntimeConfiguration().set_active_spec_version_id(self.runtime_version)
 
+        if self.runtime_version not in self.metadata_cache and self.cache_region:
+            # Try to retrieve metadata from Dogpile cache
+            cached_metadata = self.cache_region.get(&#39;METADATA_{}&#39;.format(self.runtime_version))
+            if cached_metadata:
+                self.debug_message(&#39;Retrieved metadata for {} from Redis&#39;.format(self.runtime_version))
+                self.metadata_cache[self.runtime_version] = cached_metadata
+
         if self.runtime_version in self.metadata_cache:
             # Get metadata from cache
+            self.debug_message(&#39;Retrieved metadata for {} from memory&#39;.format(self.runtime_version))
             self.metadata_decoder = self.metadata_cache[self.runtime_version]
         else:
             self.metadata_decoder = self.get_block_metadata(block_hash=self.block_hash, decode=True)
+            self.debug_message(&#39;Retrieved metadata for {} from Substrate node&#39;.format(self.runtime_version))
 
             # Update metadata cache
             self.metadata_cache[self.runtime_version] = self.metadata_decoder
+
+            if self.cache_region:
+                self.debug_message(&#39;Stored metadata for {} in Redis&#39;.format(self.runtime_version))
+                self.cache_region.set(&#39;METADATA_{}&#39;.format(self.runtime_version), self.metadata_decoder)
 
     def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
         &#34;&#34;&#34;
@@ -2125,8 +2176,8 @@ class SubstrateInterface:
             self.type_registry_cache[self.runtime_version] = {}
 
         # Check if already added
-        if type_string in self.type_registry_cache[self.runtime_version]:
-            return self.type_registry_cache[self.runtime_version][type_string][&#39;decoder_class&#39;]
+        if type_string.lower() in self.type_registry_cache[self.runtime_version]:
+            return self.type_registry_cache[self.runtime_version][type_string.lower()][&#39;decoder_class&#39;]
 
         # Try to get decoder class
         decoder_class = RuntimeConfiguration().get_decoder_class(type_string)
@@ -2143,7 +2194,12 @@ class SubstrateInterface:
         # Process classes that contain subtypes (e.g. Option&lt;ChangesTrieConfiguration&gt;)
         if decoder_class_obj and decoder_class_obj.sub_type:
             type_info[&#34;is_primitive_runtime&#34;] = False
-            self.process_metadata_typestring(decoder_class_obj.sub_type)
+
+            # Try to split on &#39;,&#39; (e.g. ActiveRecovery&lt;BlockNumber, BalanceOf, AccountId&gt;)
+            if not re.search(&#39;[&lt;()&gt;]&#39;, decoder_class_obj.sub_type):
+                for element in decoder_class_obj.sub_type.split(&#39;,&#39;):
+                    if element not in [&#39;T&#39;, &#39;I&#39;]:
+                        self.process_metadata_typestring(element.strip())
 
         # Process classes that contain type_mapping (e.g. Struct and Enum)
         if decoder_class and hasattr(decoder_class, &#39;type_mapping&#39;) and decoder_class.type_mapping:
@@ -2170,7 +2226,7 @@ class SubstrateInterface:
             type_info[&#34;is_primitive_runtime&#34;] = None
             type_info[&#34;is_primitive_core&#34;] = None
 
-        self.type_registry_cache[self.runtime_version][type_string] = type_info
+        self.type_registry_cache[self.runtime_version][type_string.lower()] = type_info
 
         return decoder_class
 
@@ -2878,6 +2934,20 @@ class SubstrateInterface:
             return &#39;0x{}&#39;.format(ss58_decode(value, self.address_type))
 
     return value</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.debug_message"><code class="name flex">
+<span>def <span class="ident">debug_message</span></span>(<span>self, message)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def debug_message(self, message):
+    if self.debug:
+        print(&#39;DEBUG&#39;, message)</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.decode_scale"><code class="name flex">
@@ -4434,14 +4504,27 @@ In the future there could be support for caching backends like Redis to make thi
     # Set active runtime version
     RuntimeConfiguration().set_active_spec_version_id(self.runtime_version)
 
+    if self.runtime_version not in self.metadata_cache and self.cache_region:
+        # Try to retrieve metadata from Dogpile cache
+        cached_metadata = self.cache_region.get(&#39;METADATA_{}&#39;.format(self.runtime_version))
+        if cached_metadata:
+            self.debug_message(&#39;Retrieved metadata for {} from Redis&#39;.format(self.runtime_version))
+            self.metadata_cache[self.runtime_version] = cached_metadata
+
     if self.runtime_version in self.metadata_cache:
         # Get metadata from cache
+        self.debug_message(&#39;Retrieved metadata for {} from memory&#39;.format(self.runtime_version))
         self.metadata_decoder = self.metadata_cache[self.runtime_version]
     else:
         self.metadata_decoder = self.get_block_metadata(block_hash=self.block_hash, decode=True)
+        self.debug_message(&#39;Retrieved metadata for {} from Substrate node&#39;.format(self.runtime_version))
 
         # Update metadata cache
-        self.metadata_cache[self.runtime_version] = self.metadata_decoder</code></pre>
+        self.metadata_cache[self.runtime_version] = self.metadata_decoder
+
+        if self.cache_region:
+            self.debug_message(&#39;Stored metadata for {} in Redis&#39;.format(self.runtime_version))
+            self.cache_region.set(&#39;METADATA_{}&#39;.format(self.runtime_version), self.metadata_decoder)</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.process_metadata_typestring"><code class="name flex">
@@ -4509,8 +4592,8 @@ In the future there could be support for caching backends like Redis to make thi
         self.type_registry_cache[self.runtime_version] = {}
 
     # Check if already added
-    if type_string in self.type_registry_cache[self.runtime_version]:
-        return self.type_registry_cache[self.runtime_version][type_string][&#39;decoder_class&#39;]
+    if type_string.lower() in self.type_registry_cache[self.runtime_version]:
+        return self.type_registry_cache[self.runtime_version][type_string.lower()][&#39;decoder_class&#39;]
 
     # Try to get decoder class
     decoder_class = RuntimeConfiguration().get_decoder_class(type_string)
@@ -4527,7 +4610,12 @@ In the future there could be support for caching backends like Redis to make thi
     # Process classes that contain subtypes (e.g. Option&lt;ChangesTrieConfiguration&gt;)
     if decoder_class_obj and decoder_class_obj.sub_type:
         type_info[&#34;is_primitive_runtime&#34;] = False
-        self.process_metadata_typestring(decoder_class_obj.sub_type)
+
+        # Try to split on &#39;,&#39; (e.g. ActiveRecovery&lt;BlockNumber, BalanceOf, AccountId&gt;)
+        if not re.search(&#39;[&lt;()&gt;]&#39;, decoder_class_obj.sub_type):
+            for element in decoder_class_obj.sub_type.split(&#39;,&#39;):
+                if element not in [&#39;T&#39;, &#39;I&#39;]:
+                    self.process_metadata_typestring(element.strip())
 
     # Process classes that contain type_mapping (e.g. Struct and Enum)
     if decoder_class and hasattr(decoder_class, &#39;type_mapping&#39;) and decoder_class.type_mapping:
@@ -4554,7 +4642,7 @@ In the future there could be support for caching backends like Redis to make thi
         type_info[&#34;is_primitive_runtime&#34;] = None
         type_info[&#34;is_primitive_core&#34;] = None
 
-    self.type_registry_cache[self.runtime_version][type_string] = type_info
+    self.type_registry_cache[self.runtime_version][type_string.lower()] = type_info
 
     return decoder_class</code></pre>
 </details>
@@ -4598,6 +4686,8 @@ use this method to perform the request.</p>
         &#34;params&#34;: params,
         &#34;id&#34;: self.request_id
     }
+
+    self.debug_message(&#39;RPC request &#34;{}&#34;&#39;.format(method))
 
     if self.url[0:6] == &#39;wss://&#39; or self.url[0:5] == &#39;ws://&#39;:
         asyncio.get_event_loop().run_until_complete(self.ws_request(payload))
@@ -4957,6 +5047,7 @@ use this method to perform the request.</p>
 <ul class="">
 <li><code><a title="substrateinterface.SubstrateInterface.compose_call" href="#substrateinterface.SubstrateInterface.compose_call">compose_call</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.convert_storage_parameter" href="#substrateinterface.SubstrateInterface.convert_storage_parameter">convert_storage_parameter</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.debug_message" href="#substrateinterface.SubstrateInterface.debug_message">debug_message</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.decode_scale" href="#substrateinterface.SubstrateInterface.decode_scale">decode_scale</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.encode_scale" href="#substrateinterface.SubstrateInterface.encode_scale">encode_scale</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.generate_storage_hash" href="#substrateinterface.SubstrateInterface.generate_storage_hash">generate_storage_hash</a></code></li>

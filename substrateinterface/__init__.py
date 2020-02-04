@@ -19,6 +19,8 @@
 import asyncio
 import binascii
 import json
+import re
+
 import requests
 import websockets
 
@@ -739,7 +741,12 @@ class SubstrateInterface:
         # Process classes that contain subtypes (e.g. Option<ChangesTrieConfiguration>)
         if decoder_class_obj and decoder_class_obj.sub_type:
             type_info["is_primitive_runtime"] = False
-            self.process_metadata_typestring(decoder_class_obj.sub_type)
+
+            # Try to split on ',' (e.g. ActiveRecovery<BlockNumber, BalanceOf, AccountId>)
+            if not re.search('[<()>]', decoder_class_obj.sub_type):
+                for element in decoder_class_obj.sub_type.split(','):
+                    if element not in ['T', 'I']:
+                        self.process_metadata_typestring(element.strip())
 
         # Process classes that contain type_mapping (e.g. Struct and Enum)
         if decoder_class and hasattr(decoder_class, 'type_mapping') and decoder_class.type_mapping:
