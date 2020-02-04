@@ -5,7 +5,6 @@
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/substrateinterface.svg)](https://pypi.org/project/substrateinterface/)
 [![License](https://img.shields.io/pypi/l/substrateinterface.svg)](https://github.com/polkascan/py-substrate-interface/blob/master/LICENSE)
 
-    
 Python Substrate Interface Library
 
 ## Description
@@ -15,6 +14,11 @@ management and versioning of types.
 
 ## Documentation
 https://polkascan.github.io/py-substrate-interface/
+
+## Installation
+```bash
+pip install substrateinterface
+```
 
 ## Examples
 

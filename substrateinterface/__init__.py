@@ -36,8 +36,7 @@ from .utils.ss58 import ss58_decode
 
 class SubstrateInterface:
 
-    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None, metadata_version=4,
-                 cache_region=None):
+    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None, cache_region=None):
         """
         A specialized class in interfacing with a Substrate node.
 
@@ -47,7 +46,6 @@ class SubstrateInterface:
         address_type: : The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults to 42, for Kusama the address type is 2
         type_registry: A dict containing the custom type registry in format: {'types': {'customType': 'u32'},..}
         type_registry_preset: The name of the predefined type registry shipped with the SCALE-codec, e.g. kusama
-        metadata_version: DEPRECATED
         cache_region: a Dogpile cache region as a central store for the metadata cache
         """
         self.cache_region = cache_region
@@ -723,8 +721,8 @@ class SubstrateInterface:
             self.type_registry_cache[self.runtime_version] = {}
 
         # Check if already added
-        if type_string in self.type_registry_cache[self.runtime_version]:
-            return self.type_registry_cache[self.runtime_version][type_string]['decoder_class']
+        if type_string.lower() in self.type_registry_cache[self.runtime_version]:
+            return self.type_registry_cache[self.runtime_version][type_string.lower()]['decoder_class']
 
         # Try to get decoder class
         decoder_class = RuntimeConfiguration().get_decoder_class(type_string)
@@ -768,7 +766,7 @@ class SubstrateInterface:
             type_info["is_primitive_runtime"] = None
             type_info["is_primitive_core"] = None
 
-        self.type_registry_cache[self.runtime_version][type_string] = type_info
+        self.type_registry_cache[self.runtime_version][type_string.lower()] = type_info
 
         return decoder_class
 
