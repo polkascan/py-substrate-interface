@@ -29,7 +29,7 @@ from scalecodec import ScaleBytes
 from scalecodec.types import U8, U16, U32, U64
 
 
-def ss58_decode(address, valid_address_type=42):
+def ss58_decode(address, valid_address_type=None):
     """
     Decodes given SS58 encoded address to an account ID
     Parameters
@@ -45,7 +45,7 @@ def ss58_decode(address, valid_address_type=42):
 
     ss58_format = base58.b58decode(address)
 
-    if ss58_format[0] != valid_address_type:
+    if valid_address_type and ss58_format[0] != valid_address_type:
         raise ValueError("Invalid Address type")
 
     # Determine checksum length according to length of address string

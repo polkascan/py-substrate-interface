@@ -30,7 +30,7 @@ from scalecodec.block import ExtrinsicsDecoder, EventsDecoder, LogDigest
 from scalecodec.metadata import MetadataDecoder
 from scalecodec.type_registry import load_type_registry_preset
 
-from .utils.hasher import blake2_256, two_x64_concat
+from .utils.hasher import blake2_256, two_x64_concat, xxh64
 from .exceptions import SubstrateRequestException
 from .constants import *
 from .utils.ss58 import ss58_decode
@@ -67,7 +67,7 @@ class SubstrateInterface:
 
         self._ws_result = None
 
-        self.address_type = address_type or 42
+        self.address_type = address_type
 
         self.mock_extrinsics = None
         self._version = None
@@ -394,7 +394,6 @@ class SubstrateInterface:
         if response.get('result'):
 
             if metadata_decoder:
-
                 # Process events
                 events_decoder = EventsDecoder(
                     data=ScaleBytes(response.get('result')),
@@ -423,7 +422,7 @@ class SubstrateInterface:
         response = self.rpc_request("chain_getRuntimeVersion", [block_hash])
         return response.get('result')
 
-    def generate_storage_hash(self, storage_module, storage_function, params=None, hasher=None, metadata_version=None):
+    def generate_storage_hash(self, storage_module, storage_function, params=None, hasher=None, key2_hasher=None, metadata_version=None):
         """
         Generate a storage key for given module/function
 
@@ -447,9 +446,12 @@ class SubstrateInterface:
                 if type(params) is not list:
                     params = [params]
 
-                params_key = bytes()
+                if len(params) == 1:
 
-                for param in params:
+                    params_key = bytes()
+
+                    param = params[0]
+
                     if type(param) is str:
                         params_key += binascii.unhexlify(param)
                     elif type(param) is ScaleBytes:
@@ -457,14 +459,56 @@ class SubstrateInterface:
                     elif isinstance(param, ScaleDecoder):
                         params_key += param.data.data
 
-                if not hasher:
-                    hasher = 'Twox64Concat'
+                    if not hasher:
+                        hasher = 'Twox64Concat'
 
-                if hasher == 'Blake2_256':
-                    storage_hash += blake2_256(params_key)
+                    if hasher == 'Blake2_256':
+                        storage_hash += blake2_256(params_key)
 
-                elif hasher == 'Twox64Concat':
-                    storage_hash += two_x64_concat(params_key)
+                    elif hasher == 'Twox64Concat':
+                        storage_hash += two_x64_concat(params_key)
+
+                elif len(params) == 2:
+
+                    params_key = bytes()
+
+                    param = params[0]
+
+                    if type(param) is str:
+                        params_key += binascii.unhexlify(param)
+                    elif type(param) is ScaleBytes:
+                        params_key += param.data
+                    elif isinstance(param, ScaleDecoder):
+                        params_key += param.data.data
+
+                    if not hasher:
+                        hasher = 'Twox64Concat'
+
+                    if hasher == 'Blake2_256':
+                        storage_hash += blake2_256(params_key) + params_key.hex()
+
+                    elif hasher == 'Twox64Concat':
+                        storage_hash += xxh64(params_key) + params_key.hex()
+
+                    params_key = bytes()
+
+                    param = params[1]
+
+                    if type(param) is str:
+                        params_key += binascii.unhexlify(param)
+                    elif type(param) is ScaleBytes:
+                        params_key += param.data
+                    elif isinstance(param, ScaleDecoder):
+                        params_key += param.data.data
+
+                    if not key2_hasher:
+                        key2_hasher = 'Twox64Concat'
+
+                    if key2_hasher == 'Blake2_256':
+                        storage_hash += blake2_256(params_key) + params_key.hex()
+
+                    elif key2_hasher == 'Twox64Concat':
+                        storage_hash += xxh64(params_key) + params_key.hex()
 
             return '0x{}'.format(storage_hash)
 
@@ -572,6 +616,8 @@ class SubstrateInterface:
                     for storage_item in metadata_module.storage.items:
                         if storage_item.name == storage_function:
 
+                            key2_hasher = None
+
                             if 'PlainType' in storage_item.type:
                                 hasher = 'Twox64Concat'
                                 return_scale_type = storage_item.type.get('PlainType')
@@ -592,6 +638,26 @@ class SubstrateInterface:
                                 param_obj = ScaleDecoder.get_decoder_class(map_type['key'])
                                 params[0] = param_obj.encode(params[0])
 
+                            elif 'DoubleMapType' in storage_item.type:
+
+                                map_type = storage_item.type.get('DoubleMapType')
+                                hasher = map_type.get('hasher')
+                                key2_hasher = map_type.get('key2Hasher')
+                                return_scale_type = map_type.get('value')
+
+                                if not params or len(params) != 2:
+                                    raise ValueError('Storage call of type "DoubleMapType" requires 2 parameters')
+
+                                # Encode parameter 1
+                                params[0] = self.convert_storage_parameter(map_type['key1'], params[0])
+                                param_obj = ScaleDecoder.get_decoder_class(map_type['key1'])
+                                params[0] = param_obj.encode(params[0])
+
+                                # Encode parameter 2
+                                params[1] = self.convert_storage_parameter(map_type['key2'], params[1])
+                                param_obj = ScaleDecoder.get_decoder_class(map_type['key2'])
+                                params[1] = param_obj.encode(params[1])
+
                             else:
                                 raise NotImplementedError("Storage type not implemented")
 
@@ -600,6 +666,7 @@ class SubstrateInterface:
                                 storage_function=storage_function,
                                 params=params,
                                 hasher=hasher,
+                                key2_hasher=key2_hasher,
                                 metadata_version=self.metadata_decoder.version.index
                             )
 
@@ -616,6 +683,8 @@ class SubstrateInterface:
                                     response['result'] = obj.decode()
 
                             return response
+
+        raise ValueError('Storage function "{}.{}" not found'.format(module, storage_function))
 
     def get_runtime_events(self, block_hash=None):
         """

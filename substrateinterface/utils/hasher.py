@@ -57,3 +57,10 @@ def two_x64_concat(data):
     storage_key2.reverse()
 
     return "{}{}".format(storage_key1.hex(), storage_key2.hex())
+
+
+def xxh64(data):
+    storage_key = bytearray(xxhash.xxh64(data, seed=0).digest())
+    storage_key.reverse()
+
+    return "{}".format(storage_key.hex())
