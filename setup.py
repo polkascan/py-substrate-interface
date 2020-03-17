@@ -167,7 +167,7 @@ setup(
         'requests==2.22.0',
         'urllib3==1.25.3',
         'xxhash==1.3.0',
-        'scalecodec>=0.9.25'
+        'scalecodec>=0.9.26'
     ],
 
     # List additional groups of dependencies here (e.g. development

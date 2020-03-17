@@ -30,7 +30,7 @@ from scalecodec.block import ExtrinsicsDecoder, EventsDecoder, LogDigest
 from scalecodec.metadata import MetadataDecoder
 from scalecodec.type_registry import load_type_registry_preset
 
-from .utils.hasher import blake2_256, two_x64_concat, xxh64
+from .utils.hasher import blake2_256, two_x64_concat, xxh64, xxh128, blake2_128, blake2_128_concat, identity
 from .exceptions import SubstrateRequestException
 from .constants import *
 from .utils.ss58 import ss58_decode
@@ -440,17 +440,22 @@ class SubstrateInterface:
         """
 
         if metadata_version and metadata_version >= 9:
-            storage_hash = two_x64_concat(storage_module.encode()) + two_x64_concat(storage_function.encode())
+            storage_hash = xxh128(storage_module.encode()) + xxh128(storage_function.encode())
+
             if params:
 
                 if type(params) is not list:
                     params = [params]
 
-                if len(params) == 1:
+                for idx, param in enumerate(params):
+                    if idx == 0:
+                        param_hasher = hasher
+                    elif idx == 1:
+                        param_hasher = key2_hasher
+                    else:
+                        raise ValueError('Unexpected third parameter for storage call')
 
                     params_key = bytes()
-
-                    param = params[0]
 
                     if type(param) is str:
                         params_key += binascii.unhexlify(param)
@@ -459,56 +464,29 @@ class SubstrateInterface:
                     elif isinstance(param, ScaleDecoder):
                         params_key += param.data.data
 
-                    if not hasher:
-                        hasher = 'Twox64Concat'
+                    if not param_hasher:
+                        param_hasher = 'Twox128'
 
-                    if hasher == 'Blake2_256':
+                    if param_hasher == 'Blake2_256':
                         storage_hash += blake2_256(params_key)
 
-                    elif hasher == 'Twox64Concat':
+                    elif param_hasher == 'Blake2_128':
+                        storage_hash += blake2_128(params_key)
+
+                    elif param_hasher == 'Blake2_128Concat':
+                        storage_hash += blake2_128_concat(params_key)
+
+                    elif param_hasher == 'Twox128':
+                        storage_hash += xxh128(params_key)
+
+                    elif param_hasher == 'Twox64Concat':
                         storage_hash += two_x64_concat(params_key)
 
-                elif len(params) == 2:
+                    elif param_hasher == 'Identity':
+                        storage_hash += identity(params_key)
 
-                    params_key = bytes()
-
-                    param = params[0]
-
-                    if type(param) is str:
-                        params_key += binascii.unhexlify(param)
-                    elif type(param) is ScaleBytes:
-                        params_key += param.data
-                    elif isinstance(param, ScaleDecoder):
-                        params_key += param.data.data
-
-                    if not hasher:
-                        hasher = 'Twox64Concat'
-
-                    if hasher == 'Blake2_256':
-                        storage_hash += blake2_256(params_key) + params_key.hex()
-
-                    elif hasher == 'Twox64Concat':
-                        storage_hash += xxh64(params_key) + params_key.hex()
-
-                    params_key = bytes()
-
-                    param = params[1]
-
-                    if type(param) is str:
-                        params_key += binascii.unhexlify(param)
-                    elif type(param) is ScaleBytes:
-                        params_key += param.data
-                    elif isinstance(param, ScaleDecoder):
-                        params_key += param.data.data
-
-                    if not key2_hasher:
-                        key2_hasher = 'Twox64Concat'
-
-                    if key2_hasher == 'Blake2_256':
-                        storage_hash += blake2_256(params_key) + params_key.hex()
-
-                    elif key2_hasher == 'Twox64Concat':
-                        storage_hash += xxh64(params_key) + params_key.hex()
+                    else:
+                        raise ValueError('Unknown storage hasher "{}"'.format(param_hasher))
 
             return '0x{}'.format(storage_hash)
 
@@ -520,10 +498,13 @@ class SubstrateInterface:
 
             # Determine hasher function
             if not hasher:
-                hasher = 'Twox64Concat'
+                hasher = 'Twox128'
 
             if hasher == 'Blake2_256':
                 return "0x{}".format(blake2_256(storage_hash))
+
+            elif hasher == 'Twox128':
+                return "0x{}".format(xxh128(storage_hash))
 
             elif hasher == 'Twox64Concat':
                 return "0x{}".format(two_x64_concat(storage_hash))
