@@ -643,7 +643,7 @@ class SubstrateInterface:
                                 raise NotImplementedError("Storage type not implemented")
 
                             storage_hash = self.generate_storage_hash(
-                                storage_module=module,
+                                storage_module=metadata_module.prefix,
                                 storage_function=storage_function,
                                 params=params,
                                 hasher=hasher,
