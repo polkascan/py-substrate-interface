@@ -163,6 +163,7 @@ setup(
         'base58==1.0.3',
         'certifi==2019.6.16',
         'chardet==3.0.4',
+        'docker==4.2.0',
         'idna==2.8',
         'requests==2.22.0',
         'urllib3==1.25.3',
