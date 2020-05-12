@@ -30,22 +30,61 @@ from scalecodec.block import ExtrinsicsDecoder, EventsDecoder, LogDigest
 from scalecodec.metadata import MetadataDecoder
 from scalecodec.type_registry import load_type_registry_preset
 
+from .subkey import Subkey
 from .utils.hasher import blake2_256, two_x64_concat, xxh64, xxh128, blake2_128, blake2_128_concat, identity
-from .exceptions import SubstrateRequestException
+from .exceptions import SubstrateRequestException, ConfigurationError, StorageFunctionNotFound
 from .constants import *
 from .utils.ss58 import ss58_decode
+
+try:
+    import sr25519
+except ImportError:
+    sr25519 = None
+
+
+class Keypair:
+
+    def __init__(self, ss58_address=None, public_key=None, private_key=None, suri=None):
+
+        if ss58_address:
+            public_key = ss58_decode(ss58_address)
+
+        if not public_key:
+            raise ValueError('No SS58 formatted address or public key provided')
+
+        public_key = '0x{}'.format(public_key.replace('0x', ''))
+
+        if len(public_key) != 66:
+            raise ValueError('Public key should be 32 bytes long')
+
+        self.public_key = public_key
+
+        if private_key:
+            private_key = '0x{}'.format(private_key.replace('0x', ''))
+
+            if len(private_key) != 130:
+                raise ValueError('Secret key should be 64 bytes long')
+
+        self.private_key = private_key
+
+        if suri:
+            # TODO automatically convert mnemonic to private key
+            pass
+
+        self.suri = suri
 
 
 class SubstrateInterface:
 
-    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None, cache_region=None):
+    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None, cache_region=None,
+                 sub_key: Subkey = None):
         """
         A specialized class in interfacing with a Substrate node.
 
         Parameters
         ----------
         url: the URL to the substrate node, either in format https://127.0.0.1:9933 or wss://127.0.0.1:9944
-        address_type: : The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults to 42, for Kusama the address type is 2
+        address_type: The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults to 42, for Kusama the address type is 2
         type_registry: A dict containing the custom type registry in format: {'types': {'customType': 'u32'},..}
         type_registry_preset: The name of the predefined type registry shipped with the SCALE-codec, e.g. kusama
         cache_region: a Dogpile cache region as a central store for the metadata cache
@@ -82,6 +121,8 @@ class SubstrateInterface:
 
         self.metadata_cache = {}
         self.type_registry_cache = {}
+
+        self.sub_key = sub_key
 
         self.debug = False
 
@@ -665,7 +706,7 @@ class SubstrateInterface:
 
                             return response
 
-        raise ValueError('Storage function "{}.{}" not found'.format(module, storage_function))
+        raise StorageFunctionNotFound('Storage function "{}.{}" not found'.format(module, storage_function))
 
     def get_runtime_events(self, block_hash=None):
         """
@@ -725,15 +766,139 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        extrinsic = ExtrinsicsDecoder(metadata=self.metadata_decoder, address_type=self.address_type)
+        call = ScaleDecoder.get_decoder_class('Call', metadata=self.metadata_decoder)
 
-        payload = extrinsic.encode({
+        call.encode({
             'call_module': call_module,
             'call_function': call_function,
             'call_args': call_params
         })
 
-        return str(payload)
+        return call
+
+    def get_account_nonce(self, account_address):
+        response = self.get_runtime_state('System', 'Account', [account_address])
+        if response.get('result'):
+            return response['result'].get('nonce', 0)
+
+    def verify_data(self, data):
+        pass
+
+    def sign_data(self, data, keypair: Keypair):
+
+        if sr25519:
+            if data[0:2] == '0x':
+                data = bytes.fromhex(data[2:])
+            else:
+                data = data.encode()
+
+            if not keypair.private_key:
+                raise ConfigurationError('private_key must be set on keypair to use sr25519 bindings')
+
+            signature = sr25519.sign(
+                (bytes.fromhex(keypair.public_key[2:]), bytes.fromhex(keypair.private_key[2:])),
+                data
+            )
+            return "0x{}".format(signature.hex())
+
+        elif self.sub_key:
+            if not keypair.suri:
+                raise ConfigurationError('suri must be set on keypair to use subkey')
+            return self.sub_key.sign(data, keypair.suri)
+
+        raise ConfigurationError(
+            "No RUST bindings available and no subkey implementation provided for signing"
+        )
+
+    def create_signed_extrinsic(self, call, keypair: Keypair, nonce=None, tip=0):
+        """
+        Creates a extrinsic signed by given account details
+
+        Parameters
+        ----------
+        keypair
+        call
+        nonce
+        tip
+
+        Returns
+        -------
+        ExtrinsicsDecoder The signed Extrinsic
+        """
+
+        # Check requirements
+        if call.__class__.__name__ != 'Call':
+            raise TypeError("'call' must be of type Call")
+
+        # Retrieve nonce
+        if not nonce:
+            nonce = self.get_account_nonce(keypair.public_key) or 0
+
+        # Retrieve genesis hash
+        genesis_hash = self.get_block_hash(0)
+
+        # TODO implement MortalEra transactions
+        era = '00'
+
+        # Create signature payload
+        signature_payload = ScaleDecoder.get_decoder_class('ExtrinsicPayloadValue')
+
+        signature_payload.encode({
+            'call': str(call.data),
+            'era': era,
+            'nonce': nonce,
+            'tip': tip,
+            'specVersion': self.runtime_version,
+            'genesisHash': genesis_hash,
+            'blockHash': genesis_hash
+        })
+
+        # Sign payload
+        signature = self.sign_data(data=str(signature_payload.data), keypair=keypair)
+
+        # Create extrinsic
+        extrinsic = ScaleDecoder.get_decoder_class('Extrinsic', metadata=self.metadata_decoder)
+
+        extrinsic.encode({
+            'account_id': keypair.public_key,
+            'signature_version': 1,
+            'signature': signature,
+            'call_function': call.value['call_function'],
+            'call_module': call.value['call_module'],
+            'call_args': call.value['call_args'],
+            'nonce': nonce,
+            'era': '00',
+            'tip': 0
+        })
+
+        return extrinsic
+
+    def create_unsigned_extrinsic(self, call):
+        # TODO implement
+        pass
+
+    def send_extrinsic(self, extrinsic):
+        """
+
+        Parameters
+        ----------
+        extrinsic: ExtrinsicsDecoder The extinsic to be send to the network
+
+        Returns
+        -------
+        The hash of the extrinsic submitted to the network
+
+        """
+
+        # Check requirements
+        if extrinsic.__class__.__name__ != 'ExtrinsicsDecoder':
+            raise TypeError("'extrinsic' must be of type ExtrinsicsDecoder")
+
+        response = self.rpc_request("author_submitExtrinsic", [str(extrinsic.data)])
+        if 'result' in response:
+            return response['result']
+        else:
+            raise SubstrateRequestException(response.get('error'))
 
     def process_metadata_typestring(self, type_string):
         """

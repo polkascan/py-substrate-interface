@@ -167,7 +167,8 @@ setup(
         'requests==2.22.0',
         'urllib3==1.25.3',
         'xxhash==1.3.0',
-        'scalecodec>=0.9.26'
+        'scalecodec>=0.9.42',
+        'py-sr25519-bindings>=0.1.0'
     ],
 
     # List additional groups of dependencies here (e.g. development

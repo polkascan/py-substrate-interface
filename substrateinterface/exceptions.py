@@ -19,3 +19,11 @@
 
 class SubstrateRequestException(Exception):
     pass
+
+
+class StorageFunctionNotFound(ValueError):
+    pass
+
+
+class ConfigurationError(Exception):
+    pass
