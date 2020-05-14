@@ -19,6 +19,7 @@
 import asyncio
 import binascii
 import json
+import logging
 import re
 
 import requests
@@ -40,6 +41,9 @@ try:
     import sr25519
 except ImportError:
     sr25519 = None
+
+
+log = logging.getLogger(__name__)
 
 
 class Keypair:
@@ -76,7 +80,7 @@ class Keypair:
 
 class SubstrateInterface:
 
-    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=None, cache_region=None,
+    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset="default", cache_region=None,
                  sub_key: Subkey = None):
         """
         A specialized class in interfacing with a Substrate node.
@@ -90,16 +94,17 @@ class SubstrateInterface:
         cache_region: a Dogpile cache region as a central store for the metadata cache
         """
         self.cache_region = cache_region
-        if type_registry or type_registry_preset:
 
+        if type_registry_preset:
+            # Load type registries in runtime configuration
             RuntimeConfiguration().update_type_registry(load_type_registry_preset("default"))
 
-            if type_registry:
-                # Load type registries in runtime configuration
-                RuntimeConfiguration().update_type_registry(type_registry)
-            if type_registry_preset:
-                # Load type registries in runtime configuration
+            if type_registry != "default":
                 RuntimeConfiguration().update_type_registry(load_type_registry_preset(type_registry_preset))
+
+        if type_registry:
+            # Load type registries in runtime configuration
+            RuntimeConfiguration().update_type_registry(type_registry)
 
         self.request_id = 1
         self.url = url
@@ -127,34 +132,16 @@ class SubstrateInterface:
         self.debug = False
 
     def debug_message(self, message):
-        if self.debug:
-            print('DEBUG', message)
+        log.info(message)
 
-    async def ws_request(self, payload):
-        """
-        Internal method to handle the request if url is a websocket address (wss:// or ws://)
-
-        Parameters
-        ----------
-        payload: a dict that contains the JSONRPC payload of the request
-
-        Returns
-        -------
-        This method doesn't return but sets the `_ws_result` object variable with the result
-        """
-        async with websockets.connect(
-                self.url
-        ) as websocket:
-            await websocket.send(json.dumps(payload))
-            self._ws_result = json.loads(await websocket.recv())
-
-    def rpc_request(self, method, params):
+    def rpc_request(self, method, params, result_handler=None):
         """
         Method that handles the actual RPC request to the Substrate node. The other implemented functions eventually
         use this method to perform the request.
 
         Parameters
         ----------
+        result_handler: Callback of function that processes the result received from the node
         method: method of the JSONRPC request
         params: a list containing the parameters of the JSONRPC request
 
@@ -172,10 +159,47 @@ class SubstrateInterface:
         self.debug_message('RPC request "{}"'.format(method))
 
         if self.url[0:6] == 'wss://' or self.url[0:5] == 'ws://':
-            asyncio.get_event_loop().run_until_complete(self.ws_request(payload))
-            json_body = self._ws_result
+            ws_result = {}
+
+            async def ws_request(ws_payload):
+                """
+                Internal method to handle the request if url is a websocket address (wss:// or ws://)
+
+                Parameters
+                ----------
+                ws_payload: a dict that contains the JSONRPC payload of the request
+
+                Returns
+                -------
+                This method doesn't return but sets the `_ws_result` object variable with the result
+                """
+                async with websockets.connect(
+                        self.url
+                ) as websocket:
+                    await websocket.send(json.dumps(ws_payload))
+
+                    if callable(result_handler):
+                        event_number = 0
+                        while not ws_result:
+                            result = json.loads(await websocket.recv())
+                            self.debug_message("Websocket result [{}] Received from node: {}".format(event_number, result))
+
+                            callback_result = result_handler(result)
+                            if callback_result:
+                                ws_result.update(callback_result)
+
+                            event_number += 1
+                    else:
+                        ws_result.update(json.loads(await websocket.recv()))
+
+            asyncio.get_event_loop().run_until_complete(ws_request(payload))
+            json_body = ws_result
 
         else:
+
+            if result_handler:
+                raise ConfigurationError("Result handlers only available for websockets (ws://) connections")
+
             response = requests.request("POST", self.url, data=json.dumps(payload), headers=self.default_headers)
 
             if response.status_code != 200:
@@ -871,18 +895,23 @@ class SubstrateInterface:
             'tip': 0
         })
 
+        # Set extrinsic hash
+        extrinsic.extrinsic_hash = extrinsic.generate_hash()
+
         return extrinsic
 
     def create_unsigned_extrinsic(self, call):
         # TODO implement
         pass
 
-    def send_extrinsic(self, extrinsic):
+    def send_extrinsic(self, extrinsic, wait_for_inclusion=False, wait_for_finalization=False):
         """
 
         Parameters
         ----------
         extrinsic: ExtrinsicsDecoder The extinsic to be send to the network
+        wait_for_inclusion: wait until extrinsic is included in a block (only works on websocket connections)
+        wait_for_finalization: wait until extrinsic is finalized (only works on websocket connections)
 
         Returns
         -------
@@ -894,11 +923,42 @@ class SubstrateInterface:
         if extrinsic.__class__.__name__ != 'ExtrinsicsDecoder':
             raise TypeError("'extrinsic' must be of type ExtrinsicsDecoder")
 
-        response = self.rpc_request("author_submitExtrinsic", [str(extrinsic.data)])
-        if 'result' in response:
-            return response['result']
+        def result_handler(result):
+            # Check if extrinsic is included and finalized
+            if 'params' in result and type(result['params']['result']) is dict:
+                if 'finalized' in result['params']['result'] and wait_for_finalization:
+                    return {
+                        'block_hash': result['params']['result']['finalized'],
+                        'extrinsic_hash': '0x{}'.format(extrinsic.extrinsic_hash),
+                        'finalized': True
+                    }
+                elif 'inBlock' in result['params']['result'] and wait_for_inclusion and not wait_for_finalization:
+                    return {
+                        'block_hash': result['params']['result']['inBlock'],
+                        'extrinsic_hash': '0x{}'.format(extrinsic.extrinsic_hash),
+                        'finalized': False
+                    }
+
+        if wait_for_inclusion or wait_for_finalization:
+            response = self.rpc_request(
+                "author_submitAndWatchExtrinsic",
+                [str(extrinsic.data)],
+                result_handler=result_handler
+            )
         else:
-            raise SubstrateRequestException(response.get('error'))
+
+            response = self.rpc_request("author_submitExtrinsic", [str(extrinsic.data)])
+
+            if 'result' not in response:
+                raise SubstrateRequestException(response.get('error'))
+
+            response = {
+                'extrinsic_hash': response['result'],
+                'block_hash': None,
+                'finalized': None
+            }
+
+        return response
 
     def process_metadata_typestring(self, type_string):
         """
