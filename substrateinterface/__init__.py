@@ -35,12 +35,10 @@ from .subkey import Subkey
 from .utils.hasher import blake2_256, two_x64_concat, xxh64, xxh128, blake2_128, blake2_128_concat, identity
 from .exceptions import SubstrateRequestException, ConfigurationError, StorageFunctionNotFound
 from .constants import *
-from .utils.ss58 import ss58_decode
+from .utils.ss58 import ss58_decode, ss58_encode
+from bip39 import bip39_to_mini_secret, new_bip39
+import sr25519
 
-try:
-    import sr25519
-except ImportError:
-    sr25519 = None
 
 
 log = logging.getLogger(__name__)
@@ -48,9 +46,9 @@ log = logging.getLogger(__name__)
 
 class Keypair:
 
-    def __init__(self, ss58_address=None, public_key=None, private_key=None, suri=None):
+    def __init__(self, ss58_address=None, public_key=None, private_key=None, address_type=42):
 
-        if ss58_address:
+        if ss58_address and not public_key:
             public_key = ss58_decode(ss58_address)
 
         if not public_key:
@@ -61,7 +59,11 @@ class Keypair:
         if len(public_key) != 66:
             raise ValueError('Public key should be 32 bytes long')
 
+        if not ss58_address:
+            ss58_address = ss58_encode(public_key, address_type=address_type)
+
         self.public_key = public_key
+        self.ss58_address = ss58_address
 
         if private_key:
             private_key = '0x{}'.format(private_key.replace('0x', ''))
@@ -70,12 +72,37 @@ class Keypair:
                 raise ValueError('Secret key should be 64 bytes long')
 
         self.private_key = private_key
+        self.address_type = address_type
 
-        if suri:
-            # TODO automatically convert mnemonic to private key
-            pass
+        self.mnemonic = None
 
-        self.suri = suri
+    @classmethod
+    def generate_mnemonic(cls):
+        return new_bip39()
+
+    @classmethod
+    def create_from_mnemonic(cls, mnemonic, address_type=42):
+        seed_array = bip39_to_mini_secret(mnemonic, "")
+
+        keypair = cls.create_from_seed(
+            seed_hex=binascii.hexlify(bytearray(seed_array)).decode("ascii"),
+            address_type=address_type
+        )
+        keypair.mnemonic = mnemonic
+
+        return keypair
+
+    @classmethod
+    def create_from_seed(cls, seed_hex, address_type=42):
+        keypair = sr25519.pair_from_seed(bytes.fromhex(seed_hex.replace('0x', '')))
+        public_key = keypair[0].hex()
+        private_key = keypair[1].hex()
+        ss58_address = ss58_encode(keypair[0], address_type)
+        return cls(ss58_address=ss58_address, public_key=public_key, private_key=private_key, address_type=address_type)
+
+    @classmethod
+    def create_from_private_key(cls, private_key, public_key=None, ss58_address=None, address_type=42):
+        return cls(ss58_address=ss58_address, public_key=public_key, private_key=private_key, address_type=address_type)
 
 
 class SubstrateInterface:
@@ -183,6 +210,10 @@ class SubstrateInterface:
                         while not ws_result:
                             result = json.loads(await websocket.recv())
                             self.debug_message("Websocket result [{}] Received from node: {}".format(event_number, result))
+
+                            # Check if response has error
+                            if 'error' in result:
+                                raise SubstrateRequestException(result['error'])
 
                             callback_result = result_handler(result)
                             if callback_result:
@@ -810,7 +841,12 @@ class SubstrateInterface:
 
     def sign_data(self, data, keypair: Keypair):
 
-        if sr25519:
+        if self.sub_key:
+            if not keypair.mnemonic:
+                raise ConfigurationError('mnemonic must be set on keypair to use subkey')
+            return self.sub_key.sign(data, keypair.mnemonic)
+
+        else:
             if data[0:2] == '0x':
                 data = bytes.fromhex(data[2:])
             else:
@@ -824,15 +860,6 @@ class SubstrateInterface:
                 data
             )
             return "0x{}".format(signature.hex())
-
-        elif self.sub_key:
-            if not keypair.suri:
-                raise ConfigurationError('suri must be set on keypair to use subkey')
-            return self.sub_key.sign(data, keypair.suri)
-
-        raise ConfigurationError(
-            "No RUST bindings available and no subkey implementation provided for signing"
-        )
 
     def create_signed_extrinsic(self, call, keypair: Keypair, nonce=None, tip=0):
         """
@@ -901,8 +928,16 @@ class SubstrateInterface:
         return extrinsic
 
     def create_unsigned_extrinsic(self, call):
-        # TODO implement
-        pass
+        # Create extrinsic
+        extrinsic = ScaleDecoder.get_decoder_class('Extrinsic', metadata=self.metadata_decoder)
+
+        extrinsic.encode({
+            'call_function': call.value['call_function'],
+            'call_module': call.value['call_module'],
+            'call_args': call.value['call_args']
+        })
+
+        return extrinsic
 
     def send_extrinsic(self, extrinsic, wait_for_inclusion=False, wait_for_finalization=False):
         """
