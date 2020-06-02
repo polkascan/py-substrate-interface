@@ -115,17 +115,12 @@ The following code snippet illustrates how to create a call, wrap it in an signe
 from substrateinterface import SubstrateInterface, SubstrateRequestException, Keypair
 
 substrate = SubstrateInterface(
-    url="http://127.0.0.1:9933",
+    url="ws://127.0.0.1:9944",
     address_type=42,
     type_registry_preset='kusama'
 )
 
-keypair = Keypair(
-    ss58_address='5HmubXCdmtEvKmvqjJ7fXkxhPXcg6JTS62kMMphqxpEE6zcG',
-    public_key='0xfc99becc4334e76e75d2e3bd3be759728b843c53954f1cada66ae9f6da97ab54',
-    private_key='0x8bb70006b5ca74fc1f26afaab8c65b6dc3c8fe9983c2c99880e5ffb74d1dcb09d8784e4a1befd363b34ac6bad337fa75dee8e4373914aa10d0263aefe04346dd',
-    suri='episode together nose spoon dose oil faculty zoo ankle evoke admit walnut'
-)
+keypair = Keypair.create_from_mnemonic('episode together nose spoon dose oil faculty zoo ankle evoke admit walnut')
 
 call = substrate.compose_call(
     call_module='Balances',
@@ -139,13 +134,27 @@ call = substrate.compose_call(
 extrinsic = substrate.create_signed_extrinsic(call=call, keypair=keypair)
 
 try:
-    extrinsic_hash = substrate.send_extrinsic(extrinsic)
-    print("Extrinsic sent: {}".format(extrinsic_hash))
+    result = substrate.send_extrinsic(extrinsic, wait_for_inclusion=True)
+    print("Extrinsic '{}' sent and included in block '{}'".format(result['extrinsic_hash'], result['block_hash']))
 
 except SubstrateRequestException as e:
     print("Failed to send: {}".format(e))
 
 ```
+
+### Keypair creation and signing
+
+```python
+
+mnemonic = Keypair.generate_mnemonic()
+keypair = Keypair.create_from_mnemonic(mnemonic)
+signature = keypair.sign("Test123")
+if keypair.verify("Test123", signature):
+    print('Verified')
+```
+
+
+### Metadata and type versioning
 
 Py-substrate-interface makes it also possible to easily interprete changed types and historic runtimes. As an example
 we create an (not very useful) historic call of a module that has been removed later on: retrieval of historic metadata and 

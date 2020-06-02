@@ -36,9 +36,8 @@ from .utils.hasher import blake2_256, two_x64_concat, xxh64, xxh128, blake2_128,
 from .exceptions import SubstrateRequestException, ConfigurationError, StorageFunctionNotFound
 from .constants import *
 from .utils.ss58 import ss58_decode, ss58_encode
-from bip39 import bip39_to_mini_secret, new_bip39
+from bip39 import bip39_to_mini_secret, bip39_generate
 import sr25519
-
 
 
 log = logging.getLogger(__name__)
@@ -77,8 +76,8 @@ class Keypair:
         self.mnemonic = None
 
     @classmethod
-    def generate_mnemonic(cls):
-        return new_bip39()
+    def generate_mnemonic(cls, words=12):
+        return bip39_generate(words)
 
     @classmethod
     def create_from_mnemonic(cls, mnemonic, address_type=42):
@@ -103,6 +102,52 @@ class Keypair:
     @classmethod
     def create_from_private_key(cls, private_key, public_key=None, ss58_address=None, address_type=42):
         return cls(ss58_address=ss58_address, public_key=public_key, private_key=private_key, address_type=address_type)
+
+    def sign(self, data):
+        """
+        Creates a sr25519 signature with give data
+
+        Parameters
+        ----------
+        data
+
+        Returns
+        -------
+        sr25519 signature
+
+        """
+        if type(data) is ScaleBytes:
+            data = bytes(data.data)
+        elif data[0:2] == '0x':
+            data = bytes.fromhex(data[2:])
+        else:
+            data = data.encode()
+
+        if not self.private_key:
+            raise ConfigurationError('No private key set to create sr25519 signatures')
+
+        signature = sr25519.sign(
+            (bytes.fromhex(self.public_key[2:]), bytes.fromhex(self.private_key[2:])),
+            data
+        )
+        return "0x{}".format(signature.hex())
+
+    def verify(self, data, signature):
+
+        if type(data) is ScaleBytes:
+            data = bytes(data.data)
+        elif data[0:2] == '0x':
+            data = bytes.fromhex(data[2:])
+        else:
+            data = data.encode()
+
+        if type(signature) is str and signature[0:2] == '0x':
+            signature = bytes.fromhex(signature[2:])
+
+        if type(signature) is not bytes:
+            raise TypeError("Signature should be of type bytes or a hex-string")
+
+        return sr25519.verify(signature, data, bytes.fromhex(self.public_key[2:]))
 
 
 class SubstrateInterface:
@@ -198,7 +243,7 @@ class SubstrateInterface:
 
                 Returns
                 -------
-                This method doesn't return but sets the `_ws_result` object variable with the result
+                This method doesn't return but updates the `ws_result` object variable with the result
                 """
                 async with websockets.connect(
                         self.url
@@ -223,7 +268,7 @@ class SubstrateInterface:
                     else:
                         ws_result.update(json.loads(await websocket.recv()))
 
-            asyncio.get_event_loop().run_until_complete(ws_request(payload))
+            asyncio.run(ws_request(payload))
             json_body = ws_result
 
         else:
@@ -839,34 +884,49 @@ class SubstrateInterface:
     def verify_data(self, data):
         pass
 
-    def sign_data(self, data, keypair: Keypair):
+    def generate_signature_payload(self, call, era=None, nonce=0, tip=0, include_call_length=False):
 
-        if self.sub_key:
-            if not keypair.mnemonic:
-                raise ConfigurationError('mnemonic must be set on keypair to use subkey')
-            return self.sub_key.sign(data, keypair.mnemonic)
+        # Retrieve genesis hash
+        genesis_hash = self.get_block_hash(0)
+
+        if era:
+            if era != '00':
+                # TODO implement MortalEra transactions
+                raise NotImplementedError("Mortal transactions not yet implemented")
+        else:
+            era = '00'
+
+        # Create signature payload
+        signature_payload = ScaleDecoder.get_decoder_class('ExtrinsicPayloadValue')
+
+        if include_call_length:
+
+            length_obj = RuntimeConfiguration().get_decoder_class('Bytes')
+            call_data = str(length_obj().encode(str(call.data)))
 
         else:
-            if data[0:2] == '0x':
-                data = bytes.fromhex(data[2:])
-            else:
-                data = data.encode()
+            call_data = str(call.data)
 
-            if not keypair.private_key:
-                raise ConfigurationError('private_key must be set on keypair to use sr25519 bindings')
+        signature_payload.encode({
+            'call': call_data,
+            'era': era,
+            'nonce': nonce,
+            'tip': tip,
+            'specVersion': self.runtime_version,
+            'genesisHash': genesis_hash,
+            'blockHash': genesis_hash
+        })
 
-            signature = sr25519.sign(
-                (bytes.fromhex(keypair.public_key[2:]), bytes.fromhex(keypair.private_key[2:])),
-                data
-            )
-            return "0x{}".format(signature.hex())
+        return signature_payload.data
 
-    def create_signed_extrinsic(self, call, keypair: Keypair, nonce=None, tip=0):
+    def create_signed_extrinsic(self, call, keypair: Keypair, era=None, nonce=None, tip=0, signature=None):
         """
         Creates a extrinsic signed by given account details
 
         Parameters
         ----------
+        signature
+        era
         keypair
         call
         nonce
@@ -885,27 +945,19 @@ class SubstrateInterface:
         if not nonce:
             nonce = self.get_account_nonce(keypair.public_key) or 0
 
-        # Retrieve genesis hash
-        genesis_hash = self.get_block_hash(0)
+        if era:
+            if era != '00':
+                # TODO implement MortalEra transactions
+                raise NotImplementedError("Mortal transactions not yet implemented")
+        else:
+            era = '00'
 
-        # TODO implement MortalEra transactions
-        era = '00'
+        if not signature:
+            # Create signature payload
+            signature_payload = self.generate_signature_payload(call=call, era=era, nonce=nonce, tip=tip)
 
-        # Create signature payload
-        signature_payload = ScaleDecoder.get_decoder_class('ExtrinsicPayloadValue')
-
-        signature_payload.encode({
-            'call': str(call.data),
-            'era': era,
-            'nonce': nonce,
-            'tip': tip,
-            'specVersion': self.runtime_version,
-            'genesisHash': genesis_hash,
-            'blockHash': genesis_hash
-        })
-
-        # Sign payload
-        signature = self.sign_data(data=str(signature_payload.data), keypair=keypair)
+            # Sign payload
+            signature = keypair.sign(signature_payload)
 
         # Create extrinsic
         extrinsic = ScaleDecoder.get_decoder_class('Extrinsic', metadata=self.metadata_decoder)
@@ -918,8 +970,8 @@ class SubstrateInterface:
             'call_module': call.value['call_module'],
             'call_args': call.value['call_args'],
             'nonce': nonce,
-            'era': '00',
-            'tip': 0
+            'era': era,
+            'tip': tip
         })
 
         # Set extrinsic hash
