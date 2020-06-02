@@ -204,7 +204,7 @@ class SubstrateInterface:
         self.debug = False
 
     def debug_message(self, message):
-        log.info(message)
+        log.debug(message)
 
     def rpc_request(self, method, params, result_handler=None):
         """
