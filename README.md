@@ -134,7 +134,7 @@ call = substrate.compose_call(
 extrinsic = substrate.create_signed_extrinsic(call=call, keypair=keypair)
 
 try:
-    result = substrate.send_extrinsic(extrinsic, wait_for_inclusion=True)
+    result = substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
     print("Extrinsic '{}' sent and included in block '{}'".format(result['extrinsic_hash'], result['block_hash']))
 
 except SubstrateRequestException as e:

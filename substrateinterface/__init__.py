@@ -910,16 +910,20 @@ class SubstrateInterface:
         else:
             call_data = str(call.data)
 
-        signature_payload.encode({
+        payload_dict = {
             'call': call_data,
             'era': era,
             'nonce': nonce,
             'tip': tip,
             'specVersion': self.runtime_version,
-            'transactionVersion': self.transaction_version,
             'genesisHash': genesis_hash,
             'blockHash': genesis_hash
-        })
+        }
+
+        if self.transaction_version:
+            payload_dict['transactionVersion'] = self.transaction_version
+
+        signature_payload.encode(payload_dict)
 
         return signature_payload.data
 
