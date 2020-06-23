@@ -2,10 +2,20 @@ from substrateinterface import SubstrateInterface, Keypair, SubstrateRequestExce
 from substrateinterface.utils.ss58 import ss58_encode
 
 settings = [{"name": "kusama",
-             "substrate": SubstrateInterface(url="wss://kusama-rpc.polkadot.io/",
+             "substrate": SubstrateInterface(url="wss://kusama-rpc.polkadot.io/", # 0.8.8 (on June 23rd)
                                              address_type=2, type_registry_preset='kusama'),
              "account" :    "EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk",
-             "block_hash" : "0x588930468212316d8a75ede0bec0bc949451c164e2cea07ccfc425f497b077b7"}]
+             "block_hash" : "0x588930468212316d8a75ede0bec0bc949451c164e2cea07ccfc425f497b077b7"},
+             
+             {"name": "substrate",
+             "substrate": SubstrateInterface(url="wss://dev-node.substrate.dev"), # rc2 (on June 23rd)
+             "account" :    "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", # Alice
+             "block_hash" : None},
+             
+             {"name": "node-template", # TODO
+             "substrate": SubstrateInterface(url="ws://127.0.0.1:9944/"),
+             "account" :    "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", # Alice
+             "block_hash" : None}]
 
 
 def example_calls(substrate, account, block_hash=None):
@@ -53,15 +63,18 @@ def example_calls(substrate, account, block_hash=None):
         ).get('result')
     ))
     
-    print("Balance @ {}: {} DOT".format(
-        block_hash,
-        substrate.get_runtime_state(
-            module='Balances',
-            storage_function='FreeBalance',
-            params=[account],
-            block_hash=block_hash
-        ).get('result')
-    ))
+    try:
+        print("Balance @ {}: {} DOT".format(
+            block_hash,
+            substrate.get_runtime_state(
+                module='Balances',
+                storage_function='FreeBalance',
+                params=[account],
+                block_hash=block_hash
+            ).get('result')
+        ))
+    except Exception as e:
+        print ("ERROR: %s %s" %(type(e), e))
     
     # Create, sign and submit extrinsic example
     
@@ -96,7 +109,7 @@ def example_calls(substrate, account, block_hash=None):
 
 if __name__ == '__main__':
     for s in settings:
-        print("\n%s" % s["name"]) 
+        print("\n#############\n%s" % s["name"]) 
         example_calls(s["substrate"], s["account"], s["block_hash"]) 
 
     
