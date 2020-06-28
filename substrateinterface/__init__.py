@@ -920,7 +920,7 @@ class SubstrateInterface:
             'blockHash': genesis_hash
         }
 
-        if self.transaction_version:
+        if self.transaction_version is not None:
             payload_dict['transactionVersion'] = self.transaction_version
 
         signature_payload.encode(payload_dict)

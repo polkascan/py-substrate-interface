@@ -39,60 +39,48 @@
 #
 
 import unittest
+
+from scalecodec.base import RuntimeConfiguration, ScaleType
+
 from substrateinterface import SubstrateInterface, Keypair, SubstrateRequestException
 from test import settings
 
 
-class CreateExtrinsicsTestCase(unittest.TestCase):
+class KusamaTypeRegistryTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.kusama_substrate = SubstrateInterface(
+        cls.substrate = SubstrateInterface(
             url=settings.KUSAMA_NODE_URL,
             address_type=2,
             type_registry_preset='kusama'
         )
 
-        cls.polkadot_substrate = SubstrateInterface(
+    def test_type_registry_compatibility(self):
+
+        for scale_type in self.substrate.get_type_registry():
+            obj = RuntimeConfiguration().get_decoder_class(scale_type)
+
+            self.assertIsNotNone(obj, '{} not supported'.format(scale_type))
+
+
+class PolkadotTypeRegistryTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.substrate = SubstrateInterface(
             url=settings.POLKADOT_NODE_URL,
             address_type=0,
             type_registry_preset='polkadot'
         )
 
-    def test_create_balance_transfer(self):
-        # Create new keypair
-        mnemonic = Keypair.generate_mnemonic()
-        keypair = Keypair.create_from_mnemonic(mnemonic, address_type=2)
+    def test_type_registry_compatibility(self):
 
-        for substrate in [self.kusama_substrate, self.polkadot_substrate]:
+        for scale_type in self.substrate.get_type_registry():
 
-            # Create balance transfer call
-            call = substrate.compose_call(
-                call_module='Balances',
-                call_function='transfer',
-                call_params={
-                    'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
-                    'value': 2 * 10 ** 3
-                }
-            )
+            obj = RuntimeConfiguration().get_decoder_class(scale_type)
 
-            extrinsic = substrate.create_signed_extrinsic(call=call, keypair=keypair)
-
-            self.assertEqual(extrinsic.address.value, keypair.public_key)
-            self.assertEqual(extrinsic.call_module.name, 'Balances')
-            self.assertEqual(extrinsic.call.name, 'transfer')
-
-            # Randomly created account should always have 0 nonce, otherwise account already exists
-            self.assertEqual(extrinsic.nonce.value, 0)
-
-            try:
-                substrate.submit_extrinsic(extrinsic)
-
-                self.fail('Should raise no funds to pay fees exception')
-
-            except SubstrateRequestException as e:
-                # Extrinsic should be successful if account had balance, eitherwise 'Bad proof' error should be raised
-                self.assertEqual(e.args[0]['data'], 'Inability to pay some fees (e.g. account balance too low)')
+            self.assertIsNotNone(obj, '{} not supported'.format(scale_type))
 
 
 if __name__ == '__main__':

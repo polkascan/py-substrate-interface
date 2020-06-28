@@ -19,4 +19,7 @@
 #  settings.py
 #
 
-NODE_URL = 'wss://kusama-rpc.polkadot.io/'
+KUSAMA_NODE_URL = 'wss://kusama-rpc.polkadot.io/'
+POLKADOT_NODE_URL = 'wss://rpc.polkadot.io/'
+
+
