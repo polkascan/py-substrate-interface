@@ -14,12 +14,11 @@ class TestRuntimeState(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        RuntimeConfiguration().update_type_registry(load_type_registry_preset("default"))
 
         metadata_decoder = MetadataDecoder(ScaleBytes(metadata_v10_hex))
         metadata_decoder.decode()
 
-        cls.substrate = SubstrateInterface(url='dummy', address_type=2)
+        cls.substrate = SubstrateInterface(url='dummy', address_type=2, type_registry_preset='kusama')
         cls.substrate.get_block_metadata = MagicMock(return_value=metadata_decoder)
 
     def test_plaintype_call(self):
