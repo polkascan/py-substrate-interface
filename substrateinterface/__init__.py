@@ -40,7 +40,7 @@ from bip39 import bip39_to_mini_secret, bip39_generate
 import sr25519
 
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class Keypair:
@@ -198,6 +198,7 @@ class SubstrateInterface:
         self.transaction_version = None
 
         self.block_hash = None
+        self.block_id = None
 
         self.metadata_cache = {}
         self.type_registry_cache = {}
@@ -207,7 +208,7 @@ class SubstrateInterface:
         self.debug = False
 
     def debug_message(self, message):
-        log.debug(message)
+        logger.debug(message)
 
     def rpc_request(self, method, params, result_handler=None):
         """
@@ -583,7 +584,7 @@ class SubstrateInterface:
 
         """
 
-        if metadata_version and metadata_version >= 9:
+        if not metadata_version or metadata_version >= 9:
             storage_hash = xxh128(storage_module.encode()) + xxh128(storage_function.encode())
 
             if params:
@@ -684,12 +685,21 @@ class SubstrateInterface:
         if block_id and block_hash:
             raise ValueError('Cannot provide block_hash and block_id at the same time')
 
+        # Check if runtime state already set to current block
+        if (block_hash and block_hash == self.block_hash) or (block_id and block_id == self.block_id):
+            return
+
         if block_id:
             block_hash = self.get_block_hash(block_id)
 
         self.block_hash = block_hash
+        self.block_id = block_id
 
         runtime_info = self.get_block_runtime_version(block_hash=self.block_hash)
+
+        # Check if runtime state already set to current block
+        if runtime_info.get("specVersion") == self.runtime_version:
+            return
 
         self.runtime_version = runtime_info.get("specVersion")
         self.transaction_version = runtime_info.get("transactionVersion")
