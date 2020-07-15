@@ -25,7 +25,7 @@ import re
 import requests
 import websockets
 
-from scalecodec import ScaleBytes
+from scalecodec import ScaleBytes, GenericCall
 from scalecodec.base import ScaleDecoder, RuntimeConfiguration
 from scalecodec.block import ExtrinsicsDecoder, EventsDecoder, LogDigest
 from scalecodec.metadata import MetadataDecoder
@@ -956,7 +956,7 @@ class SubstrateInterface:
         """
 
         # Check requirements
-        if call.__class__.__name__ != 'Call':
+        if not isinstance(call, GenericCall):
             raise TypeError("'call' must be of type Call")
 
         # Retrieve nonce
