@@ -689,7 +689,7 @@ class SubstrateInterface:
         if (block_hash and block_hash == self.block_hash) or (block_id and block_id == self.block_id):
             return
 
-        if block_id:
+        if block_id is not None:
             block_hash = self.get_block_hash(block_id)
 
         self.block_hash = block_hash
@@ -1569,7 +1569,7 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash, block_id=block_id)
 
-        response = self.rpc_request("chain_getBlock", [block_hash]).get('result')
+        response = self.rpc_request("chain_getBlock", [self.block_hash]).get('result')
 
         response['block']['header']['number'] = int(response['block']['header']['number'], 16)
 
