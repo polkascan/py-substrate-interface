@@ -1,7 +1,7 @@
 # Python Substrate Interface
- 
+
 [![Travis CI Build Status](https://api.travis-ci.org/polkascan/py-substrate-interface.svg?branch=master)](https://travis-ci.org/polkascan/py-substrate-interface)
-[![Latest Version](https://img.shields.io/pypi/v/substrate-interface.svg)](https://pypi.org/project/substrate-interface/) 
+[![Latest Version](https://img.shields.io/pypi/v/substrate-interface.svg)](https://pypi.org/project/substrate-interface/)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/substrate-interface.svg)](https://pypi.org/project/substrate-interface/)
 [![License](https://img.shields.io/pypi/l/substrate-interface.svg)](https://github.com/polkascan/py-substrate-interface/blob/master/LICENSE)
 
@@ -9,7 +9,7 @@ Python Substrate Interface Library
 
 ## Description
 This library specializes in interfacing with a Substrate node, providing additional convenience methods to deal with
-SCALE encoding/decoding (the default output and input format of the Substrate JSONRPC), metadata parsing, type registry 
+SCALE encoding/decoding (the default output and input format of the Substrate JSONRPC), metadata parsing, type registry
 management and versioning of types.
 
 ## Documentation
@@ -33,11 +33,11 @@ substrate = SubstrateInterface(
     type_registry_preset='kusama'
 )
 
-substrate.get_chain_head() 
+substrate.get_chain_head()
 ```
 Note on support for wss, this is still quite limited at the moment as connections are not reused yet. Until support is
 improved it is prefered to use http endpoints (e.g. http://127.0.0.1:9933)
-   
+
 ### Get extrinsics for a certain block
 
 ```python
@@ -74,8 +74,8 @@ for extrinsic in result['block']['extrinsics']:
 
 
 ### Make a storage call
-The modules and storage functions are provided in the metadata (see `substrate.get_metadata_storage_functions()`), 
-parameters will be automatically converted to SCALE-bytes (also including decoding of SS58 addresses).   
+The modules and storage functions are provided in the metadata (see `substrate.get_metadata_storage_functions()`),
+parameters will be automatically converted to SCALE-bytes (also including decoding of SS58 addresses).
 
 ```python
 balance_info = substrate.get_runtime_state(
@@ -105,6 +105,17 @@ if balance_info:
         block_hash,
         balance_info.get('data').get('free', 0) / 10**12
     ))
+```
+
+Or get all the key pairs of a map:
+
+```python
+# Get all the stash and controller bondings.
+all_bonded_stash_ctrls = substrate.iterate_map(
+    module='Staking',
+    storage_function='Bonded',
+    block_hash=block_hash
+)
 ```
 
 ### Create and send signed extrinsics
@@ -157,9 +168,9 @@ if keypair.verify("Test123", signature):
 ### Metadata and type versioning
 
 Py-substrate-interface makes it also possible to easily interprete changed types and historic runtimes. As an example
-we create an (not very useful) historic call of a module that has been removed later on: retrieval of historic metadata and 
-apply the correct version of types in the type registry is all done automatically. Because parsing of metadata and 
-type registry is quite heavy, the result will be cached per runtime id. In the future there could be support for 
+we create an (not very useful) historic call of a module that has been removed later on: retrieval of historic metadata and
+apply the correct version of types in the type registry is all done automatically. Because parsing of metadata and
+type registry is quite heavy, the result will be cached per runtime id. In the future there could be support for
 caching backends like Redis to make this cache more persistent.
 
 Create an unsigned extrinsic of a module that was removed by providing block hash:
