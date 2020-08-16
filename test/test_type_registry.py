@@ -37,6 +37,10 @@
 #
 #  test_create_extrinsics.py
 #
+import os
+import sys
+
+sys.path.append(os.path.abspath('../../py-scale-codec'))
 
 import unittest
 
