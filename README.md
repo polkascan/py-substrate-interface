@@ -153,6 +153,21 @@ if keypair.verify("Test123", signature):
     print('Verified')
 ```
 
+### Create keypair using Subkey wrapper (using local subkey binary)
+
+```python
+sub_key = Subkey(subkey_path='/usr/local/bin/subkey')
+subkey_result = sub_key.inspect(network='kusama', suri="appear fortune produce assist volcano deal shoulder foot engine harvest pupil agent//Alice")
+keypair = Keypair.create_from_seed(subkey_result["secretSeed"], address_type=2)
+```
+
+### Create keypair using Subkey wrapper (using Docker image parity/subkey:latest)
+
+```python
+sub_key = Subkey(use_docker=True)
+subkey_result = sub_key.inspect(network='kusama', suri="appear fortune produce assist volcano deal shoulder foot engine harvest pupil agent//Alice")
+keypair = Keypair.create_from_seed(subkey_result["secretSeed"], address_type=2)
+```
 
 ### Metadata and type versioning
 

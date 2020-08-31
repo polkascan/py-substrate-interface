@@ -1,21 +1,23 @@
-# Python Substrate Interface
+#  Polkascan Py-subkey
 #
-# Copyright 2018-2020 openAware BV (NL).
-# This file is part of Polkascan.
+#  Copyright 2018-2020 openAware BV (NL).
+#  This file is part of Polkascan.
 #
-# Polkascan is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  Polkascan is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# Polkascan is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  Polkascan is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with Polkascan. If not, see <http://www.gnu.org/licenses/>.
-
+#  You should have received a copy of the GNU General Public License
+#  along with Polkascan. If not, see <http://www.gnu.org/licenses/>.
+#
+#  __init__.py
+#
 import json
 import shlex
 import subprocess
@@ -41,6 +43,9 @@ class SubkeyImplementation(ABC):
 
     def generate_key(self, network):
         return self.execute_command(['--network={}'.format(network), 'generate'])
+
+    def inspect(self, network, suri):
+        return self.execute_command(['--network={}'.format(network), 'inspect', suri])
 
     def sign(self, data, suri, is_hex=True):
 
@@ -108,12 +113,20 @@ class LocalSubkeyImplementation(SubkeyImplementation):
         return output
 
 
+class HttpSubkeyImplementation(SubkeyImplementation):
+
+    def execute_command(self, command, stdin=None, json_output=True, **kwargs):
+        pass
+
+
 class Subkey:
 
-    def __init__(self, use_docker=True, docker_image=None, subkey_path=None):
+    def __init__(self, use_docker=True, docker_image=None, subkey_path=None, subkey_host=None):
 
         if subkey_path:
             self.implementation = LocalSubkeyImplementation(subkey_path=subkey_path)
+        elif subkey_host:
+            self.implementation = HttpSubkeyImplementation()
         elif use_docker:
             self.implementation = DockerSubkeyImplementation(docker_image=docker_image)
         else:
@@ -126,6 +139,9 @@ class Subkey:
 
     def generate_key(self, network):
         return self.implementation.generate_key(network=network)
+
+    def inspect(self, network, suri):
+        return self.implementation.inspect(network=network, suri=suri)
 
     def sign(self, data, suri, is_hex=True):
         if is_hex:
