@@ -26,30 +26,27 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python"># Python Substrate Interface
+<pre><code class="python"># Python Substrate Interface Library
 #
-# Copyright 2018-2020 openAware BV (NL).
-# This file is part of Polkascan.
+# Copyright 2018-2020 Stichting Polkascan (Polkascan Foundation).
 #
-# Polkascan is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Licensed under the Apache License, Version 2.0 (the &#34;License&#34;);
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Polkascan is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# http://www.apache.org/licenses/LICENSE-2.0
 #
-# You should have received a copy of the GNU General Public License
-# along with Polkascan. If not, see &lt;http://www.gnu.org/licenses/&gt;.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an &#34;AS IS&#34; BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import asyncio
 import binascii
 import json
 import logging
 import re
-from hashlib import blake2b
 
 import requests
 import websockets
@@ -73,8 +70,6 @@ logger = logging.getLogger(__name__)
 
 
 class Keypair:
-
-    chain_code = b&#34;SchnorrRistrettoHDKD&#34;
 
     def __init__(self, ss58_address=None, public_key=None, private_key=None, address_type=42):
 
@@ -111,32 +106,14 @@ class Keypair:
         return bip39_generate(words)
 
     @classmethod
-    def create_from_mnemonic(cls, mnemonic, hard_path=None, address_type=42):
+    def create_from_mnemonic(cls, mnemonic, address_type=42):
         seed_array = bip39_to_mini_secret(mnemonic, &#34;&#34;)
 
-        if hard_path:
-            # Get private and public key from seed
-            public_key, private_key = sr25519.pair_from_seed(bytes(seed_array))
-
-            # Private derivation
-            _, child_pubkey, child_privkey = sr25519.derive_keypair(
-                (public_key, public_key, private_key),
-                hard_path.encode()
-            )
-
-            return cls.create_from_private_key(
-                private_key=child_privkey.hex(),
-                public_key=child_pubkey.hex(),
-                address_type=address_type
-            )
-
-        else:
-
-            keypair = cls.create_from_seed(
-                seed_hex=binascii.hexlify(bytearray(seed_array)).decode(&#34;ascii&#34;),
-                address_type=address_type
-            )
-            keypair.mnemonic = mnemonic
+        keypair = cls.create_from_seed(
+            seed_hex=binascii.hexlify(bytearray(seed_array)).decode(&#34;ascii&#34;),
+            address_type=address_type
+        )
+        keypair.mnemonic = mnemonic
 
         return keypair
 
@@ -321,7 +298,7 @@ class SubstrateInterface:
                     else:
                         ws_result.update(json.loads(await websocket.recv()))
 
-            asyncio.get_event_loop().run_until_complete(ws_request(payload))
+            asyncio.run(ws_request(payload))
             json_body = ws_result
 
         else:
@@ -1914,8 +1891,6 @@ class SubstrateInterface:
 </summary>
 <pre><code class="python">class Keypair:
 
-    chain_code = b&#34;SchnorrRistrettoHDKD&#34;
-
     def __init__(self, ss58_address=None, public_key=None, private_key=None, address_type=42):
 
         if ss58_address and not public_key:
@@ -1951,32 +1926,14 @@ class SubstrateInterface:
         return bip39_generate(words)
 
     @classmethod
-    def create_from_mnemonic(cls, mnemonic, hard_path=None, address_type=42):
+    def create_from_mnemonic(cls, mnemonic, address_type=42):
         seed_array = bip39_to_mini_secret(mnemonic, &#34;&#34;)
 
-        if hard_path:
-            # Get private and public key from seed
-            public_key, private_key = sr25519.pair_from_seed(bytes(seed_array))
-
-            # Private derivation
-            _, child_pubkey, child_privkey = sr25519.derive_keypair(
-                (public_key, public_key, private_key),
-                hard_path.encode()
-            )
-
-            return cls.create_from_private_key(
-                private_key=child_privkey.hex(),
-                public_key=child_pubkey.hex(),
-                address_type=address_type
-            )
-
-        else:
-
-            keypair = cls.create_from_seed(
-                seed_hex=binascii.hexlify(bytearray(seed_array)).decode(&#34;ascii&#34;),
-                address_type=address_type
-            )
-            keypair.mnemonic = mnemonic
+        keypair = cls.create_from_seed(
+            seed_hex=binascii.hexlify(bytearray(seed_array)).decode(&#34;ascii&#34;),
+            address_type=address_type
+        )
+        keypair.mnemonic = mnemonic
 
         return keypair
 
@@ -2038,17 +1995,10 @@ class SubstrateInterface:
 
         return sr25519.verify(signature, data, bytes.fromhex(self.public_key[2:]))</code></pre>
 </details>
-<h3>Class variables</h3>
-<dl>
-<dt id="substrateinterface.Keypair.chain_code"><code class="name">var <span class="ident">chain_code</span></code></dt>
-<dd>
-<div class="desc"></div>
-</dd>
-</dl>
 <h3>Static methods</h3>
 <dl>
 <dt id="substrateinterface.Keypair.create_from_mnemonic"><code class="name flex">
-<span>def <span class="ident">create_from_mnemonic</span></span>(<span>mnemonic, hard_path=None, address_type=42)</span>
+<span>def <span class="ident">create_from_mnemonic</span></span>(<span>mnemonic, address_type=42)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -2057,32 +2007,14 @@ class SubstrateInterface:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
-def create_from_mnemonic(cls, mnemonic, hard_path=None, address_type=42):
+def create_from_mnemonic(cls, mnemonic, address_type=42):
     seed_array = bip39_to_mini_secret(mnemonic, &#34;&#34;)
 
-    if hard_path:
-        # Get private and public key from seed
-        public_key, private_key = sr25519.pair_from_seed(bytes(seed_array))
-
-        # Private derivation
-        _, child_pubkey, child_privkey = sr25519.derive_keypair(
-            (public_key, public_key, private_key),
-            hard_path.encode()
-        )
-
-        return cls.create_from_private_key(
-            private_key=child_privkey.hex(),
-            public_key=child_pubkey.hex(),
-            address_type=address_type
-        )
-
-    else:
-
-        keypair = cls.create_from_seed(
-            seed_hex=binascii.hexlify(bytearray(seed_array)).decode(&#34;ascii&#34;),
-            address_type=address_type
-        )
-        keypair.mnemonic = mnemonic
+    keypair = cls.create_from_seed(
+        seed_hex=binascii.hexlify(bytearray(seed_array)).decode(&#34;ascii&#34;),
+        address_type=address_type
+    )
+    keypair.mnemonic = mnemonic
 
     return keypair</code></pre>
 </details>
@@ -2359,7 +2291,7 @@ def generate_mnemonic(cls, words=12):
                     else:
                         ws_result.update(json.loads(await websocket.recv()))
 
-            asyncio.get_event_loop().run_until_complete(ws_request(payload))
+            asyncio.run(ws_request(payload))
             json_body = ws_result
 
         else:
@@ -6010,7 +5942,7 @@ use this method to perform the request.</p>
                 else:
                     ws_result.update(json.loads(await websocket.recv()))
 
-        asyncio.get_event_loop().run_until_complete(ws_request(payload))
+        asyncio.run(ws_request(payload))
         json_body = ws_result
 
     else:
@@ -6420,7 +6352,6 @@ use this method to perform the request.</p>
 <li>
 <h4><code><a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a></code></h4>
 <ul class="">
-<li><code><a title="substrateinterface.Keypair.chain_code" href="#substrateinterface.Keypair.chain_code">chain_code</a></code></li>
 <li><code><a title="substrateinterface.Keypair.create_from_mnemonic" href="#substrateinterface.Keypair.create_from_mnemonic">create_from_mnemonic</a></code></li>
 <li><code><a title="substrateinterface.Keypair.create_from_private_key" href="#substrateinterface.Keypair.create_from_private_key">create_from_private_key</a></code></li>
 <li><code><a title="substrateinterface.Keypair.create_from_seed" href="#substrateinterface.Keypair.create_from_seed">create_from_seed</a></code></li>

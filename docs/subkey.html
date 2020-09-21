@@ -26,23 +26,21 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python"># Python Substrate Interface
+<pre><code class="python"># Python Substrate Interface Library
 #
-# Copyright 2018-2020 openAware BV (NL).
-# This file is part of Polkascan.
+# Copyright 2018-2020 Stichting Polkascan (Polkascan Foundation).
 #
-# Polkascan is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Licensed under the Apache License, Version 2.0 (the &#34;License&#34;);
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Polkascan is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# http://www.apache.org/licenses/LICENSE-2.0
 #
-# You should have received a copy of the GNU General Public License
-# along with Polkascan. If not, see &lt;http://www.gnu.org/licenses/&gt;.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an &#34;AS IS&#34; BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import json
 import shlex
@@ -69,6 +67,9 @@ class SubkeyImplementation(ABC):
 
     def generate_key(self, network):
         return self.execute_command([&#39;--network={}&#39;.format(network), &#39;generate&#39;])
+
+    def inspect(self, network, suri):
+        return self.execute_command([&#39;--network={}&#39;.format(network), &#39;inspect&#39;, suri])
 
     def sign(self, data, suri, is_hex=True):
 
@@ -136,12 +137,20 @@ class LocalSubkeyImplementation(SubkeyImplementation):
         return output
 
 
+class HttpSubkeyImplementation(SubkeyImplementation):
+
+    def execute_command(self, command, stdin=None, json_output=True, **kwargs):
+        pass
+
+
 class Subkey:
 
-    def __init__(self, use_docker=True, docker_image=None, subkey_path=None):
+    def __init__(self, use_docker=True, docker_image=None, subkey_path=None, subkey_host=None):
 
         if subkey_path:
             self.implementation = LocalSubkeyImplementation(subkey_path=subkey_path)
+        elif subkey_host:
+            self.implementation = HttpSubkeyImplementation()
         elif use_docker:
             self.implementation = DockerSubkeyImplementation(docker_image=docker_image)
         else:
@@ -154,6 +163,9 @@ class Subkey:
 
     def generate_key(self, network):
         return self.implementation.generate_key(network=network)
+
+    def inspect(self, network, suri):
+        return self.implementation.inspect(network=network, suri=suri)
 
     def sign(self, data, suri, is_hex=True):
         if is_hex:
@@ -281,6 +293,43 @@ inheritance.</p></div>
 </dd>
 </dl>
 </dd>
+<dt id="substrateinterface.subkey.HttpSubkeyImplementation"><code class="flex name class">
+<span>class <span class="ident">HttpSubkeyImplementation</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Helper class that provides a standard way to create an ABC using
+inheritance.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class HttpSubkeyImplementation(SubkeyImplementation):
+
+    def execute_command(self, command, stdin=None, json_output=True, **kwargs):
+        pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="substrateinterface.subkey.SubkeyImplementation" href="#substrateinterface.subkey.SubkeyImplementation">SubkeyImplementation</a></li>
+<li>abc.ABC</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="substrateinterface.subkey.HttpSubkeyImplementation.execute_command"><code class="name flex">
+<span>def <span class="ident">execute_command</span></span>(<span>self, command, stdin=None, json_output=True, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def execute_command(self, command, stdin=None, json_output=True, **kwargs):
+    pass</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
 <dt id="substrateinterface.subkey.InvalidConfigurationError"><code class="flex name class">
 <span>class <span class="ident">InvalidConfigurationError</span></span>
 <span>(</span><span>...)</span>
@@ -369,7 +418,7 @@ inheritance.</p></div>
 </dd>
 <dt id="substrateinterface.subkey.Subkey"><code class="flex name class">
 <span>class <span class="ident">Subkey</span></span>
-<span>(</span><span>use_docker=True, docker_image=None, subkey_path=None)</span>
+<span>(</span><span>use_docker=True, docker_image=None, subkey_path=None, subkey_host=None)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -379,10 +428,12 @@ inheritance.</p></div>
 </summary>
 <pre><code class="python">class Subkey:
 
-    def __init__(self, use_docker=True, docker_image=None, subkey_path=None):
+    def __init__(self, use_docker=True, docker_image=None, subkey_path=None, subkey_host=None):
 
         if subkey_path:
             self.implementation = LocalSubkeyImplementation(subkey_path=subkey_path)
+        elif subkey_host:
+            self.implementation = HttpSubkeyImplementation()
         elif use_docker:
             self.implementation = DockerSubkeyImplementation(docker_image=docker_image)
         else:
@@ -395,6 +446,9 @@ inheritance.</p></div>
 
     def generate_key(self, network):
         return self.implementation.generate_key(network=network)
+
+    def inspect(self, network, suri):
+        return self.implementation.inspect(network=network, suri=suri)
 
     def sign(self, data, suri, is_hex=True):
         if is_hex:
@@ -427,6 +481,19 @@ inheritance.</p></div>
 </summary>
 <pre><code class="python">def generate_key(self, network):
     return self.implementation.generate_key(network=network)</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.subkey.Subkey.inspect"><code class="name flex">
+<span>def <span class="ident">inspect</span></span>(<span>self, network, suri)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def inspect(self, network, suri):
+    return self.implementation.inspect(network=network, suri=suri)</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.subkey.Subkey.sign"><code class="name flex">
@@ -465,6 +532,9 @@ inheritance.</p></div>
     def generate_key(self, network):
         return self.execute_command([&#39;--network={}&#39;.format(network), &#39;generate&#39;])
 
+    def inspect(self, network, suri):
+        return self.execute_command([&#39;--network={}&#39;.format(network), &#39;inspect&#39;, suri])
+
     def sign(self, data, suri, is_hex=True):
 
         return self.execute_command(
@@ -480,6 +550,7 @@ inheritance.</p></div>
 <h3>Subclasses</h3>
 <ul class="hlist">
 <li><a title="substrateinterface.subkey.DockerSubkeyImplementation" href="#substrateinterface.subkey.DockerSubkeyImplementation">DockerSubkeyImplementation</a></li>
+<li><a title="substrateinterface.subkey.HttpSubkeyImplementation" href="#substrateinterface.subkey.HttpSubkeyImplementation">HttpSubkeyImplementation</a></li>
 <li><a title="substrateinterface.subkey.LocalSubkeyImplementation" href="#substrateinterface.subkey.LocalSubkeyImplementation">LocalSubkeyImplementation</a></li>
 </ul>
 <h3>Methods</h3>
@@ -509,6 +580,19 @@ def execute_command(self, command, stdin=None, json_output=True, **kwargs):
 </summary>
 <pre><code class="python">def generate_key(self, network):
     return self.execute_command([&#39;--network={}&#39;.format(network), &#39;generate&#39;])</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.subkey.SubkeyImplementation.inspect"><code class="name flex">
+<span>def <span class="ident">inspect</span></span>(<span>self, network, suri)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def inspect(self, network, suri):
+    return self.execute_command([&#39;--network={}&#39;.format(network), &#39;inspect&#39;, suri])</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.subkey.SubkeyImplementation.sign"><code class="name flex">
@@ -557,6 +641,12 @@ def execute_command(self, command, stdin=None, json_output=True, **kwargs):
 </ul>
 </li>
 <li>
+<h4><code><a title="substrateinterface.subkey.HttpSubkeyImplementation" href="#substrateinterface.subkey.HttpSubkeyImplementation">HttpSubkeyImplementation</a></code></h4>
+<ul class="">
+<li><code><a title="substrateinterface.subkey.HttpSubkeyImplementation.execute_command" href="#substrateinterface.subkey.HttpSubkeyImplementation.execute_command">execute_command</a></code></li>
+</ul>
+</li>
+<li>
 <h4><code><a title="substrateinterface.subkey.InvalidConfigurationError" href="#substrateinterface.subkey.InvalidConfigurationError">InvalidConfigurationError</a></code></h4>
 </li>
 <li>
@@ -570,6 +660,7 @@ def execute_command(self, command, stdin=None, json_output=True, **kwargs):
 <ul class="">
 <li><code><a title="substrateinterface.subkey.Subkey.execute_command" href="#substrateinterface.subkey.Subkey.execute_command">execute_command</a></code></li>
 <li><code><a title="substrateinterface.subkey.Subkey.generate_key" href="#substrateinterface.subkey.Subkey.generate_key">generate_key</a></code></li>
+<li><code><a title="substrateinterface.subkey.Subkey.inspect" href="#substrateinterface.subkey.Subkey.inspect">inspect</a></code></li>
 <li><code><a title="substrateinterface.subkey.Subkey.sign" href="#substrateinterface.subkey.Subkey.sign">sign</a></code></li>
 </ul>
 </li>
@@ -578,6 +669,7 @@ def execute_command(self, command, stdin=None, json_output=True, **kwargs):
 <ul class="">
 <li><code><a title="substrateinterface.subkey.SubkeyImplementation.execute_command" href="#substrateinterface.subkey.SubkeyImplementation.execute_command">execute_command</a></code></li>
 <li><code><a title="substrateinterface.subkey.SubkeyImplementation.generate_key" href="#substrateinterface.subkey.SubkeyImplementation.generate_key">generate_key</a></code></li>
+<li><code><a title="substrateinterface.subkey.SubkeyImplementation.inspect" href="#substrateinterface.subkey.SubkeyImplementation.inspect">inspect</a></code></li>
 <li><code><a title="substrateinterface.subkey.SubkeyImplementation.sign" href="#substrateinterface.subkey.SubkeyImplementation.sign">sign</a></code></li>
 </ul>
 </li>
