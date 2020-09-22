@@ -70,6 +70,21 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
                 # Extrinsic should be successful if account had balance, eitherwise 'Bad proof' error should be raised
                 self.assertEqual(e.args[0]['data'], 'Inability to pay some fees (e.g. account balance too low)')
 
+    def test_generate_signature_payload(self):
+
+        call = self.polkadot_substrate.compose_call(
+            call_module='Balances',
+            call_function='transfer',
+            call_params={
+                'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
+                'value': 2 * 10 ** 3
+            }
+        )
+
+        signature_payload = self.polkadot_substrate.generate_signature_payload(call=call, nonce=2)
+
+        self.assertEqual(str(signature_payload), '0x0500586cb27c291c813ce74e86a60dad270609abf2fc8bee107e44a80ac00225c409411f000800170000000500000091b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c391b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3')
+
 
 if __name__ == '__main__':
     unittest.main()
