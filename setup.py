@@ -186,7 +186,7 @@ setup(
         'xxhash==1.3.0',
         'scalecodec>=0.10.16',
         'py-sr25519-bindings>=0.1.2',
-        'py-bip39-bindings>=0.1.5'
+        'py-bip39-bindings>=0.1.6'
     ],
 
     # List additional groups of dependencies here (e.g. development
