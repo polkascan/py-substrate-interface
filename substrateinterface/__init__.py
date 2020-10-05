@@ -768,7 +768,6 @@ class SubstrateInterface:
                             else:
                                 raise ValueError('Given storage is not a map')
 
-
         prefix = self.generate_storage_hash(module, storage_function)
         prefix_len = len(prefix)
         pairs = self.rpc_request(method="state_getPairs", params=[prefix, block_hash]).get('result')
