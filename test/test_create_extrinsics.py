@@ -1,42 +1,18 @@
-#  Polkascan Substrate Interface GUI
+# Python Substrate Interface Library
 #
-#  Copyright 2018-2020 openAware BV (NL).
-#  This file is part of Polkascan.
+# Copyright 2018-2020 Stichting Polkascan (Polkascan Foundation).
 #
-#  Polkascan is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#  Polkascan is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
+# http://www.apache.org/licenses/LICENSE-2.0
 #
-#  You should have received a copy of the GNU General Public License
-#  along with Polkascan. If not, see <http://www.gnu.org/licenses/>.
-#
-#  test_create_extrinsics.py
-#
-
-#  Polkascan Substrate Interface GUI
-#
-#
-#  Polkascan is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  Polkascan is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with Polkascan. If not, see <http://www.gnu.org/licenses/>.
-#
-#  test_create_extrinsics.py
-#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import unittest
 from substrateinterface import SubstrateInterface, Keypair, SubstrateRequestException
@@ -58,6 +34,14 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
             address_type=0,
             type_registry_preset='polkadot'
         )
+
+    def test_compatibility_polkadot_runtime(self):
+        self.polkadot_substrate.get_runtime_block()
+        self.assertLessEqual(self.polkadot_substrate.runtime_version, 24)
+
+    def test_compatibility_kusama_runtime(self):
+        self.kusama_substrate.get_runtime_block()
+        self.assertLessEqual(self.kusama_substrate.runtime_version, 2024)
 
     def test_create_balance_transfer(self):
         # Create new keypair
@@ -93,6 +77,21 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
             except SubstrateRequestException as e:
                 # Extrinsic should be successful if account had balance, eitherwise 'Bad proof' error should be raised
                 self.assertEqual(e.args[0]['data'], 'Inability to pay some fees (e.g. account balance too low)')
+
+    def test_generate_signature_payload(self):
+
+        call = self.polkadot_substrate.compose_call(
+            call_module='Balances',
+            call_function='transfer',
+            call_params={
+                'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
+                'value': 2 * 10 ** 3
+            }
+        )
+
+        signature_payload = self.polkadot_substrate.generate_signature_payload(call=call, nonce=2)
+
+        self.assertEqual(str(signature_payload), '0x0500586cb27c291c813ce74e86a60dad270609abf2fc8bee107e44a80ac00225c409411f000800180000000500000091b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c391b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3')
 
 
 if __name__ == '__main__':

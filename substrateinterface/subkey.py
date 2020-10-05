@@ -1,20 +1,18 @@
-# Python Substrate Interface
+# Python Subkey Wrapper
 #
-# Copyright 2018-2020 openAware BV (NL).
-# This file is part of Polkascan.
+# Copyright 2018-2020 Stichting Polkascan (Polkascan Foundation).
 #
-# Polkascan is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Polkascan is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# http://www.apache.org/licenses/LICENSE-2.0
 #
-# You should have received a copy of the GNU General Public License
-# along with Polkascan. If not, see <http://www.gnu.org/licenses/>.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import json
 import shlex
@@ -40,7 +38,13 @@ class SubkeyImplementation(ABC):
         pass
 
     def generate_key(self, network):
-        return self.execute_command(['--network={}'.format(network), 'generate'])
+        return self.execute_command(['generate', '--network={}'.format(network)])
+
+    def inspect(self, network, suri):
+        return self.execute_command(['inspect', '--network={}'.format(network), suri])
+
+    def vanity(self, network, pattern):
+        return self.execute_command(['vanity', '--pattern={}'.format(pattern), '--network={}'.format(network)])
 
     def sign(self, data, suri, is_hex=True):
 
@@ -59,7 +63,8 @@ class DockerSubkeyImplementation(SubkeyImplementation):
 
     def execute_command(self, command, stdin=None, json_output=True, **kwargs):
 
-        command = ['--output=json'] + command
+        if json_output:
+            command = command + ['--output-type=json']
 
         full_command = ' '.join([shlex.quote(el) for el in command])
 
@@ -75,7 +80,7 @@ class DockerSubkeyImplementation(SubkeyImplementation):
             output = output[0:-1].decode()
 
             if json_output:
-                output = json.loads(output)
+                output = json.loads(output[output.index('{'):])
 
             return output
 
@@ -93,7 +98,7 @@ class LocalSubkeyImplementation(SubkeyImplementation):
 
     def execute_command(self, command, stdin=None, json_output=True, **kwargs):
 
-        result = subprocess.run([self.subkey_path, '--output=json'] + command, input=stdin, encoding='ascii',
+        result = subprocess.run([self.subkey_path] + command + ['--output-type', 'json'], input=stdin, encoding='ascii',
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         if result.returncode > 0:
@@ -108,17 +113,25 @@ class LocalSubkeyImplementation(SubkeyImplementation):
         return output
 
 
+class HttpSubkeyImplementation(SubkeyImplementation):
+
+    def execute_command(self, command, stdin=None, json_output=True, **kwargs):
+        pass
+
+
 class Subkey:
 
-    def __init__(self, use_docker=True, docker_image=None, subkey_path=None):
+    def __init__(self, use_docker=True, docker_image=None, subkey_path=None, subkey_host=None):
 
         if subkey_path:
             self.implementation = LocalSubkeyImplementation(subkey_path=subkey_path)
+        elif subkey_host:
+            self.implementation = HttpSubkeyImplementation()
         elif use_docker:
             self.implementation = DockerSubkeyImplementation(docker_image=docker_image)
         else:
             raise InvalidConfigurationError(
-                'No valid subkey configuration, either set subkey_path, subkey_host or subkey_host'
+                'No valid subkey configuration, either set subkey_path, subkey_host or use_docker'
             )
 
     def execute_command(self, command):
@@ -126,6 +139,12 @@ class Subkey:
 
     def generate_key(self, network):
         return self.implementation.generate_key(network=network)
+
+    def vanity(self, network, pattern):
+        return self.implementation.vanity(network=network, pattern=pattern)
+
+    def inspect(self, network, suri):
+        return self.implementation.inspect(network=network, suri=suri)
 
     def sign(self, data, suri, is_hex=True):
         if is_hex:

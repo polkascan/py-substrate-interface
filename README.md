@@ -22,9 +22,24 @@ pip install substrate-interface
 
 ## Examples
 
-Simple example, initialize interface and get head block hash of Kusama chain:
-
 ### Initialization
+
+The following examples show how to initialize for supported chains:
+
+#### Polkadot
+
+```python
+substrate = SubstrateInterface(
+    url="wss://rpc.polkadot.io",
+    address_type=0,
+    type_registry_preset='polkadot'
+)
+```
+
+Note on support for `wss`, this is still quite limited at the moment as connections are not reused yet. Until support is
+improved it is prefered to use `http` endpoints (e.g. http://127.0.0.1:9933)
+
+#### Kusama
 
 ```python
 substrate = SubstrateInterface(
@@ -32,11 +47,63 @@ substrate = SubstrateInterface(
     address_type=2,
     type_registry_preset='kusama'
 )
-
-substrate.get_chain_head()
 ```
-Note on support for wss, this is still quite limited at the moment as connections are not reused yet. Until support is
-improved it is prefered to use http endpoints (e.g. http://127.0.0.1:9933)
+
+#### Kulupu
+
+```python
+substrate = SubstrateInterface(
+    url="wss://rpc.kulupu.corepaper.org/ws",
+    address_type=16,
+    type_registry_preset='kulupu'
+)
+```
+
+#### Substrate Node Template
+Compatible with https://github.com/substrate-developer-hub/substrate-node-template 
+
+```python
+substrate = SubstrateInterface(
+    url="http://127.0.0.1:9933",
+    address_type=42,
+    type_registry_preset='substrate-node-template'
+)
+ 
+```
+
+If custom types are introduced in the Substrate chain, the following example will add compatibility by creating a custom type 
+registry JSON file and including this during initialization:
+
+```json
+{
+  "runtime_id": 2,
+  "types": {
+    "MyCustomInt": "u32",
+    "MyStruct": {
+      "type": "struct",
+      "type_mapping": [
+         ["account", "AccountId"],
+         ["message", "Vec<u8>"]
+      ]
+    }
+  },
+  "versioning": [
+  ]
+}
+```
+
+```python
+custom_type_registry = load_type_registry_file("my-custom-types.json")
+
+substrate = SubstrateInterface(
+    url="http://127.0.0.1:9933",
+    address_type=42,
+    type_registry_preset='substrate-node-template',
+    type_registry=custom_type_registry
+)
+ 
+```
+
 
 ### Get extrinsics for a certain block
 
@@ -164,6 +231,21 @@ if keypair.verify("Test123", signature):
     print('Verified')
 ```
 
+### Create keypair using Subkey wrapper (using local subkey binary)
+
+```python
+sub_key = Subkey(subkey_path='/usr/local/bin/subkey')
+subkey_result = sub_key.inspect(network='kusama', suri="appear fortune produce assist volcano deal shoulder foot engine harvest pupil agent//Alice")
+keypair = Keypair.create_from_seed(subkey_result["secretSeed"], address_type=2)
+```
+
+### Create keypair using Subkey wrapper (using Docker image parity/subkey:latest)
+
+```python
+sub_key = Subkey(use_docker=True)
+subkey_result = sub_key.inspect(network='kusama', suri="appear fortune produce assist volcano deal shoulder foot engine harvest pupil agent//Alice")
+keypair = Keypair.create_from_seed(subkey_result["secretSeed"], address_type=2)
+```
 
 ### Metadata and type versioning
 
