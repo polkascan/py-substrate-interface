@@ -35,6 +35,14 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
             type_registry_preset='polkadot'
         )
 
+    def test_compatibility_polkadot_runtime(self):
+        self.polkadot_substrate.get_runtime_block()
+        self.assertLessEqual(self.polkadot_substrate.runtime_version, 24)
+
+    def test_compatibility_kusama_runtime(self):
+        self.kusama_substrate.get_runtime_block()
+        self.assertLessEqual(self.kusama_substrate.runtime_version, 2024)
+
     def test_create_balance_transfer(self):
         # Create new keypair
         mnemonic = Keypair.generate_mnemonic()
@@ -83,7 +91,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
 
         signature_payload = self.polkadot_substrate.generate_signature_payload(call=call, nonce=2)
 
-        self.assertEqual(str(signature_payload), '0x0500586cb27c291c813ce74e86a60dad270609abf2fc8bee107e44a80ac00225c409411f000800170000000500000091b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c391b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3')
+        self.assertEqual(str(signature_payload), '0x0500586cb27c291c813ce74e86a60dad270609abf2fc8bee107e44a80ac00225c409411f000800180000000500000091b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c391b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3')
 
 
 if __name__ == '__main__':
