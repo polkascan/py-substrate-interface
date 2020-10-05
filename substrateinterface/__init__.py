@@ -248,7 +248,10 @@ class SubstrateInterface:
                 This method doesn't return but updates the `ws_result` object variable with the result
                 """
                 async with websockets.connect(
-                        self.url
+                        self.url,
+                        max_size=2**32,
+                        read_limit=2**32,
+                        write_limit=2**32,
                 ) as websocket:
                     await websocket.send(json.dumps(ws_payload))
 
@@ -726,6 +729,60 @@ class SubstrateInterface:
             if self.cache_region:
                 self.debug_message('Stored metadata for {} in Redis'.format(self.runtime_version))
                 self.cache_region.set('METADATA_{}'.format(self.runtime_version), self.metadata_decoder)
+
+    def iterate_map(self, module, storage_function, block_hash=None):
+        """
+        iterates over all key-pairs localted at the given module and storage_function. The storage
+        item must be a map.
+
+        Parameters
+        ----------
+        module: The module name in the metadata, e.g. Balances or Account.
+        storage_function: The storage function name, e.g. FreeBalance or AccountNonce.
+        block_hash: Optional block hash, when left to None the chain tip will be used.
+
+        Returns
+        -------
+        A two dimensional list of key-value pairs, both decoded into the given type, e.g.
+        [[k1, v1], [k2, v2], ...]
+        """
+        self.init_runtime(block_hash=block_hash)
+
+        key_type = None
+        value_type = None
+        concat_hash_len = None
+        for metadata_module in self.metadata_decoder.metadata.modules:
+            if metadata_module.name == module:
+                if metadata_module.storage:
+                    for storage_item in metadata_module.storage.items:
+                        if storage_item.name == storage_function:
+                            if 'MapType' in storage_item.type:
+                                key_type = storage_item.type['MapType']['key']
+                                value_type = storage_item.type['MapType']['value']
+                                if storage_item.type['MapType']['hasher'] == "Blake2_128Concat":
+                                    concat_hash_len = 32
+                                elif storage_item.type['MapType']['hasher'] == "Twox64Concat":
+                                    concat_hash_len = 16
+                                else:
+                                    raise ValueError('Unsupported hash type')
+                            else:
+                                raise ValueError('Given storage is not a map')
+
+
+        prefix = self.generate_storage_hash(module, storage_function)
+        prefix_len = len(prefix)
+        pairs = self.rpc_request(method="state_getPairs", params=[prefix, block_hash]).get('result')
+
+        # convert keys to the portion that needs to be decoded.
+        pairs = map(lambda kp: ["0x" + kp[0][prefix_len + concat_hash_len:], kp[1]], pairs)
+
+        # decode both of them
+        pairs = map(
+            lambda kp: [self.decode_scale(key_type, kp[0]), self.decode_scale(value_type, kp[1])],
+            list(pairs)
+        )
+
+        return list(pairs)
 
     def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
         """
