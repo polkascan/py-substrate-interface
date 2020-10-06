@@ -29,7 +29,7 @@ class TestRuntimeState(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
 
-        cls.substrate = SubstrateInterface(url='dummy', address_type=42, type_registry_preset='substrate-node-template')
+        cls.substrate = SubstrateInterface(url='dummy', address_type=42, type_registry_preset='kusama')
 
     def test_plaintype_call(self):
 
@@ -37,13 +37,13 @@ class TestRuntimeState(unittest.TestCase):
             if method == 'chain_getRuntimeVersion':
                 return {
                     "jsonrpc": "2.0",
-                    "result": {"specVersion": 1042},
+                    "result": {"specVersion": 2023},
                     "id": 1
                 }
             if method == 'state_getStorageAt':
                 return {
                     "jsonrpc": "2.0",
-                    "result": '0x080000000000000080e36a0900000000020000000100000000000000000000000000020000',
+                    "result": '0x0800000000000000482d7c0900000000020000000100000000000000000000000000020000',
                     "id": 1
                 }
 
@@ -70,7 +70,7 @@ class TestRuntimeState(unittest.TestCase):
             if method == 'chain_getRuntimeVersion':
                 return {
                     "jsonrpc": "2.0",
-                    "result": {"specVersion": 1042},
+                    "result": {"specVersion": 2023},
                     "id": 1
                 }
             elif method == 'state_getStorageAt':
@@ -109,7 +109,7 @@ class TestRuntimeState(unittest.TestCase):
             if method == 'chain_getRuntimeVersion':
                 return {
                     "jsonrpc": "2.0",
-                    "result": {"specVersion": 1042},
+                    "result": {"specVersion": 2023},
                     "id": 1
                 }
             elif method == 'state_getPairs':
