@@ -273,7 +273,8 @@ class SubstrateInterface:
                     else:
                         ws_result.update(json.loads(await websocket.recv()))
 
-            asyncio.run(ws_request(payload))
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(ws_request(payload))
             json_body = ws_result
 
         else:
@@ -1010,7 +1011,7 @@ class SubstrateInterface:
         """
 
         # Check requirements
-        if not isinstance(call, GenericCall):
+        if not isinstance(call, GenericCall) and not isinstance(call, Call):
             raise TypeError("'call' must be of type Call")
 
         # Retrieve nonce
