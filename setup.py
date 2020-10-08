@@ -165,7 +165,7 @@ setup(
     # https://packaging.python.org/guides/distributing-packages-using-setuptools/#python-requires
 
     #python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, <4',
-    python_requires='>=3.6, <4',
+    python_requires='>=3.7, <4',
 
     # This field lists other packages that your project depends on to run.
     # Any package you put here will be installed by pip when your project is
@@ -174,17 +174,17 @@ setup(
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
-        'asyncio==3.4.3',
-        'websockets==8.1',
-        'base58==1.0.3',
-        'certifi==2019.6.16',
-        'chardet==3.0.4',
-        'docker==4.2.0',
-        'idna==2.8',
-        'requests==2.22.0',
-        'urllib3==1.25.3',
-        'xxhash==1.3.0',
-        'scalecodec>=0.10.18',
+        'asyncio>=3.4.3',
+        'websockets>=8.1',
+        'base58>=2.0.1',
+        'certifi>=2019.6.16',
+        'chardet>=3.0.4',
+        'docker>=4.2.0',
+        'idna>=2.8',
+        'requests>=2.24.0',
+        'urllib3>=1.25.10',
+        'xxhash>=1.3.0',
+        'scalecodec>=0.10.19',
         'py-sr25519-bindings>=0.1.2',
         'py-bip39-bindings>=0.1.6'
     ],
