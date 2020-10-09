@@ -41,7 +41,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
 
     def test_compatibility_kusama_runtime(self):
         self.kusama_substrate.get_runtime_block()
-        self.assertLessEqual(self.kusama_substrate.runtime_version, 2024)
+        self.assertLessEqual(self.kusama_substrate.runtime_version, 2025)
 
     def test_create_balance_transfer(self):
         # Create new keypair

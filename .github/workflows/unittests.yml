@@ -1,6 +1,13 @@
 name: Run unit tests
 
-on: [push]
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [master, develop]
+  schedule:
+    - cron: '0 7 * * *'
 
 jobs:
   build:
