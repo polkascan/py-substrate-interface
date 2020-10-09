@@ -64,7 +64,7 @@ setup(
     # There are some restrictions on what makes a valid project name
     # specification here:
     # https://packaging.python.org/specifications/core-metadata/#name
-    name='substrate-interface',  # Required
+    name='py-substrate-interface',  # Required
 
     # Versions should comply with PEP 440:
     # https://www.python.org/dev/peps/pep-0440/
@@ -105,7 +105,7 @@ setup(
     #
     # This field corresponds to the "Home-Page" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#home-page-optional
-    url='https://github.com/polkascan/py-substrate-interface',  # Optional
+    url='https://github.com/gridsingularity/py-substrate-interface',  # Optional
 
     # This should be your name or the name of the organization which owns the
     # project.
@@ -135,9 +135,7 @@ setup(
         # that you indicate whether you support Python 2, Python 3 or both.
         # These classifiers are *not* checked by 'pip install'. See instead
         # 'python_requires' below.
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.6',
     ],
 
     # This field adds keywords for your project which will appear on the
