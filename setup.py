@@ -184,7 +184,7 @@ setup(
         'requests>=2.24.0',
         'urllib3>=1.25.10',
         'xxhash>=1.3.0',
-        'scalecodec>=0.10.19',
+        'scalecodec>=0.10.25',
         'py-sr25519-bindings>=0.1.2',
         'py-bip39-bindings>=0.1.6'
     ],
