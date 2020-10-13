@@ -217,8 +217,20 @@ try:
 
 except SubstrateRequestException as e:
     print("Failed to send: {}".format(e))
-
 ```
+
+### Create mortal extrinsics
+
+By default `immortal` extrinsics are created, which means they have an indefinite lifetime for being included in a 
+block. However it is recommended to use specify an expiry window, so you know after a certain amount of time if the 
+extrinsic is not included in a block, it will be invalidated.
+
+```python 
+extrinsic = substrate.create_signed_extrinsic(call=call, keypair=keypair, era={'period': 64})
+```
+
+The `period` specifies the number of blocks the extrinsic is valid counted from current head.
+
 
 ### Keypair creation and signing
 

@@ -956,12 +956,15 @@ class SubstrateInterface:
         # Retrieve genesis hash
         genesis_hash = self.get_block_hash(0)
 
-        if era:
-            if era != '00':
-                # TODO implement MortalEra transactions
-                raise NotImplementedError("Mortal transactions not yet implemented")
-        else:
+        if not era:
             era = '00'
+
+        if era == '00':
+            block_hash = genesis_hash
+        else:
+            era_obj = ScaleDecoder.get_decoder_class('Era')
+            era_obj.encode(era)
+            block_hash = self.get_block_hash(block_id=era_obj.birth(era.get('current')))
 
         # Create signature payload
         signature_payload = ScaleDecoder.get_decoder_class('ExtrinsicPayloadValue')
@@ -981,7 +984,7 @@ class SubstrateInterface:
             'tip': tip,
             'specVersion': self.runtime_version,
             'genesisHash': genesis_hash,
-            'blockHash': genesis_hash
+            'blockHash': block_hash
         }
 
         if self.transaction_version is not None:
@@ -1017,12 +1020,13 @@ class SubstrateInterface:
         if not nonce:
             nonce = self.get_account_nonce(keypair.public_key) or 0
 
-        if era:
-            if era != '00':
-                # TODO implement MortalEra transactions
-                raise NotImplementedError("Mortal transactions not yet implemented")
-        else:
+        # Process era
+        if not era:
             era = '00'
+        else:
+            if isinstance(era, dict) and 'current' not in era and 'phase' not in era:
+                # Retrieve current block id
+                era['current'] = self.get_block_number(self.get_chain_finalised_head())
 
         if signature:
 

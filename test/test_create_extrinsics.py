@@ -78,6 +78,34 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
                 # Extrinsic should be successful if account had balance, eitherwise 'Bad proof' error should be raised
                 self.assertEqual(e.args[0]['data'], 'Inability to pay some fees (e.g. account balance too low)')
 
+    def test_create_mortal_extrinsic(self):
+        # Create new keypair
+        mnemonic = Keypair.generate_mnemonic()
+        keypair = Keypair.create_from_mnemonic(mnemonic, address_type=2)
+
+        for substrate in [self.kusama_substrate, self.polkadot_substrate]:
+
+            # Create balance transfer call
+            call = substrate.compose_call(
+                call_module='Balances',
+                call_function='transfer',
+                call_params={
+                    'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
+                    'value': 2 * 10 ** 3
+                }
+            )
+
+            extrinsic = substrate.create_signed_extrinsic(call=call, keypair=keypair, era={'period': 64})
+
+            try:
+                substrate.submit_extrinsic(extrinsic)
+
+                self.fail('Should raise no funds to pay fees exception')
+
+            except SubstrateRequestException as e:
+                # Extrinsic should be successful if account had balance, eitherwise 'Bad proof' error should be raised
+                self.assertEqual(e.args[0]['data'], 'Inability to pay some fees (e.g. account balance too low)')
+
     def test_generate_signature_payload(self):
 
         call = self.polkadot_substrate.compose_call(
