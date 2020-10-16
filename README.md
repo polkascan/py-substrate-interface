@@ -235,12 +235,17 @@ The `period` specifies the number of blocks the extrinsic is valid counted from 
 ### Keypair creation and signing
 
 ```python
-
 mnemonic = Keypair.generate_mnemonic()
 keypair = Keypair.create_from_mnemonic(mnemonic)
 signature = keypair.sign("Test123")
 if keypair.verify("Test123", signature):
     print('Verified')
+```
+
+By default a keypair is using SR25519 cryptograhpy, alternatively ED25519 can be explictly specified:
+
+```python
+keypair = Keypair.create_from_mnemonic(mnemonic, crypto_type=Keypair.ED25519)
 ```
 
 ### Create keypair using Subkey wrapper (using local subkey binary)

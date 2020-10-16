@@ -36,6 +36,7 @@ from .constants import *
 from .utils.ss58 import ss58_decode, ss58_encode
 from bip39 import bip39_to_mini_secret, bip39_generate
 import sr25519
+import ed25519
 
 
 logger = logging.getLogger(__name__)
@@ -43,7 +44,12 @@ logger = logging.getLogger(__name__)
 
 class Keypair:
 
-    def __init__(self, ss58_address=None, public_key=None, private_key=None, address_type=42):
+    ED25519 = 0
+    SR25519 = 1
+
+    def __init__(self, ss58_address=None, public_key=None, private_key=None, address_type=42, crypto_type=SR25519):
+
+        self.crypto_type = crypto_type
 
         if ss58_address and not public_key:
             public_key = ss58_decode(ss58_address)
@@ -65,7 +71,7 @@ class Keypair:
         if private_key:
             private_key = '0x{}'.format(private_key.replace('0x', ''))
 
-            if len(private_key) != 130:
+            if self.crypto_type == self.SR25519 and len(private_key) != 130:
                 raise ValueError('Secret key should be 64 bytes long')
 
         self.private_key = private_key
@@ -78,28 +84,46 @@ class Keypair:
         return bip39_generate(words)
 
     @classmethod
-    def create_from_mnemonic(cls, mnemonic, address_type=42):
+    def create_from_mnemonic(cls, mnemonic, address_type=42, crypto_type=SR25519):
         seed_array = bip39_to_mini_secret(mnemonic, "")
 
         keypair = cls.create_from_seed(
             seed_hex=binascii.hexlify(bytearray(seed_array)).decode("ascii"),
-            address_type=address_type
+            address_type=address_type,
+            crypto_type=crypto_type
         )
         keypair.mnemonic = mnemonic
 
         return keypair
 
     @classmethod
-    def create_from_seed(cls, seed_hex, address_type=42):
-        keypair = sr25519.pair_from_seed(bytes.fromhex(seed_hex.replace('0x', '')))
-        public_key = keypair[0].hex()
-        private_key = keypair[1].hex()
-        ss58_address = ss58_encode(keypair[0], address_type)
-        return cls(ss58_address=ss58_address, public_key=public_key, private_key=private_key, address_type=address_type)
+    def create_from_seed(cls, seed_hex, address_type=42, crypto_type=SR25519):
+
+        if crypto_type == cls.SR25519:
+            public_key, private_key = sr25519.pair_from_seed(bytes.fromhex(seed_hex.replace('0x', '')))
+        elif crypto_type == cls.ED25519:
+            private_key, public_key = ed25519.ed_from_seed(bytes.fromhex(seed_hex.replace('0x', '')))
+        else:
+            raise ValueError('crypto_type "{}" not supported'.format(crypto_type))
+
+        public_key = public_key.hex()
+        private_key = private_key.hex()
+
+        ss58_address = ss58_encode(public_key, address_type)
+
+        return cls(
+            ss58_address=ss58_address, public_key=public_key, private_key=private_key,
+            address_type=address_type, crypto_type=crypto_type
+        )
 
     @classmethod
-    def create_from_private_key(cls, private_key, public_key=None, ss58_address=None, address_type=42):
-        return cls(ss58_address=ss58_address, public_key=public_key, private_key=private_key, address_type=address_type)
+    def create_from_private_key(
+            cls, private_key, public_key=None, ss58_address=None, address_type=42, crypto_type=SR25519
+    ):
+        return cls(
+            ss58_address=ss58_address, public_key=public_key, private_key=private_key,
+            address_type=address_type, crypto_type=crypto_type
+        )
 
     def sign(self, data):
         """
@@ -122,12 +146,16 @@ class Keypair:
             data = data.encode()
 
         if not self.private_key:
-            raise ConfigurationError('No private key set to create sr25519 signatures')
+            raise ConfigurationError('No private key set to create signatures')
 
-        signature = sr25519.sign(
-            (bytes.fromhex(self.public_key[2:]), bytes.fromhex(self.private_key[2:])),
-            data
-        )
+        if self.crypto_type == self.SR25519:
+
+            signature = sr25519.sign((bytes.fromhex(self.public_key[2:]), bytes.fromhex(self.private_key[2:])), data)
+        elif self.crypto_type == self.ED25519:
+            signature = ed25519.ed_sign(bytes.fromhex(self.public_key[2:]), bytes.fromhex(self.private_key[2:]), data)
+        else:
+            raise ValueError("Crypto type not supported")
+
         return "0x{}".format(signature.hex())
 
     def verify(self, data, signature):
@@ -145,7 +173,15 @@ class Keypair:
         if type(signature) is not bytes:
             raise TypeError("Signature should be of type bytes or a hex-string")
 
-        return sr25519.verify(signature, data, bytes.fromhex(self.public_key[2:]))
+        if self.crypto_type == self.SR25519:
+            return sr25519.verify(signature, data, bytes.fromhex(self.public_key[2:]))
+        elif self.crypto_type == self.ED25519:
+            return ed25519.ed_verify(signature, data, bytes.fromhex(self.public_key[2:]))
+        else:
+            raise ValueError("Crypto type not supported")
+
+    def __repr__(self):
+        return '<Keypair (ss58_address={})>'.format(self.ss58_address)
 
 
 class SubstrateInterface:
@@ -1037,14 +1073,14 @@ class SubstrateInterface:
                 signature_version = int(signature[0:2], 16)
                 signature = '0x{}'.format(signature[2:])
             else:
-                signature_version = 1
+                signature_version = keypair.crypto_type
 
         else:
             # Create signature payload
             signature_payload = self.generate_signature_payload(call=call, era=era, nonce=nonce, tip=tip)
 
-            # Set Signature version to sr25519
-            signature_version = 1
+            # Set Signature version to crypto type of keypair
+            signature_version = keypair.crypto_type
 
             # Sign payload
             signature = keypair.sign(signature_payload)
@@ -1317,7 +1353,7 @@ class SubstrateInterface:
 
         """
         type_registry = self.get_type_registry(block_hash=block_hash)
-        return type_registry.get(type_string)
+        return type_registry.get(type_string.lower())
 
     def get_metadata_modules(self, block_hash=None):
         """

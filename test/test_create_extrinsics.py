@@ -15,6 +15,8 @@
 # limitations under the License.
 
 import unittest
+
+from scalecodec.type_registry import load_type_registry_preset
 from substrateinterface import SubstrateInterface, Keypair, SubstrateRequestException
 from test import settings
 
@@ -36,12 +38,20 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
         )
 
     def test_compatibility_polkadot_runtime(self):
-        self.polkadot_substrate.get_runtime_block()
-        self.assertLessEqual(self.polkadot_substrate.runtime_version, 24)
+        type_reg = load_type_registry_preset("polkadot")
+
+        runtime_data = self.polkadot_substrate.rpc_request('state_getRuntimeVersion', [])
+        self.assertLessEqual(
+            runtime_data['result']['specVersion'], type_reg.get('runtime_id'), 'Current runtime is incompatible'
+        )
 
     def test_compatibility_kusama_runtime(self):
-        self.kusama_substrate.get_runtime_block()
-        self.assertLessEqual(self.kusama_substrate.runtime_version, 2025)
+        type_reg = load_type_registry_preset("kusama")
+
+        runtime_data = self.polkadot_substrate.rpc_request('state_getRuntimeVersion', [])
+        self.assertLessEqual(
+            runtime_data['result']['specVersion'], type_reg.get('runtime_id'), 'Current runtime is incompatible'
+        )
 
     def test_create_balance_transfer(self):
         # Create new keypair
@@ -106,20 +116,18 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
                 # Extrinsic should be successful if account had balance, eitherwise 'Bad proof' error should be raised
                 self.assertEqual(e.args[0]['data'], 'Inability to pay some fees (e.g. account balance too low)')
 
-    def test_generate_signature_payload(self):
-
-        call = self.polkadot_substrate.compose_call(
-            call_module='Balances',
-            call_function='transfer',
+    def test_create_unsigned_extrinsic(self):
+        
+        call = self.kusama_substrate.compose_call(
+            call_module='Timestamp',
+            call_function='set',
             call_params={
-                'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
-                'value': 2 * 10 ** 3
+                'now': 1602857508000,
             }
         )
 
-        signature_payload = self.polkadot_substrate.generate_signature_payload(call=call, nonce=2)
-
-        self.assertEqual(str(signature_payload), '0x0500586cb27c291c813ce74e86a60dad270609abf2fc8bee107e44a80ac00225c409411f000800180000000500000091b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c391b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3')
+        extrinsic = self.kusama_substrate.create_unsigned_extrinsic(call)
+        self.assertEqual(str(extrinsic.data), '0x280402000ba09cc0317501')
 
 
 if __name__ == '__main__':
