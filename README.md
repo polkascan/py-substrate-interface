@@ -20,8 +20,6 @@ https://polkascan.github.io/py-substrate-interface/
 pip install substrate-interface
 ```
 
-## Examples
-
 ### Initialization
 
 The following examples show how to initialize for supported chains:
@@ -103,6 +101,19 @@ substrate = SubstrateInterface(
 )
  
 ```
+
+## Keeping type registry presets up to date
+
+When on-chain runtime upgrades occur, types used in call- or storage functions can be added or modified. Therefor it is
+important to keep the type registry presets up to date. At the moment the type registry for Polkadot, Kusama and Kulupu
+ are being actively maintained for this library and an check and update procedure can be triggered with:
+ 
+```python
+substrate.update_type_registry_presets()
+```   
+
+## Examples
+
 
 
 ### Get extrinsics for a certain block

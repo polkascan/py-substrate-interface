@@ -28,6 +28,7 @@ from scalecodec.base import ScaleDecoder, RuntimeConfiguration
 from scalecodec.block import ExtrinsicsDecoder, EventsDecoder, LogDigest
 from scalecodec.metadata import MetadataDecoder
 from scalecodec.type_registry import load_type_registry_preset
+from scalecodec.updater import update_type_registries
 
 from .subkey import Subkey
 from .utils.hasher import blake2_256, two_x64_concat, xxh64, xxh128, blake2_128, blake2_128_concat, identity
@@ -1902,3 +1903,10 @@ class SubstrateInterface:
             "module_name": module.name,
             "spec_version": spec_version
         }
+
+    def update_type_registry_presets(self):
+        try:
+            update_type_registries()
+            return True
+        except Exception:
+            return False
