@@ -13,8 +13,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from os import environ
 
-KUSAMA_NODE_URL = 'wss://kusama-rpc.polkadot.io/'
-POLKADOT_NODE_URL = 'wss://rpc.polkadot.io/'
+KUSAMA_NODE_URL = environ.get('SUBSTRATE_NODE_URL_KUSAMA') or 'wss://kusama-rpc.polkadot.io/'
+POLKADOT_NODE_URL = environ.get('SUBSTRATE_NODE_URL_POLKADOT') or 'wss://rpc.polkadot.io/'
 
 
