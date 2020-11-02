@@ -256,7 +256,7 @@ if keypair.verify("Test123", signature):
 By default a keypair is using SR25519 cryptography, alternatively ED25519 can be explictly specified:
 
 ```python
-keypair = Keypair.create_from_mnemonic(mnemonic, crypto_type=Keypair.ED25519)
+keypair = Keypair.create_from_mnemonic(mnemonic, crypto_type=KeypairType.ED25519)
 ```
 
 ### Creating keypairs with soft and hard key derivation paths
