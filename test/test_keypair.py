@@ -16,7 +16,8 @@
 
 import unittest
 
-from substrateinterface import Keypair
+from scalecodec import ScaleBytes
+from substrateinterface import Keypair, KeypairType, extract_derive_path, ConfigurationError, DEV_PHRASE
 from bip39 import bip39_validate
 
 
@@ -72,6 +73,35 @@ class KeyPairTestCase(unittest.TestCase):
         signature = keypair.sign("0x1234")
         self.assertTrue(keypair.verify("0x1234", signature))
 
+    def test_sign_and_verify_scale_bytes(self):
+        mnemonic = Keypair.generate_mnemonic()
+        keypair = Keypair.create_from_mnemonic(mnemonic)
+
+        data = ScaleBytes('0x1234')
+
+        signature = keypair.sign(data)
+        self.assertTrue(keypair.verify(data, signature))
+
+    def test_sign_missing_private_key(self):
+        keypair = Keypair(ss58_address="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")
+        self.assertRaises(ConfigurationError, keypair.sign, "0x1234")
+
+    def test_sign_unsupported_crypto_type(self):
+        keypair = Keypair.create_from_private_key(
+            ss58_address='16ADqpMa4yzfmWs3nuTSMhfZ2ckeGtvqhPWCNqECEGDcGgU2',
+            private_key='0x1f1995bdf3a17b60626a26cfe6f564b337d46056b7a1281b64c649d592ccda0a9cffd34d9fb01cae1fba61aeed184c817442a2186d5172416729a4b54dd4b84e',
+            crypto_type=3
+        )
+        self.assertRaises(ConfigurationError, keypair.sign, "0x1234")
+
+    def test_verify_unsupported_crypto_type(self):
+        keypair = Keypair.create_from_private_key(
+            ss58_address='16ADqpMa4yzfmWs3nuTSMhfZ2ckeGtvqhPWCNqECEGDcGgU2',
+            private_key='0x1f1995bdf3a17b60626a26cfe6f564b337d46056b7a1281b64c649d592ccda0a9cffd34d9fb01cae1fba61aeed184c817442a2186d5172416729a4b54dd4b84e',
+            crypto_type=3
+        )
+        self.assertRaises(ConfigurationError, keypair.verify, "0x1234", '0x1234')
+
     def test_sign_and_verify_incorrect_signature(self):
         mnemonic = Keypair.generate_mnemonic()
         keypair = Keypair.create_from_mnemonic(mnemonic)
@@ -92,20 +122,20 @@ class KeyPairTestCase(unittest.TestCase):
 
     def test_create_ed25519_keypair(self):
         mnemonic = "old leopard transfer rib spatial phone calm indicate online fire caution review"
-        keypair = Keypair.create_from_mnemonic(mnemonic, address_type=0, crypto_type=Keypair.ED25519)
+        keypair = Keypair.create_from_mnemonic(mnemonic, address_type=0, crypto_type=KeypairType.ED25519)
 
         self.assertEqual(keypair.ss58_address, "16dYRUXznyhvWHS1ktUENGfNAEjCawyDzHRtN9AdFnJRc38h")
 
     def test_sign_and_verify_ed25519(self):
         mnemonic = Keypair.generate_mnemonic()
-        keypair = Keypair.create_from_mnemonic(mnemonic, crypto_type=Keypair.ED25519)
+        keypair = Keypair.create_from_mnemonic(mnemonic, crypto_type=KeypairType.ED25519)
         signature = keypair.sign("Test123")
 
         self.assertTrue(keypair.verify("Test123", signature))
 
     def test_sign_and_verify_invalid_signature_ed25519(self):
         mnemonic = Keypair.generate_mnemonic()
-        keypair = Keypair.create_from_mnemonic(mnemonic, crypto_type=Keypair.ED25519)
+        keypair = Keypair.create_from_mnemonic(mnemonic, crypto_type=KeypairType.ED25519)
         signature = "0x4c291bfb0bb9c1274e86d4b666d13b2ac99a0bacc04a4846fb8ea50bda114677f83c1f164af58fc184451e5140cc8160c4de626163b11451d3bbb208a1889f8a"
         self.assertFalse(keypair.verify("Test123", signature))
 
@@ -122,6 +152,63 @@ class KeyPairTestCase(unittest.TestCase):
             private_key='0x1f1995bdf3a17b60626a26cfe6f564b337d46056b7a1281b64c649d592ccda0a9cffd34d9fb01cae1fba61aeed184c817442a2186d5172416729a4b54dd4b84e'
         )
         self.assertEqual(keypair.public_key, '0xe4359ad3e2716c539a1d663ebd0a51bdc5c98a12e663bb4c4402db47828c9446')
+
+    def test_hdkd_hard_path(self):
+        mnemonic = 'old leopard transfer rib spatial phone calm indicate online fire caution review'
+        derivation_address = '5FEiH8iuDUw271xbqWTWuB6WrDjv5dnCeDX1CyHubAniXDNN'
+        derivation_path = '//Alice'
+
+        derived_keypair = Keypair.create_from_uri(mnemonic + derivation_path)
+
+        self.assertEqual(derivation_address, derived_keypair.ss58_address)
+
+    def test_hdkd_soft_path(self):
+        mnemonic = 'old leopard transfer rib spatial phone calm indicate online fire caution review'
+        derivation_address = '5GNXbA46ma5dg19GXdiKi5JH3mnkZ8Yea3bBtZAvj7t99P9i'
+        derivation_path = '/Alice'
+
+        derived_keypair = Keypair.create_from_uri(mnemonic + derivation_path)
+
+        self.assertEqual(derivation_address, derived_keypair.ss58_address)
+
+    def test_hdkd_default_to_dev_mnemonic(self):
+        derivation_address = '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'
+        derivation_path = '//Alice'
+
+        derived_keypair = Keypair.create_from_uri(derivation_path)
+
+        self.assertEqual(derivation_address, derived_keypair.ss58_address)
+
+    def test_hdkd_nested_hard_soft_path(self):
+        derivation_address = '5CJGwWiKXSE16WJaxBdPZhWqUYkotgenLUALv7ZvqQ4TXeqf'
+        derivation_path = '//Bob/test'
+
+        derived_keypair = Keypair.create_from_uri(derivation_path)
+
+        self.assertEqual(derivation_address, derived_keypair.ss58_address)
+
+    def test_hdkd_nested_soft_hard_path(self):
+        derivation_address = '5Cwc8tShrshDJUp1P1M21dKUTcYQpV9GcfSa4hUBNmMdV3Cx'
+        derivation_path = '/Bob//test'
+
+        derived_keypair = Keypair.create_from_uri(derivation_path)
+
+        self.assertEqual(derivation_address, derived_keypair.ss58_address)
+
+    def test_hdkd_path_gt_32_bytes(self):
+        derivation_address = '5GR5pfZeNs1uQiSWVxZaQiZou3wdZiX894eqgvfNfHbEh7W2'
+        derivation_path = '//PathNameLongerThan32BytesWhichShouldBeHashed'
+
+        derived_keypair = Keypair.create_from_uri(derivation_path)
+
+        self.assertEqual(derivation_address, derived_keypair.ss58_address)
+
+    def test_hdkd_unsupported_password(self):
+        self.assertRaises(NotImplementedError, Keypair.create_from_uri, DEV_PHRASE + '///test')
+
+    def test_reconstruct_path_fail(self):
+        self.assertRaises(ValueError, extract_derive_path, 'no_slashes')
+        self.assertRaises(ValueError, extract_derive_path, '//')
 
 
 if __name__ == '__main__':

@@ -30,11 +30,13 @@ from scalecodec.metadata import MetadataDecoder
 from scalecodec.type_registry import load_type_registry_preset
 from scalecodec.updater import update_type_registries
 
+from .key import extract_derive_path
 from .subkey import Subkey
-from .utils.hasher import blake2_256, two_x64_concat, xxh64, xxh128, blake2_128, blake2_128_concat, identity
+from .utils.hasher import blake2_256, two_x64_concat, xxh128, blake2_128, blake2_128_concat, identity
 from .exceptions import SubstrateRequestException, ConfigurationError, StorageFunctionNotFound
 from .constants import *
 from .utils.ss58 import ss58_decode, ss58_encode
+
 from bip39 import bip39_to_mini_secret, bip39_generate
 import sr25519
 import ed25519
@@ -43,20 +45,28 @@ import ed25519
 logger = logging.getLogger(__name__)
 
 
-class Keypair:
-
+class KeypairType:
     ED25519 = 0
     SR25519 = 1
 
-    def __init__(self, ss58_address=None, public_key=None, private_key=None, address_type=42, crypto_type=SR25519):
+
+class Keypair:
+
+    def __init__(self, ss58_address=None, public_key=None, private_key=None, address_type=42, seed_hex=None,
+                 crypto_type=KeypairType.SR25519):
 
         self.crypto_type = crypto_type
+        self.seed_hex = seed_hex
+        self.derive_path = None
 
         if ss58_address and not public_key:
             public_key = ss58_decode(ss58_address)
 
         if not public_key:
             raise ValueError('No SS58 formatted address or public key provided')
+
+        if type(public_key) is bytes:
+            public_key = public_key.hex()
 
         public_key = '0x{}'.format(public_key.replace('0x', ''))
 
@@ -70,9 +80,13 @@ class Keypair:
         self.ss58_address = ss58_address
 
         if private_key:
+
+            if type(private_key) is bytes:
+                private_key = private_key.hex()
+
             private_key = '0x{}'.format(private_key.replace('0x', ''))
 
-            if self.crypto_type == self.SR25519 and len(private_key) != 130:
+            if self.crypto_type == KeypairType.SR25519 and len(private_key) != 130:
                 raise ValueError('Secret key should be 64 bytes long')
 
         self.private_key = private_key
@@ -85,7 +99,7 @@ class Keypair:
         return bip39_generate(words)
 
     @classmethod
-    def create_from_mnemonic(cls, mnemonic, address_type=42, crypto_type=SR25519):
+    def create_from_mnemonic(cls, mnemonic, address_type=42, crypto_type=KeypairType.SR25519):
         seed_array = bip39_to_mini_secret(mnemonic, "")
 
         keypair = cls.create_from_seed(
@@ -98,11 +112,11 @@ class Keypair:
         return keypair
 
     @classmethod
-    def create_from_seed(cls, seed_hex, address_type=42, crypto_type=SR25519):
+    def create_from_seed(cls, seed_hex, address_type=42, crypto_type=KeypairType.SR25519):
 
-        if crypto_type == cls.SR25519:
+        if crypto_type == KeypairType.SR25519:
             public_key, private_key = sr25519.pair_from_seed(bytes.fromhex(seed_hex.replace('0x', '')))
-        elif crypto_type == cls.ED25519:
+        elif crypto_type == KeypairType.ED25519:
             private_key, public_key = ed25519.ed_from_seed(bytes.fromhex(seed_hex.replace('0x', '')))
         else:
             raise ValueError('crypto_type "{}" not supported'.format(crypto_type))
@@ -114,12 +128,61 @@ class Keypair:
 
         return cls(
             ss58_address=ss58_address, public_key=public_key, private_key=private_key,
-            address_type=address_type, crypto_type=crypto_type
+            address_type=address_type, crypto_type=crypto_type, seed_hex=seed_hex
         )
 
     @classmethod
+    def create_from_uri(cls, suri, address_type=42, crypto_type=KeypairType.SR25519):
+
+        if suri and suri.startswith('/'):
+            suri = DEV_PHRASE + suri
+
+        suri_regex = re.match(r'^(?P<phrase>\w+( \w+)*)(?P<path>(//?[^/]+)*)(///(?P<password>.*))?$', suri)
+
+        suri_parts = suri_regex.groupdict()
+
+        if suri_parts['password']:
+            raise NotImplementedError("Passwords in suri not supported")
+
+        derived_keypair = cls.create_from_mnemonic(
+            suri_parts['phrase'], address_type=address_type, crypto_type=crypto_type
+        )
+
+        if suri_parts['path'] != '':
+
+            derived_keypair.derive_path = suri_parts['path']
+
+            if crypto_type not in [KeypairType.SR25519]:
+                raise NotImplementedError('Derivation paths for this crypto type not supported')
+
+            derive_junctions = extract_derive_path(suri_parts['path'])
+
+            child_pubkey = bytes.fromhex(derived_keypair.public_key[2:])
+            child_privkey = bytes.fromhex(derived_keypair.private_key[2:])
+
+            for junction in derive_junctions:
+
+                if junction.is_hard:
+
+                    _, child_pubkey, child_privkey = sr25519.hard_derive_keypair(
+                        (junction.chain_code, child_pubkey, child_privkey),
+                        b''
+                    )
+
+                else:
+
+                    _, child_pubkey, child_privkey = sr25519.derive_keypair(
+                        (junction.chain_code, child_pubkey, child_privkey),
+                        b''
+                    )
+
+            derived_keypair = Keypair(public_key=child_pubkey, private_key=child_privkey)
+
+        return derived_keypair
+
+    @classmethod
     def create_from_private_key(
-            cls, private_key, public_key=None, ss58_address=None, address_type=42, crypto_type=SR25519
+            cls, private_key, public_key=None, ss58_address=None, address_type=42, crypto_type=KeypairType.SR25519
     ):
         return cls(
             ss58_address=ss58_address, public_key=public_key, private_key=private_key,
@@ -149,13 +212,13 @@ class Keypair:
         if not self.private_key:
             raise ConfigurationError('No private key set to create signatures')
 
-        if self.crypto_type == self.SR25519:
+        if self.crypto_type == KeypairType.SR25519:
 
             signature = sr25519.sign((bytes.fromhex(self.public_key[2:]), bytes.fromhex(self.private_key[2:])), data)
-        elif self.crypto_type == self.ED25519:
+        elif self.crypto_type == KeypairType.ED25519:
             signature = ed25519.ed_sign(bytes.fromhex(self.public_key[2:]), bytes.fromhex(self.private_key[2:]), data)
         else:
-            raise ValueError("Crypto type not supported")
+            raise ConfigurationError("Crypto type not supported")
 
         return "0x{}".format(signature.hex())
 
@@ -174,12 +237,12 @@ class Keypair:
         if type(signature) is not bytes:
             raise TypeError("Signature should be of type bytes or a hex-string")
 
-        if self.crypto_type == self.SR25519:
+        if self.crypto_type == KeypairType.SR25519:
             return sr25519.verify(signature, data, bytes.fromhex(self.public_key[2:]))
-        elif self.crypto_type == self.ED25519:
+        elif self.crypto_type == KeypairType.ED25519:
             return ed25519.ed_verify(signature, data, bytes.fromhex(self.public_key[2:]))
         else:
-            raise ValueError("Crypto type not supported")
+            raise ConfigurationError("Crypto type not supported")
 
     def __repr__(self):
         return '<Keypair (ss58_address={})>'.format(self.ss58_address)

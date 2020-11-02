@@ -16,3 +16,5 @@
 
 STORAGE_HASH_SYSTEM_EVENTS = "0xcc956bdb7605e3547539f321ac2bc95c"
 STORAGE_HASH_SYSTEM_EVENTS_V9 = "0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7"
+
+DEV_PHRASE = 'bottom drive obey lake curtain smoke basket hold race lonely fit walk'

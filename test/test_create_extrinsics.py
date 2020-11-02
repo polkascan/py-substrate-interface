@@ -117,7 +117,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
                 self.assertEqual(e.args[0]['data'], 'Inability to pay some fees (e.g. account balance too low)')
 
     def test_create_unsigned_extrinsic(self):
-        
+
         call = self.kusama_substrate.compose_call(
             call_module='Timestamp',
             call_function='set',

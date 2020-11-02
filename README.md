@@ -259,20 +259,17 @@ By default a keypair is using SR25519 cryptography, alternatively ED25519 can be
 keypair = Keypair.create_from_mnemonic(mnemonic, crypto_type=Keypair.ED25519)
 ```
 
-### Create keypair using Subkey wrapper (using local subkey binary)
+### Creating keypairs with soft and hard key derivation paths
 
 ```python
-sub_key = Subkey(subkey_path='/usr/local/bin/subkey')
-subkey_result = sub_key.inspect(network='kusama', suri="appear fortune produce assist volcano deal shoulder foot engine harvest pupil agent//Alice")
-keypair = Keypair.create_from_seed(subkey_result["secretSeed"], address_type=2)
+mnemonic = Keypair.generate_mnemonic()
+keypair = Keypair.create_from_uri(mnemonic + '//hard/soft')
 ```
 
-### Create keypair using Subkey wrapper (using Docker image parity/subkey:latest)
+By omitting the mnemonic the default development mnemonic is used: 
 
 ```python
-sub_key = Subkey(use_docker=True)
-subkey_result = sub_key.inspect(network='kusama', suri="appear fortune produce assist volcano deal shoulder foot engine harvest pupil agent//Alice")
-keypair = Keypair.create_from_seed(subkey_result["secretSeed"], address_type=2)
+keypair = Keypair.create_from_uri('//Alice')
 ```
 
 ### Metadata and type versioning
