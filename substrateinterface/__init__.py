@@ -1839,7 +1839,7 @@ class SubstrateInterface:
             storage_dict["type_key1"] = type_info["key1"]
             storage_dict["type_key2"] = type_info["key2"]
             storage_dict["type_hasher_key1"] = type_info["hasher"]
-            storage_dict["type_hasher_key1"] = type_info["key2Hasher"]
+            storage_dict["type_hasher_key2"] = type_info["key2Hasher"]
 
         if storage_item.fallback != '0x00':
             # Decode fallback
