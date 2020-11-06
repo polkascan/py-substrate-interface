@@ -7,9 +7,9 @@ idna>=2.10
 requests==2.24.0
 urllib3>=1.25.11
 xxhash>=1.3.0
-pytest>=6.1.1
+pytest>=6.1.2
 
-scalecodec>=0.10.29
+scalecodec>=0.10.30
 py-sr25519-bindings>=0.1.2
 py-ed25519-bindings>=0.1.1
 py-bip39-bindings>=0.1.6
