@@ -1117,18 +1117,18 @@ class SubstrateInterface:
             raise TypeError("'call' must be of type Call")
 
         # Retrieve nonce
-        if not nonce:
+        if nonce is None:
             nonce = self.get_account_nonce(keypair.public_key) or 0
 
         # Process era
-        if not era:
+        if era is None:
             era = '00'
         else:
             if isinstance(era, dict) and 'current' not in era and 'phase' not in era:
                 # Retrieve current block id
                 era['current'] = self.get_block_number(self.get_chain_finalised_head())
 
-        if signature:
+        if signature is not None:
 
             signature = signature.replace('0x', '')
 
@@ -1236,6 +1236,49 @@ class SubstrateInterface:
             }
 
         return response
+
+    def get_payment_info(self, call, keypair):
+        """
+        Retrieves fee estimation via RPC for given extrinsic
+
+        Parameters
+        ----------
+        call Call object to estimate fees for
+        keypair Keypair of the sender, does not have to include private key because no valid signature is required
+
+        Returns
+        -------
+        Dict with payment info
+
+        E.g. {'class': 'normal', 'partialFee': 151000000, 'weight': 217238000}
+
+        """
+
+        # Check requirements
+        if not isinstance(call, GenericCall):
+            raise TypeError("'call' must be of type Call")
+
+        if not isinstance(keypair, Keypair):
+            raise TypeError("'keypair' must be of type Keypair")
+
+        # No valid signature is required for fee estimation
+        signature = '0x' + '00' * 64
+
+        # Create extrinsic
+        extrinsic = self.create_signed_extrinsic(
+            call=call,
+            keypair=keypair,
+            signature=signature
+        )
+
+        payment_info = self.rpc_request('payment_queryInfo', [str(extrinsic.data)])
+
+        # convert partialFee to int
+        if 'result' in payment_info:
+            payment_info['result']['partialFee'] = int(payment_info['result']['partialFee'])
+            return payment_info['result']
+        else:
+            raise SubstrateRequestException(payment_info['error']['message'])
 
     def process_metadata_typestring(self, type_string):
         """

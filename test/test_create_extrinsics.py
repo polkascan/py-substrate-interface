@@ -129,6 +129,25 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
         extrinsic = self.kusama_substrate.create_unsigned_extrinsic(call)
         self.assertEqual(str(extrinsic.data), '0x280402000ba09cc0317501')
 
+    def test_payment_info(self):
+        keypair = Keypair(ss58_address="EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk")
+
+        call = self.kusama_substrate.compose_call(
+            call_module='Balances',
+            call_function='transfer',
+            call_params={
+                'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
+                'value': 2 * 10 ** 3
+            }
+        )
+        payment_info = self.kusama_substrate.get_payment_info(call=call, keypair=keypair)
+
+        self.assertIn('class', payment_info)
+        self.assertIn('partialFee', payment_info)
+        self.assertIn('weight', payment_info)
+
+        self.assertGreater(payment_info['partialFee'], 0)
+
 
 if __name__ == '__main__':
     unittest.main()
