@@ -176,10 +176,10 @@ setup(
     install_requires=[
         'websockets>=8.1',
         'base58>=2.0.1',
-        'certifi>=2019.6.16',
+        'certifi>=2020.11.8',
         'docker>=4.2.0',
         'idna>=2.8',
-        'requests>=2.24.0',
+        'requests>=2.25.0',
         'xxhash>=1.3.0',
         'scalecodec>=0.10.31',
         'py-sr25519-bindings>=0.1.2',

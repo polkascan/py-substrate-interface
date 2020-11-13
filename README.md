@@ -272,6 +272,22 @@ By omitting the mnemonic the default development mnemonic is used:
 keypair = Keypair.create_from_uri('//Alice')
 ```
 
+### Getting estimate of network fees for extrinsic in advance
+
+```python
+keypair = Keypair(ss58_address="EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk")
+
+call = self.kusama_substrate.compose_call(
+    call_module='Balances',
+    call_function='transfer',
+    call_params={
+        'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
+        'value': 2 * 10 ** 3
+    }
+)
+payment_info = self.kusama_substrate.get_payment_info(call=call, keypair=keypair)
+```
+
 ### Metadata and type versioning
 
 Py-substrate-interface makes it also possible to easily interprete changed types and historic runtimes. As an example
