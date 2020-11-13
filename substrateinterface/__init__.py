@@ -796,7 +796,17 @@ class SubstrateInterface:
         self.block_hash = block_hash
         self.block_id = block_id
 
-        runtime_info = self.get_block_runtime_version(block_hash=self.block_hash)
+        # In fact calls and storage functions are decoded against runtime of previous block, therefor retrieve
+        # metadata and apply type registry of runtime of parent block
+        block_header = self.get_block_header(block_hash=self.block_hash) or {}
+        parent_block_hash = block_header.get('parentHash')
+
+        if parent_block_hash == '0x0000000000000000000000000000000000000000000000000000000000000000':
+            runtime_block_hash = self.block_hash
+        else:
+            runtime_block_hash = parent_block_hash
+
+        runtime_info = self.get_block_runtime_version(block_hash=runtime_block_hash)
 
         # Check if runtime state already set to current block
         if runtime_info.get("specVersion") == self.runtime_version:
@@ -820,7 +830,7 @@ class SubstrateInterface:
             self.debug_message('Retrieved metadata for {} from memory'.format(self.runtime_version))
             self.metadata_decoder = self.metadata_cache[self.runtime_version]
         else:
-            self.metadata_decoder = self.get_block_metadata(block_hash=self.block_hash, decode=True)
+            self.metadata_decoder = self.get_block_metadata(block_hash=runtime_block_hash, decode=True)
             self.debug_message('Retrieved metadata for {} from Substrate node'.format(self.runtime_version))
 
             # Update metadata cache
