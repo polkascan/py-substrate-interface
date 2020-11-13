@@ -34,16 +34,32 @@ class TestRuntimeState(unittest.TestCase):
     def test_plaintype_call(self):
 
         def mocked_request(method, params):
+
             if method == 'chain_getRuntimeVersion':
                 return {
                     "jsonrpc": "2.0",
                     "result": {"specVersion": 2023},
                     "id": 1
                 }
-            if method == 'state_getStorageAt':
+            elif method == 'state_getStorageAt':
                 return {
                     "jsonrpc": "2.0",
                     "result": '0x0800000000000000482d7c0900000000020000000100000000000000000000000000020000',
+                    "id": 1
+                }
+            elif method == 'chain_getHeader':
+                return {
+                    "jsonrpc": "2.0",
+                    "result": {
+                        "digest": {
+                            "logs": [
+                            ]
+                        },
+                        "extrinsicsRoot": "0xa94148d938c7b7976abf4272dca95724d7a74da2f3649ec0bd53dc3daaedda44",
+                        "number": "0x4abaaa",
+                        "parentHash": "0xe1781813275653a970b4260298b3858b36d38e072256dad674f7c786a0cae236",
+                        "stateRoot": "0xb6aa468385c82d15b343a676b3488d9f141ac100fc548bb8a546f27a7241c44a"
+                    },
                     "id": 1
                 }
 
@@ -78,6 +94,21 @@ class TestRuntimeState(unittest.TestCase):
                     'jsonrpc': '2.0',
                     'result': '0x00000000030000c16ff28623000000000000000000000000000000000000000000000000000000c16ff286230000000000000000000000c16ff28623000000000000000000',
                     'id': 1
+                }
+            elif method == 'chain_getHeader':
+                return {
+                    "jsonrpc": "2.0",
+                    "result": {
+                        "digest": {
+                            "logs": [
+                            ]
+                        },
+                        "extrinsicsRoot": "0xa94148d938c7b7976abf4272dca95724d7a74da2f3649ec0bd53dc3daaedda44",
+                        "number": "0x4abaaa",
+                        "parentHash": "0xe1781813275653a970b4260298b3858b36d38e072256dad674f7c786a0cae236",
+                        "stateRoot": "0xb6aa468385c82d15b343a676b3488d9f141ac100fc548bb8a546f27a7241c44a"
+                    },
+                    "id": 1
                 }
 
         self.substrate.rpc_request = MagicMock(side_effect=mocked_request)
@@ -119,6 +150,21 @@ class TestRuntimeState(unittest.TestCase):
                         ['0x5f3e4907f716ac89b6347d15ececedca3ed14b45ed20d054f05e37e2542cfe70e535263148daaf49be5ddb1579b72e84524fc29e78609e3caf42e85aa118ebfe0b0ad404b5bdd25f',
                          '0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d']
                     ],
+                    "id": 1
+                }
+            elif method == 'chain_getHeader':
+                return {
+                    "jsonrpc": "2.0",
+                    "result": {
+                        "digest": {
+                            "logs": [
+                            ]
+                        },
+                        "extrinsicsRoot": "0xa94148d938c7b7976abf4272dca95724d7a74da2f3649ec0bd53dc3daaedda44",
+                        "number": "0x4abaaa",
+                        "parentHash": "0xe1781813275653a970b4260298b3858b36d38e072256dad674f7c786a0cae236",
+                        "stateRoot": "0xb6aa468385c82d15b343a676b3488d9f141ac100fc548bb8a546f27a7241c44a"
+                    },
                     "id": 1
                 }
 

@@ -41,6 +41,21 @@ class TestHelperFunctions(unittest.TestCase):
                     "result": {"specVersion": 2023},
                     "id": 1
                 }
+            elif method == 'chain_getHeader':
+                return {
+                    "jsonrpc": "2.0",
+                    "result": {
+                        "digest": {
+                            "logs": [
+                            ]
+                        },
+                        "extrinsicsRoot": "0xa94148d938c7b7976abf4272dca95724d7a74da2f3649ec0bd53dc3daaedda44",
+                        "number": "0x4abaaa",
+                        "parentHash": "0xe1781813275653a970b4260298b3858b36d38e072256dad674f7c786a0cae236",
+                        "stateRoot": "0xb6aa468385c82d15b343a676b3488d9f141ac100fc548bb8a546f27a7241c44a"
+                    },
+                    "id": 1
+                }
 
         cls.substrate.rpc_request = MagicMock(side_effect=mocked_request)
 
