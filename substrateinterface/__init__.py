@@ -31,7 +31,6 @@ from scalecodec.type_registry import load_type_registry_preset
 from scalecodec.updater import update_type_registries
 
 from .key import extract_derive_path
-from .subkey import Subkey
 from .utils.hasher import blake2_256, two_x64_concat, xxh128, blake2_128, blake2_128_concat, identity
 from .exceptions import SubstrateRequestException, ConfigurationError, StorageFunctionNotFound
 from .constants import *
@@ -250,8 +249,7 @@ class Keypair:
 
 class SubstrateInterface:
 
-    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset="default", cache_region=None,
-                 sub_key: Subkey = None):
+    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset="default", cache_region=None):
         """
         A specialized class in interfacing with a Substrate node.
 
@@ -300,8 +298,6 @@ class SubstrateInterface:
 
         self.metadata_cache = {}
         self.type_registry_cache = {}
-
-        self.sub_key = sub_key
 
         self.debug = False
 
