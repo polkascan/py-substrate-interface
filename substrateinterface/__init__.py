@@ -369,7 +369,14 @@ class SubstrateInterface:
                     else:
                         ws_result.update(json.loads(await websocket.recv()))
 
-            asyncio.run(ws_request(payload))
+            if hasattr(asyncio, 'run'):
+                # Python 3.7+
+                asyncio.run(ws_request(payload))
+            else:
+                # Python 3.6 compatibility
+                loop = asyncio.get_event_loop()
+                loop.run_until_complete(ws_request(payload))
+
             json_body = ws_result
 
         else:

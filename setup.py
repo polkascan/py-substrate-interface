@@ -136,6 +136,7 @@ setup(
         # These classifiers are *not* checked by 'pip install'. See instead
         # 'python_requires' below.
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
     ],
@@ -165,7 +166,7 @@ setup(
     # https://packaging.python.org/guides/distributing-packages-using-setuptools/#python-requires
 
     #python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, <4',
-    python_requires='>=3.7, <4',
+    python_requires='>=3.6, <4',
 
     # This field lists other packages that your project depends on to run.
     # Any package you put here will be installed by pip when your project is
@@ -182,7 +183,7 @@ setup(
         'xxhash>=1.3.0',
         'scalecodec>=0.10.31',
         'py-sr25519-bindings>=0.1.2',
-        'py-ed25519-bindings>=0.1.1',
+        'py-ed25519-bindings>=0.1.2',
         'py-bip39-bindings>=0.1.6'
     ],
 
