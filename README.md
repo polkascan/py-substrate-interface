@@ -318,8 +318,9 @@ signature_payload = substrate.generate_signature_payload(call=call, era=era, non
 
 Then on another (offline) machine generate the signature with given `signature_payload`:
 
-```bash
-echo -n "05005e9126f218e28ab981811e25e345f6c3c314f7deceb62a3e738aaf3690add4610284d717450300000100000001000000c0cd96a7ee70debe9b0713ac343d8406ab81324076670ea8f3f9f510a0d9a4f0f5c179098d480a60bd452e0555cb5172dc6320898e06f4886d69b6149e1e276f" | subkey sign --hex "nature exchange gasp toy result bacon coin broccoli rule oyster believe lyrics"
+```python
+keypair = Keypair.create_from_mnemonic("nature exchange gasp toy result bacon coin broccoli rule oyster believe lyrics")
+signature = keypair.sign(signature_payload)
 ```
 
 Finally on the online machine send the extrinsic with generated signature:
