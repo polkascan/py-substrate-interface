@@ -148,6 +148,34 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
 
         self.assertGreater(payment_info['partialFee'], 0)
 
+    def test_generate_signature_payload_lte_256_bytes(self):
+
+        call = self.kusama_substrate.compose_call(
+            call_module='System',
+            call_function='remark',
+            call_params={
+                '_remark': '0x' + ('01' * 177)
+            }
+        )
+
+        signature_payload = self.kusama_substrate.generate_signature_payload(call=call)
+
+        self.assertEqual(signature_payload.length, 256)
+
+    def test_generate_signature_payload_gt_256_bytes(self):
+
+        call = self.kusama_substrate.compose_call(
+            call_module='System',
+            call_function='remark',
+            call_params={
+                '_remark': '0x' + ('01' * 178)
+            }
+        )
+
+        signature_payload = self.kusama_substrate.generate_signature_payload(call=call)
+
+        self.assertEqual(signature_payload.length, 32)
+
 
 if __name__ == '__main__':
     unittest.main()

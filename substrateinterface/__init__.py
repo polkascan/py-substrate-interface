@@ -15,6 +15,8 @@
 # limitations under the License.
 
 import asyncio
+from hashlib import blake2b
+
 import binascii
 import json
 import logging
@@ -1104,6 +1106,9 @@ class SubstrateInterface:
             payload_dict['transactionVersion'] = self.transaction_version
 
         signature_payload.encode(payload_dict)
+
+        if signature_payload.data.length > 256:
+            return ScaleBytes(data=blake2b(signature_payload.data.data, digest_size=32).digest())
 
         return signature_payload.data
 
