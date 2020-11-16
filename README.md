@@ -288,6 +288,60 @@ call = self.kusama_substrate.compose_call(
 payment_info = self.kusama_substrate.get_payment_info(call=call, keypair=keypair)
 ```
 
+### Offline signing of extrinsics
+
+This example generates a signature payload which can be signed on another (offline) machine and later on sent to the 
+network with the generated signature.
+
+Generate signature payload on online machine:
+```python
+substrate = SubstrateInterface(
+    url="http://127.0.0.1:9933",
+    address_type=42,
+    type_registry_preset='substrate-node-template',
+)
+
+call = substrate.compose_call(
+    call_module='Balances',
+    call_function='transfer',
+    call_params={
+        'dest': '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
+        'value': 2 * 10**8
+    }
+)
+
+era = {'period': 64, 'current': 22719}
+nonce = 0
+
+signature_payload = substrate.generate_signature_payload(call=call, era=era, nonce=nonce)
+```
+
+Then on another (offline) machine generate the signature with given `signature_payload`:
+
+```bash
+echo -n "05005e9126f218e28ab981811e25e345f6c3c314f7deceb62a3e738aaf3690add4610284d717450300000100000001000000c0cd96a7ee70debe9b0713ac343d8406ab81324076670ea8f3f9f510a0d9a4f0f5c179098d480a60bd452e0555cb5172dc6320898e06f4886d69b6149e1e276f" | subkey sign --hex "nature exchange gasp toy result bacon coin broccoli rule oyster believe lyrics"
+```
+
+Finally on the online machine send the extrinsic with generated signature:
+
+```python
+keypair = Keypair(ss58_address="5EChUec3ZQhUvY1g52ZbfBVkqjUY9Kcr6mcEvQMbmd38shQL")
+
+extrinsic = substrate.create_signed_extrinsic(
+    call=call,
+    keypair=keypair,
+    era=era,
+    nonce=nonce,
+    signature=signature
+)
+
+result = substrate.submit_extrinsic(
+    extrinsic=extrinsic
+)
+
+print(result['extrinsic_hash'])
+```
+
 ### Metadata and type versioning
 
 Py-substrate-interface makes it also possible to easily interprete changed types and historic runtimes. As an example
