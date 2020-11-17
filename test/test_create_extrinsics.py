@@ -27,13 +27,13 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
     def setUpClass(cls):
         cls.kusama_substrate = SubstrateInterface(
             url=settings.KUSAMA_NODE_URL,
-            address_type=2,
+            ss58_format=2,
             type_registry_preset='kusama'
         )
 
         cls.polkadot_substrate = SubstrateInterface(
             url=settings.POLKADOT_NODE_URL,
-            address_type=0,
+            ss58_format=0,
             type_registry_preset='polkadot'
         )
 
@@ -56,7 +56,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
     def test_create_balance_transfer(self):
         # Create new keypair
         mnemonic = Keypair.generate_mnemonic()
-        keypair = Keypair.create_from_mnemonic(mnemonic, address_type=2)
+        keypair = Keypair.create_from_mnemonic(mnemonic, ss58_format=2)
 
         for substrate in [self.kusama_substrate, self.polkadot_substrate]:
 
@@ -91,7 +91,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
     def test_create_mortal_extrinsic(self):
         # Create new keypair
         mnemonic = Keypair.generate_mnemonic()
-        keypair = Keypair.create_from_mnemonic(mnemonic, address_type=2)
+        keypair = Keypair.create_from_mnemonic(mnemonic, ss58_format=2)
 
         for substrate in [self.kusama_substrate, self.polkadot_substrate]:
 

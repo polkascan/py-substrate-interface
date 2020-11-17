@@ -20,6 +20,7 @@
     Encoding/decoding according to specification on https://wiki.parity.io/External-Address-Format-(SS58)
 
 """
+import warnings
 import base58
 from hashlib import blake2b
 
@@ -27,23 +28,29 @@ from scalecodec import ScaleBytes
 from scalecodec.types import U8, U16, U32, U64
 
 
-def ss58_decode(address, valid_address_type=None):
+def ss58_decode(address, valid_ss58_format=None, valid_address_type=None):
     """
     Decodes given SS58 encoded address to an account ID
     Parameters
     ----------
     address: e.g. EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk
+    valid_ss58_format
     valid_address_type
 
     Returns
     -------
     Decoded string AccountId
     """
+
+    if valid_address_type is not None:
+        warnings.warn("Keyword 'valid_address_type' will be replaced by 'valid_ss58_format'", DeprecationWarning)
+        valid_ss58_format = valid_address_type
+
     checksum_prefix = b'SS58PRE'
 
     ss58_format = base58.b58decode(address)
 
-    if valid_address_type and ss58_format[0] != valid_address_type:
+    if valid_ss58_format is not None and ss58_format[0] != valid_ss58_format:
         raise ValueError("Invalid Address type")
 
     # Determine checksum length according to length of address string
@@ -74,20 +81,25 @@ def ss58_decode(address, valid_address_type=None):
     return ss58_format[1:len(ss58_format)-checksum_length].hex()
 
 
-def ss58_encode(address, address_type=42):
+def ss58_encode(address, ss58_format=42, address_type=None):
     """
     Encodes an account ID to an Substrate address according to provided address_type
 
     Parameters
     ----------
     address
-    address_type
+    ss58_format
+    address_type: (deprecated)
 
     Returns
     -------
 
     """
     checksum_prefix = b'SS58PRE'
+
+    if address_type is not None:
+        warnings.warn("Keyword 'address_type' will be replaced by 'ss58_format'", DeprecationWarning)
+        ss58_format = address_type
 
     if type(address) is bytes or type(address) is bytearray:
         address_bytes = address
@@ -103,25 +115,30 @@ def ss58_encode(address, address_type=42):
     else:
         raise ValueError("Invalid length for address")
 
-    address_format = bytes([address_type]) + address_bytes
+    address_format = bytes([ss58_format]) + address_bytes
     checksum = blake2b(checksum_prefix + address_format).digest()
 
     return base58.b58encode(address_format + checksum[:checksum_length]).decode()
 
 
-def ss58_encode_account_index(account_index, address_type=42):
+def ss58_encode_account_index(account_index, ss58_format=42, address_type=None):
     """
     Encodes an AccountIndex to an Substrate address according to provided address_type
 
     Parameters
     ----------
     account_index
-    address_type
+    ss58_format
+    address_type: (deprecated)
 
     Returns
     -------
 
     """
+
+    if address_type is not None:
+        warnings.warn("Keyword 'address_type' will be replaced by 'ss58_format'", DeprecationWarning)
+        ss58_format = address_type
 
     if 0 <= account_index <= 2**8 - 1:
         account_idx_encoder = U8()
@@ -134,23 +151,29 @@ def ss58_encode_account_index(account_index, address_type=42):
     else:
         raise ValueError("Value too large for an account index")
 
-    return ss58_encode(account_idx_encoder.encode(account_index).data, address_type)
+    return ss58_encode(account_idx_encoder.encode(account_index).data, ss58_format)
 
 
-def ss58_decode_account_index(address, valid_address_type=42):
+def ss58_decode_account_index(address, valid_ss58_format=None, valid_address_type=None):
     """
     Decodes given SS58 encoded address to an AccountIndex
 
     Parameters
     ----------
     address
+    valid_ss58_format
     valid_address_type
 
     Returns
     -------
     Decoded int AccountIndex
     """
-    account_index_bytes = ss58_decode(address, valid_address_type)
+
+    if valid_address_type is not None:
+        warnings.warn("Keyword 'valid_address_type' will be replaced by 'valid_ss58_format'", DeprecationWarning)
+        valid_ss58_format = valid_address_type
+
+    account_index_bytes = ss58_decode(address, valid_ss58_format)
 
     if len(account_index_bytes) == 2:
         return U8(ScaleBytes('0x{}'.format(account_index_bytes))).decode()

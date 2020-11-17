@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import asyncio
+import warnings
 from hashlib import blake2b
 
 import binascii
@@ -53,7 +54,8 @@ class KeypairType:
 
 class Keypair:
 
-    def __init__(self, ss58_address=None, public_key=None, private_key=None, address_type=42, seed_hex=None,
+    def __init__(self, ss58_address=None, public_key=None, private_key=None, ss58_format=42,
+                 address_type=None, seed_hex=None,
                  crypto_type=KeypairType.SR25519):
 
         self.crypto_type = crypto_type
@@ -74,10 +76,17 @@ class Keypair:
         if len(public_key) != 66:
             raise ValueError('Public key should be 32 bytes long')
 
+        if address_type is not None:
+            warnings.warn("Keyword 'address_type' will be replaced by 'ss58_format'", DeprecationWarning)
+            ss58_format = address_type
+
+        self.ss58_format = ss58_format
+
         if not ss58_address:
-            ss58_address = ss58_encode(public_key, address_type=address_type)
+            ss58_address = ss58_encode(public_key, ss58_format=ss58_format)
 
         self.public_key = public_key
+
         self.ss58_address = ss58_address
 
         if private_key:
@@ -91,7 +100,6 @@ class Keypair:
                 raise ValueError('Secret key should be 64 bytes long')
 
         self.private_key = private_key
-        self.address_type = address_type
 
         self.mnemonic = None
 
@@ -100,12 +108,16 @@ class Keypair:
         return bip39_generate(words)
 
     @classmethod
-    def create_from_mnemonic(cls, mnemonic, address_type=42, crypto_type=KeypairType.SR25519):
+    def create_from_mnemonic(cls, mnemonic, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
         seed_array = bip39_to_mini_secret(mnemonic, "")
+
+        if address_type is not None:
+            warnings.warn("Keyword 'address_type' will be replaced by 'ss58_format'", DeprecationWarning)
+            ss58_format = address_type
 
         keypair = cls.create_from_seed(
             seed_hex=binascii.hexlify(bytearray(seed_array)).decode("ascii"),
-            address_type=address_type,
+            ss58_format=ss58_format,
             crypto_type=crypto_type
         )
         keypair.mnemonic = mnemonic
@@ -113,7 +125,11 @@ class Keypair:
         return keypair
 
     @classmethod
-    def create_from_seed(cls, seed_hex, address_type=42, crypto_type=KeypairType.SR25519):
+    def create_from_seed(cls, seed_hex, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+
+        if address_type is not None:
+            warnings.warn("Keyword 'address_type' will be replaced by 'ss58_format'", DeprecationWarning)
+            ss58_format = address_type
 
         if crypto_type == KeypairType.SR25519:
             public_key, private_key = sr25519.pair_from_seed(bytes.fromhex(seed_hex.replace('0x', '')))
@@ -125,15 +141,19 @@ class Keypair:
         public_key = public_key.hex()
         private_key = private_key.hex()
 
-        ss58_address = ss58_encode(public_key, address_type)
+        ss58_address = ss58_encode(public_key, ss58_format)
 
         return cls(
             ss58_address=ss58_address, public_key=public_key, private_key=private_key,
-            address_type=address_type, crypto_type=crypto_type, seed_hex=seed_hex
+            ss58_format=ss58_format, crypto_type=crypto_type, seed_hex=seed_hex
         )
 
     @classmethod
-    def create_from_uri(cls, suri, address_type=42, crypto_type=KeypairType.SR25519):
+    def create_from_uri(cls, suri, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+
+        if address_type is not None:
+            warnings.warn("Keyword 'address_type' will be replaced by 'ss58_format'", DeprecationWarning)
+            ss58_format = address_type
 
         if suri and suri.startswith('/'):
             suri = DEV_PHRASE + suri
@@ -146,7 +166,7 @@ class Keypair:
             raise NotImplementedError("Passwords in suri not supported")
 
         derived_keypair = cls.create_from_mnemonic(
-            suri_parts['phrase'], address_type=address_type, crypto_type=crypto_type
+            suri_parts['phrase'], ss58_format=ss58_format, crypto_type=crypto_type
         )
 
         if suri_parts['path'] != '':
@@ -183,11 +203,16 @@ class Keypair:
 
     @classmethod
     def create_from_private_key(
-            cls, private_key, public_key=None, ss58_address=None, address_type=42, crypto_type=KeypairType.SR25519
+            cls, private_key, public_key=None, ss58_address=None, ss58_format=42, crypto_type=KeypairType.SR25519,
+            address_type=None
     ):
+        if address_type is not None:
+            warnings.warn("Keyword 'address_type' will be replaced by 'ss58_format'", DeprecationWarning)
+            ss58_format = address_type
+
         return cls(
             ss58_address=ss58_address, public_key=public_key, private_key=private_key,
-            address_type=address_type, crypto_type=crypto_type
+            ss58_format=ss58_format, crypto_type=crypto_type
         )
 
     def sign(self, data):
@@ -251,7 +276,8 @@ class Keypair:
 
 class SubstrateInterface:
 
-    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset="default", cache_region=None):
+    def __init__(self, url, ss58_format=None, type_registry=None, type_registry_preset=None, cache_region=None,
+                 address_type=None):
         """
         A specialized class in interfacing with a Substrate node.
 
@@ -263,28 +289,31 @@ class SubstrateInterface:
         type_registry_preset: The name of the predefined type registry shipped with the SCALE-codec, e.g. kusama
         cache_region: a Dogpile cache region as a central store for the metadata cache
         """
+
+        if address_type is not None:
+            warnings.warn("Keyword 'address_type' will be replaced by 'ss58_format'", DeprecationWarning)
+            ss58_format = address_type
+
+        # Initialize lazy loading variables
+        self.__version = None
+        self.__name = None
+        self.__properties = None
+        self.__chain = None
+
+        self.__token_decimals = None
+        self.__token_symbol = None
+        self.__ss58_format = None
+
         self.cache_region = cache_region
 
-        if type_registry_preset:
-            # Load type registries in runtime configuration
-            RuntimeConfiguration().update_type_registry(load_type_registry_preset("default"))
-
-            if type_registry != "default":
-                RuntimeConfiguration().update_type_registry(load_type_registry_preset(type_registry_preset))
-
-        if type_registry:
-            # Load type registries in runtime configuration
-            RuntimeConfiguration().update_type_registry(type_registry)
+        self.ss58_format = ss58_format
 
         self.request_id = 1
         self.url = url
 
         self._ws_result = None
 
-        self.address_type = address_type
-
         self.mock_extrinsics = None
-        self._version = None
         self.default_headers = {
             'content-type': "application/json",
             'cache-control': "no-cache"
@@ -302,6 +331,25 @@ class SubstrateInterface:
         self.type_registry_cache = {}
 
         self.debug = False
+
+        if not type_registry_preset:
+            # Try to auto discover type registry preset by chain name
+            if self.chain.lower() in ['polkadot', 'kusama', 'westend', 'kulupu']:
+                type_registry_preset = self.chain.lower()
+            else:
+                type_registry_preset = "default"
+
+        # Set type registry
+        if type_registry_preset:
+            # Load type registries in runtime configuration
+            RuntimeConfiguration().update_type_registry(load_type_registry_preset("default"))
+
+            if type_registry != "default":
+                RuntimeConfiguration().update_type_registry(load_type_registry_preset(type_registry_preset))
+
+        if type_registry:
+            # Load type registries in runtime configuration
+            RuntimeConfiguration().update_type_registry(type_registry)
 
     def debug_message(self, message):
         logger.debug(message)
@@ -395,29 +443,63 @@ class SubstrateInterface:
 
         return json_body
 
-    def get_system_name(self):
-        """
-        A pass-though to existing JSONRPC method `system_name`
+    @property
+    def name(self):
+        if not self.__name:
+            self.__name = self.rpc_request("system_name", []).get('result')
+        return self.__name
 
-        Returns
-        -------
+    @property
+    def properties(self):
+        if not self.__properties:
+            self.__properties = self.rpc_request("system_properties", []).get('result')
+        return self.__properties
 
-        """
-        response = self.rpc_request("system_name", [])
-        return response.get('result')
+    @property
+    def chain(self):
+        if not self.__chain:
+            self.__chain = self.rpc_request("system_chain", []).get('result')
+        return self.__chain
 
-    def get_version(self):
-        """
-        A pass-though to existing JSONRPC method `system_version`
+    @property
+    def version(self):
+        if not self.__version:
+            self.__version = self.rpc_request("system_version", []).get('result')
+        return self.__version
 
-        Returns
-        -------
+    @property
+    def token_decimals(self):
+        if not self.__token_decimals:
+            self.__token_decimals = self.properties.get('tokenDecimals')
+        return self.__token_decimals
 
-        """
-        if not self._version:
-            response = self.rpc_request("system_version", [])
-            self._version = response.get('result')
-        return self._version
+    @token_decimals.setter
+    def token_decimals(self, value):
+        if type(value) is not int and value is not None:
+            raise TypeError('Token decimals must be an int')
+        self.__token_decimals = value
+
+    @property
+    def token_symbol(self):
+        if not self.__token_symbol:
+            self.__token_symbol = self.properties.get('tokenSymbol')
+        return self.__token_symbol
+
+    @token_symbol.setter
+    def token_symbol(self, value):
+        self.__token_symbol = value
+
+    @property
+    def ss58_format(self):
+        if not self.__ss58_format:
+            self.__ss58_format = self.properties.get('ss58Format')
+        return self.__ss58_format
+
+    @ss58_format.setter
+    def ss58_format(self, value):
+        if type(value) is not int and value is not None:
+            raise TypeError('ss58_format must be an int')
+        self.__ss58_format = value
 
     def get_chain_head(self):
         """
@@ -763,7 +845,7 @@ class SubstrateInterface:
     def convert_storage_parameter(self, scale_type, value):
         if scale_type == 'AccountId':
             if value[0:2] != '0x':
-                return '0x{}'.format(ss58_decode(value, self.address_type))
+                return '0x{}'.format(ss58_decode(value, self.ss58_format))
 
         return value
 

@@ -29,7 +29,7 @@ class TestRuntimeState(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
 
-        cls.substrate = SubstrateInterface(url='dummy', address_type=42, type_registry_preset='kusama')
+        cls.substrate = SubstrateInterface(url='dummy', ss58_format=42, type_registry_preset='kusama')
 
     def test_plaintype_call(self):
 
