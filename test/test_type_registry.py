@@ -33,7 +33,7 @@ class KusamaTypeRegistryTestCase(unittest.TestCase):
     def setUpClass(cls):
         cls.substrate = SubstrateInterface(
             url=settings.KUSAMA_NODE_URL,
-            address_type=2,
+            ss58_format=2,
             type_registry_preset='kusama'
         )
 
@@ -51,7 +51,7 @@ class PolkadotTypeRegistryTestCase(unittest.TestCase):
     def setUpClass(cls):
         cls.substrate = SubstrateInterface(
             url=settings.POLKADOT_NODE_URL,
-            address_type=0,
+            ss58_format=0,
             type_registry_preset='polkadot'
         )
 

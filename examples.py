@@ -3,7 +3,7 @@ from substrateinterface.utils.ss58 import ss58_encode
 
 substrate = SubstrateInterface(
     url="wss://kusama-rpc.polkadot.io/",
-    address_type=2,
+    ss58_format=2,
     type_registry_preset='kusama'
 )
 
@@ -17,7 +17,7 @@ result = substrate.get_runtime_block(block_hash=block_hash)
 for extrinsic in result['block']['extrinsics']:
 
     if 'account_id' in extrinsic:
-        signed_by_address = ss58_encode(address=extrinsic['account_id'], address_type=2)
+        signed_by_address = ss58_encode(address=extrinsic['account_id'], ss58_format=2)
     else:
         signed_by_address = None
 
@@ -30,7 +30,7 @@ for extrinsic in result['block']['extrinsics']:
     for param in extrinsic['params']:
 
         if param['type'] == 'Address':
-            param['value'] = ss58_encode(address=param['value'], address_type=2)
+            param['value'] = ss58_encode(address=param['value'], ss58_format=2)
 
         if param['type'] == 'Compact<Balance>':
             param['value'] = '{} DOT'.format(param['value'] / 10**12)
