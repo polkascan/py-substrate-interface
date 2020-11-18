@@ -24,36 +24,59 @@ pip install substrate-interface
 
 The following examples show how to initialize for supported chains:
 
-#### Polkadot
+#### Autodiscover mode
+
+```python
+substrate = SubstrateInterface(
+    url="wss://rpc.polkadot.io"
+)
+```
+
+When only an `url` is provided, it tries to determine certain properties like `ss58_format` and 
+`type_registry_preset` automatically by calling the RPC method `system_properties`. 
+
+At the moment this will work for Polkadot, Kusama, Kulupu and Westend nodes, for other chains the `ss58_format` 
+(default 42) and  `type_registry` (defaults to latest vanilla Substrate types) should be set manually. 
+
+#### Manually set required properties
+
+Polkadot
 
 ```python
 substrate = SubstrateInterface(
     url="wss://rpc.polkadot.io",
-    address_type=0,
+    ss58_format=0,
     type_registry_preset='polkadot'
 )
 ```
 
-Note on support for `wss`, this is still quite limited at the moment as connections are not reused yet. Until support is
-improved it is prefered to use `http` endpoints (e.g. http://127.0.0.1:9933)
-
-#### Kusama
+Kusama
 
 ```python
 substrate = SubstrateInterface(
     url="wss://kusama-rpc.polkadot.io/",
-    address_type=2,
+    ss58_format=2,
     type_registry_preset='kusama'
 )
 ```
 
-#### Kulupu
+Kulupu
 
 ```python
 substrate = SubstrateInterface(
     url="wss://rpc.kulupu.corepaper.org/ws",
-    address_type=16,
+    ss58_format=16,
     type_registry_preset='kulupu'
+)
+```
+
+Westend
+
+```python
+substrate = SubstrateInterface(
+    url="wss://westend-rpc.polkadot.io",
+    ss58_format=42,
+    type_registry_preset='westend'
 )
 ```
 
@@ -63,7 +86,7 @@ Compatible with https://github.com/substrate-developer-hub/substrate-node-templa
 ```python
 substrate = SubstrateInterface(
     url="http://127.0.0.1:9933",
-    address_type=42,
+    ss58_format=42,
     type_registry_preset='substrate-node-template'
 )
  
@@ -95,7 +118,7 @@ custom_type_registry = load_type_registry_file("my-custom-types.json")
 
 substrate = SubstrateInterface(
     url="http://127.0.0.1:9933",
-    address_type=42,
+    ss58_format=42,
     type_registry_preset='substrate-node-template',
     type_registry=custom_type_registry
 )
@@ -105,15 +128,15 @@ substrate = SubstrateInterface(
 ## Keeping type registry presets up to date
 
 When on-chain runtime upgrades occur, types used in call- or storage functions can be added or modified. Therefor it is
-important to keep the type registry presets up to date. At the moment the type registry for Polkadot, Kusama and Kulupu
- are being actively maintained for this library and an check and update procedure can be triggered with:
+important to keep the type registry presets up to date, otherwise this can lead to decoding errors like 
+`RemainingScaleBytesNotEmptyException`. At the moment the type registry for Polkadot, Kusama, Kulupu and
+Westend are being actively maintained for this library and an check and update procedure can be triggered with:
  
 ```python
 substrate.update_type_registry_presets()
 ```   
 
 ## Examples
-
 
 
 ### Get extrinsics for a certain block
@@ -205,7 +228,7 @@ from substrateinterface import SubstrateInterface, SubstrateRequestException, Ke
 
 substrate = SubstrateInterface(
     url="ws://127.0.0.1:9944",
-    address_type=42,
+    ss58_format=42,
     type_registry_preset='kusama'
 )
 
@@ -230,9 +253,13 @@ except SubstrateRequestException as e:
     print("Failed to send: {}".format(e))
 ```
 
+The `wait_for_inclusion` keyword argument used in the example above will block giving the result until it gets 
+confirmation from the node that the extrinsic is succesfully included in a block. The `wait_for_finalization` keyword
+will wait until extrinsic is finalized. Note this feature is only available for websocket connections. 
+
 ### Create mortal extrinsics
 
-By default `immortal` extrinsics are created, which means they have an indefinite lifetime for being included in a 
+By default _immortal_ extrinsics are created, which means they have an indefinite lifetime for being included in a 
 block. However it is recommended to use specify an expiry window, so you know after a certain amount of time if the 
 extrinsic is not included in a block, it will be invalidated.
 
@@ -277,7 +304,7 @@ keypair = Keypair.create_from_uri('//Alice')
 ```python
 keypair = Keypair(ss58_address="EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk")
 
-call = self.kusama_substrate.compose_call(
+call = substrate.compose_call(
     call_module='Balances',
     call_function='transfer',
     call_params={
@@ -285,7 +312,8 @@ call = self.kusama_substrate.compose_call(
         'value': 2 * 10 ** 3
     }
 )
-payment_info = self.kusama_substrate.get_payment_info(call=call, keypair=keypair)
+payment_info = substrate.get_payment_info(call=call, keypair=keypair)
+# {'class': 'normal', 'partialFee': 2499999066, 'weight': 216625000}
 ```
 
 ### Offline signing of extrinsics
@@ -293,11 +321,11 @@ payment_info = self.kusama_substrate.get_payment_info(call=call, keypair=keypair
 This example generates a signature payload which can be signed on another (offline) machine and later on sent to the 
 network with the generated signature.
 
-Generate signature payload on online machine:
+- Generate signature payload on online machine:
 ```python
 substrate = SubstrateInterface(
     url="http://127.0.0.1:9933",
-    address_type=42,
+    ss58_format=42,
     type_registry_preset='substrate-node-template',
 )
 
@@ -316,14 +344,14 @@ nonce = 0
 signature_payload = substrate.generate_signature_payload(call=call, era=era, nonce=nonce)
 ```
 
-Then on another (offline) machine generate the signature with given `signature_payload`:
+- Then on another (offline) machine generate the signature with given `signature_payload`:
 
 ```python
 keypair = Keypair.create_from_mnemonic("nature exchange gasp toy result bacon coin broccoli rule oyster believe lyrics")
 signature = keypair.sign(signature_payload)
 ```
 
-Finally on the online machine send the extrinsic with generated signature:
+- Finally on the online machine send the extrinsic with generated signature:
 
 ```python
 keypair = Keypair(ss58_address="5EChUec3ZQhUvY1g52ZbfBVkqjUY9Kcr6mcEvQMbmd38shQL")

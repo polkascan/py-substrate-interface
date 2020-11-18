@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
 import warnings
 from hashlib import blake2b
 
@@ -24,7 +23,7 @@ import logging
 import re
 
 import requests
-import websockets
+from websocket import create_connection
 
 from scalecodec import ScaleBytes, GenericCall
 from scalecodec.base import ScaleDecoder, RuntimeConfiguration
@@ -276,8 +275,8 @@ class Keypair:
 
 class SubstrateInterface:
 
-    def __init__(self, url, ss58_format=None, type_registry=None, type_registry_preset=None, cache_region=None,
-                 address_type=None):
+    def __init__(self, url=None, websocket=None, ss58_format=None, type_registry=None, type_registry_preset=None,
+                 cache_region=None, address_type=None):
         """
         A specialized class in interfacing with a Substrate node.
 
@@ -289,6 +288,9 @@ class SubstrateInterface:
         type_registry_preset: The name of the predefined type registry shipped with the SCALE-codec, e.g. kusama
         cache_region: a Dogpile cache region as a central store for the metadata cache
         """
+
+        if (not url and not websocket) or (url and websocket):
+            raise ValueError("Either 'url' or 'websocket' must be provided")
 
         if address_type is not None:
             warnings.warn("Keyword 'address_type' will be replaced by 'ss58_format'", DeprecationWarning)
@@ -310,6 +312,16 @@ class SubstrateInterface:
 
         self.request_id = 1
         self.url = url
+
+        if self.url and (self.url[0:6] == 'wss://' or self.url[0:5] == 'ws://'):
+            websocket = create_connection(
+                    url,
+                    max_size=2**32,
+                    read_limit=2**32,
+                    write_limit=2**32,
+            )
+
+        self.websocket = websocket
 
         self._ws_result = None
 
@@ -378,56 +390,28 @@ class SubstrateInterface:
 
         self.debug_message('RPC request "{}"'.format(method))
 
-        if self.url[0:6] == 'wss://' or self.url[0:5] == 'ws://':
-            ws_result = {}
+        if self.websocket:
+            self.websocket.send(json.dumps(payload))
 
-            async def ws_request(ws_payload):
-                """
-                Internal method to handle the request if url is a websocket address (wss:// or ws://)
+            if callable(result_handler):
+                # If result handler is set, pass result through and loop until handler return not None
+                event_number = 0
+                json_body = None
+                while not json_body:
+                    result = json.loads(self.websocket.recv())
+                    self.debug_message("Websocket result [{}] Received from node: {}".format(event_number, result))
 
-                Parameters
-                ----------
-                ws_payload: a dict that contains the JSONRPC payload of the request
+                    # Check if response has error
+                    if 'error' in result:
+                        raise SubstrateRequestException(result['error'])
 
-                Returns
-                -------
-                This method doesn't return but updates the `ws_result` object variable with the result
-                """
-                async with websockets.connect(
-                        self.url,
-                        max_size=2**32,
-                        read_limit=2**32,
-                        write_limit=2**32,
-                ) as websocket:
-                    await websocket.send(json.dumps(ws_payload))
+                    callback_result = result_handler(result)
+                    if callback_result:
+                        json_body = callback_result
 
-                    if callable(result_handler):
-                        event_number = 0
-                        while not ws_result:
-                            result = json.loads(await websocket.recv())
-                            self.debug_message("Websocket result [{}] Received from node: {}".format(event_number, result))
-
-                            # Check if response has error
-                            if 'error' in result:
-                                raise SubstrateRequestException(result['error'])
-
-                            callback_result = result_handler(result)
-                            if callback_result:
-                                ws_result.update(callback_result)
-
-                            event_number += 1
-                    else:
-                        ws_result.update(json.loads(await websocket.recv()))
-
-            if hasattr(asyncio, 'run'):
-                # Python 3.7+
-                asyncio.run(ws_request(payload))
+                    event_number += 1
             else:
-                # Python 3.6 compatibility
-                loop = asyncio.get_event_loop()
-                loop.run_until_complete(ws_request(payload))
-
-            json_body = ws_result
+                json_body = json.loads(self.websocket.recv())
 
         else:
 
