@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.8.4" />
+<meta name="generator" content="pdoc 0.9.1" />
 <title>substrateinterface API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
-<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/styles/github.min.css" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
 <style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.1/highlight.min.js" integrity="sha256-eOgo0OtLL4cdq7RdwRUiGKLX9XsIJ7nGhWEKbohmVAQ=" crossorigin></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
 <script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
 </head>
 <body>
@@ -42,36 +42,52 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
+import warnings
+from hashlib import blake2b
+
 import binascii
 import json
 import logging
 import re
 
 import requests
-import websockets
+from websocket import create_connection
 
 from scalecodec import ScaleBytes, GenericCall
 from scalecodec.base import ScaleDecoder, RuntimeConfiguration
 from scalecodec.block import ExtrinsicsDecoder, EventsDecoder, LogDigest
 from scalecodec.metadata import MetadataDecoder
 from scalecodec.type_registry import load_type_registry_preset
+from scalecodec.updater import update_type_registries
 
-from .subkey import Subkey
-from .utils.hasher import blake2_256, two_x64_concat, xxh64, xxh128, blake2_128, blake2_128_concat, identity
+from .key import extract_derive_path
+from .utils.hasher import blake2_256, two_x64_concat, xxh128, blake2_128, blake2_128_concat, identity
 from .exceptions import SubstrateRequestException, ConfigurationError, StorageFunctionNotFound
 from .constants import *
 from .utils.ss58 import ss58_decode, ss58_encode
+
 from bip39 import bip39_to_mini_secret, bip39_generate
 import sr25519
+import ed25519
 
 
 logger = logging.getLogger(__name__)
 
 
+class KeypairType:
+    ED25519 = 0
+    SR25519 = 1
+
+
 class Keypair:
 
-    def __init__(self, ss58_address=None, public_key=None, private_key=None, address_type=42):
+    def __init__(self, ss58_address=None, public_key=None, private_key=None, ss58_format=42,
+                 address_type=None, seed_hex=None,
+                 crypto_type=KeypairType.SR25519):
+
+        self.crypto_type = crypto_type
+        self.seed_hex = seed_hex
+        self.derive_path = None
 
         if ss58_address and not public_key:
             public_key = ss58_decode(ss58_address)
@@ -79,25 +95,38 @@ class Keypair:
         if not public_key:
             raise ValueError(&#39;No SS58 formatted address or public key provided&#39;)
 
+        if type(public_key) is bytes:
+            public_key = public_key.hex()
+
         public_key = &#39;0x{}&#39;.format(public_key.replace(&#39;0x&#39;, &#39;&#39;))
 
         if len(public_key) != 66:
             raise ValueError(&#39;Public key should be 32 bytes long&#39;)
 
+        if address_type is not None:
+            warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
+            ss58_format = address_type
+
+        self.ss58_format = ss58_format
+
         if not ss58_address:
-            ss58_address = ss58_encode(public_key, address_type=address_type)
+            ss58_address = ss58_encode(public_key, ss58_format=ss58_format)
 
         self.public_key = public_key
+
         self.ss58_address = ss58_address
 
         if private_key:
+
+            if type(private_key) is bytes:
+                private_key = private_key.hex()
+
             private_key = &#39;0x{}&#39;.format(private_key.replace(&#39;0x&#39;, &#39;&#39;))
 
-            if len(private_key) != 130:
+            if self.crypto_type == KeypairType.SR25519 and len(private_key) != 130:
                 raise ValueError(&#39;Secret key should be 64 bytes long&#39;)
 
         self.private_key = private_key
-        self.address_type = address_type
 
         self.mnemonic = None
 
@@ -106,28 +135,112 @@ class Keypair:
         return bip39_generate(words)
 
     @classmethod
-    def create_from_mnemonic(cls, mnemonic, address_type=42):
+    def create_from_mnemonic(cls, mnemonic, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
         seed_array = bip39_to_mini_secret(mnemonic, &#34;&#34;)
+
+        if address_type is not None:
+            warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
+            ss58_format = address_type
 
         keypair = cls.create_from_seed(
             seed_hex=binascii.hexlify(bytearray(seed_array)).decode(&#34;ascii&#34;),
-            address_type=address_type
+            ss58_format=ss58_format,
+            crypto_type=crypto_type
         )
         keypair.mnemonic = mnemonic
 
         return keypair
 
     @classmethod
-    def create_from_seed(cls, seed_hex, address_type=42):
-        keypair = sr25519.pair_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
-        public_key = keypair[0].hex()
-        private_key = keypair[1].hex()
-        ss58_address = ss58_encode(keypair[0], address_type)
-        return cls(ss58_address=ss58_address, public_key=public_key, private_key=private_key, address_type=address_type)
+    def create_from_seed(cls, seed_hex, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+
+        if address_type is not None:
+            warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
+            ss58_format = address_type
+
+        if crypto_type == KeypairType.SR25519:
+            public_key, private_key = sr25519.pair_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
+        elif crypto_type == KeypairType.ED25519:
+            private_key, public_key = ed25519.ed_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
+        else:
+            raise ValueError(&#39;crypto_type &#34;{}&#34; not supported&#39;.format(crypto_type))
+
+        public_key = public_key.hex()
+        private_key = private_key.hex()
+
+        ss58_address = ss58_encode(public_key, ss58_format)
+
+        return cls(
+            ss58_address=ss58_address, public_key=public_key, private_key=private_key,
+            ss58_format=ss58_format, crypto_type=crypto_type, seed_hex=seed_hex
+        )
 
     @classmethod
-    def create_from_private_key(cls, private_key, public_key=None, ss58_address=None, address_type=42):
-        return cls(ss58_address=ss58_address, public_key=public_key, private_key=private_key, address_type=address_type)
+    def create_from_uri(cls, suri, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+
+        if address_type is not None:
+            warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
+            ss58_format = address_type
+
+        if suri and suri.startswith(&#39;/&#39;):
+            suri = DEV_PHRASE + suri
+
+        suri_regex = re.match(r&#39;^(?P&lt;phrase&gt;\w+( \w+)*)(?P&lt;path&gt;(//?[^/]+)*)(///(?P&lt;password&gt;.*))?$&#39;, suri)
+
+        suri_parts = suri_regex.groupdict()
+
+        if suri_parts[&#39;password&#39;]:
+            raise NotImplementedError(&#34;Passwords in suri not supported&#34;)
+
+        derived_keypair = cls.create_from_mnemonic(
+            suri_parts[&#39;phrase&#39;], ss58_format=ss58_format, crypto_type=crypto_type
+        )
+
+        if suri_parts[&#39;path&#39;] != &#39;&#39;:
+
+            derived_keypair.derive_path = suri_parts[&#39;path&#39;]
+
+            if crypto_type not in [KeypairType.SR25519]:
+                raise NotImplementedError(&#39;Derivation paths for this crypto type not supported&#39;)
+
+            derive_junctions = extract_derive_path(suri_parts[&#39;path&#39;])
+
+            child_pubkey = bytes.fromhex(derived_keypair.public_key[2:])
+            child_privkey = bytes.fromhex(derived_keypair.private_key[2:])
+
+            for junction in derive_junctions:
+
+                if junction.is_hard:
+
+                    _, child_pubkey, child_privkey = sr25519.hard_derive_keypair(
+                        (junction.chain_code, child_pubkey, child_privkey),
+                        b&#39;&#39;
+                    )
+
+                else:
+
+                    _, child_pubkey, child_privkey = sr25519.derive_keypair(
+                        (junction.chain_code, child_pubkey, child_privkey),
+                        b&#39;&#39;
+                    )
+
+            derived_keypair = Keypair(public_key=child_pubkey, private_key=child_privkey)
+
+        return derived_keypair
+
+    @classmethod
+    def create_from_private_key(
+            cls, private_key, public_key=None, ss58_address=None, ss58_format=42, crypto_type=KeypairType.SR25519,
+            address_type=None
+    ):
+        if address_type is not None:
+            warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
+            ss58_format = address_type
+
+        return cls(
+            ss58_address=ss58_address, public_key=public_key, private_key=private_key,
+            ss58_format=ss58_format, crypto_type=crypto_type
+        )
 
     def sign(self, data):
         &#34;&#34;&#34;
@@ -150,12 +263,16 @@ class Keypair:
             data = data.encode()
 
         if not self.private_key:
-            raise ConfigurationError(&#39;No private key set to create sr25519 signatures&#39;)
+            raise ConfigurationError(&#39;No private key set to create signatures&#39;)
 
-        signature = sr25519.sign(
-            (bytes.fromhex(self.public_key[2:]), bytes.fromhex(self.private_key[2:])),
-            data
-        )
+        if self.crypto_type == KeypairType.SR25519:
+
+            signature = sr25519.sign((bytes.fromhex(self.public_key[2:]), bytes.fromhex(self.private_key[2:])), data)
+        elif self.crypto_type == KeypairType.ED25519:
+            signature = ed25519.ed_sign(bytes.fromhex(self.public_key[2:]), bytes.fromhex(self.private_key[2:]), data)
+        else:
+            raise ConfigurationError(&#34;Crypto type not supported&#34;)
+
         return &#34;0x{}&#34;.format(signature.hex())
 
     def verify(self, data, signature):
@@ -173,13 +290,21 @@ class Keypair:
         if type(signature) is not bytes:
             raise TypeError(&#34;Signature should be of type bytes or a hex-string&#34;)
 
-        return sr25519.verify(signature, data, bytes.fromhex(self.public_key[2:]))
+        if self.crypto_type == KeypairType.SR25519:
+            return sr25519.verify(signature, data, bytes.fromhex(self.public_key[2:]))
+        elif self.crypto_type == KeypairType.ED25519:
+            return ed25519.ed_verify(signature, data, bytes.fromhex(self.public_key[2:]))
+        else:
+            raise ConfigurationError(&#34;Crypto type not supported&#34;)
+
+    def __repr__(self):
+        return &#39;&lt;Keypair (ss58_address={})&gt;&#39;.format(self.ss58_address)
 
 
 class SubstrateInterface:
 
-    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=&#34;default&#34;, cache_region=None,
-                 sub_key: Subkey = None):
+    def __init__(self, url=None, websocket=None, ss58_format=None, type_registry=None, type_registry_preset=None,
+                 cache_region=None, address_type=None):
         &#34;&#34;&#34;
         A specialized class in interfacing with a Substrate node.
 
@@ -191,28 +316,44 @@ class SubstrateInterface:
         type_registry_preset: The name of the predefined type registry shipped with the SCALE-codec, e.g. kusama
         cache_region: a Dogpile cache region as a central store for the metadata cache
         &#34;&#34;&#34;
+
+        if (not url and not websocket) or (url and websocket):
+            raise ValueError(&#34;Either &#39;url&#39; or &#39;websocket&#39; must be provided&#34;)
+
+        if address_type is not None:
+            warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
+            ss58_format = address_type
+
+        # Initialize lazy loading variables
+        self.__version = None
+        self.__name = None
+        self.__properties = None
+        self.__chain = None
+
+        self.__token_decimals = None
+        self.__token_symbol = None
+        self.__ss58_format = None
+
         self.cache_region = cache_region
 
-        if type_registry_preset:
-            # Load type registries in runtime configuration
-            RuntimeConfiguration().update_type_registry(load_type_registry_preset(&#34;default&#34;))
-
-            if type_registry != &#34;default&#34;:
-                RuntimeConfiguration().update_type_registry(load_type_registry_preset(type_registry_preset))
-
-        if type_registry:
-            # Load type registries in runtime configuration
-            RuntimeConfiguration().update_type_registry(type_registry)
+        self.ss58_format = ss58_format
 
         self.request_id = 1
         self.url = url
 
+        if self.url and (self.url[0:6] == &#39;wss://&#39; or self.url[0:5] == &#39;ws://&#39;):
+            websocket = create_connection(
+                    url,
+                    max_size=2**32,
+                    read_limit=2**32,
+                    write_limit=2**32,
+            )
+
+        self.websocket = websocket
+
         self._ws_result = None
 
-        self.address_type = address_type
-
         self.mock_extrinsics = None
-        self._version = None
         self.default_headers = {
             &#39;content-type&#39;: &#34;application/json&#34;,
             &#39;cache-control&#39;: &#34;no-cache&#34;
@@ -229,9 +370,26 @@ class SubstrateInterface:
         self.metadata_cache = {}
         self.type_registry_cache = {}
 
-        self.sub_key = sub_key
-
         self.debug = False
+
+        if not type_registry_preset:
+            # Try to auto discover type registry preset by chain name
+            if self.chain.lower() in [&#39;polkadot&#39;, &#39;kusama&#39;, &#39;westend&#39;, &#39;kulupu&#39;]:
+                type_registry_preset = self.chain.lower()
+            else:
+                type_registry_preset = &#34;default&#34;
+
+        # Set type registry
+        if type_registry_preset:
+            # Load type registries in runtime configuration
+            RuntimeConfiguration().update_type_registry(load_type_registry_preset(&#34;default&#34;))
+
+            if type_registry != &#34;default&#34;:
+                RuntimeConfiguration().update_type_registry(load_type_registry_preset(type_registry_preset))
+
+        if type_registry:
+            # Load type registries in runtime configuration
+            RuntimeConfiguration().update_type_registry(type_registry)
 
     def debug_message(self, message):
         logger.debug(message)
@@ -260,46 +418,28 @@ class SubstrateInterface:
 
         self.debug_message(&#39;RPC request &#34;{}&#34;&#39;.format(method))
 
-        if self.url[0:6] == &#39;wss://&#39; or self.url[0:5] == &#39;ws://&#39;:
-            ws_result = {}
+        if self.websocket:
+            self.websocket.send(json.dumps(payload))
 
-            async def ws_request(ws_payload):
-                &#34;&#34;&#34;
-                Internal method to handle the request if url is a websocket address (wss:// or ws://)
+            if callable(result_handler):
+                # If result handler is set, pass result through and loop until handler return not None
+                event_number = 0
+                json_body = None
+                while not json_body:
+                    result = json.loads(self.websocket.recv())
+                    self.debug_message(&#34;Websocket result [{}] Received from node: {}&#34;.format(event_number, result))
 
-                Parameters
-                ----------
-                ws_payload: a dict that contains the JSONRPC payload of the request
+                    # Check if response has error
+                    if &#39;error&#39; in result:
+                        raise SubstrateRequestException(result[&#39;error&#39;])
 
-                Returns
-                -------
-                This method doesn&#39;t return but updates the `ws_result` object variable with the result
-                &#34;&#34;&#34;
-                async with websockets.connect(
-                        self.url
-                ) as websocket:
-                    await websocket.send(json.dumps(ws_payload))
+                    callback_result = result_handler(result)
+                    if callback_result:
+                        json_body = callback_result
 
-                    if callable(result_handler):
-                        event_number = 0
-                        while not ws_result:
-                            result = json.loads(await websocket.recv())
-                            self.debug_message(&#34;Websocket result [{}] Received from node: {}&#34;.format(event_number, result))
-
-                            # Check if response has error
-                            if &#39;error&#39; in result:
-                                raise SubstrateRequestException(result[&#39;error&#39;])
-
-                            callback_result = result_handler(result)
-                            if callback_result:
-                                ws_result.update(callback_result)
-
-                            event_number += 1
-                    else:
-                        ws_result.update(json.loads(await websocket.recv()))
-
-            asyncio.run(ws_request(payload))
-            json_body = ws_result
+                    event_number += 1
+            else:
+                json_body = json.loads(self.websocket.recv())
 
         else:
 
@@ -315,29 +455,63 @@ class SubstrateInterface:
 
         return json_body
 
-    def get_system_name(self):
-        &#34;&#34;&#34;
-        A pass-though to existing JSONRPC method `system_name`
+    @property
+    def name(self):
+        if not self.__name:
+            self.__name = self.rpc_request(&#34;system_name&#34;, []).get(&#39;result&#39;)
+        return self.__name
 
-        Returns
-        -------
+    @property
+    def properties(self):
+        if not self.__properties:
+            self.__properties = self.rpc_request(&#34;system_properties&#34;, []).get(&#39;result&#39;)
+        return self.__properties
 
-        &#34;&#34;&#34;
-        response = self.rpc_request(&#34;system_name&#34;, [])
-        return response.get(&#39;result&#39;)
+    @property
+    def chain(self):
+        if not self.__chain:
+            self.__chain = self.rpc_request(&#34;system_chain&#34;, []).get(&#39;result&#39;)
+        return self.__chain
 
-    def get_version(self):
-        &#34;&#34;&#34;
-        A pass-though to existing JSONRPC method `system_version`
+    @property
+    def version(self):
+        if not self.__version:
+            self.__version = self.rpc_request(&#34;system_version&#34;, []).get(&#39;result&#39;)
+        return self.__version
 
-        Returns
-        -------
+    @property
+    def token_decimals(self):
+        if not self.__token_decimals:
+            self.__token_decimals = self.properties.get(&#39;tokenDecimals&#39;)
+        return self.__token_decimals
 
-        &#34;&#34;&#34;
-        if not self._version:
-            response = self.rpc_request(&#34;system_version&#34;, [])
-            self._version = response.get(&#39;result&#39;)
-        return self._version
+    @token_decimals.setter
+    def token_decimals(self, value):
+        if type(value) is not int and value is not None:
+            raise TypeError(&#39;Token decimals must be an int&#39;)
+        self.__token_decimals = value
+
+    @property
+    def token_symbol(self):
+        if not self.__token_symbol:
+            self.__token_symbol = self.properties.get(&#39;tokenSymbol&#39;)
+        return self.__token_symbol
+
+    @token_symbol.setter
+    def token_symbol(self, value):
+        self.__token_symbol = value
+
+    @property
+    def ss58_format(self):
+        if not self.__ss58_format:
+            self.__ss58_format = self.properties.get(&#39;ss58Format&#39;)
+        return self.__ss58_format
+
+    @ss58_format.setter
+    def ss58_format(self, value):
+        if type(value) is not int and value is not None:
+            raise TypeError(&#39;ss58_format must be an int&#39;)
+        self.__ss58_format = value
 
     def get_chain_head(self):
         &#34;&#34;&#34;
@@ -683,7 +857,7 @@ class SubstrateInterface:
     def convert_storage_parameter(self, scale_type, value):
         if scale_type == &#39;AccountId&#39;:
             if value[0:2] != &#39;0x&#39;:
-                return &#39;0x{}&#39;.format(ss58_decode(value, self.address_type))
+                return &#39;0x{}&#39;.format(ss58_decode(value, self.ss58_format))
 
         return value
 
@@ -721,7 +895,17 @@ class SubstrateInterface:
         self.block_hash = block_hash
         self.block_id = block_id
 
-        runtime_info = self.get_block_runtime_version(block_hash=self.block_hash)
+        # In fact calls and storage functions are decoded against runtime of previous block, therefor retrieve
+        # metadata and apply type registry of runtime of parent block
+        block_header = self.get_block_header(block_hash=self.block_hash) or {}
+        parent_block_hash = block_header.get(&#39;parentHash&#39;)
+
+        if parent_block_hash == &#39;0x0000000000000000000000000000000000000000000000000000000000000000&#39;:
+            runtime_block_hash = self.block_hash
+        else:
+            runtime_block_hash = parent_block_hash
+
+        runtime_info = self.get_block_runtime_version(block_hash=runtime_block_hash)
 
         # Check if runtime state already set to current block
         if runtime_info.get(&#34;specVersion&#34;) == self.runtime_version:
@@ -745,7 +929,7 @@ class SubstrateInterface:
             self.debug_message(&#39;Retrieved metadata for {} from memory&#39;.format(self.runtime_version))
             self.metadata_decoder = self.metadata_cache[self.runtime_version]
         else:
-            self.metadata_decoder = self.get_block_metadata(block_hash=self.block_hash, decode=True)
+            self.metadata_decoder = self.get_block_metadata(block_hash=runtime_block_hash, decode=True)
             self.debug_message(&#39;Retrieved metadata for {} from Substrate node&#39;.format(self.runtime_version))
 
             # Update metadata cache
@@ -754,6 +938,59 @@ class SubstrateInterface:
             if self.cache_region:
                 self.debug_message(&#39;Stored metadata for {} in Redis&#39;.format(self.runtime_version))
                 self.cache_region.set(&#39;METADATA_{}&#39;.format(self.runtime_version), self.metadata_decoder)
+
+    def iterate_map(self, module, storage_function, block_hash=None):
+        &#34;&#34;&#34;
+        iterates over all key-pairs localted at the given module and storage_function. The storage
+        item must be a map.
+
+        Parameters
+        ----------
+        module: The module name in the metadata, e.g. Balances or Account.
+        storage_function: The storage function name, e.g. FreeBalance or AccountNonce.
+        block_hash: Optional block hash, when left to None the chain tip will be used.
+
+        Returns
+        -------
+        A two dimensional list of key-value pairs, both decoded into the given type, e.g.
+        [[k1, v1], [k2, v2], ...]
+        &#34;&#34;&#34;
+        self.init_runtime(block_hash=block_hash)
+
+        key_type = None
+        value_type = None
+        concat_hash_len = None
+        for metadata_module in self.metadata_decoder.metadata.modules:
+            if metadata_module.name == module:
+                if metadata_module.storage:
+                    for storage_item in metadata_module.storage.items:
+                        if storage_item.name == storage_function:
+                            if &#39;MapType&#39; in storage_item.type:
+                                key_type = storage_item.type[&#39;MapType&#39;][&#39;key&#39;]
+                                value_type = storage_item.type[&#39;MapType&#39;][&#39;value&#39;]
+                                if storage_item.type[&#39;MapType&#39;][&#39;hasher&#39;] == &#34;Blake2_128Concat&#34;:
+                                    concat_hash_len = 32
+                                elif storage_item.type[&#39;MapType&#39;][&#39;hasher&#39;] == &#34;Twox64Concat&#34;:
+                                    concat_hash_len = 16
+                                else:
+                                    raise ValueError(&#39;Unsupported hash type&#39;)
+                            else:
+                                raise ValueError(&#39;Given storage is not a map&#39;)
+
+        prefix = self.generate_storage_hash(module, storage_function)
+        prefix_len = len(prefix)
+        pairs = self.rpc_request(method=&#34;state_getPairs&#34;, params=[prefix, block_hash]).get(&#39;result&#39;)
+
+        # convert keys to the portion that needs to be decoded.
+        pairs = map(lambda kp: [&#34;0x&#34; + kp[0][prefix_len + concat_hash_len:], kp[1]], pairs)
+
+        # decode both of them
+        pairs = map(
+            lambda kp: [self.decode_scale(key_type, kp[0]), self.decode_scale(value_type, kp[1])],
+            list(pairs)
+        )
+
+        return list(pairs)
 
     def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
         &#34;&#34;&#34;
@@ -928,12 +1165,15 @@ class SubstrateInterface:
         # Retrieve genesis hash
         genesis_hash = self.get_block_hash(0)
 
-        if era:
-            if era != &#39;00&#39;:
-                # TODO implement MortalEra transactions
-                raise NotImplementedError(&#34;Mortal transactions not yet implemented&#34;)
-        else:
+        if not era:
             era = &#39;00&#39;
+
+        if era == &#39;00&#39;:
+            block_hash = genesis_hash
+        else:
+            era_obj = ScaleDecoder.get_decoder_class(&#39;Era&#39;)
+            era_obj.encode(era)
+            block_hash = self.get_block_hash(block_id=era_obj.birth(era.get(&#39;current&#39;)))
 
         # Create signature payload
         signature_payload = ScaleDecoder.get_decoder_class(&#39;ExtrinsicPayloadValue&#39;)
@@ -953,13 +1193,16 @@ class SubstrateInterface:
             &#39;tip&#39;: tip,
             &#39;specVersion&#39;: self.runtime_version,
             &#39;genesisHash&#39;: genesis_hash,
-            &#39;blockHash&#39;: genesis_hash
+            &#39;blockHash&#39;: block_hash
         }
 
         if self.transaction_version is not None:
             payload_dict[&#39;transactionVersion&#39;] = self.transaction_version
 
         signature_payload.encode(payload_dict)
+
+        if signature_payload.data.length &gt; 256:
+            return ScaleBytes(data=blake2b(signature_payload.data.data, digest_size=32).digest())
 
         return signature_payload.data
 
@@ -986,17 +1229,18 @@ class SubstrateInterface:
             raise TypeError(&#34;&#39;call&#39; must be of type Call&#34;)
 
         # Retrieve nonce
-        if not nonce:
+        if nonce is None:
             nonce = self.get_account_nonce(keypair.public_key) or 0
 
-        if era:
-            if era != &#39;00&#39;:
-                # TODO implement MortalEra transactions
-                raise NotImplementedError(&#34;Mortal transactions not yet implemented&#34;)
-        else:
+        # Process era
+        if era is None:
             era = &#39;00&#39;
+        else:
+            if isinstance(era, dict) and &#39;current&#39; not in era and &#39;phase&#39; not in era:
+                # Retrieve current block id
+                era[&#39;current&#39;] = self.get_block_number(self.get_chain_finalised_head())
 
-        if signature:
+        if signature is not None:
 
             signature = signature.replace(&#39;0x&#39;, &#39;&#39;)
 
@@ -1005,14 +1249,14 @@ class SubstrateInterface:
                 signature_version = int(signature[0:2], 16)
                 signature = &#39;0x{}&#39;.format(signature[2:])
             else:
-                signature_version = 1
+                signature_version = keypair.crypto_type
 
         else:
             # Create signature payload
             signature_payload = self.generate_signature_payload(call=call, era=era, nonce=nonce, tip=tip)
 
-            # Set Signature version to sr25519
-            signature_version = 1
+            # Set Signature version to crypto type of keypair
+            signature_version = keypair.crypto_type
 
             # Sign payload
             signature = keypair.sign(signature_payload)
@@ -1104,6 +1348,49 @@ class SubstrateInterface:
             }
 
         return response
+
+    def get_payment_info(self, call, keypair):
+        &#34;&#34;&#34;
+        Retrieves fee estimation via RPC for given extrinsic
+
+        Parameters
+        ----------
+        call Call object to estimate fees for
+        keypair Keypair of the sender, does not have to include private key because no valid signature is required
+
+        Returns
+        -------
+        Dict with payment info
+
+        E.g. {&#39;class&#39;: &#39;normal&#39;, &#39;partialFee&#39;: 151000000, &#39;weight&#39;: 217238000}
+
+        &#34;&#34;&#34;
+
+        # Check requirements
+        if not isinstance(call, GenericCall):
+            raise TypeError(&#34;&#39;call&#39; must be of type Call&#34;)
+
+        if not isinstance(keypair, Keypair):
+            raise TypeError(&#34;&#39;keypair&#39; must be of type Keypair&#34;)
+
+        # No valid signature is required for fee estimation
+        signature = &#39;0x&#39; + &#39;00&#39; * 64
+
+        # Create extrinsic
+        extrinsic = self.create_signed_extrinsic(
+            call=call,
+            keypair=keypair,
+            signature=signature
+        )
+
+        payment_info = self.rpc_request(&#39;payment_queryInfo&#39;, [str(extrinsic.data)])
+
+        # convert partialFee to int
+        if &#39;result&#39; in payment_info:
+            payment_info[&#39;result&#39;][&#39;partialFee&#39;] = int(payment_info[&#39;result&#39;][&#39;partialFee&#39;])
+            return payment_info[&#39;result&#39;]
+        else:
+            raise SubstrateRequestException(payment_info[&#39;error&#39;][&#39;message&#39;])
 
     def process_metadata_typestring(self, type_string):
         &#34;&#34;&#34;
@@ -1285,7 +1572,7 @@ class SubstrateInterface:
 
         &#34;&#34;&#34;
         type_registry = self.get_type_registry(block_hash=block_hash)
-        return type_registry.get(type_string)
+        return type_registry.get(type_string.lower())
 
     def get_metadata_modules(self, block_hash=None):
         &#34;&#34;&#34;
@@ -1707,7 +1994,7 @@ class SubstrateInterface:
             storage_dict[&#34;type_key1&#34;] = type_info[&#34;key1&#34;]
             storage_dict[&#34;type_key2&#34;] = type_info[&#34;key2&#34;]
             storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
-            storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;key2Hasher&#34;]
+            storage_dict[&#34;type_hasher_key2&#34;] = type_info[&#34;key2Hasher&#34;]
 
         if storage_item.fallback != &#39;0x00&#39;:
             # Decode fallback
@@ -1833,7 +2120,14 @@ class SubstrateInterface:
             &#34;module_prefix&#34;: module.prefix,
             &#34;module_name&#34;: module.name,
             &#34;spec_version&#34;: spec_version
-        }</code></pre>
+        }
+
+    def update_type_registry_presets(self):
+        try:
+            update_type_registries()
+            return True
+        except Exception:
+            return False</code></pre>
 </details>
 </section>
 <section>
@@ -1847,7 +2141,7 @@ class SubstrateInterface:
 <dd>
 <div class="desc"></div>
 </dd>
-<dt><code class="name"><a title="substrateinterface.subkey" href="subkey.html">substrateinterface.subkey</a></code></dt>
+<dt><code class="name"><a title="substrateinterface.key" href="key.html">substrateinterface.key</a></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -1863,16 +2157,29 @@ class SubstrateInterface:
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="substrateinterface.bip39_generate"><code class="name flex">
-<span>def <span class="ident">bip39_generate</span></span>(<span>...)</span>
+<span>def <span class="ident">bip39_generate</span></span>(<span>words)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Generates a new mnemonic</p>
+<h1 id="arguments">Arguments</h1>
+<ul>
+<li><code>words</code> - The amount of words to generate, valid values are 12, 15, 18, 21 and 24</li>
+</ul>
+<h1 id="returns">Returns</h1>
+<p>A string containing the mnemonic words.</p></div>
 </dd>
 <dt id="substrateinterface.bip39_to_mini_secret"><code class="name flex">
-<span>def <span class="ident">bip39_to_mini_secret</span></span>(<span>...)</span>
+<span>def <span class="ident">bip39_to_mini_secret</span></span>(<span>phrase, password)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Create a mini-secret from a BIP39 phrase</p>
+<h1 id="arguments">Arguments</h1>
+<ul>
+<li><code>phrase</code> - Mnemonic phrase</li>
+<li><code>password</code> - Use empty string for no password</li>
+</ul>
+<h1 id="returns">Returns</h1>
+<p>Returns the 32-bytes mini-secret via entropy</p></div>
 </dd>
 </dl>
 </section>
@@ -1881,7 +2188,7 @@ class SubstrateInterface:
 <dl>
 <dt id="substrateinterface.Keypair"><code class="flex name class">
 <span>class <span class="ident">Keypair</span></span>
-<span>(</span><span>ss58_address=None, public_key=None, private_key=None, address_type=42)</span>
+<span>(</span><span>ss58_address=None, public_key=None, private_key=None, ss58_format=42, address_type=None, seed_hex=None, crypto_type=1)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1891,7 +2198,13 @@ class SubstrateInterface:
 </summary>
 <pre><code class="python">class Keypair:
 
-    def __init__(self, ss58_address=None, public_key=None, private_key=None, address_type=42):
+    def __init__(self, ss58_address=None, public_key=None, private_key=None, ss58_format=42,
+                 address_type=None, seed_hex=None,
+                 crypto_type=KeypairType.SR25519):
+
+        self.crypto_type = crypto_type
+        self.seed_hex = seed_hex
+        self.derive_path = None
 
         if ss58_address and not public_key:
             public_key = ss58_decode(ss58_address)
@@ -1899,25 +2212,38 @@ class SubstrateInterface:
         if not public_key:
             raise ValueError(&#39;No SS58 formatted address or public key provided&#39;)
 
+        if type(public_key) is bytes:
+            public_key = public_key.hex()
+
         public_key = &#39;0x{}&#39;.format(public_key.replace(&#39;0x&#39;, &#39;&#39;))
 
         if len(public_key) != 66:
             raise ValueError(&#39;Public key should be 32 bytes long&#39;)
 
+        if address_type is not None:
+            warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
+            ss58_format = address_type
+
+        self.ss58_format = ss58_format
+
         if not ss58_address:
-            ss58_address = ss58_encode(public_key, address_type=address_type)
+            ss58_address = ss58_encode(public_key, ss58_format=ss58_format)
 
         self.public_key = public_key
+
         self.ss58_address = ss58_address
 
         if private_key:
+
+            if type(private_key) is bytes:
+                private_key = private_key.hex()
+
             private_key = &#39;0x{}&#39;.format(private_key.replace(&#39;0x&#39;, &#39;&#39;))
 
-            if len(private_key) != 130:
+            if self.crypto_type == KeypairType.SR25519 and len(private_key) != 130:
                 raise ValueError(&#39;Secret key should be 64 bytes long&#39;)
 
         self.private_key = private_key
-        self.address_type = address_type
 
         self.mnemonic = None
 
@@ -1926,28 +2252,112 @@ class SubstrateInterface:
         return bip39_generate(words)
 
     @classmethod
-    def create_from_mnemonic(cls, mnemonic, address_type=42):
+    def create_from_mnemonic(cls, mnemonic, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
         seed_array = bip39_to_mini_secret(mnemonic, &#34;&#34;)
+
+        if address_type is not None:
+            warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
+            ss58_format = address_type
 
         keypair = cls.create_from_seed(
             seed_hex=binascii.hexlify(bytearray(seed_array)).decode(&#34;ascii&#34;),
-            address_type=address_type
+            ss58_format=ss58_format,
+            crypto_type=crypto_type
         )
         keypair.mnemonic = mnemonic
 
         return keypair
 
     @classmethod
-    def create_from_seed(cls, seed_hex, address_type=42):
-        keypair = sr25519.pair_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
-        public_key = keypair[0].hex()
-        private_key = keypair[1].hex()
-        ss58_address = ss58_encode(keypair[0], address_type)
-        return cls(ss58_address=ss58_address, public_key=public_key, private_key=private_key, address_type=address_type)
+    def create_from_seed(cls, seed_hex, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+
+        if address_type is not None:
+            warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
+            ss58_format = address_type
+
+        if crypto_type == KeypairType.SR25519:
+            public_key, private_key = sr25519.pair_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
+        elif crypto_type == KeypairType.ED25519:
+            private_key, public_key = ed25519.ed_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
+        else:
+            raise ValueError(&#39;crypto_type &#34;{}&#34; not supported&#39;.format(crypto_type))
+
+        public_key = public_key.hex()
+        private_key = private_key.hex()
+
+        ss58_address = ss58_encode(public_key, ss58_format)
+
+        return cls(
+            ss58_address=ss58_address, public_key=public_key, private_key=private_key,
+            ss58_format=ss58_format, crypto_type=crypto_type, seed_hex=seed_hex
+        )
 
     @classmethod
-    def create_from_private_key(cls, private_key, public_key=None, ss58_address=None, address_type=42):
-        return cls(ss58_address=ss58_address, public_key=public_key, private_key=private_key, address_type=address_type)
+    def create_from_uri(cls, suri, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+
+        if address_type is not None:
+            warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
+            ss58_format = address_type
+
+        if suri and suri.startswith(&#39;/&#39;):
+            suri = DEV_PHRASE + suri
+
+        suri_regex = re.match(r&#39;^(?P&lt;phrase&gt;\w+( \w+)*)(?P&lt;path&gt;(//?[^/]+)*)(///(?P&lt;password&gt;.*))?$&#39;, suri)
+
+        suri_parts = suri_regex.groupdict()
+
+        if suri_parts[&#39;password&#39;]:
+            raise NotImplementedError(&#34;Passwords in suri not supported&#34;)
+
+        derived_keypair = cls.create_from_mnemonic(
+            suri_parts[&#39;phrase&#39;], ss58_format=ss58_format, crypto_type=crypto_type
+        )
+
+        if suri_parts[&#39;path&#39;] != &#39;&#39;:
+
+            derived_keypair.derive_path = suri_parts[&#39;path&#39;]
+
+            if crypto_type not in [KeypairType.SR25519]:
+                raise NotImplementedError(&#39;Derivation paths for this crypto type not supported&#39;)
+
+            derive_junctions = extract_derive_path(suri_parts[&#39;path&#39;])
+
+            child_pubkey = bytes.fromhex(derived_keypair.public_key[2:])
+            child_privkey = bytes.fromhex(derived_keypair.private_key[2:])
+
+            for junction in derive_junctions:
+
+                if junction.is_hard:
+
+                    _, child_pubkey, child_privkey = sr25519.hard_derive_keypair(
+                        (junction.chain_code, child_pubkey, child_privkey),
+                        b&#39;&#39;
+                    )
+
+                else:
+
+                    _, child_pubkey, child_privkey = sr25519.derive_keypair(
+                        (junction.chain_code, child_pubkey, child_privkey),
+                        b&#39;&#39;
+                    )
+
+            derived_keypair = Keypair(public_key=child_pubkey, private_key=child_privkey)
+
+        return derived_keypair
+
+    @classmethod
+    def create_from_private_key(
+            cls, private_key, public_key=None, ss58_address=None, ss58_format=42, crypto_type=KeypairType.SR25519,
+            address_type=None
+    ):
+        if address_type is not None:
+            warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
+            ss58_format = address_type
+
+        return cls(
+            ss58_address=ss58_address, public_key=public_key, private_key=private_key,
+            ss58_format=ss58_format, crypto_type=crypto_type
+        )
 
     def sign(self, data):
         &#34;&#34;&#34;
@@ -1970,12 +2380,16 @@ class SubstrateInterface:
             data = data.encode()
 
         if not self.private_key:
-            raise ConfigurationError(&#39;No private key set to create sr25519 signatures&#39;)
+            raise ConfigurationError(&#39;No private key set to create signatures&#39;)
 
-        signature = sr25519.sign(
-            (bytes.fromhex(self.public_key[2:]), bytes.fromhex(self.private_key[2:])),
-            data
-        )
+        if self.crypto_type == KeypairType.SR25519:
+
+            signature = sr25519.sign((bytes.fromhex(self.public_key[2:]), bytes.fromhex(self.private_key[2:])), data)
+        elif self.crypto_type == KeypairType.ED25519:
+            signature = ed25519.ed_sign(bytes.fromhex(self.public_key[2:]), bytes.fromhex(self.private_key[2:]), data)
+        else:
+            raise ConfigurationError(&#34;Crypto type not supported&#34;)
+
         return &#34;0x{}&#34;.format(signature.hex())
 
     def verify(self, data, signature):
@@ -1993,12 +2407,20 @@ class SubstrateInterface:
         if type(signature) is not bytes:
             raise TypeError(&#34;Signature should be of type bytes or a hex-string&#34;)
 
-        return sr25519.verify(signature, data, bytes.fromhex(self.public_key[2:]))</code></pre>
+        if self.crypto_type == KeypairType.SR25519:
+            return sr25519.verify(signature, data, bytes.fromhex(self.public_key[2:]))
+        elif self.crypto_type == KeypairType.ED25519:
+            return ed25519.ed_verify(signature, data, bytes.fromhex(self.public_key[2:]))
+        else:
+            raise ConfigurationError(&#34;Crypto type not supported&#34;)
+
+    def __repr__(self):
+        return &#39;&lt;Keypair (ss58_address={})&gt;&#39;.format(self.ss58_address)</code></pre>
 </details>
 <h3>Static methods</h3>
 <dl>
 <dt id="substrateinterface.Keypair.create_from_mnemonic"><code class="name flex">
-<span>def <span class="ident">create_from_mnemonic</span></span>(<span>mnemonic, address_type=42)</span>
+<span>def <span class="ident">create_from_mnemonic</span></span>(<span>mnemonic, ss58_format=42, address_type=None, crypto_type=1)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -2007,12 +2429,17 @@ class SubstrateInterface:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
-def create_from_mnemonic(cls, mnemonic, address_type=42):
+def create_from_mnemonic(cls, mnemonic, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
     seed_array = bip39_to_mini_secret(mnemonic, &#34;&#34;)
+
+    if address_type is not None:
+        warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
+        ss58_format = address_type
 
     keypair = cls.create_from_seed(
         seed_hex=binascii.hexlify(bytearray(seed_array)).decode(&#34;ascii&#34;),
-        address_type=address_type
+        ss58_format=ss58_format,
+        crypto_type=crypto_type
     )
     keypair.mnemonic = mnemonic
 
@@ -2020,7 +2447,7 @@ def create_from_mnemonic(cls, mnemonic, address_type=42):
 </details>
 </dd>
 <dt id="substrateinterface.Keypair.create_from_private_key"><code class="name flex">
-<span>def <span class="ident">create_from_private_key</span></span>(<span>private_key, public_key=None, ss58_address=None, address_type=42)</span>
+<span>def <span class="ident">create_from_private_key</span></span>(<span>private_key, public_key=None, ss58_address=None, ss58_format=42, crypto_type=1, address_type=None)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -2029,12 +2456,22 @@ def create_from_mnemonic(cls, mnemonic, address_type=42):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
-def create_from_private_key(cls, private_key, public_key=None, ss58_address=None, address_type=42):
-    return cls(ss58_address=ss58_address, public_key=public_key, private_key=private_key, address_type=address_type)</code></pre>
+def create_from_private_key(
+        cls, private_key, public_key=None, ss58_address=None, ss58_format=42, crypto_type=KeypairType.SR25519,
+        address_type=None
+):
+    if address_type is not None:
+        warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
+        ss58_format = address_type
+
+    return cls(
+        ss58_address=ss58_address, public_key=public_key, private_key=private_key,
+        ss58_format=ss58_format, crypto_type=crypto_type
+    )</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.Keypair.create_from_seed"><code class="name flex">
-<span>def <span class="ident">create_from_seed</span></span>(<span>seed_hex, address_type=42)</span>
+<span>def <span class="ident">create_from_seed</span></span>(<span>seed_hex, ss58_format=42, address_type=None, crypto_type=1)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -2043,12 +2480,91 @@ def create_from_private_key(cls, private_key, public_key=None, ss58_address=None
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
-def create_from_seed(cls, seed_hex, address_type=42):
-    keypair = sr25519.pair_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
-    public_key = keypair[0].hex()
-    private_key = keypair[1].hex()
-    ss58_address = ss58_encode(keypair[0], address_type)
-    return cls(ss58_address=ss58_address, public_key=public_key, private_key=private_key, address_type=address_type)</code></pre>
+def create_from_seed(cls, seed_hex, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+
+    if address_type is not None:
+        warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
+        ss58_format = address_type
+
+    if crypto_type == KeypairType.SR25519:
+        public_key, private_key = sr25519.pair_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
+    elif crypto_type == KeypairType.ED25519:
+        private_key, public_key = ed25519.ed_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
+    else:
+        raise ValueError(&#39;crypto_type &#34;{}&#34; not supported&#39;.format(crypto_type))
+
+    public_key = public_key.hex()
+    private_key = private_key.hex()
+
+    ss58_address = ss58_encode(public_key, ss58_format)
+
+    return cls(
+        ss58_address=ss58_address, public_key=public_key, private_key=private_key,
+        ss58_format=ss58_format, crypto_type=crypto_type, seed_hex=seed_hex
+    )</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.Keypair.create_from_uri"><code class="name flex">
+<span>def <span class="ident">create_from_uri</span></span>(<span>suri, ss58_format=42, address_type=None, crypto_type=1)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def create_from_uri(cls, suri, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+
+    if address_type is not None:
+        warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
+        ss58_format = address_type
+
+    if suri and suri.startswith(&#39;/&#39;):
+        suri = DEV_PHRASE + suri
+
+    suri_regex = re.match(r&#39;^(?P&lt;phrase&gt;\w+( \w+)*)(?P&lt;path&gt;(//?[^/]+)*)(///(?P&lt;password&gt;.*))?$&#39;, suri)
+
+    suri_parts = suri_regex.groupdict()
+
+    if suri_parts[&#39;password&#39;]:
+        raise NotImplementedError(&#34;Passwords in suri not supported&#34;)
+
+    derived_keypair = cls.create_from_mnemonic(
+        suri_parts[&#39;phrase&#39;], ss58_format=ss58_format, crypto_type=crypto_type
+    )
+
+    if suri_parts[&#39;path&#39;] != &#39;&#39;:
+
+        derived_keypair.derive_path = suri_parts[&#39;path&#39;]
+
+        if crypto_type not in [KeypairType.SR25519]:
+            raise NotImplementedError(&#39;Derivation paths for this crypto type not supported&#39;)
+
+        derive_junctions = extract_derive_path(suri_parts[&#39;path&#39;])
+
+        child_pubkey = bytes.fromhex(derived_keypair.public_key[2:])
+        child_privkey = bytes.fromhex(derived_keypair.private_key[2:])
+
+        for junction in derive_junctions:
+
+            if junction.is_hard:
+
+                _, child_pubkey, child_privkey = sr25519.hard_derive_keypair(
+                    (junction.chain_code, child_pubkey, child_privkey),
+                    b&#39;&#39;
+                )
+
+            else:
+
+                _, child_pubkey, child_privkey = sr25519.derive_keypair(
+                    (junction.chain_code, child_pubkey, child_privkey),
+                    b&#39;&#39;
+                )
+
+        derived_keypair = Keypair(public_key=child_pubkey, private_key=child_privkey)
+
+    return derived_keypair</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.Keypair.generate_mnemonic"><code class="name flex">
@@ -2108,12 +2624,16 @@ def generate_mnemonic(cls, words=12):
         data = data.encode()
 
     if not self.private_key:
-        raise ConfigurationError(&#39;No private key set to create sr25519 signatures&#39;)
+        raise ConfigurationError(&#39;No private key set to create signatures&#39;)
 
-    signature = sr25519.sign(
-        (bytes.fromhex(self.public_key[2:]), bytes.fromhex(self.private_key[2:])),
-        data
-    )
+    if self.crypto_type == KeypairType.SR25519:
+
+        signature = sr25519.sign((bytes.fromhex(self.public_key[2:]), bytes.fromhex(self.private_key[2:])), data)
+    elif self.crypto_type == KeypairType.ED25519:
+        signature = ed25519.ed_sign(bytes.fromhex(self.public_key[2:]), bytes.fromhex(self.private_key[2:]), data)
+    else:
+        raise ConfigurationError(&#34;Crypto type not supported&#34;)
+
     return &#34;0x{}&#34;.format(signature.hex())</code></pre>
 </details>
 </dd>
@@ -2141,14 +2661,44 @@ def generate_mnemonic(cls, words=12):
     if type(signature) is not bytes:
         raise TypeError(&#34;Signature should be of type bytes or a hex-string&#34;)
 
-    return sr25519.verify(signature, data, bytes.fromhex(self.public_key[2:]))</code></pre>
+    if self.crypto_type == KeypairType.SR25519:
+        return sr25519.verify(signature, data, bytes.fromhex(self.public_key[2:]))
+    elif self.crypto_type == KeypairType.ED25519:
+        return ed25519.ed_verify(signature, data, bytes.fromhex(self.public_key[2:]))
+    else:
+        raise ConfigurationError(&#34;Crypto type not supported&#34;)</code></pre>
 </details>
+</dd>
+</dl>
+</dd>
+<dt id="substrateinterface.KeypairType"><code class="flex name class">
+<span>class <span class="ident">KeypairType</span></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class KeypairType:
+    ED25519 = 0
+    SR25519 = 1</code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="substrateinterface.KeypairType.ED25519"><code class="name">var <span class="ident">ED25519</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="substrateinterface.KeypairType.SR25519"><code class="name">var <span class="ident">SR25519</span></code></dt>
+<dd>
+<div class="desc"></div>
 </dd>
 </dl>
 </dd>
 <dt id="substrateinterface.SubstrateInterface"><code class="flex name class">
 <span>class <span class="ident">SubstrateInterface</span></span>
-<span>(</span><span>url, address_type=None, type_registry=None, type_registry_preset='default', cache_region=None, sub_key: <a title="substrateinterface.subkey.Subkey" href="subkey.html#substrateinterface.subkey.Subkey">Subkey</a> = None)</span>
+<span>(</span><span>url=None, websocket=None, ss58_format=None, type_registry=None, type_registry_preset=None, cache_region=None, address_type=None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A specialized class in interfacing with a Substrate node.</p>
@@ -2171,8 +2721,8 @@ def generate_mnemonic(cls, words=12):
 </summary>
 <pre><code class="python">class SubstrateInterface:
 
-    def __init__(self, url, address_type=None, type_registry=None, type_registry_preset=&#34;default&#34;, cache_region=None,
-                 sub_key: Subkey = None):
+    def __init__(self, url=None, websocket=None, ss58_format=None, type_registry=None, type_registry_preset=None,
+                 cache_region=None, address_type=None):
         &#34;&#34;&#34;
         A specialized class in interfacing with a Substrate node.
 
@@ -2184,28 +2734,44 @@ def generate_mnemonic(cls, words=12):
         type_registry_preset: The name of the predefined type registry shipped with the SCALE-codec, e.g. kusama
         cache_region: a Dogpile cache region as a central store for the metadata cache
         &#34;&#34;&#34;
+
+        if (not url and not websocket) or (url and websocket):
+            raise ValueError(&#34;Either &#39;url&#39; or &#39;websocket&#39; must be provided&#34;)
+
+        if address_type is not None:
+            warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
+            ss58_format = address_type
+
+        # Initialize lazy loading variables
+        self.__version = None
+        self.__name = None
+        self.__properties = None
+        self.__chain = None
+
+        self.__token_decimals = None
+        self.__token_symbol = None
+        self.__ss58_format = None
+
         self.cache_region = cache_region
 
-        if type_registry_preset:
-            # Load type registries in runtime configuration
-            RuntimeConfiguration().update_type_registry(load_type_registry_preset(&#34;default&#34;))
-
-            if type_registry != &#34;default&#34;:
-                RuntimeConfiguration().update_type_registry(load_type_registry_preset(type_registry_preset))
-
-        if type_registry:
-            # Load type registries in runtime configuration
-            RuntimeConfiguration().update_type_registry(type_registry)
+        self.ss58_format = ss58_format
 
         self.request_id = 1
         self.url = url
 
+        if self.url and (self.url[0:6] == &#39;wss://&#39; or self.url[0:5] == &#39;ws://&#39;):
+            websocket = create_connection(
+                    url,
+                    max_size=2**32,
+                    read_limit=2**32,
+                    write_limit=2**32,
+            )
+
+        self.websocket = websocket
+
         self._ws_result = None
 
-        self.address_type = address_type
-
         self.mock_extrinsics = None
-        self._version = None
         self.default_headers = {
             &#39;content-type&#39;: &#34;application/json&#34;,
             &#39;cache-control&#39;: &#34;no-cache&#34;
@@ -2222,9 +2788,26 @@ def generate_mnemonic(cls, words=12):
         self.metadata_cache = {}
         self.type_registry_cache = {}
 
-        self.sub_key = sub_key
-
         self.debug = False
+
+        if not type_registry_preset:
+            # Try to auto discover type registry preset by chain name
+            if self.chain.lower() in [&#39;polkadot&#39;, &#39;kusama&#39;, &#39;westend&#39;, &#39;kulupu&#39;]:
+                type_registry_preset = self.chain.lower()
+            else:
+                type_registry_preset = &#34;default&#34;
+
+        # Set type registry
+        if type_registry_preset:
+            # Load type registries in runtime configuration
+            RuntimeConfiguration().update_type_registry(load_type_registry_preset(&#34;default&#34;))
+
+            if type_registry != &#34;default&#34;:
+                RuntimeConfiguration().update_type_registry(load_type_registry_preset(type_registry_preset))
+
+        if type_registry:
+            # Load type registries in runtime configuration
+            RuntimeConfiguration().update_type_registry(type_registry)
 
     def debug_message(self, message):
         logger.debug(message)
@@ -2253,46 +2836,28 @@ def generate_mnemonic(cls, words=12):
 
         self.debug_message(&#39;RPC request &#34;{}&#34;&#39;.format(method))
 
-        if self.url[0:6] == &#39;wss://&#39; or self.url[0:5] == &#39;ws://&#39;:
-            ws_result = {}
+        if self.websocket:
+            self.websocket.send(json.dumps(payload))
 
-            async def ws_request(ws_payload):
-                &#34;&#34;&#34;
-                Internal method to handle the request if url is a websocket address (wss:// or ws://)
+            if callable(result_handler):
+                # If result handler is set, pass result through and loop until handler return not None
+                event_number = 0
+                json_body = None
+                while not json_body:
+                    result = json.loads(self.websocket.recv())
+                    self.debug_message(&#34;Websocket result [{}] Received from node: {}&#34;.format(event_number, result))
 
-                Parameters
-                ----------
-                ws_payload: a dict that contains the JSONRPC payload of the request
+                    # Check if response has error
+                    if &#39;error&#39; in result:
+                        raise SubstrateRequestException(result[&#39;error&#39;])
 
-                Returns
-                -------
-                This method doesn&#39;t return but updates the `ws_result` object variable with the result
-                &#34;&#34;&#34;
-                async with websockets.connect(
-                        self.url
-                ) as websocket:
-                    await websocket.send(json.dumps(ws_payload))
+                    callback_result = result_handler(result)
+                    if callback_result:
+                        json_body = callback_result
 
-                    if callable(result_handler):
-                        event_number = 0
-                        while not ws_result:
-                            result = json.loads(await websocket.recv())
-                            self.debug_message(&#34;Websocket result [{}] Received from node: {}&#34;.format(event_number, result))
-
-                            # Check if response has error
-                            if &#39;error&#39; in result:
-                                raise SubstrateRequestException(result[&#39;error&#39;])
-
-                            callback_result = result_handler(result)
-                            if callback_result:
-                                ws_result.update(callback_result)
-
-                            event_number += 1
-                    else:
-                        ws_result.update(json.loads(await websocket.recv()))
-
-            asyncio.run(ws_request(payload))
-            json_body = ws_result
+                    event_number += 1
+            else:
+                json_body = json.loads(self.websocket.recv())
 
         else:
 
@@ -2308,29 +2873,63 @@ def generate_mnemonic(cls, words=12):
 
         return json_body
 
-    def get_system_name(self):
-        &#34;&#34;&#34;
-        A pass-though to existing JSONRPC method `system_name`
+    @property
+    def name(self):
+        if not self.__name:
+            self.__name = self.rpc_request(&#34;system_name&#34;, []).get(&#39;result&#39;)
+        return self.__name
 
-        Returns
-        -------
+    @property
+    def properties(self):
+        if not self.__properties:
+            self.__properties = self.rpc_request(&#34;system_properties&#34;, []).get(&#39;result&#39;)
+        return self.__properties
 
-        &#34;&#34;&#34;
-        response = self.rpc_request(&#34;system_name&#34;, [])
-        return response.get(&#39;result&#39;)
+    @property
+    def chain(self):
+        if not self.__chain:
+            self.__chain = self.rpc_request(&#34;system_chain&#34;, []).get(&#39;result&#39;)
+        return self.__chain
 
-    def get_version(self):
-        &#34;&#34;&#34;
-        A pass-though to existing JSONRPC method `system_version`
+    @property
+    def version(self):
+        if not self.__version:
+            self.__version = self.rpc_request(&#34;system_version&#34;, []).get(&#39;result&#39;)
+        return self.__version
 
-        Returns
-        -------
+    @property
+    def token_decimals(self):
+        if not self.__token_decimals:
+            self.__token_decimals = self.properties.get(&#39;tokenDecimals&#39;)
+        return self.__token_decimals
 
-        &#34;&#34;&#34;
-        if not self._version:
-            response = self.rpc_request(&#34;system_version&#34;, [])
-            self._version = response.get(&#39;result&#39;)
-        return self._version
+    @token_decimals.setter
+    def token_decimals(self, value):
+        if type(value) is not int and value is not None:
+            raise TypeError(&#39;Token decimals must be an int&#39;)
+        self.__token_decimals = value
+
+    @property
+    def token_symbol(self):
+        if not self.__token_symbol:
+            self.__token_symbol = self.properties.get(&#39;tokenSymbol&#39;)
+        return self.__token_symbol
+
+    @token_symbol.setter
+    def token_symbol(self, value):
+        self.__token_symbol = value
+
+    @property
+    def ss58_format(self):
+        if not self.__ss58_format:
+            self.__ss58_format = self.properties.get(&#39;ss58Format&#39;)
+        return self.__ss58_format
+
+    @ss58_format.setter
+    def ss58_format(self, value):
+        if type(value) is not int and value is not None:
+            raise TypeError(&#39;ss58_format must be an int&#39;)
+        self.__ss58_format = value
 
     def get_chain_head(self):
         &#34;&#34;&#34;
@@ -2676,7 +3275,7 @@ def generate_mnemonic(cls, words=12):
     def convert_storage_parameter(self, scale_type, value):
         if scale_type == &#39;AccountId&#39;:
             if value[0:2] != &#39;0x&#39;:
-                return &#39;0x{}&#39;.format(ss58_decode(value, self.address_type))
+                return &#39;0x{}&#39;.format(ss58_decode(value, self.ss58_format))
 
         return value
 
@@ -2714,7 +3313,17 @@ def generate_mnemonic(cls, words=12):
         self.block_hash = block_hash
         self.block_id = block_id
 
-        runtime_info = self.get_block_runtime_version(block_hash=self.block_hash)
+        # In fact calls and storage functions are decoded against runtime of previous block, therefor retrieve
+        # metadata and apply type registry of runtime of parent block
+        block_header = self.get_block_header(block_hash=self.block_hash) or {}
+        parent_block_hash = block_header.get(&#39;parentHash&#39;)
+
+        if parent_block_hash == &#39;0x0000000000000000000000000000000000000000000000000000000000000000&#39;:
+            runtime_block_hash = self.block_hash
+        else:
+            runtime_block_hash = parent_block_hash
+
+        runtime_info = self.get_block_runtime_version(block_hash=runtime_block_hash)
 
         # Check if runtime state already set to current block
         if runtime_info.get(&#34;specVersion&#34;) == self.runtime_version:
@@ -2738,7 +3347,7 @@ def generate_mnemonic(cls, words=12):
             self.debug_message(&#39;Retrieved metadata for {} from memory&#39;.format(self.runtime_version))
             self.metadata_decoder = self.metadata_cache[self.runtime_version]
         else:
-            self.metadata_decoder = self.get_block_metadata(block_hash=self.block_hash, decode=True)
+            self.metadata_decoder = self.get_block_metadata(block_hash=runtime_block_hash, decode=True)
             self.debug_message(&#39;Retrieved metadata for {} from Substrate node&#39;.format(self.runtime_version))
 
             # Update metadata cache
@@ -2747,6 +3356,59 @@ def generate_mnemonic(cls, words=12):
             if self.cache_region:
                 self.debug_message(&#39;Stored metadata for {} in Redis&#39;.format(self.runtime_version))
                 self.cache_region.set(&#39;METADATA_{}&#39;.format(self.runtime_version), self.metadata_decoder)
+
+    def iterate_map(self, module, storage_function, block_hash=None):
+        &#34;&#34;&#34;
+        iterates over all key-pairs localted at the given module and storage_function. The storage
+        item must be a map.
+
+        Parameters
+        ----------
+        module: The module name in the metadata, e.g. Balances or Account.
+        storage_function: The storage function name, e.g. FreeBalance or AccountNonce.
+        block_hash: Optional block hash, when left to None the chain tip will be used.
+
+        Returns
+        -------
+        A two dimensional list of key-value pairs, both decoded into the given type, e.g.
+        [[k1, v1], [k2, v2], ...]
+        &#34;&#34;&#34;
+        self.init_runtime(block_hash=block_hash)
+
+        key_type = None
+        value_type = None
+        concat_hash_len = None
+        for metadata_module in self.metadata_decoder.metadata.modules:
+            if metadata_module.name == module:
+                if metadata_module.storage:
+                    for storage_item in metadata_module.storage.items:
+                        if storage_item.name == storage_function:
+                            if &#39;MapType&#39; in storage_item.type:
+                                key_type = storage_item.type[&#39;MapType&#39;][&#39;key&#39;]
+                                value_type = storage_item.type[&#39;MapType&#39;][&#39;value&#39;]
+                                if storage_item.type[&#39;MapType&#39;][&#39;hasher&#39;] == &#34;Blake2_128Concat&#34;:
+                                    concat_hash_len = 32
+                                elif storage_item.type[&#39;MapType&#39;][&#39;hasher&#39;] == &#34;Twox64Concat&#34;:
+                                    concat_hash_len = 16
+                                else:
+                                    raise ValueError(&#39;Unsupported hash type&#39;)
+                            else:
+                                raise ValueError(&#39;Given storage is not a map&#39;)
+
+        prefix = self.generate_storage_hash(module, storage_function)
+        prefix_len = len(prefix)
+        pairs = self.rpc_request(method=&#34;state_getPairs&#34;, params=[prefix, block_hash]).get(&#39;result&#39;)
+
+        # convert keys to the portion that needs to be decoded.
+        pairs = map(lambda kp: [&#34;0x&#34; + kp[0][prefix_len + concat_hash_len:], kp[1]], pairs)
+
+        # decode both of them
+        pairs = map(
+            lambda kp: [self.decode_scale(key_type, kp[0]), self.decode_scale(value_type, kp[1])],
+            list(pairs)
+        )
+
+        return list(pairs)
 
     def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
         &#34;&#34;&#34;
@@ -2921,12 +3583,15 @@ def generate_mnemonic(cls, words=12):
         # Retrieve genesis hash
         genesis_hash = self.get_block_hash(0)
 
-        if era:
-            if era != &#39;00&#39;:
-                # TODO implement MortalEra transactions
-                raise NotImplementedError(&#34;Mortal transactions not yet implemented&#34;)
-        else:
+        if not era:
             era = &#39;00&#39;
+
+        if era == &#39;00&#39;:
+            block_hash = genesis_hash
+        else:
+            era_obj = ScaleDecoder.get_decoder_class(&#39;Era&#39;)
+            era_obj.encode(era)
+            block_hash = self.get_block_hash(block_id=era_obj.birth(era.get(&#39;current&#39;)))
 
         # Create signature payload
         signature_payload = ScaleDecoder.get_decoder_class(&#39;ExtrinsicPayloadValue&#39;)
@@ -2946,13 +3611,16 @@ def generate_mnemonic(cls, words=12):
             &#39;tip&#39;: tip,
             &#39;specVersion&#39;: self.runtime_version,
             &#39;genesisHash&#39;: genesis_hash,
-            &#39;blockHash&#39;: genesis_hash
+            &#39;blockHash&#39;: block_hash
         }
 
         if self.transaction_version is not None:
             payload_dict[&#39;transactionVersion&#39;] = self.transaction_version
 
         signature_payload.encode(payload_dict)
+
+        if signature_payload.data.length &gt; 256:
+            return ScaleBytes(data=blake2b(signature_payload.data.data, digest_size=32).digest())
 
         return signature_payload.data
 
@@ -2979,17 +3647,18 @@ def generate_mnemonic(cls, words=12):
             raise TypeError(&#34;&#39;call&#39; must be of type Call&#34;)
 
         # Retrieve nonce
-        if not nonce:
+        if nonce is None:
             nonce = self.get_account_nonce(keypair.public_key) or 0
 
-        if era:
-            if era != &#39;00&#39;:
-                # TODO implement MortalEra transactions
-                raise NotImplementedError(&#34;Mortal transactions not yet implemented&#34;)
-        else:
+        # Process era
+        if era is None:
             era = &#39;00&#39;
+        else:
+            if isinstance(era, dict) and &#39;current&#39; not in era and &#39;phase&#39; not in era:
+                # Retrieve current block id
+                era[&#39;current&#39;] = self.get_block_number(self.get_chain_finalised_head())
 
-        if signature:
+        if signature is not None:
 
             signature = signature.replace(&#39;0x&#39;, &#39;&#39;)
 
@@ -2998,14 +3667,14 @@ def generate_mnemonic(cls, words=12):
                 signature_version = int(signature[0:2], 16)
                 signature = &#39;0x{}&#39;.format(signature[2:])
             else:
-                signature_version = 1
+                signature_version = keypair.crypto_type
 
         else:
             # Create signature payload
             signature_payload = self.generate_signature_payload(call=call, era=era, nonce=nonce, tip=tip)
 
-            # Set Signature version to sr25519
-            signature_version = 1
+            # Set Signature version to crypto type of keypair
+            signature_version = keypair.crypto_type
 
             # Sign payload
             signature = keypair.sign(signature_payload)
@@ -3097,6 +3766,49 @@ def generate_mnemonic(cls, words=12):
             }
 
         return response
+
+    def get_payment_info(self, call, keypair):
+        &#34;&#34;&#34;
+        Retrieves fee estimation via RPC for given extrinsic
+
+        Parameters
+        ----------
+        call Call object to estimate fees for
+        keypair Keypair of the sender, does not have to include private key because no valid signature is required
+
+        Returns
+        -------
+        Dict with payment info
+
+        E.g. {&#39;class&#39;: &#39;normal&#39;, &#39;partialFee&#39;: 151000000, &#39;weight&#39;: 217238000}
+
+        &#34;&#34;&#34;
+
+        # Check requirements
+        if not isinstance(call, GenericCall):
+            raise TypeError(&#34;&#39;call&#39; must be of type Call&#34;)
+
+        if not isinstance(keypair, Keypair):
+            raise TypeError(&#34;&#39;keypair&#39; must be of type Keypair&#34;)
+
+        # No valid signature is required for fee estimation
+        signature = &#39;0x&#39; + &#39;00&#39; * 64
+
+        # Create extrinsic
+        extrinsic = self.create_signed_extrinsic(
+            call=call,
+            keypair=keypair,
+            signature=signature
+        )
+
+        payment_info = self.rpc_request(&#39;payment_queryInfo&#39;, [str(extrinsic.data)])
+
+        # convert partialFee to int
+        if &#39;result&#39; in payment_info:
+            payment_info[&#39;result&#39;][&#39;partialFee&#39;] = int(payment_info[&#39;result&#39;][&#39;partialFee&#39;])
+            return payment_info[&#39;result&#39;]
+        else:
+            raise SubstrateRequestException(payment_info[&#39;error&#39;][&#39;message&#39;])
 
     def process_metadata_typestring(self, type_string):
         &#34;&#34;&#34;
@@ -3278,7 +3990,7 @@ def generate_mnemonic(cls, words=12):
 
         &#34;&#34;&#34;
         type_registry = self.get_type_registry(block_hash=block_hash)
-        return type_registry.get(type_string)
+        return type_registry.get(type_string.lower())
 
     def get_metadata_modules(self, block_hash=None):
         &#34;&#34;&#34;
@@ -3700,7 +4412,7 @@ def generate_mnemonic(cls, words=12):
             storage_dict[&#34;type_key1&#34;] = type_info[&#34;key1&#34;]
             storage_dict[&#34;type_key2&#34;] = type_info[&#34;key2&#34;]
             storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
-            storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;key2Hasher&#34;]
+            storage_dict[&#34;type_hasher_key2&#34;] = type_info[&#34;key2Hasher&#34;]
 
         if storage_item.fallback != &#39;0x00&#39;:
             # Decode fallback
@@ -3826,8 +4538,116 @@ def generate_mnemonic(cls, words=12):
             &#34;module_prefix&#34;: module.prefix,
             &#34;module_name&#34;: module.name,
             &#34;spec_version&#34;: spec_version
-        }</code></pre>
+        }
+
+    def update_type_registry_presets(self):
+        try:
+            update_type_registries()
+            return True
+        except Exception:
+            return False</code></pre>
 </details>
+<h3>Instance variables</h3>
+<dl>
+<dt id="substrateinterface.SubstrateInterface.chain"><code class="name">var <span class="ident">chain</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def chain(self):
+    if not self.__chain:
+        self.__chain = self.rpc_request(&#34;system_chain&#34;, []).get(&#39;result&#39;)
+    return self.__chain</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.name"><code class="name">var <span class="ident">name</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def name(self):
+    if not self.__name:
+        self.__name = self.rpc_request(&#34;system_name&#34;, []).get(&#39;result&#39;)
+    return self.__name</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.properties"><code class="name">var <span class="ident">properties</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def properties(self):
+    if not self.__properties:
+        self.__properties = self.rpc_request(&#34;system_properties&#34;, []).get(&#39;result&#39;)
+    return self.__properties</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.ss58_format"><code class="name">var <span class="ident">ss58_format</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def ss58_format(self):
+    if not self.__ss58_format:
+        self.__ss58_format = self.properties.get(&#39;ss58Format&#39;)
+    return self.__ss58_format</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.token_decimals"><code class="name">var <span class="ident">token_decimals</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def token_decimals(self):
+    if not self.__token_decimals:
+        self.__token_decimals = self.properties.get(&#39;tokenDecimals&#39;)
+    return self.__token_decimals</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.token_symbol"><code class="name">var <span class="ident">token_symbol</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def token_symbol(self):
+    if not self.__token_symbol:
+        self.__token_symbol = self.properties.get(&#39;tokenSymbol&#39;)
+    return self.__token_symbol</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.version"><code class="name">var <span class="ident">version</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def version(self):
+    if not self.__version:
+        self.__version = self.rpc_request(&#34;system_version&#34;, []).get(&#39;result&#39;)
+    return self.__version</code></pre>
+</details>
+</dd>
+</dl>
 <h3>Methods</h3>
 <dl>
 <dt id="substrateinterface.SubstrateInterface.compose_call"><code class="name flex">
@@ -3891,7 +4711,7 @@ def generate_mnemonic(cls, words=12):
 <pre><code class="python">def convert_storage_parameter(self, scale_type, value):
     if scale_type == &#39;AccountId&#39;:
         if value[0:2] != &#39;0x&#39;:
-            return &#39;0x{}&#39;.format(ss58_decode(value, self.address_type))
+            return &#39;0x{}&#39;.format(ss58_decode(value, self.ss58_format))
 
     return value</code></pre>
 </details>
@@ -3948,17 +4768,18 @@ def generate_mnemonic(cls, words=12):
         raise TypeError(&#34;&#39;call&#39; must be of type Call&#34;)
 
     # Retrieve nonce
-    if not nonce:
+    if nonce is None:
         nonce = self.get_account_nonce(keypair.public_key) or 0
 
-    if era:
-        if era != &#39;00&#39;:
-            # TODO implement MortalEra transactions
-            raise NotImplementedError(&#34;Mortal transactions not yet implemented&#34;)
-    else:
+    # Process era
+    if era is None:
         era = &#39;00&#39;
+    else:
+        if isinstance(era, dict) and &#39;current&#39; not in era and &#39;phase&#39; not in era:
+            # Retrieve current block id
+            era[&#39;current&#39;] = self.get_block_number(self.get_chain_finalised_head())
 
-    if signature:
+    if signature is not None:
 
         signature = signature.replace(&#39;0x&#39;, &#39;&#39;)
 
@@ -3967,14 +4788,14 @@ def generate_mnemonic(cls, words=12):
             signature_version = int(signature[0:2], 16)
             signature = &#39;0x{}&#39;.format(signature[2:])
         else:
-            signature_version = 1
+            signature_version = keypair.crypto_type
 
     else:
         # Create signature payload
         signature_payload = self.generate_signature_payload(call=call, era=era, nonce=nonce, tip=tip)
 
-        # Set Signature version to sr25519
-        signature_version = 1
+        # Set Signature version to crypto type of keypair
+        signature_version = keypair.crypto_type
 
         # Sign payload
         signature = keypair.sign(signature_payload)
@@ -4131,12 +4952,15 @@ is set</p>
     # Retrieve genesis hash
     genesis_hash = self.get_block_hash(0)
 
-    if era:
-        if era != &#39;00&#39;:
-            # TODO implement MortalEra transactions
-            raise NotImplementedError(&#34;Mortal transactions not yet implemented&#34;)
-    else:
+    if not era:
         era = &#39;00&#39;
+
+    if era == &#39;00&#39;:
+        block_hash = genesis_hash
+    else:
+        era_obj = ScaleDecoder.get_decoder_class(&#39;Era&#39;)
+        era_obj.encode(era)
+        block_hash = self.get_block_hash(block_id=era_obj.birth(era.get(&#39;current&#39;)))
 
     # Create signature payload
     signature_payload = ScaleDecoder.get_decoder_class(&#39;ExtrinsicPayloadValue&#39;)
@@ -4156,13 +4980,16 @@ is set</p>
         &#39;tip&#39;: tip,
         &#39;specVersion&#39;: self.runtime_version,
         &#39;genesisHash&#39;: genesis_hash,
-        &#39;blockHash&#39;: genesis_hash
+        &#39;blockHash&#39;: block_hash
     }
 
     if self.transaction_version is not None:
         payload_dict[&#39;transactionVersion&#39;] = self.transaction_version
 
     signature_payload.encode(payload_dict)
+
+    if signature_payload.data.length &gt; 256:
+        return ScaleBytes(data=blake2b(signature_payload.data.data, digest_size=32).digest())
 
     return signature_payload.data</code></pre>
 </details>
@@ -5117,6 +5944,69 @@ omitted)</p>
     return storage_list</code></pre>
 </details>
 </dd>
+<dt id="substrateinterface.SubstrateInterface.get_payment_info"><code class="name flex">
+<span>def <span class="ident">get_payment_info</span></span>(<span>self, call, keypair)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieves fee estimation via RPC for given extrinsic</p>
+<h2 id="parameters">Parameters</h2>
+<p>call Call object to estimate fees for
+keypair Keypair of the sender, does not have to include private key because no valid signature is required</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Dict with payment info</code></dt>
+<dd>&nbsp;</dd>
+<dt><code>E.g. {'class': 'normal', 'partialFee': 151000000, 'weight': 217238000}</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_payment_info(self, call, keypair):
+    &#34;&#34;&#34;
+    Retrieves fee estimation via RPC for given extrinsic
+
+    Parameters
+    ----------
+    call Call object to estimate fees for
+    keypair Keypair of the sender, does not have to include private key because no valid signature is required
+
+    Returns
+    -------
+    Dict with payment info
+
+    E.g. {&#39;class&#39;: &#39;normal&#39;, &#39;partialFee&#39;: 151000000, &#39;weight&#39;: 217238000}
+
+    &#34;&#34;&#34;
+
+    # Check requirements
+    if not isinstance(call, GenericCall):
+        raise TypeError(&#34;&#39;call&#39; must be of type Call&#34;)
+
+    if not isinstance(keypair, Keypair):
+        raise TypeError(&#34;&#39;keypair&#39; must be of type Keypair&#34;)
+
+    # No valid signature is required for fee estimation
+    signature = &#39;0x&#39; + &#39;00&#39; * 64
+
+    # Create extrinsic
+    extrinsic = self.create_signed_extrinsic(
+        call=call,
+        keypair=keypair,
+        signature=signature
+    )
+
+    payment_info = self.rpc_request(&#39;payment_queryInfo&#39;, [str(extrinsic.data)])
+
+    # convert partialFee to int
+    if &#39;result&#39; in payment_info:
+        payment_info[&#39;result&#39;][&#39;partialFee&#39;] = int(payment_info[&#39;result&#39;][&#39;partialFee&#39;])
+        return payment_info[&#39;result&#39;]
+    else:
+        raise SubstrateRequestException(payment_info[&#39;error&#39;][&#39;message&#39;])</code></pre>
+</details>
+</dd>
 <dt id="substrateinterface.SubstrateInterface.get_runtime_block"><code class="name flex">
 <span>def <span class="ident">get_runtime_block</span></span>(<span>self, block_hash=None, block_id=None)</span>
 </code></dt>
@@ -5480,28 +6370,6 @@ omitted)</p>
         raise SubstrateRequestException(&#34;Error occurred during retrieval of events&#34;)</code></pre>
 </details>
 </dd>
-<dt id="substrateinterface.SubstrateInterface.get_system_name"><code class="name flex">
-<span>def <span class="ident">get_system_name</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>A pass-though to existing JSONRPC method <code>system_name</code></p>
-<h2 id="returns">Returns</h2></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_system_name(self):
-    &#34;&#34;&#34;
-    A pass-though to existing JSONRPC method `system_name`
-
-    Returns
-    -------
-
-    &#34;&#34;&#34;
-    response = self.rpc_request(&#34;system_name&#34;, [])
-    return response.get(&#39;result&#39;)</code></pre>
-</details>
-</dd>
 <dt id="substrateinterface.SubstrateInterface.get_type_definition"><code class="name flex">
 <span>def <span class="ident">get_type_definition</span></span>(<span>self, type_string, block_hash=None)</span>
 </code></dt>
@@ -5533,7 +6401,7 @@ omitted)</p>
 
     &#34;&#34;&#34;
     type_registry = self.get_type_registry(block_hash=block_hash)
-    return type_registry.get(type_string)</code></pre>
+    return type_registry.get(type_string.lower())</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.get_type_registry"><code class="name flex">
@@ -5627,30 +6495,6 @@ chaintip if block_hash is omitted)</p>
     return self.type_registry_cache[self.runtime_version]</code></pre>
 </details>
 </dd>
-<dt id="substrateinterface.SubstrateInterface.get_version"><code class="name flex">
-<span>def <span class="ident">get_version</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>A pass-though to existing JSONRPC method <code>system_version</code></p>
-<h2 id="returns">Returns</h2></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_version(self):
-    &#34;&#34;&#34;
-    A pass-though to existing JSONRPC method `system_version`
-
-    Returns
-    -------
-
-    &#34;&#34;&#34;
-    if not self._version:
-        response = self.rpc_request(&#34;system_version&#34;, [])
-        self._version = response.get(&#39;result&#39;)
-    return self._version</code></pre>
-</details>
-</dd>
 <dt id="substrateinterface.SubstrateInterface.init_runtime"><code class="name flex">
 <span>def <span class="ident">init_runtime</span></span>(<span>self, block_hash=None, block_id=None)</span>
 </code></dt>
@@ -5704,7 +6548,17 @@ In the future there could be support for caching backends like Redis to make thi
     self.block_hash = block_hash
     self.block_id = block_id
 
-    runtime_info = self.get_block_runtime_version(block_hash=self.block_hash)
+    # In fact calls and storage functions are decoded against runtime of previous block, therefor retrieve
+    # metadata and apply type registry of runtime of parent block
+    block_header = self.get_block_header(block_hash=self.block_hash) or {}
+    parent_block_hash = block_header.get(&#39;parentHash&#39;)
+
+    if parent_block_hash == &#39;0x0000000000000000000000000000000000000000000000000000000000000000&#39;:
+        runtime_block_hash = self.block_hash
+    else:
+        runtime_block_hash = parent_block_hash
+
+    runtime_info = self.get_block_runtime_version(block_hash=runtime_block_hash)
 
     # Check if runtime state already set to current block
     if runtime_info.get(&#34;specVersion&#34;) == self.runtime_version:
@@ -5728,7 +6582,7 @@ In the future there could be support for caching backends like Redis to make thi
         self.debug_message(&#39;Retrieved metadata for {} from memory&#39;.format(self.runtime_version))
         self.metadata_decoder = self.metadata_cache[self.runtime_version]
     else:
-        self.metadata_decoder = self.get_block_metadata(block_hash=self.block_hash, decode=True)
+        self.metadata_decoder = self.get_block_metadata(block_hash=runtime_block_hash, decode=True)
         self.debug_message(&#39;Retrieved metadata for {} from Substrate node&#39;.format(self.runtime_version))
 
         # Update metadata cache
@@ -5737,6 +6591,77 @@ In the future there could be support for caching backends like Redis to make thi
         if self.cache_region:
             self.debug_message(&#39;Stored metadata for {} in Redis&#39;.format(self.runtime_version))
             self.cache_region.set(&#39;METADATA_{}&#39;.format(self.runtime_version), self.metadata_decoder)</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.iterate_map"><code class="name flex">
+<span>def <span class="ident">iterate_map</span></span>(<span>self, module, storage_function, block_hash=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>iterates over all key-pairs localted at the given module and storage_function. The storage
+item must be a map.</p>
+<h2 id="parameters">Parameters</h2>
+<p>module: The module name in the metadata, e.g. Balances or Account.
+storage_function: The storage function name, e.g. FreeBalance or AccountNonce.
+block_hash: Optional block hash, when left to None the chain tip will be used.</p>
+<h2 id="returns">Returns</h2>
+<p>A two dimensional list of key-value pairs, both decoded into the given type, e.g.
+[[k1, v1], [k2, v2], &hellip;]</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def iterate_map(self, module, storage_function, block_hash=None):
+    &#34;&#34;&#34;
+    iterates over all key-pairs localted at the given module and storage_function. The storage
+    item must be a map.
+
+    Parameters
+    ----------
+    module: The module name in the metadata, e.g. Balances or Account.
+    storage_function: The storage function name, e.g. FreeBalance or AccountNonce.
+    block_hash: Optional block hash, when left to None the chain tip will be used.
+
+    Returns
+    -------
+    A two dimensional list of key-value pairs, both decoded into the given type, e.g.
+    [[k1, v1], [k2, v2], ...]
+    &#34;&#34;&#34;
+    self.init_runtime(block_hash=block_hash)
+
+    key_type = None
+    value_type = None
+    concat_hash_len = None
+    for metadata_module in self.metadata_decoder.metadata.modules:
+        if metadata_module.name == module:
+            if metadata_module.storage:
+                for storage_item in metadata_module.storage.items:
+                    if storage_item.name == storage_function:
+                        if &#39;MapType&#39; in storage_item.type:
+                            key_type = storage_item.type[&#39;MapType&#39;][&#39;key&#39;]
+                            value_type = storage_item.type[&#39;MapType&#39;][&#39;value&#39;]
+                            if storage_item.type[&#39;MapType&#39;][&#39;hasher&#39;] == &#34;Blake2_128Concat&#34;:
+                                concat_hash_len = 32
+                            elif storage_item.type[&#39;MapType&#39;][&#39;hasher&#39;] == &#34;Twox64Concat&#34;:
+                                concat_hash_len = 16
+                            else:
+                                raise ValueError(&#39;Unsupported hash type&#39;)
+                        else:
+                            raise ValueError(&#39;Given storage is not a map&#39;)
+
+    prefix = self.generate_storage_hash(module, storage_function)
+    prefix_len = len(prefix)
+    pairs = self.rpc_request(method=&#34;state_getPairs&#34;, params=[prefix, block_hash]).get(&#39;result&#39;)
+
+    # convert keys to the portion that needs to be decoded.
+    pairs = map(lambda kp: [&#34;0x&#34; + kp[0][prefix_len + concat_hash_len:], kp[1]], pairs)
+
+    # decode both of them
+    pairs = map(
+        lambda kp: [self.decode_scale(key_type, kp[0]), self.decode_scale(value_type, kp[1])],
+        list(pairs)
+    )
+
+    return list(pairs)</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.process_metadata_typestring"><code class="name flex">
@@ -5904,46 +6829,28 @@ use this method to perform the request.</p>
 
     self.debug_message(&#39;RPC request &#34;{}&#34;&#39;.format(method))
 
-    if self.url[0:6] == &#39;wss://&#39; or self.url[0:5] == &#39;ws://&#39;:
-        ws_result = {}
+    if self.websocket:
+        self.websocket.send(json.dumps(payload))
 
-        async def ws_request(ws_payload):
-            &#34;&#34;&#34;
-            Internal method to handle the request if url is a websocket address (wss:// or ws://)
+        if callable(result_handler):
+            # If result handler is set, pass result through and loop until handler return not None
+            event_number = 0
+            json_body = None
+            while not json_body:
+                result = json.loads(self.websocket.recv())
+                self.debug_message(&#34;Websocket result [{}] Received from node: {}&#34;.format(event_number, result))
 
-            Parameters
-            ----------
-            ws_payload: a dict that contains the JSONRPC payload of the request
+                # Check if response has error
+                if &#39;error&#39; in result:
+                    raise SubstrateRequestException(result[&#39;error&#39;])
 
-            Returns
-            -------
-            This method doesn&#39;t return but updates the `ws_result` object variable with the result
-            &#34;&#34;&#34;
-            async with websockets.connect(
-                    self.url
-            ) as websocket:
-                await websocket.send(json.dumps(ws_payload))
+                callback_result = result_handler(result)
+                if callback_result:
+                    json_body = callback_result
 
-                if callable(result_handler):
-                    event_number = 0
-                    while not ws_result:
-                        result = json.loads(await websocket.recv())
-                        self.debug_message(&#34;Websocket result [{}] Received from node: {}&#34;.format(event_number, result))
-
-                        # Check if response has error
-                        if &#39;error&#39; in result:
-                            raise SubstrateRequestException(result[&#39;error&#39;])
-
-                        callback_result = result_handler(result)
-                        if callback_result:
-                            ws_result.update(callback_result)
-
-                        event_number += 1
-                else:
-                    ws_result.update(json.loads(await websocket.recv()))
-
-        asyncio.run(ws_request(payload))
-        json_body = ws_result
+                event_number += 1
+        else:
+            json_body = json.loads(self.websocket.recv())
 
     else:
 
@@ -6229,7 +7136,7 @@ use this method to perform the request.</p>
         storage_dict[&#34;type_key1&#34;] = type_info[&#34;key1&#34;]
         storage_dict[&#34;type_key2&#34;] = type_info[&#34;key2&#34;]
         storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
-        storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;key2Hasher&#34;]
+        storage_dict[&#34;type_hasher_key2&#34;] = type_info[&#34;key2Hasher&#34;]
 
     if storage_item.fallback != &#39;0x00&#39;:
         # Decode fallback
@@ -6322,6 +7229,23 @@ use this method to perform the request.</p>
     return response</code></pre>
 </details>
 </dd>
+<dt id="substrateinterface.SubstrateInterface.update_type_registry_presets"><code class="name flex">
+<span>def <span class="ident">update_type_registry_presets</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update_type_registry_presets(self):
+    try:
+        update_type_registries()
+        return True
+    except Exception:
+        return False</code></pre>
+</details>
+</dd>
 </dl>
 </dd>
 </dl>
@@ -6337,7 +7261,7 @@ use this method to perform the request.</p>
 <ul>
 <li><code><a title="substrateinterface.constants" href="constants.html">substrateinterface.constants</a></code></li>
 <li><code><a title="substrateinterface.exceptions" href="exceptions.html">substrateinterface.exceptions</a></code></li>
-<li><code><a title="substrateinterface.subkey" href="subkey.html">substrateinterface.subkey</a></code></li>
+<li><code><a title="substrateinterface.key" href="key.html">substrateinterface.key</a></code></li>
 <li><code><a title="substrateinterface.utils" href="utils/index.html">substrateinterface.utils</a></code></li>
 </ul>
 </li>
@@ -6355,14 +7279,23 @@ use this method to perform the request.</p>
 <li><code><a title="substrateinterface.Keypair.create_from_mnemonic" href="#substrateinterface.Keypair.create_from_mnemonic">create_from_mnemonic</a></code></li>
 <li><code><a title="substrateinterface.Keypair.create_from_private_key" href="#substrateinterface.Keypair.create_from_private_key">create_from_private_key</a></code></li>
 <li><code><a title="substrateinterface.Keypair.create_from_seed" href="#substrateinterface.Keypair.create_from_seed">create_from_seed</a></code></li>
+<li><code><a title="substrateinterface.Keypair.create_from_uri" href="#substrateinterface.Keypair.create_from_uri">create_from_uri</a></code></li>
 <li><code><a title="substrateinterface.Keypair.generate_mnemonic" href="#substrateinterface.Keypair.generate_mnemonic">generate_mnemonic</a></code></li>
 <li><code><a title="substrateinterface.Keypair.sign" href="#substrateinterface.Keypair.sign">sign</a></code></li>
 <li><code><a title="substrateinterface.Keypair.verify" href="#substrateinterface.Keypair.verify">verify</a></code></li>
 </ul>
 </li>
 <li>
+<h4><code><a title="substrateinterface.KeypairType" href="#substrateinterface.KeypairType">KeypairType</a></code></h4>
+<ul class="">
+<li><code><a title="substrateinterface.KeypairType.ED25519" href="#substrateinterface.KeypairType.ED25519">ED25519</a></code></li>
+<li><code><a title="substrateinterface.KeypairType.SR25519" href="#substrateinterface.KeypairType.SR25519">SR25519</a></code></li>
+</ul>
+</li>
+<li>
 <h4><code><a title="substrateinterface.SubstrateInterface" href="#substrateinterface.SubstrateInterface">SubstrateInterface</a></code></h4>
 <ul class="">
+<li><code><a title="substrateinterface.SubstrateInterface.chain" href="#substrateinterface.SubstrateInterface.chain">chain</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.compose_call" href="#substrateinterface.SubstrateInterface.compose_call">compose_call</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.convert_storage_parameter" href="#substrateinterface.SubstrateInterface.convert_storage_parameter">convert_storage_parameter</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.create_signed_extrinsic" href="#substrateinterface.SubstrateInterface.create_signed_extrinsic">create_signed_extrinsic</a></code></li>
@@ -6393,25 +7326,32 @@ use this method to perform the request.</p>
 <li><code><a title="substrateinterface.SubstrateInterface.get_metadata_modules" href="#substrateinterface.SubstrateInterface.get_metadata_modules">get_metadata_modules</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_metadata_storage_function" href="#substrateinterface.SubstrateInterface.get_metadata_storage_function">get_metadata_storage_function</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_metadata_storage_functions" href="#substrateinterface.SubstrateInterface.get_metadata_storage_functions">get_metadata_storage_functions</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_payment_info" href="#substrateinterface.SubstrateInterface.get_payment_info">get_payment_info</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_runtime_block" href="#substrateinterface.SubstrateInterface.get_runtime_block">get_runtime_block</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_runtime_events" href="#substrateinterface.SubstrateInterface.get_runtime_events">get_runtime_events</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_runtime_metadata" href="#substrateinterface.SubstrateInterface.get_runtime_metadata">get_runtime_metadata</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_runtime_state" href="#substrateinterface.SubstrateInterface.get_runtime_state">get_runtime_state</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_storage" href="#substrateinterface.SubstrateInterface.get_storage">get_storage</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_storage_by_key" href="#substrateinterface.SubstrateInterface.get_storage_by_key">get_storage_by_key</a></code></li>
-<li><code><a title="substrateinterface.SubstrateInterface.get_system_name" href="#substrateinterface.SubstrateInterface.get_system_name">get_system_name</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_type_definition" href="#substrateinterface.SubstrateInterface.get_type_definition">get_type_definition</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_type_registry" href="#substrateinterface.SubstrateInterface.get_type_registry">get_type_registry</a></code></li>
-<li><code><a title="substrateinterface.SubstrateInterface.get_version" href="#substrateinterface.SubstrateInterface.get_version">get_version</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.init_runtime" href="#substrateinterface.SubstrateInterface.init_runtime">init_runtime</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.iterate_map" href="#substrateinterface.SubstrateInterface.iterate_map">iterate_map</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.name" href="#substrateinterface.SubstrateInterface.name">name</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.process_metadata_typestring" href="#substrateinterface.SubstrateInterface.process_metadata_typestring">process_metadata_typestring</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.properties" href="#substrateinterface.SubstrateInterface.properties">properties</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.rpc_request" href="#substrateinterface.SubstrateInterface.rpc_request">rpc_request</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.serialize_constant" href="#substrateinterface.SubstrateInterface.serialize_constant">serialize_constant</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.serialize_module_call" href="#substrateinterface.SubstrateInterface.serialize_module_call">serialize_module_call</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.serialize_module_error" href="#substrateinterface.SubstrateInterface.serialize_module_error">serialize_module_error</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.serialize_module_event" href="#substrateinterface.SubstrateInterface.serialize_module_event">serialize_module_event</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.serialize_storage_item" href="#substrateinterface.SubstrateInterface.serialize_storage_item">serialize_storage_item</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.ss58_format" href="#substrateinterface.SubstrateInterface.ss58_format">ss58_format</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.submit_extrinsic" href="#substrateinterface.SubstrateInterface.submit_extrinsic">submit_extrinsic</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.token_decimals" href="#substrateinterface.SubstrateInterface.token_decimals">token_decimals</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.token_symbol" href="#substrateinterface.SubstrateInterface.token_symbol">token_symbol</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.update_type_registry_presets" href="#substrateinterface.SubstrateInterface.update_type_registry_presets">update_type_registry_presets</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.version" href="#substrateinterface.SubstrateInterface.version">version</a></code></li>
 </ul>
 </li>
 </ul>
@@ -6420,7 +7360,7 @@ use this method to perform the request.</p>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.4</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.1</a>.</p>
 </footer>
 </body>
 </html>
