@@ -127,7 +127,7 @@ class Keypair:
 
         Returns
         -------
-
+        Seed phrase
         """
         return bip39_generate(words)
 
@@ -141,7 +141,7 @@ class Keypair:
         mnemonic: Seed phrase
         ss58_format: Substrate address format, default = 42
         address_type: (deprecated)
-        crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+        crypto_type: Use `KeypairType.SR25519` or `KeypairType.ED25519` cryptography for generating the Keypair
 
         Returns
         -------
@@ -332,6 +332,7 @@ class Keypair:
     def verify(self, data, signature):
         """
         Verifies data with specified signature
+
         Parameters
         ----------
         data: data to be verified in `Scalebytes`, `bytes` or hex string format
