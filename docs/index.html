@@ -155,7 +155,7 @@ class Keypair:
 
         Returns
         -------
-
+        Seed phrase
         &#34;&#34;&#34;
         return bip39_generate(words)
 
@@ -169,7 +169,7 @@ class Keypair:
         mnemonic: Seed phrase
         ss58_format: Substrate address format, default = 42
         address_type: (deprecated)
-        crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+        crypto_type: Use `KeypairType.SR25519` or `KeypairType.ED25519` cryptography for generating the Keypair
 
         Returns
         -------
@@ -330,7 +330,7 @@ class Keypair:
 
         Parameters
         ----------
-        data: data to sign in `Scalebytes`, `bytes` or hex string format
+        data: data to sign in `Scalebytes`, bytes or hex string format
 
         Returns
         -------
@@ -360,10 +360,11 @@ class Keypair:
     def verify(self, data, signature):
         &#34;&#34;&#34;
         Verifies data with specified signature
+
         Parameters
         ----------
-        data: data to be verified in `Scalebytes`, `bytes` or hex string format
-        signature: signature in `bytes` or hex string format
+        data: data to be verified in `Scalebytes`, bytes or hex string format
+        signature: signature in bytes or hex string format
 
         Returns
         -------
@@ -2383,7 +2384,7 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
 
         Returns
         -------
-
+        Seed phrase
         &#34;&#34;&#34;
         return bip39_generate(words)
 
@@ -2397,7 +2398,7 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
         mnemonic: Seed phrase
         ss58_format: Substrate address format, default = 42
         address_type: (deprecated)
-        crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+        crypto_type: Use `KeypairType.SR25519` or `KeypairType.ED25519` cryptography for generating the Keypair
 
         Returns
         -------
@@ -2558,7 +2559,7 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
 
         Parameters
         ----------
-        data: data to sign in `Scalebytes`, `bytes` or hex string format
+        data: data to sign in `Scalebytes`, bytes or hex string format
 
         Returns
         -------
@@ -2588,10 +2589,11 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
     def verify(self, data, signature):
         &#34;&#34;&#34;
         Verifies data with specified signature
+
         Parameters
         ----------
-        data: data to be verified in `Scalebytes`, `bytes` or hex string format
-        signature: signature in `bytes` or hex string format
+        data: data to be verified in `Scalebytes`, bytes or hex string format
+        signature: signature in bytes or hex string format
 
         Returns
         -------
@@ -2636,7 +2638,7 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
 <dd>&nbsp;</dd>
 <dt><strong><code>address_type</code></strong> :&ensp;<code>(deprecated)</code></dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>crypto_type</code></strong> :&ensp;<code>Use <a title="substrateinterface.KeypairType.SR25519" href="#substrateinterface.KeypairType.SR25519">KeypairType.SR25519</a></code> or <code><a title="substrateinterface.KeypairType.ED25519" href="#substrateinterface.KeypairType.ED25519">KeypairType.ED25519</a> cryptography for generating the <a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a></code></dt>
+<dt><strong><code>crypto_type</code></strong> :&ensp;<code>Use </code>KeypairType.SR25519<code> or </code>KeypairType.ED25519<code> cryptography for generating the <a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a></code></dt>
 <dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -2658,7 +2660,7 @@ def create_from_mnemonic(cls, mnemonic, ss58_format=42, address_type=None, crypt
     mnemonic: Seed phrase
     ss58_format: Substrate address format, default = 42
     address_type: (deprecated)
-    crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+    crypto_type: Use `KeypairType.SR25519` or `KeypairType.ED25519` cryptography for generating the Keypair
 
     Returns
     -------
@@ -2906,7 +2908,11 @@ def create_from_uri(cls, suri, ss58_format=42, address_type=None, crypto_type=Ke
 <dt><strong><code>words</code></strong> :&ensp;<code>The amount</code> of <code>words to generate, valid values are 12, 15, 18, 21 and 24</code></dt>
 <dd>&nbsp;</dd>
 </dl>
-<h2 id="returns">Returns</h2></div>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Seed phrase</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2922,7 +2928,7 @@ def generate_mnemonic(cls, words=12):
 
     Returns
     -------
-
+    Seed phrase
     &#34;&#34;&#34;
     return bip39_generate(words)</code></pre>
 </details>
@@ -2937,7 +2943,7 @@ def generate_mnemonic(cls, words=12):
 <div class="desc"><p>Creates a signature for given data</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>data</code></strong> :&ensp;<code>data to sign in </code>Scalebytes<code>, </code>bytes<code><code>or &lt;/code&gt;hex string format</code></dt>
+<dt><strong><code>data</code></strong> :&ensp;<code>data to sign in </code>Scalebytes<code>, bytes</code> or <code>hex string format</code></dt>
 <dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -2955,7 +2961,7 @@ def generate_mnemonic(cls, words=12):
 
     Parameters
     ----------
-    data: data to sign in `Scalebytes`, `bytes` or hex string format
+    data: data to sign in `Scalebytes`, bytes or hex string format
 
     Returns
     -------
@@ -2987,13 +2993,12 @@ def generate_mnemonic(cls, words=12):
 <span>def <span class="ident">verify</span></span>(<span>self, data, signature)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Verifies data with specified signature
-Parameters</p>
-<hr>
+<div class="desc"><p>Verifies data with specified signature</p>
+<h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>data</code></strong> :&ensp;<code>data to be verified in </code>Scalebytes<code>, </code>bytes<code><code>or &lt;/code&gt;hex string format</code></dt>
+<dt><strong><code>data</code></strong> :&ensp;<code>data to be verified in </code>Scalebytes<code>, bytes</code> or <code>hex string format</code></dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>signature</code></strong> :&ensp;<code>signature in </code>bytes<code><code>or &lt;/code&gt;hex string format</code></dt>
+<dt><strong><code>signature</code></strong> :&ensp;<code>signature in bytes</code> or <code>hex string format</code></dt>
 <dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -3008,10 +3013,11 @@ Parameters</p>
 <pre><code class="python">def verify(self, data, signature):
     &#34;&#34;&#34;
     Verifies data with specified signature
+
     Parameters
     ----------
-    data: data to be verified in `Scalebytes`, `bytes` or hex string format
-    signature: signature in `bytes` or hex string format
+    data: data to be verified in `Scalebytes`, bytes or hex string format
+    signature: signature in bytes or hex string format
 
     Returns
     -------

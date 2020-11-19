@@ -302,7 +302,7 @@ class Keypair:
 
         Parameters
         ----------
-        data: data to sign in `Scalebytes`, `bytes` or hex string format
+        data: data to sign in `Scalebytes`, bytes or hex string format
 
         Returns
         -------
@@ -335,8 +335,8 @@ class Keypair:
 
         Parameters
         ----------
-        data: data to be verified in `Scalebytes`, `bytes` or hex string format
-        signature: signature in `bytes` or hex string format
+        data: data to be verified in `Scalebytes`, bytes or hex string format
+        signature: signature in bytes or hex string format
 
         Returns
         -------
