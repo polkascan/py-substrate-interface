@@ -1231,11 +1231,11 @@ class SubstrateInterface:
         call_module: Name of the runtime module e.g. Balances
         call_function: Name of the call function e.g. transfer
         call_params: This is a dict containing the params of the call. e.g. `{&#39;dest&#39;: &#39;EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk&#39;, &#39;value&#39;: 1000000000000}`
-        block_hash
+        block_hash: Use metadata at given block_hash to compose call
 
         Returns
         -------
-
+        GenericCall
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -1250,6 +1250,17 @@ class SubstrateInterface:
         return call
 
     def get_account_nonce(self, account_address):
+        &#34;&#34;&#34;
+        Returns current nonce for given account address
+
+        Parameters
+        ----------
+        account_address: SS58 formatted address
+
+        Returns
+        -------
+        int
+        &#34;&#34;&#34;
         response = self.get_runtime_state(&#39;System&#39;, &#39;Account&#39;, [account_address])
         if response.get(&#39;result&#39;):
             return response[&#39;result&#39;].get(&#39;nonce&#39;, 0)
@@ -1306,12 +1317,12 @@ class SubstrateInterface:
 
         Parameters
         ----------
-        signature
-        era
-        keypair
-        call
-        nonce
-        tip
+        call: GenericCall to create extrinsic for
+        keypair: Keypair used to sign the extrinsic
+        era: Specify mortality in blocks in follow format: `{&#39;period&#39;: &lt;amount_blocks&gt;}` If omitted the extrinsic is immortal
+        nonce: nonce to include in extrinsics, if omitted the current nonce is retrieved on-chain
+        tip: specify tip to gain priority during network congestion
+        signature: Optionally provide signature if externally signed
 
         Returns
         -------
@@ -1376,6 +1387,16 @@ class SubstrateInterface:
         return extrinsic
 
     def create_unsigned_extrinsic(self, call):
+        &#34;&#34;&#34;
+        Create unsigned extrinsic for given `Call`
+        Parameters
+        ----------
+        call: GenericCall the call the extrinsic should contain
+
+        Returns
+        -------
+        ExtrinsicsDecoder
+        &#34;&#34;&#34;
         # Create extrinsic
         extrinsic = ScaleDecoder.get_decoder_class(&#39;Extrinsic&#39;, metadata=self.metadata_decoder)
 
@@ -3931,11 +3952,11 @@ def generate_mnemonic(cls, words=12):
         call_module: Name of the runtime module e.g. Balances
         call_function: Name of the call function e.g. transfer
         call_params: This is a dict containing the params of the call. e.g. `{&#39;dest&#39;: &#39;EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk&#39;, &#39;value&#39;: 1000000000000}`
-        block_hash
+        block_hash: Use metadata at given block_hash to compose call
 
         Returns
         -------
-
+        GenericCall
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -3950,6 +3971,17 @@ def generate_mnemonic(cls, words=12):
         return call
 
     def get_account_nonce(self, account_address):
+        &#34;&#34;&#34;
+        Returns current nonce for given account address
+
+        Parameters
+        ----------
+        account_address: SS58 formatted address
+
+        Returns
+        -------
+        int
+        &#34;&#34;&#34;
         response = self.get_runtime_state(&#39;System&#39;, &#39;Account&#39;, [account_address])
         if response.get(&#39;result&#39;):
             return response[&#39;result&#39;].get(&#39;nonce&#39;, 0)
@@ -4006,12 +4038,12 @@ def generate_mnemonic(cls, words=12):
 
         Parameters
         ----------
-        signature
-        era
-        keypair
-        call
-        nonce
-        tip
+        call: GenericCall to create extrinsic for
+        keypair: Keypair used to sign the extrinsic
+        era: Specify mortality in blocks in follow format: `{&#39;period&#39;: &lt;amount_blocks&gt;}` If omitted the extrinsic is immortal
+        nonce: nonce to include in extrinsics, if omitted the current nonce is retrieved on-chain
+        tip: specify tip to gain priority during network congestion
+        signature: Optionally provide signature if externally signed
 
         Returns
         -------
@@ -4076,6 +4108,16 @@ def generate_mnemonic(cls, words=12):
         return extrinsic
 
     def create_unsigned_extrinsic(self, call):
+        &#34;&#34;&#34;
+        Create unsigned extrinsic for given `Call`
+        Parameters
+        ----------
+        call: GenericCall the call the extrinsic should contain
+
+        Returns
+        -------
+        ExtrinsicsDecoder
+        &#34;&#34;&#34;
         # Create extrinsic
         extrinsic = ScaleDecoder.get_decoder_class(&#39;Extrinsic&#39;, metadata=self.metadata_decoder)
 
@@ -5039,10 +5081,14 @@ def version(self):
 <dd>&nbsp;</dd>
 <dt><strong><code>call_params</code></strong> :&ensp;<code>This is a dict containing the params</code> of <code>the call. e.g. </code>{'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk', 'value': 1000000000000}``</dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>block_hash</code></strong></dt>
+<dt><strong><code>block_hash</code></strong> :&ensp;<code>Use metadata at given block_hash to compose call</code></dt>
 <dd>&nbsp;</dd>
 </dl>
-<h2 id="returns">Returns</h2></div>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>GenericCall</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5056,11 +5102,11 @@ def version(self):
     call_module: Name of the runtime module e.g. Balances
     call_function: Name of the call function e.g. transfer
     call_params: This is a dict containing the params of the call. e.g. `{&#39;dest&#39;: &#39;EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk&#39;, &#39;value&#39;: 1000000000000}`
-    block_hash
+    block_hash: Use metadata at given block_hash to compose call
 
     Returns
     -------
-
+    GenericCall
     &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
@@ -5099,17 +5145,17 @@ def version(self):
 <div class="desc"><p>Creates a extrinsic signed by given account details</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>signature</code></strong></dt>
+<dt><strong><code>call</code></strong> :&ensp;<code>GenericCall to create extrinsic for</code></dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>era</code></strong></dt>
+<dt><strong><code>keypair</code></strong> :&ensp;<code><a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a> used to sign the extrinsic</code></dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>keypair</code></strong></dt>
+<dt><strong><code>era</code></strong> :&ensp;<code _period_:="'period':" _wzxhzdk:13_="<amount_blocks>">Specify mortality in blocks in follow format:</code><code> If omitted the extrinsic is immortal</code></dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>call</code></strong></dt>
+<dt><strong><code>nonce</code></strong> :&ensp;<code>nonce to include in extrinsics, if omitted the current nonce is retrieved on-chain</code></dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>nonce</code></strong></dt>
+<dt><strong><code>tip</code></strong> :&ensp;<code>specify tip to gain priority during network congestion</code></dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>tip</code></strong></dt>
+<dt><strong><code>signature</code></strong> :&ensp;<code>Optionally provide signature if externally signed</code></dt>
 <dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -5127,12 +5173,12 @@ def version(self):
 
     Parameters
     ----------
-    signature
-    era
-    keypair
-    call
-    nonce
-    tip
+    call: GenericCall to create extrinsic for
+    keypair: Keypair used to sign the extrinsic
+    era: Specify mortality in blocks in follow format: `{&#39;period&#39;: &lt;amount_blocks&gt;}` If omitted the extrinsic is immortal
+    nonce: nonce to include in extrinsics, if omitted the current nonce is retrieved on-chain
+    tip: specify tip to gain priority during network congestion
+    signature: Optionally provide signature if externally signed
 
     Returns
     -------
@@ -5201,12 +5247,33 @@ def version(self):
 <span>def <span class="ident">create_unsigned_extrinsic</span></span>(<span>self, call)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Create unsigned extrinsic for given <code>Call</code>
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>call</code></strong> :&ensp;<code>GenericCall the call the extrinsic should contain</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>ExtrinsicsDecoder</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def create_unsigned_extrinsic(self, call):
+    &#34;&#34;&#34;
+    Create unsigned extrinsic for given `Call`
+    Parameters
+    ----------
+    call: GenericCall the call the extrinsic should contain
+
+    Returns
+    -------
+    ExtrinsicsDecoder
+    &#34;&#34;&#34;
     # Create extrinsic
     extrinsic = ScaleDecoder.get_decoder_class(&#39;Extrinsic&#39;, metadata=self.metadata_decoder)
 
@@ -5485,12 +5552,33 @@ is set</p>
 <span>def <span class="ident">get_account_nonce</span></span>(<span>self, account_address)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Returns current nonce for given account address</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>account_address</code></strong> :&ensp;<code>SS58 formatted address</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_account_nonce(self, account_address):
+    &#34;&#34;&#34;
+    Returns current nonce for given account address
+
+    Parameters
+    ----------
+    account_address: SS58 formatted address
+
+    Returns
+    -------
+    int
+    &#34;&#34;&#34;
     response = self.get_runtime_state(&#39;System&#39;, &#39;Account&#39;, [account_address])
     if response.get(&#39;result&#39;):
         return response[&#39;result&#39;].get(&#39;nonce&#39;, 0)</code></pre>

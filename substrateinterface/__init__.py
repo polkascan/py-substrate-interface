@@ -1203,11 +1203,11 @@ class SubstrateInterface:
         call_module: Name of the runtime module e.g. Balances
         call_function: Name of the call function e.g. transfer
         call_params: This is a dict containing the params of the call. e.g. `{'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk', 'value': 1000000000000}`
-        block_hash
+        block_hash: Use metadata at given block_hash to compose call
 
         Returns
         -------
-
+        GenericCall
         """
         self.init_runtime(block_hash=block_hash)
 
@@ -1222,6 +1222,17 @@ class SubstrateInterface:
         return call
 
     def get_account_nonce(self, account_address):
+        """
+        Returns current nonce for given account address
+
+        Parameters
+        ----------
+        account_address: SS58 formatted address
+
+        Returns
+        -------
+        int
+        """
         response = self.get_runtime_state('System', 'Account', [account_address])
         if response.get('result'):
             return response['result'].get('nonce', 0)
@@ -1278,12 +1289,12 @@ class SubstrateInterface:
 
         Parameters
         ----------
-        signature
-        era
-        keypair
-        call
-        nonce
-        tip
+        call: GenericCall to create extrinsic for
+        keypair: Keypair used to sign the extrinsic
+        era: Specify mortality in blocks in follow format: `{'period': <amount_blocks>}` If omitted the extrinsic is immortal
+        nonce: nonce to include in extrinsics, if omitted the current nonce is retrieved on-chain
+        tip: specify tip to gain priority during network congestion
+        signature: Optionally provide signature if externally signed
 
         Returns
         -------
@@ -1348,6 +1359,16 @@ class SubstrateInterface:
         return extrinsic
 
     def create_unsigned_extrinsic(self, call):
+        """
+        Create unsigned extrinsic for given `Call`
+        Parameters
+        ----------
+        call: GenericCall the call the extrinsic should contain
+
+        Returns
+        -------
+        ExtrinsicsDecoder
+        """
         # Create extrinsic
         extrinsic = ScaleDecoder.get_decoder_class('Extrinsic', metadata=self.metadata_decoder)
 
