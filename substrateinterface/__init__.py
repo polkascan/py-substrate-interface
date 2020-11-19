@@ -56,6 +56,20 @@ class Keypair:
     def __init__(self, ss58_address=None, public_key=None, private_key=None, ss58_format=42,
                  address_type=None, seed_hex=None,
                  crypto_type=KeypairType.SR25519):
+        """
+        Allows generation of Keypairs from a variety of input combination, such as a public/private key combination, a
+        mnemonic or a uri containing soft and hard derivation paths. With these Keypairs data can be signed and verified
+
+        Parameters
+        ----------
+        ss58_address: Substrate address
+        public_key: hex string or bytes of public_key key
+        private_key: hex string or bytes of private key
+        ss58_format: Substrate address format, default = 42
+        address_type: (deprecated) replaced by ss58_format
+        seed_hex: hex string of seed
+        crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+        """
 
         self.crypto_type = crypto_type
         self.seed_hex = seed_hex
@@ -104,10 +118,35 @@ class Keypair:
 
     @classmethod
     def generate_mnemonic(cls, words=12):
+        """
+        Generates a new seed phrase with given amount of words (default 12)
+
+        Parameters
+        ----------
+        words: The amount of words to generate, valid values are 12, 15, 18, 21 and 24
+
+        Returns
+        -------
+
+        """
         return bip39_generate(words)
 
     @classmethod
     def create_from_mnemonic(cls, mnemonic, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+        """
+        Create a Keypair for given memonic
+
+        Parameters
+        ----------
+        mnemonic: Seed phrase
+        ss58_format: Substrate address format, default = 42
+        address_type: (deprecated)
+        crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+
+        Returns
+        -------
+        Keypair
+        """
         seed_array = bip39_to_mini_secret(mnemonic, "")
 
         if address_type is not None:
@@ -125,6 +164,20 @@ class Keypair:
 
     @classmethod
     def create_from_seed(cls, seed_hex, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+        """
+        Create a Keypair for given seed
+
+        Parameters
+        ----------
+        seed_hex: hex string of seed
+        ss58_format: Substrate address format, default = 42
+        address_type: (deprecated)
+        crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+
+        Returns
+        -------
+        Keypair
+        """
 
         if address_type is not None:
             warnings.warn("Keyword 'address_type' will be replaced by 'ss58_format'", DeprecationWarning)
@@ -149,6 +202,20 @@ class Keypair:
 
     @classmethod
     def create_from_uri(cls, suri, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+        """
+        Creates Keypair for specified suri in following format: `<mnemonic>/<soft-path>//<hard-path>`
+
+        Parameters
+        ----------
+        suri:
+        ss58_format: Substrate address format, default = 42
+        address_type: (deprecated)
+        crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+
+        Returns
+        -------
+        Keypair
+        """
 
         if address_type is not None:
             warnings.warn("Keyword 'address_type' will be replaced by 'ss58_format'", DeprecationWarning)
@@ -205,6 +272,21 @@ class Keypair:
             cls, private_key, public_key=None, ss58_address=None, ss58_format=42, crypto_type=KeypairType.SR25519,
             address_type=None
     ):
+        """
+        Creates Keypair for specified public/private keys
+        Parameters
+        ----------
+        private_key: hex string or bytes of private key
+        public_key: hex string or bytes of public key
+        ss58_address: Substrate address
+        ss58_format: Substrate address format, default = 42
+        address_type: (deprecated)
+        crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+
+        Returns
+        -------
+        Keypair
+        """
         if address_type is not None:
             warnings.warn("Keyword 'address_type' will be replaced by 'ss58_format'", DeprecationWarning)
             ss58_format = address_type
@@ -216,15 +298,15 @@ class Keypair:
 
     def sign(self, data):
         """
-        Creates a sr25519 signature with give data
+        Creates a signature for given data
 
         Parameters
         ----------
-        data
+        data: data to sign in `Scalebytes`, `bytes` or hex string format
 
         Returns
         -------
-        sr25519 signature
+        signature in hex string format
 
         """
         if type(data) is ScaleBytes:
@@ -248,6 +330,17 @@ class Keypair:
         return "0x{}".format(signature.hex())
 
     def verify(self, data, signature):
+        """
+        Verifies data with specified signature
+        Parameters
+        ----------
+        data: data to be verified in `Scalebytes`, `bytes` or hex string format
+        signature: signature in `bytes` or hex string format
+
+        Returns
+        -------
+        True if data is signed with this Keypair, otherwise False
+        """
 
         if type(data) is ScaleBytes:
             data = bytes(data.data)
@@ -283,7 +376,7 @@ class SubstrateInterface:
         Parameters
         ----------
         url: the URL to the substrate node, either in format https://127.0.0.1:9933 or wss://127.0.0.1:9944
-        address_type: The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults to 42, for Kusama the address type is 2
+        ss58_format: The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults to 42, for Kusama the address type is 2
         type_registry: A dict containing the custom type registry in format: {'types': {'customType': 'u32'},..}
         type_registry_preset: The name of the predefined type registry shipped with the SCALE-codec, e.g. kusama
         cache_region: a Dogpile cache region as a central store for the metadata cache

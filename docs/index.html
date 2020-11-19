@@ -84,6 +84,20 @@ class Keypair:
     def __init__(self, ss58_address=None, public_key=None, private_key=None, ss58_format=42,
                  address_type=None, seed_hex=None,
                  crypto_type=KeypairType.SR25519):
+        &#34;&#34;&#34;
+        Allows generation of Keypairs from a variety of input combination, such as a public/private key combination, a
+        mnemonic or a uri containing soft and hard derivation paths. With these Keypairs data can be signed and verified
+
+        Parameters
+        ----------
+        ss58_address: Substrate address
+        public_key: hex string or bytes of public_key key
+        private_key: hex string or bytes of private key
+        ss58_format: Substrate address format, default = 42
+        address_type: (deprecated) replaced by ss58_format
+        seed_hex: hex string of seed
+        crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+        &#34;&#34;&#34;
 
         self.crypto_type = crypto_type
         self.seed_hex = seed_hex
@@ -132,10 +146,35 @@ class Keypair:
 
     @classmethod
     def generate_mnemonic(cls, words=12):
+        &#34;&#34;&#34;
+        Generates a new seed phrase with given amount of words (default 12)
+
+        Parameters
+        ----------
+        words: The amount of words to generate, valid values are 12, 15, 18, 21 and 24
+
+        Returns
+        -------
+
+        &#34;&#34;&#34;
         return bip39_generate(words)
 
     @classmethod
     def create_from_mnemonic(cls, mnemonic, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+        &#34;&#34;&#34;
+        Create a Keypair for given memonic
+
+        Parameters
+        ----------
+        mnemonic: Seed phrase
+        ss58_format: Substrate address format, default = 42
+        address_type: (deprecated)
+        crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+
+        Returns
+        -------
+        Keypair
+        &#34;&#34;&#34;
         seed_array = bip39_to_mini_secret(mnemonic, &#34;&#34;)
 
         if address_type is not None:
@@ -153,6 +192,20 @@ class Keypair:
 
     @classmethod
     def create_from_seed(cls, seed_hex, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+        &#34;&#34;&#34;
+        Create a Keypair for given seed
+
+        Parameters
+        ----------
+        seed_hex: hex string of seed
+        ss58_format: Substrate address format, default = 42
+        address_type: (deprecated)
+        crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+
+        Returns
+        -------
+        Keypair
+        &#34;&#34;&#34;
 
         if address_type is not None:
             warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
@@ -177,6 +230,20 @@ class Keypair:
 
     @classmethod
     def create_from_uri(cls, suri, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+        &#34;&#34;&#34;
+        Creates Keypair for specified suri in following format: `&lt;mnemonic&gt;/&lt;soft-path&gt;//&lt;hard-path&gt;`
+
+        Parameters
+        ----------
+        suri:
+        ss58_format: Substrate address format, default = 42
+        address_type: (deprecated)
+        crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+
+        Returns
+        -------
+        Keypair
+        &#34;&#34;&#34;
 
         if address_type is not None:
             warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
@@ -233,6 +300,21 @@ class Keypair:
             cls, private_key, public_key=None, ss58_address=None, ss58_format=42, crypto_type=KeypairType.SR25519,
             address_type=None
     ):
+        &#34;&#34;&#34;
+        Creates Keypair for specified public/private keys
+        Parameters
+        ----------
+        private_key: hex string or bytes of private key
+        public_key: hex string or bytes of public key
+        ss58_address: Substrate address
+        ss58_format: Substrate address format, default = 42
+        address_type: (deprecated)
+        crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+
+        Returns
+        -------
+        Keypair
+        &#34;&#34;&#34;
         if address_type is not None:
             warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
             ss58_format = address_type
@@ -244,15 +326,15 @@ class Keypair:
 
     def sign(self, data):
         &#34;&#34;&#34;
-        Creates a sr25519 signature with give data
+        Creates a signature for given data
 
         Parameters
         ----------
-        data
+        data: data to sign in `Scalebytes`, `bytes` or hex string format
 
         Returns
         -------
-        sr25519 signature
+        signature in hex string format
 
         &#34;&#34;&#34;
         if type(data) is ScaleBytes:
@@ -276,6 +358,17 @@ class Keypair:
         return &#34;0x{}&#34;.format(signature.hex())
 
     def verify(self, data, signature):
+        &#34;&#34;&#34;
+        Verifies data with specified signature
+        Parameters
+        ----------
+        data: data to be verified in `Scalebytes`, `bytes` or hex string format
+        signature: signature in `bytes` or hex string format
+
+        Returns
+        -------
+        True if data is signed with this Keypair, otherwise False
+        &#34;&#34;&#34;
 
         if type(data) is ScaleBytes:
             data = bytes(data.data)
@@ -311,7 +404,7 @@ class SubstrateInterface:
         Parameters
         ----------
         url: the URL to the substrate node, either in format https://127.0.0.1:9933 or wss://127.0.0.1:9944
-        address_type: The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults to 42, for Kusama the address type is 2
+        ss58_format: The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults to 42, for Kusama the address type is 2
         type_registry: A dict containing the custom type registry in format: {&#39;types&#39;: {&#39;customType&#39;: &#39;u32&#39;},..}
         type_registry_preset: The name of the predefined type registry shipped with the SCALE-codec, e.g. kusama
         cache_region: a Dogpile cache region as a central store for the metadata cache
@@ -2191,7 +2284,25 @@ class SubstrateInterface:
 <span>(</span><span>ss58_address=None, public_key=None, private_key=None, ss58_format=42, address_type=None, seed_hex=None, crypto_type=1)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Allows generation of Keypairs from a variety of input combination, such as a public/private key combination, a
+mnemonic or a uri containing soft and hard derivation paths. With these Keypairs data can be signed and verified</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>ss58_address</code></strong> :&ensp;<code>Substrate address</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>public_key</code></strong> :&ensp;<code>hex string</code> or <code>bytes</code> of <code>public_key <a title="substrateinterface.key" href="key.html">substrateinterface.key</a></code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>private_key</code></strong> :&ensp;<code>hex string</code> or <code>bytes</code> of <code>private <a title="substrateinterface.key" href="key.html">substrateinterface.key</a></code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>ss58_format</code></strong> :&ensp;<code>Substrate address format</code>, default <code>= 42</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>address_type</code></strong> :&ensp;<code>(deprecated) replaced by ss58_format</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>seed_hex</code></strong> :&ensp;<code>hex string</code> of <code>seed</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>crypto_type</code></strong> :&ensp;<code>Use <a title="substrateinterface.KeypairType.SR25519" href="#substrateinterface.KeypairType.SR25519">KeypairType.SR25519</a></code> or <code><a title="substrateinterface.KeypairType.ED25519" href="#substrateinterface.KeypairType.ED25519">KeypairType.ED25519</a> cryptography for generating the <a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a></code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2201,6 +2312,20 @@ class SubstrateInterface:
     def __init__(self, ss58_address=None, public_key=None, private_key=None, ss58_format=42,
                  address_type=None, seed_hex=None,
                  crypto_type=KeypairType.SR25519):
+        &#34;&#34;&#34;
+        Allows generation of Keypairs from a variety of input combination, such as a public/private key combination, a
+        mnemonic or a uri containing soft and hard derivation paths. With these Keypairs data can be signed and verified
+
+        Parameters
+        ----------
+        ss58_address: Substrate address
+        public_key: hex string or bytes of public_key key
+        private_key: hex string or bytes of private key
+        ss58_format: Substrate address format, default = 42
+        address_type: (deprecated) replaced by ss58_format
+        seed_hex: hex string of seed
+        crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+        &#34;&#34;&#34;
 
         self.crypto_type = crypto_type
         self.seed_hex = seed_hex
@@ -2249,10 +2374,35 @@ class SubstrateInterface:
 
     @classmethod
     def generate_mnemonic(cls, words=12):
+        &#34;&#34;&#34;
+        Generates a new seed phrase with given amount of words (default 12)
+
+        Parameters
+        ----------
+        words: The amount of words to generate, valid values are 12, 15, 18, 21 and 24
+
+        Returns
+        -------
+
+        &#34;&#34;&#34;
         return bip39_generate(words)
 
     @classmethod
     def create_from_mnemonic(cls, mnemonic, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+        &#34;&#34;&#34;
+        Create a Keypair for given memonic
+
+        Parameters
+        ----------
+        mnemonic: Seed phrase
+        ss58_format: Substrate address format, default = 42
+        address_type: (deprecated)
+        crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+
+        Returns
+        -------
+        Keypair
+        &#34;&#34;&#34;
         seed_array = bip39_to_mini_secret(mnemonic, &#34;&#34;)
 
         if address_type is not None:
@@ -2270,6 +2420,20 @@ class SubstrateInterface:
 
     @classmethod
     def create_from_seed(cls, seed_hex, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+        &#34;&#34;&#34;
+        Create a Keypair for given seed
+
+        Parameters
+        ----------
+        seed_hex: hex string of seed
+        ss58_format: Substrate address format, default = 42
+        address_type: (deprecated)
+        crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+
+        Returns
+        -------
+        Keypair
+        &#34;&#34;&#34;
 
         if address_type is not None:
             warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
@@ -2294,6 +2458,20 @@ class SubstrateInterface:
 
     @classmethod
     def create_from_uri(cls, suri, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+        &#34;&#34;&#34;
+        Creates Keypair for specified suri in following format: `&lt;mnemonic&gt;/&lt;soft-path&gt;//&lt;hard-path&gt;`
+
+        Parameters
+        ----------
+        suri:
+        ss58_format: Substrate address format, default = 42
+        address_type: (deprecated)
+        crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+
+        Returns
+        -------
+        Keypair
+        &#34;&#34;&#34;
 
         if address_type is not None:
             warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
@@ -2350,6 +2528,21 @@ class SubstrateInterface:
             cls, private_key, public_key=None, ss58_address=None, ss58_format=42, crypto_type=KeypairType.SR25519,
             address_type=None
     ):
+        &#34;&#34;&#34;
+        Creates Keypair for specified public/private keys
+        Parameters
+        ----------
+        private_key: hex string or bytes of private key
+        public_key: hex string or bytes of public key
+        ss58_address: Substrate address
+        ss58_format: Substrate address format, default = 42
+        address_type: (deprecated)
+        crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+
+        Returns
+        -------
+        Keypair
+        &#34;&#34;&#34;
         if address_type is not None:
             warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
             ss58_format = address_type
@@ -2361,15 +2554,15 @@ class SubstrateInterface:
 
     def sign(self, data):
         &#34;&#34;&#34;
-        Creates a sr25519 signature with give data
+        Creates a signature for given data
 
         Parameters
         ----------
-        data
+        data: data to sign in `Scalebytes`, `bytes` or hex string format
 
         Returns
         -------
-        sr25519 signature
+        signature in hex string format
 
         &#34;&#34;&#34;
         if type(data) is ScaleBytes:
@@ -2393,6 +2586,17 @@ class SubstrateInterface:
         return &#34;0x{}&#34;.format(signature.hex())
 
     def verify(self, data, signature):
+        &#34;&#34;&#34;
+        Verifies data with specified signature
+        Parameters
+        ----------
+        data: data to be verified in `Scalebytes`, `bytes` or hex string format
+        signature: signature in `bytes` or hex string format
+
+        Returns
+        -------
+        True if data is signed with this Keypair, otherwise False
+        &#34;&#34;&#34;
 
         if type(data) is ScaleBytes:
             data = bytes(data.data)
@@ -2423,13 +2627,43 @@ class SubstrateInterface:
 <span>def <span class="ident">create_from_mnemonic</span></span>(<span>mnemonic, ss58_format=42, address_type=None, crypto_type=1)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Create a Keypair for given memonic</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>mnemonic</code></strong> :&ensp;<code>Seed phrase</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>ss58_format</code></strong> :&ensp;<code>Substrate address format</code>, default <code>= 42</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>address_type</code></strong> :&ensp;<code>(deprecated)</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>crypto_type</code></strong> :&ensp;<code>Use <a title="substrateinterface.KeypairType.SR25519" href="#substrateinterface.KeypairType.SR25519">KeypairType.SR25519</a></code> or <code><a title="substrateinterface.KeypairType.ED25519" href="#substrateinterface.KeypairType.ED25519">KeypairType.ED25519</a> cryptography for generating the <a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a></code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a></code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
 def create_from_mnemonic(cls, mnemonic, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+    &#34;&#34;&#34;
+    Create a Keypair for given memonic
+
+    Parameters
+    ----------
+    mnemonic: Seed phrase
+    ss58_format: Substrate address format, default = 42
+    address_type: (deprecated)
+    crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+
+    Returns
+    -------
+    Keypair
+    &#34;&#34;&#34;
     seed_array = bip39_to_mini_secret(mnemonic, &#34;&#34;)
 
     if address_type is not None:
@@ -2450,7 +2684,28 @@ def create_from_mnemonic(cls, mnemonic, ss58_format=42, address_type=None, crypt
 <span>def <span class="ident">create_from_private_key</span></span>(<span>private_key, public_key=None, ss58_address=None, ss58_format=42, crypto_type=1, address_type=None)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Creates Keypair for specified public/private keys
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>private_key</code></strong> :&ensp;<code>hex string</code> or <code>bytes</code> of <code>private <a title="substrateinterface.key" href="key.html">substrateinterface.key</a></code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>public_key</code></strong> :&ensp;<code>hex string</code> or <code>bytes</code> of <code>public <a title="substrateinterface.key" href="key.html">substrateinterface.key</a></code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>ss58_address</code></strong> :&ensp;<code>Substrate address</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>ss58_format</code></strong> :&ensp;<code>Substrate address format</code>, default <code>= 42</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>address_type</code></strong> :&ensp;<code>(deprecated)</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>crypto_type</code></strong> :&ensp;<code>Use <a title="substrateinterface.KeypairType.SR25519" href="#substrateinterface.KeypairType.SR25519">KeypairType.SR25519</a></code> or <code><a title="substrateinterface.KeypairType.ED25519" href="#substrateinterface.KeypairType.ED25519">KeypairType.ED25519</a> cryptography for generating the <a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a></code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a></code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2460,6 +2715,21 @@ def create_from_private_key(
         cls, private_key, public_key=None, ss58_address=None, ss58_format=42, crypto_type=KeypairType.SR25519,
         address_type=None
 ):
+    &#34;&#34;&#34;
+    Creates Keypair for specified public/private keys
+    Parameters
+    ----------
+    private_key: hex string or bytes of private key
+    public_key: hex string or bytes of public key
+    ss58_address: Substrate address
+    ss58_format: Substrate address format, default = 42
+    address_type: (deprecated)
+    crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+
+    Returns
+    -------
+    Keypair
+    &#34;&#34;&#34;
     if address_type is not None:
         warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
         ss58_format = address_type
@@ -2474,13 +2744,43 @@ def create_from_private_key(
 <span>def <span class="ident">create_from_seed</span></span>(<span>seed_hex, ss58_format=42, address_type=None, crypto_type=1)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Create a Keypair for given seed</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>seed_hex</code></strong> :&ensp;<code>hex string</code> of <code>seed</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>ss58_format</code></strong> :&ensp;<code>Substrate address format</code>, default <code>= 42</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>address_type</code></strong> :&ensp;<code>(deprecated)</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>crypto_type</code></strong> :&ensp;<code>Use <a title="substrateinterface.KeypairType.SR25519" href="#substrateinterface.KeypairType.SR25519">KeypairType.SR25519</a></code> or <code><a title="substrateinterface.KeypairType.ED25519" href="#substrateinterface.KeypairType.ED25519">KeypairType.ED25519</a> cryptography for generating the <a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a></code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a></code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
 def create_from_seed(cls, seed_hex, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+    &#34;&#34;&#34;
+    Create a Keypair for given seed
+
+    Parameters
+    ----------
+    seed_hex: hex string of seed
+    ss58_format: Substrate address format, default = 42
+    address_type: (deprecated)
+    crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+
+    Returns
+    -------
+    Keypair
+    &#34;&#34;&#34;
 
     if address_type is not None:
         warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
@@ -2508,13 +2808,42 @@ def create_from_seed(cls, seed_hex, ss58_format=42, address_type=None, crypto_ty
 <span>def <span class="ident">create_from_uri</span></span>(<span>suri, ss58_format=42, address_type=None, crypto_type=1)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Creates Keypair for specified suri in following format: <code>&lt;mnemonic&gt;/&lt;soft-path&gt;//&lt;hard-path&gt;</code></p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt>suri:</dt>
+<dt><strong><code>ss58_format</code></strong> :&ensp;<code>Substrate address format</code>, default <code>= 42</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>address_type</code></strong> :&ensp;<code>(deprecated)</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>crypto_type</code></strong> :&ensp;<code>Use <a title="substrateinterface.KeypairType.SR25519" href="#substrateinterface.KeypairType.SR25519">KeypairType.SR25519</a></code> or <code><a title="substrateinterface.KeypairType.ED25519" href="#substrateinterface.KeypairType.ED25519">KeypairType.ED25519</a> cryptography for generating the <a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a></code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a></code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
 def create_from_uri(cls, suri, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+    &#34;&#34;&#34;
+    Creates Keypair for specified suri in following format: `&lt;mnemonic&gt;/&lt;soft-path&gt;//&lt;hard-path&gt;`
+
+    Parameters
+    ----------
+    suri:
+    ss58_format: Substrate address format, default = 42
+    address_type: (deprecated)
+    crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+
+    Returns
+    -------
+    Keypair
+    &#34;&#34;&#34;
 
     if address_type is not None:
         warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
@@ -2571,13 +2900,30 @@ def create_from_uri(cls, suri, ss58_format=42, address_type=None, crypto_type=Ke
 <span>def <span class="ident">generate_mnemonic</span></span>(<span>words=12)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Generates a new seed phrase with given amount of words (default 12)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>words</code></strong> :&ensp;<code>The amount</code> of <code>words to generate, valid values are 12, 15, 18, 21 and 24</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
 def generate_mnemonic(cls, words=12):
+    &#34;&#34;&#34;
+    Generates a new seed phrase with given amount of words (default 12)
+
+    Parameters
+    ----------
+    words: The amount of words to generate, valid values are 12, 15, 18, 21 and 24
+
+    Returns
+    -------
+
+    &#34;&#34;&#34;
     return bip39_generate(words)</code></pre>
 </details>
 </dd>
@@ -2588,15 +2934,15 @@ def generate_mnemonic(cls, words=12):
 <span>def <span class="ident">sign</span></span>(<span>self, data)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Creates a sr25519 signature with give data</p>
+<div class="desc"><p>Creates a signature for given data</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>data</code></strong></dt>
+<dt><strong><code>data</code></strong> :&ensp;<code>data to sign in </code>Scalebytes<code>, </code>bytes<code><code>or &lt;/code&gt;hex string format</code></dt>
 <dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>sr25519 signature</code></dt>
+<dt><code>signature in hex string format</code></dt>
 <dd>&nbsp;</dd>
 </dl></div>
 <details class="source">
@@ -2605,15 +2951,15 @@ def generate_mnemonic(cls, words=12):
 </summary>
 <pre><code class="python">def sign(self, data):
     &#34;&#34;&#34;
-    Creates a sr25519 signature with give data
+    Creates a signature for given data
 
     Parameters
     ----------
-    data
+    data: data to sign in `Scalebytes`, `bytes` or hex string format
 
     Returns
     -------
-    sr25519 signature
+    signature in hex string format
 
     &#34;&#34;&#34;
     if type(data) is ScaleBytes:
@@ -2641,12 +2987,36 @@ def generate_mnemonic(cls, words=12):
 <span>def <span class="ident">verify</span></span>(<span>self, data, signature)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Verifies data with specified signature
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>data</code></strong> :&ensp;<code>data to be verified in </code>Scalebytes<code>, </code>bytes<code><code>or &lt;/code&gt;hex string format</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>signature</code></strong> :&ensp;<code>signature in </code>bytes<code><code>or &lt;/code&gt;hex string format</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>True if data is signed with this <a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a>, otherwise False</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def verify(self, data, signature):
+    &#34;&#34;&#34;
+    Verifies data with specified signature
+    Parameters
+    ----------
+    data: data to be verified in `Scalebytes`, `bytes` or hex string format
+    signature: signature in `bytes` or hex string format
+
+    Returns
+    -------
+    True if data is signed with this Keypair, otherwise False
+    &#34;&#34;&#34;
 
     if type(data) is ScaleBytes:
         data = bytes(data.data)
@@ -2706,7 +3076,7 @@ def generate_mnemonic(cls, words=12):
 <dl>
 <dt><strong><code>url</code></strong> :&ensp;<code>the URL to the substrate node, either in format &lt;https://127.0.0.1:9933&gt;</code> or <code>wss://127.0.0.1:9944</code></dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>address_type</code></strong> :&ensp;<code>The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults to 42, for Kusama the address type is 2</code></dt>
+<dt><strong><code>ss58_format</code></strong> :&ensp;<code>The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults to 42, for Kusama the address type is 2</code></dt>
 <dd>&nbsp;</dd>
 <dt><strong><code>type_registry</code></strong> :&ensp;<code>A dict containing the custom type registry in format: {'types': {'customType': 'u32'},..}</code></dt>
 <dd>&nbsp;</dd>
@@ -2729,7 +3099,7 @@ def generate_mnemonic(cls, words=12):
         Parameters
         ----------
         url: the URL to the substrate node, either in format https://127.0.0.1:9933 or wss://127.0.0.1:9944
-        address_type: The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults to 42, for Kusama the address type is 2
+        ss58_format: The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults to 42, for Kusama the address type is 2
         type_registry: A dict containing the custom type registry in format: {&#39;types&#39;: {&#39;customType&#39;: &#39;u32&#39;},..}
         type_registry_preset: The name of the predefined type registry shipped with the SCALE-codec, e.g. kusama
         cache_region: a Dogpile cache region as a central store for the metadata cache
