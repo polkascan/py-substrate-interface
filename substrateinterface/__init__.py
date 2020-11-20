@@ -23,7 +23,7 @@ import logging
 import re
 
 import requests
-from websocket import create_connection
+from websocket import create_connection, WebSocketConnectionClosedException
 
 from scalecodec import ScaleBytes, GenericCall
 from scalecodec.base import ScaleDecoder, RuntimeConfiguration
@@ -408,16 +408,10 @@ class SubstrateInterface:
         self.url = url
 
         if self.url and (self.url[0:6] == 'wss://' or self.url[0:5] == 'ws://'):
-            websocket = create_connection(
-                    url,
-                    max_size=2**32,
-                    read_limit=2**32,
-                    write_limit=2**32,
-            )
+            self.connect_websocket()
 
-        self.websocket = websocket
-
-        self._ws_result = None
+        elif websocket:
+            self.websocket = websocket
 
         self.mock_extrinsics = None
         self.default_headers = {
@@ -444,6 +438,7 @@ class SubstrateInterface:
                 type_registry_preset = self.chain.lower()
             else:
                 type_registry_preset = "default"
+            self.debug_message("Auto set type_registry_preset to {} ...".format(type_registry_preset))
 
         # Set type registry
         if type_registry_preset:
@@ -456,6 +451,16 @@ class SubstrateInterface:
         if type_registry:
             # Load type registries in runtime configuration
             RuntimeConfiguration().update_type_registry(type_registry)
+
+    def connect_websocket(self):
+        if self.url and (self.url[0:6] == 'wss://' or self.url[0:5] == 'ws://'):
+            self.debug_message("Connecting to {} ...".format(self.url))
+            self.websocket = create_connection(
+                self.url,
+                max_size=2 ** 32,
+                read_limit=2 ** 32,
+                write_limit=2 ** 32,
+            )
 
     def debug_message(self, message):
         logger.debug(message)
@@ -482,30 +487,43 @@ class SubstrateInterface:
             "id": self.request_id
         }
 
-        self.debug_message('RPC request "{}"'.format(method))
+        self.debug_message('RPC request #{}: "{}"'.format(self.request_id, method))
 
         if self.websocket:
-            self.websocket.send(json.dumps(payload))
+            try:
+                self.websocket.send(json.dumps(payload))
 
-            if callable(result_handler):
-                # If result handler is set, pass result through and loop until handler return not None
-                event_number = 0
-                json_body = None
-                while not json_body:
-                    result = json.loads(self.websocket.recv())
-                    self.debug_message("Websocket result [{}] Received from node: {}".format(event_number, result))
+                if callable(result_handler):
+                    # If result handler is set, pass result through and loop until handler return not None
+                    event_number = 0
+                    json_body = None
+                    while not json_body:
+                        result = json.loads(self.websocket.recv())
+                        self.debug_message("Websocket result [{}] Received from node: {}".format(event_number, result))
 
-                    # Check if response has error
-                    if 'error' in result:
-                        raise SubstrateRequestException(result['error'])
+                        # Check if response has error
+                        if 'error' in result:
+                            raise SubstrateRequestException(result['error'])
 
-                    callback_result = result_handler(result)
-                    if callback_result:
-                        json_body = callback_result
+                        callback_result = result_handler(result)
+                        if callback_result:
+                            json_body = callback_result
 
-                    event_number += 1
-            else:
-                json_body = json.loads(self.websocket.recv())
+                        event_number += 1
+                else:
+
+                    json_body = json.loads(self.websocket.recv())
+
+            except WebSocketConnectionClosedException:
+                if self.url:
+                    # Try to reconnect websocket and retry rpc_request
+                    self.debug_message("Connection Closed; Trying to reconnecting...")
+                    self.connect_websocket()
+
+                    return self.rpc_request(method=method, params=params, result_handler=result_handler)
+                else:
+                    # websocket connection is externally created, re-raise exception
+                    raise
 
         else:
 
@@ -519,6 +537,7 @@ class SubstrateInterface:
 
             json_body = response.json()
 
+        self.request_id += 1
         return json_body
 
     @property
