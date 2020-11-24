@@ -406,6 +406,7 @@ class SubstrateInterface:
 
         self.request_id = 1
         self.url = url
+        self.websocket = None
 
         if self.url and (self.url[0:6] == 'wss://' or self.url[0:5] == 'ws://'):
             self.connect_websocket()
