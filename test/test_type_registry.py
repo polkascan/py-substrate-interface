@@ -21,9 +21,9 @@ sys.path.append(os.path.abspath('../../py-scale-codec'))
 
 import unittest
 
-from scalecodec.base import RuntimeConfiguration, ScaleType
+from scalecodec.base import ScaleBytes
 
-from substrateinterface import SubstrateInterface, Keypair, SubstrateRequestException
+from substrateinterface import SubstrateInterface
 from test import settings
 
 
@@ -40,7 +40,7 @@ class KusamaTypeRegistryTestCase(unittest.TestCase):
     def test_type_registry_compatibility(self):
 
         for scale_type in self.substrate.get_type_registry():
-            obj = RuntimeConfiguration().get_decoder_class(scale_type)
+            obj = self.substrate.runtime_config.get_decoder_class(scale_type)
 
             self.assertIsNotNone(obj, '{} not supported'.format(scale_type))
 
@@ -59,9 +59,40 @@ class PolkadotTypeRegistryTestCase(unittest.TestCase):
 
         for scale_type in self.substrate.get_type_registry():
 
-            obj = RuntimeConfiguration().get_decoder_class(scale_type)
+            obj = self.substrate.runtime_config.get_decoder_class(scale_type)
 
             self.assertIsNotNone(obj, '{} not supported'.format(scale_type))
+
+
+class MultipleTypeRegistryTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.polkadot_substrate = SubstrateInterface(
+            url=settings.POLKADOT_NODE_URL,
+            ss58_format=0,
+            type_registry_preset='polkadot',
+            type_registry={
+                'types': {
+                    'TestType': 'u8'
+                }
+            }
+        )
+
+        cls.kusama_substrate = SubstrateInterface(
+            url=settings.KUSAMA_NODE_URL,
+            ss58_format=2,
+            type_registry_preset='kusama',
+            type_registry={
+                'types': {
+                    'TestType': 'u16'
+                }
+            }
+        )
+
+    def test_correct_type_registry_persists(self):
+        self.assertEqual(self.kusama_substrate.encode_scale('TestType', 16), ScaleBytes('0x1000'))
+        self.assertEqual(self.polkadot_substrate.encode_scale('TestType', 16), ScaleBytes('0x10'))
 
 
 if __name__ == '__main__':

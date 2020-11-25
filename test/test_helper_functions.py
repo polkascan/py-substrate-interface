@@ -63,7 +63,7 @@ class TestHelperFunctions(unittest.TestCase):
         self.assertEqual(self.substrate.decode_scale('Compact<u32>', '0x08'), 2)
 
     def test_encode_scale(self):
-        self.assertEqual(self.substrate.encode_scale('Compact<u32>', 3), '0x0c')
+        self.assertEqual(self.substrate.encode_scale('Compact<u32>', 3), ScaleBytes('0x0c'))
 
     def test_get_type_definition(self):
         self.assertDictEqual(self.substrate.get_type_definition('Bytes'), {

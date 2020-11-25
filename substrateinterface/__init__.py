@@ -26,7 +26,7 @@ import requests
 from websocket import create_connection, WebSocketConnectionClosedException
 
 from scalecodec import ScaleBytes, GenericCall
-from scalecodec.base import ScaleDecoder, RuntimeConfiguration
+from scalecodec.base import ScaleDecoder, RuntimeConfigurationObject
 from scalecodec.block import ExtrinsicsDecoder, EventsDecoder, LogDigest
 from scalecodec.metadata import MetadataDecoder
 from scalecodec.type_registry import load_type_registry_preset
@@ -430,6 +430,7 @@ class SubstrateInterface:
 
         self.metadata_cache = {}
         self.type_registry_cache = {}
+        self.runtime_config = RuntimeConfigurationObject()
 
         self.debug = False
 
@@ -444,14 +445,14 @@ class SubstrateInterface:
         # Set type registry
         if type_registry_preset:
             # Load type registries in runtime configuration
-            RuntimeConfiguration().update_type_registry(load_type_registry_preset("default"))
+            self.runtime_config.update_type_registry(load_type_registry_preset("default"))
 
             if type_registry != "default":
-                RuntimeConfiguration().update_type_registry(load_type_registry_preset(type_registry_preset))
+                self.runtime_config.update_type_registry(load_type_registry_preset(type_registry_preset))
 
         if type_registry:
             # Load type registries in runtime configuration
-            RuntimeConfiguration().update_type_registry(type_registry)
+            self.runtime_config.update_type_registry(type_registry)
 
     def connect_websocket(self):
         if self.url and (self.url[0:6] == 'wss://' or self.url[0:5] == 'ws://'):
@@ -771,9 +772,10 @@ class SubstrateInterface:
 
             if return_scale_type and response.get('result'):
                 obj = ScaleDecoder.get_decoder_class(
-                    return_scale_type,
-                    ScaleBytes(response.get('result')),
-                    metadata=metadata
+                    type_string=return_scale_type,
+                    data=ScaleBytes(response.get('result')),
+                    metadata=metadata,
+                    runtime_config=self.runtime_config
                 )
                 return obj.decode()
             else:
@@ -1001,7 +1003,7 @@ class SubstrateInterface:
         self.transaction_version = runtime_info.get("transactionVersion")
 
         # Set active runtime version
-        RuntimeConfiguration().set_active_spec_version_id(self.runtime_version)
+        self.runtime_config.set_active_spec_version_id(self.runtime_version)
 
         if self.runtime_version not in self.metadata_cache and self.cache_region:
             # Try to retrieve metadata from Dogpile cache
@@ -1122,7 +1124,9 @@ class SubstrateInterface:
 
                                 # Encode parameter
                                 params[0] = self.convert_storage_parameter(map_type['key'], params[0])
-                                param_obj = ScaleDecoder.get_decoder_class(map_type['key'])
+                                param_obj = ScaleDecoder.get_decoder_class(
+                                    type_string=map_type['key'], runtime_config=self.runtime_config
+                                )
                                 params[0] = param_obj.encode(params[0])
 
                             elif 'DoubleMapType' in storage_item.type:
@@ -1137,12 +1141,16 @@ class SubstrateInterface:
 
                                 # Encode parameter 1
                                 params[0] = self.convert_storage_parameter(map_type['key1'], params[0])
-                                param_obj = ScaleDecoder.get_decoder_class(map_type['key1'])
+                                param_obj = ScaleDecoder.get_decoder_class(
+                                    type_string=map_type['key1'], runtime_config=self.runtime_config
+                                )
                                 params[0] = param_obj.encode(params[0])
 
                                 # Encode parameter 2
                                 params[1] = self.convert_storage_parameter(map_type['key2'], params[1])
-                                param_obj = ScaleDecoder.get_decoder_class(map_type['key2'])
+                                param_obj = ScaleDecoder.get_decoder_class(
+                                    type_string=map_type['key2'], runtime_config=self.runtime_config
+                                )
                                 params[1] = param_obj.encode(params[1])
 
                             else:
@@ -1163,9 +1171,10 @@ class SubstrateInterface:
 
                                 if return_scale_type and response.get('result'):
                                     obj = ScaleDecoder.get_decoder_class(
-                                        return_scale_type,
-                                        ScaleBytes(response.get('result')),
-                                        metadata=self.metadata_decoder
+                                        type_string=return_scale_type,
+                                        data=ScaleBytes(response.get('result')),
+                                        metadata=self.metadata_decoder,
+                                        runtime_config=self.runtime_config
                                     )
                                     response['result'] = obj.decode()
 
@@ -1231,7 +1240,9 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        call = ScaleDecoder.get_decoder_class('Call', metadata=self.metadata_decoder)
+        call = ScaleDecoder.get_decoder_class(
+            type_string='Call', metadata=self.metadata_decoder, runtime_config=self.runtime_config
+        )
 
         call.encode({
             'call_module': call_module,
@@ -1268,16 +1279,16 @@ class SubstrateInterface:
         if era == '00':
             block_hash = genesis_hash
         else:
-            era_obj = ScaleDecoder.get_decoder_class('Era')
+            era_obj = ScaleDecoder.get_decoder_class('Era', runtime_config=self.runtime_config)
             era_obj.encode(era)
             block_hash = self.get_block_hash(block_id=era_obj.birth(era.get('current')))
 
         # Create signature payload
-        signature_payload = ScaleDecoder.get_decoder_class('ExtrinsicPayloadValue')
+        signature_payload = ScaleDecoder.get_decoder_class('ExtrinsicPayloadValue', runtime_config=self.runtime_config)
 
         if include_call_length:
 
-            length_obj = RuntimeConfiguration().get_decoder_class('Bytes')
+            length_obj = self.runtime_config.get_decoder_class('Bytes')
             call_data = str(length_obj().encode(str(call.data)))
 
         else:
@@ -1359,7 +1370,9 @@ class SubstrateInterface:
             signature = keypair.sign(signature_payload)
 
         # Create extrinsic
-        extrinsic = ScaleDecoder.get_decoder_class('Extrinsic', metadata=self.metadata_decoder)
+        extrinsic = ScaleDecoder.get_decoder_class(
+            type_string='Extrinsic', metadata=self.metadata_decoder, runtime_config=self.runtime_config
+        )
 
         extrinsic.encode({
             'account_id': keypair.public_key,
@@ -1390,7 +1403,9 @@ class SubstrateInterface:
         ExtrinsicsDecoder
         """
         # Create extrinsic
-        extrinsic = ScaleDecoder.get_decoder_class('Extrinsic', metadata=self.metadata_decoder)
+        extrinsic = ScaleDecoder.get_decoder_class(
+            type_string='Extrinsic', metadata=self.metadata_decoder, runtime_config=self.runtime_config
+        )
 
         extrinsic.encode({
             'call_function': call.value['call_function'],
@@ -1406,8 +1421,8 @@ class SubstrateInterface:
         Parameters
         ----------
         extrinsic: ExtrinsicsDecoder The extinsic to be send to the network
-        wait_for_inclusion: wait until extrinsic is included in a block (only works on websocket connections)
-        wait_for_finalization: wait until extrinsic is finalized (only works on websocket connections)
+        wait_for_inclusion: wait until extrinsic is included in a block (only works for websocket connections)
+        wait_for_finalization: wait until extrinsic is finalized (only works for websocket connections)
 
         Returns
         -------
@@ -1541,13 +1556,15 @@ class SubstrateInterface:
             return self.type_registry_cache[self.runtime_version][type_string.lower()]['decoder_class']
 
         # Try to get decoder class
-        decoder_class = RuntimeConfiguration().get_decoder_class(type_string)
+        decoder_class = self.runtime_config.get_decoder_class(type_string)
 
         if not decoder_class:
 
             # Not in type registry, try get hard coded decoder classes
             try:
-                decoder_class_obj = ScaleDecoder.get_decoder_class(type_string)
+                decoder_class_obj = ScaleDecoder.get_decoder_class(
+                    type_string=type_string, runtime_config=self.runtime_config
+                )
                 decoder_class = decoder_class_obj.__class__
             except NotImplementedError as e:
                 decoder_class = None
@@ -2026,7 +2043,15 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        obj = ScaleDecoder.get_decoder_class(type_string, ScaleBytes(scale_bytes), metadata=self.metadata_decoder)
+        if type(scale_bytes) == str:
+            scale_bytes = ScaleBytes(scale_bytes)
+
+        obj = ScaleDecoder.get_decoder_class(
+            type_string=type_string,
+            data=scale_bytes,
+            metadata=self.metadata_decoder,
+            runtime_config=self.runtime_config
+        )
         return obj.decode()
 
     def encode_scale(self, type_string, value, block_hash=None):
@@ -2045,8 +2070,10 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        obj = ScaleDecoder.get_decoder_class(type_string)
-        return str(obj.encode(value))
+        obj = ScaleDecoder.get_decoder_class(
+            type_string=type_string, metadata=self.metadata_decoder, runtime_config=self.runtime_config
+        )
+        return obj.encode(value)
 
     # Serializing helper function
 
@@ -2106,8 +2133,11 @@ class SubstrateInterface:
         if storage_item.fallback != '0x00':
             # Decode fallback
             try:
-                fallback_obj = ScaleDecoder.get_decoder_class(storage_dict["type_value"],
-                                                              ScaleBytes(storage_item.fallback))
+                fallback_obj = ScaleDecoder.get_decoder_class(
+                    type_string=storage_dict["type_value"],
+                    data=ScaleBytes(storage_item.fallback),
+                    runtime_config=self.runtime_config
+                )
                 storage_dict["storage_fallback"] = fallback_obj.decode()
             except Exception:
                 storage_dict["storage_fallback"] = '[decoding error]'
@@ -2129,8 +2159,9 @@ class SubstrateInterface:
 
         """
         try:
-            value_obj = ScaleDecoder.get_decoder_class(constant.type,
-                                                       ScaleBytes(constant.constant_value))
+            value_obj = ScaleDecoder.get_decoder_class(
+                type_string=constant.type, data=ScaleBytes(constant.constant_value), runtime_config=self.runtime_config
+            )
             constant_decoded_value = value_obj.decode()
         except Exception:
             constant_decoded_value = '[decoding error]'
