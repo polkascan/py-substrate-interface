@@ -654,13 +654,14 @@ class SubstrateInterface:
             for idx, extrinsic_data in enumerate(response['block']['extrinsics']):
                 extrinsic_decoder = ExtrinsicsDecoder(
                     data=ScaleBytes(extrinsic_data),
-                    metadata=metadata_decoder
+                    metadata=metadata_decoder,
+                    runtime_config=self.runtime_config
                 )
                 extrinsic_decoder.decode()
                 response['block']['extrinsics'][idx] = extrinsic_decoder.value
 
             for idx, log_data in enumerate(response['block']['header']["digest"]["logs"]):
-                log_digest = LogDigest(ScaleBytes(log_data))
+                log_digest = LogDigest(ScaleBytes(log_data), runtime_config=self.runtime_config)
                 log_digest.decode()
                 response['block']['header']["digest"]["logs"][idx] = log_digest.value
 
@@ -830,7 +831,8 @@ class SubstrateInterface:
                 # Process events
                 events_decoder = EventsDecoder(
                     data=ScaleBytes(response.get('result')),
-                    metadata=metadata_decoder
+                    metadata=metadata_decoder,
+                    runtime_config=self.runtime_config
                 )
                 events_decoder.decode()
 
@@ -2013,13 +2015,14 @@ class SubstrateInterface:
         for idx, extrinsic_data in enumerate(response['block']['extrinsics']):
             extrinsic_decoder = ExtrinsicsDecoder(
                 data=ScaleBytes(extrinsic_data),
-                metadata=self.metadata_decoder
+                metadata=self.metadata_decoder,
+                runtime_config=self.runtime_config
             )
             extrinsic_decoder.decode()
             response['block']['extrinsics'][idx] = extrinsic_decoder.value
 
         for idx, log_data in enumerate(response['block']['header']["digest"]["logs"]):
-            log_digest = LogDigest(ScaleBytes(log_data))
+            log_digest = LogDigest(ScaleBytes(log_data), runtime_config=self.runtime_config)
             log_digest.decode()
             response['block']['header']["digest"]["logs"][idx] = log_digest.value
 
