@@ -370,7 +370,7 @@ class Keypair:
 class SubstrateInterface:
 
     def __init__(self, url=None, websocket=None, ss58_format=None, type_registry=None, type_registry_preset=None,
-                 cache_region=None, address_type=None):
+                 cache_region=None, address_type=None, runtime_config=None):
         """
         A specialized class in interfacing with a Substrate node.
 
@@ -430,7 +430,11 @@ class SubstrateInterface:
 
         self.metadata_cache = {}
         self.type_registry_cache = {}
-        self.runtime_config = RuntimeConfigurationObject()
+
+        if not runtime_config:
+            runtime_config = RuntimeConfigurationObject()
+
+        self.runtime_config = runtime_config
 
         self.debug = False
 
