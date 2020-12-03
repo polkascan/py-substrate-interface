@@ -263,7 +263,7 @@ class Keypair:
                         b''
                     )
 
-            derived_keypair = Keypair(public_key=child_pubkey, private_key=child_privkey)
+            derived_keypair = Keypair(public_key=child_pubkey, private_key=child_privkey, ss58_format=ss58_format)
 
         return derived_keypair
 
