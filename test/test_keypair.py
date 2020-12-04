@@ -179,6 +179,15 @@ class KeyPairTestCase(unittest.TestCase):
 
         self.assertEqual(derivation_address, derived_keypair.ss58_address)
 
+    def test_hdkd_create_uri_correct_ss58format(self):
+        derivation_address = 'HNZata7iMYWmk5RvZRTiAsSDhV8366zq2YGb3tLH5Upf74F'
+        derivation_path = '//Alice'
+
+        derived_keypair = Keypair.create_from_uri(derivation_path, ss58_format=2)
+
+        self.assertEqual(derived_keypair.ss58_format, 2)
+        self.assertEqual(derived_keypair.ss58_address, derivation_address)
+
     def test_hdkd_nested_hard_soft_path(self):
         derivation_address = '5CJGwWiKXSE16WJaxBdPZhWqUYkotgenLUALv7ZvqQ4TXeqf'
         derivation_path = '//Bob/test'
