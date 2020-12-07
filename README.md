@@ -138,74 +138,35 @@ substrate.update_type_registry_presets()
 
 ## Examples
 
-
-### Get extrinsics for a certain block
-
-```python
-# Set block_hash to None for chaintip
-block_hash = "0x588930468212316d8a75ede0bec0bc949451c164e2cea07ccfc425f497b077b7"
-
-# Retrieve extrinsics in block
-result = substrate.get_runtime_block(block_hash=block_hash)
-
-for extrinsic in result['block']['extrinsics']:
-
-    if 'account_id' in extrinsic:
-        signed_by_address = ss58_encode(address=extrinsic['account_id'], address_type=2)
-    else:
-        signed_by_address = None
-
-    print('\nModule: {}\nCall: {}\nSigned by: {}'.format(
-        extrinsic['call_module'],
-        extrinsic['call_function'],
-        signed_by_address
-    ))
-
-    # Loop through params
-    for param in extrinsic['params']:
-
-        if param['type'] == 'Address':
-            param['value'] = ss58_encode(address=param['value'], address_type=2)
-
-        if param['type'] == 'Compact<Balance>':
-            param['value'] = '{} DOT'.format(param['value'] / 10**12)
-
-        print("Param '{}': {}".format(param['name'], param['value']))
-```
-
-
-### Make a storage call
+### Read storage
 The modules and storage functions are provided in the metadata (see `substrate.get_metadata_storage_functions()`),
 parameters will be automatically converted to SCALE-bytes (also including decoding of SS58 addresses).
 
+Example: 
+
 ```python
-balance_info = substrate.get_runtime_state(
+result = substrate.query(
     module='System',
     storage_function='Account',
-    params=['5E9oDs9PjpsBbxXxRE9uMaZZhnBAV38n2ouLB28oecBDdeQo']
-).get('result')
+    params=['F4xQKRUagnSGjFqafyhajLs94e7Vvzvr8ebwYJceKpr8R7T']
+)
 
-if balance_info:
-    print("\n\nCurrent free balance: {} KSM".format(
-        balance_info.get('data').get('free', 0) / 10**12
-    ))
+print(result.value['nonce']) #  7695
+print(result.value['data']['free']) # 635278638077956496
 ```
 
-Or get a historic balance at a certain block hash:
+Or get the account info at a specific block hash:
 
 ```python
-balance_info = substrate.get_runtime_state(
+result = substrate.query(
     module='System',
     storage_function='Account',
-    params=['5E9oDs9PjpsBbxXxRE9uMaZZhnBAV38n2ouLB28oecBDdeQo'],
-    block_hash=block_hash
-).get('result')
+    params=['F4xQKRUagnSGjFqafyhajLs94e7Vvzvr8ebwYJceKpr8R7T'],
+    block_hash='0x176e064454388fd78941a0bace38db424e71db9d5d5ed0272ead7003a02234fa'
+)
 
-if balance_info:
-    print("\n\nFree balance @ {}: {} KSM".format(
-        block_hash,
-        balance_info.get('data').get('free', 0) / 10**12
-    ))
+print(result.value['nonce']) #  7673
+print(result.value['data']['free']) # 637747267365404068
 ```
 
 Or get all the key pairs of a map:
@@ -247,7 +208,7 @@ extrinsic = substrate.create_signed_extrinsic(call=call, keypair=keypair)
 
 try:
     result = substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
-    print("Extrinsic '{}' sent and included in block '{}'".format(result['extrinsic_hash'], result['block_hash']))
+    print("Extrinsic '{}' sent and included in block '{}'".format(result.extrinsic_hash, result.block_hash))
 
 except SubstrateRequestException as e:
     print("Failed to send: {}".format(e))
@@ -257,10 +218,44 @@ The `wait_for_inclusion` keyword argument used in the example above will block g
 confirmation from the node that the extrinsic is succesfully included in a block. The `wait_for_finalization` keyword
 will wait until extrinsic is finalized. Note this feature is only available for websocket connections. 
 
+### Examining the ExtrinsicResult object
+
+The `substrate.submit_extrinsic` example above returns an `ExtrinsicResult` object, which contains information about the on-chain 
+execution of the extrinsic. Because the `block_hash` is necessary to retrieve the triggered events from storage, most
+information is only available when `wait_for_inclusion=True` or `wait_for_finalization=True` is used when submitting
+an extrinsic. 
+
+
+Examples:
+```python
+result = substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
+print(result.is_success) # False
+print(result.weight) # 216625000
+print(result.total_fee_amount) # 2749998966
+print(result.error_message['name']) # 'LiquidityRestrictions'
+```
+
+`ExtrinsicResult` objects can also be created with all existing extrinsics on-chain:
+
+```python
+
+result = ExtrinsicResult(
+    substrate=substrate,
+    extrinsic_hash="0x56fea3010910bd8c0c97253ffe308dc13d1613b7e952e7e2028257d2b83c027a",
+    block_hash="0x04fb003f8bc999eeb284aa8e74f2c6f63cf5bd5c00d0d0da4cd4d253a643e4c9"
+)
+
+print(result.is_success) # False
+print(result.weight) # 359262000
+print(result.total_fee_amount) # 2483332406
+print(result.error_message['docs']) # [' Sender is not a sub-account.']
+```
+
+
 ### Create mortal extrinsics
 
-By default _immortal_ extrinsics are created, which means they have an indefinite lifetime for being included in a 
-block. However it is recommended to use specify an expiry window, so you know after a certain amount of time if the 
+By default, _immortal_ extrinsics are created, which means they have an indefinite lifetime for being included in a 
+block. However, it is recommended to use specify an expiry window, so you know after a certain amount of time if the 
 extrinsic is not included in a block, it will be invalidated.
 
 ```python 
@@ -280,7 +275,7 @@ if keypair.verify("Test123", signature):
     print('Verified')
 ```
 
-By default a keypair is using SR25519 cryptography, alternatively ED25519 can be explictly specified:
+By default, a keypair is using SR25519 cryptography, alternatively ED25519 can be explictly specified:
 
 ```python
 keypair = Keypair.create_from_mnemonic(mnemonic, crypto_type=KeypairType.ED25519)
@@ -371,23 +366,38 @@ result = substrate.submit_extrinsic(
 print(result['extrinsic_hash'])
 ```
 
-### Metadata and type versioning
-
-Py-substrate-interface makes it also possible to easily interprete changed types and historic runtimes. As an example
-we create an (not very useful) historic call of a module that has been removed later on: retrieval of historic metadata and
-apply the correct version of types in the type registry is all done automatically. Because parsing of metadata and
-type registry is quite heavy, the result will be cached per runtime id. In the future there could be support for
-caching backends like Redis to make this cache more persistent.
-
-Create an unsigned extrinsic of a module that was removed by providing block hash:
+### Get extrinsics for a certain block
 
 ```python
-payload = substrate.compose_call(
-    call_module='Nicks',
-    call_function='clear_name',
-    call_params={},
-    block_hash="0x918107632d7994d50f3661db3af353d2aa378f696e47a393bab573f63f7d6c3a"
-)
+# Set block_hash to None for chaintip
+block_hash = "0x588930468212316d8a75ede0bec0bc949451c164e2cea07ccfc425f497b077b7"
+
+# Retrieve extrinsics in block
+result = substrate.get_runtime_block(block_hash=block_hash)
+
+for extrinsic in result['block']['extrinsics']:
+
+    if 'account_id' in extrinsic:
+        signed_by_address = ss58_encode(address=extrinsic['account_id'], address_type=2)
+    else:
+        signed_by_address = None
+
+    print('\nModule: {}\nCall: {}\nSigned by: {}'.format(
+        extrinsic['call_module'],
+        extrinsic['call_function'],
+        signed_by_address
+    ))
+
+    # Loop through params
+    for param in extrinsic['params']:
+
+        if param['type'] == 'Address':
+            param['value'] = ss58_encode(address=param['value'], address_type=2)
+
+        if param['type'] == 'Compact<Balance>':
+            param['value'] = '{} DOT'.format(param['value'] / 10**12)
+
+        print("Param '{}': {}".format(param['name'], param['value']))
 ```
 
 ## License

@@ -23,10 +23,11 @@ import logging
 import re
 
 import requests
+import typing
 from websocket import create_connection, WebSocketConnectionClosedException
 
 from scalecodec import ScaleBytes, GenericCall
-from scalecodec.base import ScaleDecoder, RuntimeConfigurationObject
+from scalecodec.base import ScaleDecoder, RuntimeConfigurationObject, ScaleType
 from scalecodec.block import ExtrinsicsDecoder, EventsDecoder, LogDigest
 from scalecodec.metadata import MetadataDecoder
 from scalecodec.type_registry import load_type_registry_preset
@@ -1086,7 +1087,7 @@ class SubstrateInterface:
 
         return list(pairs)
 
-    def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
+    def query(self, module, storage_function, params=None, block_hash=None) -> typing.Optional[ScaleType]:
         """
         Retrieves the storage entry for given module, function and optional parameters at given block hash
 
@@ -1095,11 +1096,11 @@ class SubstrateInterface:
         module: The module name in the metadata, e.g. Balances or Account
         storage_function: The storage function name, e.g. FreeBalance or AccountNonce
         params: list of params, in the decoded format of the applicable ScaleTypes
-        block_hash: Optional block hash, when left to None the chain tip will be used
+        block_hash: Optional block hash, when omitted the chain tip will be used
 
         Returns
         -------
-
+        ScaleType
         """
 
         self.init_runtime(block_hash=block_hash)
@@ -1182,13 +1183,42 @@ class SubstrateInterface:
                                         metadata=self.metadata_decoder,
                                         runtime_config=self.runtime_config
                                     )
-                                    response['result'] = obj.decode()
+                                    obj.decode()
+                                    return obj
 
-                            return response
+                            return None
 
         raise StorageFunctionNotFound('Storage function "{}.{}" not found'.format(module, storage_function))
 
+    def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
+        warnings.warn("'get_runtime_state' will be replaced by 'query'", DeprecationWarning)
+
+        obj = self.query(module, storage_function, params=params, block_hash=block_hash)
+        return {'result': obj.value if obj else None}
+
+    def get_events(self, block_hash=None) -> list:
+        """
+        Convenience method to get events for a certain block (storage call for module 'System' and function 'Events')
+
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+        list
+        """
+        events = []
+        storage_obj = self.query(module="System", storage_function="Events", block_hash=block_hash)
+        if storage_obj:
+            events += storage_obj.elements
+        return events
+
+
     def get_runtime_events(self, block_hash=None):
+
+        warnings.warn("'get_runtime_events' will be replaced by 'get_events'", DeprecationWarning)
+
         """
         Convenience method to get events for a certain block (storage call for module 'System' and function 'Events')
 
@@ -1286,6 +1316,10 @@ class SubstrateInterface:
             block_hash = genesis_hash
         else:
             era_obj = ScaleDecoder.get_decoder_class('Era', runtime_config=self.runtime_config)
+
+            if isinstance(era, dict) and 'current' not in era and 'phase' not in era:
+                raise ValueError('The era dict must contain either "current" or "phase" element to encode a valid era')
+
             era_obj.encode(era)
             block_hash = self.get_block_hash(block_id=era_obj.birth(era.get('current')))
 
@@ -1462,6 +1496,14 @@ class SubstrateInterface:
                 [str(extrinsic.data)],
                 result_handler=result_handler
             )
+
+            result = ExtrinsicResult(
+                substrate=self,
+                extrinsic_hash=response['extrinsic_hash'],
+                block_hash=response['block_hash'],
+                finalized=response['finalized']
+            )
+
         else:
 
             response = self.rpc_request("author_submitExtrinsic", [str(extrinsic.data)])
@@ -1469,13 +1511,12 @@ class SubstrateInterface:
             if 'result' not in response:
                 raise SubstrateRequestException(response.get('error'))
 
-            response = {
-                'extrinsic_hash': response['result'],
-                'block_hash': None,
-                'finalized': None
-            }
+            result = ExtrinsicResult(
+                substrate=self,
+                extrinsic_hash=response['result']
+            )
 
-        return response
+        return result
 
     def get_payment_info(self, call, keypair):
         """
@@ -2273,3 +2314,190 @@ class SubstrateInterface:
             return True
         except Exception:
             return False
+
+
+class ExtrinsicResult:
+
+    def __init__(self, substrate: SubstrateInterface, extrinsic_hash: str, block_hash: str = None, finalized=None):
+        """
+        Object containing information of submitted extrinsic. Block hash where extrinsic is included is required
+        when retrieving triggered events or determine if extrinsic was succesfull
+
+        Parameters
+        ----------
+        substrate
+        extrinsic_hash
+        block_hash
+        finalized
+        """
+        self.substrate = substrate
+        self.extrinsic_hash = extrinsic_hash
+        self.block_hash = block_hash
+        self.finalized = finalized
+
+        self.__extrinsic_idx = None
+        self.__extrinsic_data = None
+
+        self.__triggered_events = None
+        self.__is_succes = None
+        self.__error_message = None
+        self.__weight = None
+        self.__total_fee_amount = None
+
+    def retrieve_extrinsic(self):
+        if not self.block_hash:
+            raise ValueError("ExtrinsicResult can't retrieve events because it's unknown which block_hash it is "
+                             "included, manually set block_hash or use `wait_for_inclusion` when sending extrinsic")
+        # Determine extrinsic idx
+        block = self.substrate.get_runtime_block(block_hash=self.block_hash)
+
+        self.__extrinsic_idx = self.__get_extrinsic_index(
+            block_extrinsics=block['block']['extrinsics'],
+            extrinsic_hash=self.extrinsic_hash
+        )
+        self.__extrinsic_data = block['block']['extrinsics'][self.__extrinsic_idx]
+
+    @property
+    def extrinsic_idx(self):
+        if self.__extrinsic_idx is None:
+            self.retrieve_extrinsic()
+        return self.__extrinsic_idx
+
+    @property
+    def extrinsic_data(self):
+        if self.__extrinsic_data is None:
+            self.retrieve_extrinsic()
+        return self.__extrinsic_data
+
+    @property
+    def triggered_events(self) -> list:
+        """
+        Gets triggered events for submitted extrinsic. block_hash where extrinsic is included is required, manually
+        set block_hash or use `wait_for_inclusion` when submitting extrinsic
+
+        Returns
+        -------
+        list
+        """
+        if self.__triggered_events is None:
+            if not self.block_hash:
+                raise ValueError("ExtrinsicResult can't retrieve events because it's unknown which block_hash it is "
+                                 "included, manually set block_hash or use `wait_for_inclusion` when sending extrinsic")
+
+            if self.extrinsic_idx is None:
+                self.retrieve_extrinsic()
+
+            self.__triggered_events = []
+
+            for event in self.substrate.get_events(block_hash=self.block_hash):
+                if event.extrinsic_idx == self.extrinsic_idx:
+                    self.__triggered_events.append(event)
+
+        return self.__triggered_events
+
+    def process_events(self):
+        if self.triggered_events:
+
+            self.__total_fee_amount = 0
+
+            for event in self.triggered_events:
+                # Check events
+                if event.event_module.name == 'System' and event.event.name == 'ExtrinsicSuccess':
+                    self.__is_succes = True
+                    self.__error_message = None
+
+                    for param in event.params:
+                        if param['type'] == 'DispatchInfo':
+                            self.__weight = param['value']['weight']
+
+                if event.event_module.name == 'System' and event.event.name == 'ExtrinsicFailed':
+                    self.__is_succes = False
+
+                    for param in event.params:
+                        if param['type'] == 'DispatchError':
+                            if 'Module' in param['value']:
+                                module_error = self.substrate.metadata_decoder.get_module_error(
+                                    module_index=param['value']['Module']['index'],
+                                    error_index=param['value']['Module']['error']
+                                )
+                                self.__error_message = {
+                                    'type': 'Module',
+                                    'name': module_error.name,
+                                    'docs': module_error.docs
+                                }
+                            elif 'BadOrigin' in param['value']:
+                                self.__error_message = {
+                                    'type': 'System',
+                                    'name': 'BadOrigin',
+                                    'docs': 'Bad origin'
+                                }
+                            elif 'CannotLookup' in param['value']:
+                                self.__error_message = {
+                                    'type': 'System',
+                                    'name': 'CannotLookup',
+                                    'docs': 'Cannot lookup'
+                                }
+                            elif 'Other' in param['value']:
+                                self.__error_message = {
+                                    'type': 'System',
+                                    'name': 'Other',
+                                    'docs': 'Unspecified error occurred'
+                                }
+
+                        if param['type'] == 'DispatchInfo':
+                            self.__weight = param['value']['weight']
+
+                if event.event_module.name == 'Treasury' and event.event.name == 'Deposit':
+                    self.__total_fee_amount += event.params[0]['value']
+
+                if event.event_module.name == 'Balances' and event.event.name == 'Deposit':
+                    self.__total_fee_amount += event.params[1]['value']
+
+    @property
+    def is_succes(self) -> bool:
+        if self.__is_succes is None:
+            self.process_events()
+
+        return self.__is_succes
+
+    @property
+    def error_message(self):
+        if self.__error_message is None:
+            if self.is_succes:
+                return None
+            self.process_events()
+        return self.__error_message
+
+    @property
+    def weight(self) -> int:
+        if self.__weight is None:
+            self.process_events()
+        return self.__weight
+
+    @property
+    def total_fee_amount(self) -> int:
+        if self.__total_fee_amount is None:
+            self.process_events()
+        return self.__total_fee_amount
+
+    # Helper functions
+    @staticmethod
+    def __get_extrinsic_index(block_extrinsics: list, extrinsic_hash: str) -> int:
+        """
+        Returns the index of a provided extrinsic
+        """
+        for idx, extrinsics in enumerate(block_extrinsics):
+            if extrinsics.get("extrinsic_hash") == extrinsic_hash.replace('0x', ''):
+                return idx
+        return -1
+
+    # Backwards compatibility methods
+    def __getitem__(self, item):
+        return getattr(self, item)
+
+    def __iter__(self):
+        for item in self.__dict__.items():
+            yield item
+
+    def get(self, name):
+        return self[name]

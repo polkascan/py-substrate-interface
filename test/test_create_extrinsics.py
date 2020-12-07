@@ -17,7 +17,7 @@
 import unittest
 
 from scalecodec.type_registry import load_type_registry_preset
-from substrateinterface import SubstrateInterface, Keypair, SubstrateRequestException
+from substrateinterface import SubstrateInterface, Keypair, SubstrateRequestException, ExtrinsicResult
 from test import settings
 
 
@@ -175,6 +175,108 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
         signature_payload = self.kusama_substrate.generate_signature_payload(call=call)
 
         self.assertEqual(signature_payload.length, 32)
+
+    def test_check_extrinsic_result(self):
+        result = ExtrinsicResult(
+            substrate=self.kusama_substrate,
+            extrinsic_hash="0x5bcb59fdfc2ba852dabf31447b84764df85c8f64073757ea800f25b48e63ebd2",
+            block_hash="0x8dae706d0f4882a7db484e708e27d9363a3adfa53baaac8b58c30f7c519a2520"
+        )
+
+        self.assertTrue(result.is_succes)
+
+    def test_check_extrinsic_failed_result(self):
+        result = ExtrinsicResult(
+            substrate=self.kusama_substrate,
+            extrinsic_hash="0xa5f2b9f4b8ea9f357780dd49010c99708f580a02624e4500af24b20b92773100",
+            block_hash="0x4b459839cc0b8c807061b5bfc68ca78b2039296174ed0a7754a70b84b287181e"
+        )
+
+        self.assertFalse(result.is_succes)
+
+    def test_check_extrinsic_failed_error_message(self):
+        result = ExtrinsicResult(
+            substrate=self.kusama_substrate,
+            extrinsic_hash="0xa5f2b9f4b8ea9f357780dd49010c99708f580a02624e4500af24b20b92773100",
+            block_hash="0x4b459839cc0b8c807061b5bfc68ca78b2039296174ed0a7754a70b84b287181e"
+        )
+
+        self.assertEqual(result.error_message['name'], 'LiquidityRestrictions')
+
+    def test_check_extrinsic_failed_error_message2(self):
+        result = ExtrinsicResult(
+            substrate=self.kusama_substrate,
+            extrinsic_hash="0x6147478693eb1ccbe1967e9327c5db093daf5f87bbf6822b4bd8d3dc3bf4e356",
+            block_hash="0x402f22856baf7aaca9510c317b1c392e4d9e6133aabcc0c26f6c5b40dcde70a7"
+        )
+
+        self.assertEqual(result.error_message['name'], 'MustBeVoter')
+
+    def test_check_extrinsic_total_fee_amount(self):
+        result = ExtrinsicResult(
+            substrate=self.kusama_substrate,
+            extrinsic_hash="0xa5f2b9f4b8ea9f357780dd49010c99708f580a02624e4500af24b20b92773100",
+            block_hash="0x4b459839cc0b8c807061b5bfc68ca78b2039296174ed0a7754a70b84b287181e"
+        )
+
+        self.assertEqual(2583332366, result.total_fee_amount)
+
+    def test_check_extrinsic_total_fee_amount2(self):
+        result = ExtrinsicResult(
+            substrate=self.kusama_substrate,
+            extrinsic_hash="0x7347df791b8e47a5eba29c2123783cac638acbe63b4a99024eade4e7805d7ab7",
+            block_hash="0xffbf45b4dfa1be1929b519d5bf6558b2c972ea2e0fe24b623111b238cf67e095"
+        )
+
+        self.assertEqual(2749998966, result.total_fee_amount)
+
+    def test_check_failed_extrinsic_weight(self):
+        result = ExtrinsicResult(
+            substrate=self.kusama_substrate,
+            extrinsic_hash="0xa5f2b9f4b8ea9f357780dd49010c99708f580a02624e4500af24b20b92773100",
+            block_hash="0x4b459839cc0b8c807061b5bfc68ca78b2039296174ed0a7754a70b84b287181e"
+        )
+
+        self.assertEqual(216625000, result.weight)
+
+    def test_check_success_extrinsic_weight(self):
+        result = ExtrinsicResult(
+            substrate=self.kusama_substrate,
+            extrinsic_hash="0x5bcb59fdfc2ba852dabf31447b84764df85c8f64073757ea800f25b48e63ebd2",
+            block_hash="0x8dae706d0f4882a7db484e708e27d9363a3adfa53baaac8b58c30f7c519a2520"
+        )
+
+        self.assertEqual(10000, result.weight)
+
+    def test_check_success_extrinsic_weight2(self):
+        result = ExtrinsicResult(
+            substrate=self.kusama_substrate,
+            extrinsic_hash="0x7347df791b8e47a5eba29c2123783cac638acbe63b4a99024eade4e7805d7ab7",
+            block_hash="0xffbf45b4dfa1be1929b519d5bf6558b2c972ea2e0fe24b623111b238cf67e095"
+        )
+
+        self.assertEqual(252000000, result.weight)
+
+    def test_extrinsic_result_set_readonly_attr(self):
+        result = ExtrinsicResult(
+            substrate=self.kusama_substrate,
+            extrinsic_hash="0xa5f2b9f4b8ea9f357780dd49010c99708f580a02624e4500af24b20b92773100"
+        )
+        with self.assertRaises(AttributeError):
+            result.is_succes = False
+
+        with self.assertRaises(AttributeError):
+            result.triggered_events = False
+
+    def test_extrinsic_result_no_blockhash_check_events(self):
+
+        result = ExtrinsicResult(
+            substrate=self.kusama_substrate,
+            extrinsic_hash="0xa5f2b9f4b8ea9f357780dd49010c99708f580a02624e4500af24b20b92773100"
+        )
+
+        with self.assertRaises(ValueError):
+            events = result.triggered_events
 
 
 if __name__ == '__main__':
