@@ -158,15 +158,15 @@ print(result.value['data']['free']) # 635278638077956496
 Or get the account info at a specific block hash:
 
 ```python
-result = substrate.query(
+account_info = substrate.query(
     module='System',
     storage_function='Account',
     params=['F4xQKRUagnSGjFqafyhajLs94e7Vvzvr8ebwYJceKpr8R7T'],
     block_hash='0x176e064454388fd78941a0bace38db424e71db9d5d5ed0272ead7003a02234fa'
 )
 
-print(result.value['nonce']) #  7673
-print(result.value['data']['free']) # 637747267365404068
+print(account_info.value['nonce']) #  7673
+print(account_info.value['data']['free']) # 637747267365404068
 ```
 
 Or get all the key pairs of a map:
@@ -207,8 +207,8 @@ call = substrate.compose_call(
 extrinsic = substrate.create_signed_extrinsic(call=call, keypair=keypair)
 
 try:
-    result = substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
-    print("Extrinsic '{}' sent and included in block '{}'".format(result.extrinsic_hash, result.block_hash))
+    receipt = substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
+    print("Extrinsic '{}' sent and included in block '{}'".format(receipt.extrinsic_hash, receipt.block_hash))
 
 except SubstrateRequestException as e:
     print("Failed to send: {}".format(e))
@@ -228,27 +228,27 @@ an extrinsic.
 
 Examples:
 ```python
-result = substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
-print(result.is_success) # False
-print(result.weight) # 216625000
-print(result.total_fee_amount) # 2749998966
-print(result.error_message['name']) # 'LiquidityRestrictions'
+receipt = substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
+print(receipt.is_success) # False
+print(receipt.weight) # 216625000
+print(receipt.total_fee_amount) # 2749998966
+print(receipt.error_message['name']) # 'LiquidityRestrictions'
 ```
 
 `ExtrinsicReceipt` objects can also be created with all existing extrinsics on-chain:
 
 ```python
 
-result = ExtrinsicReceipt(
+receipt = ExtrinsicReceipt(
     substrate=substrate,
     extrinsic_hash="0x56fea3010910bd8c0c97253ffe308dc13d1613b7e952e7e2028257d2b83c027a",
     block_hash="0x04fb003f8bc999eeb284aa8e74f2c6f63cf5bd5c00d0d0da4cd4d253a643e4c9"
 )
 
-print(result.is_success) # False
-print(result.weight) # 359262000
-print(result.total_fee_amount) # 2483332406
-print(result.error_message['docs']) # [' Sender is not a sub-account.']
+print(receipt.is_success) # False
+print(receipt.weight) # 359262000
+print(receipt.total_fee_amount) # 2483332406
+print(receipt.error_message['docs']) # [' Sender is not a sub-account.']
 ```
 
 

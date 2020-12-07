@@ -28,7 +28,7 @@ from websocket import create_connection, WebSocketConnectionClosedException
 
 from scalecodec import ScaleBytes, GenericCall
 from scalecodec.base import ScaleDecoder, RuntimeConfigurationObject, ScaleType
-from scalecodec.block import ExtrinsicsDecoder, EventsDecoder, LogDigest
+from scalecodec.block import ExtrinsicsDecoder, EventsDecoder, LogDigest, Extrinsic
 from scalecodec.metadata import MetadataDecoder
 from scalecodec.type_registry import load_type_registry_preset
 from scalecodec.updater import update_type_registries
@@ -1299,9 +1299,9 @@ class SubstrateInterface:
         -------
         int
         """
-        response = self.get_runtime_state('System', 'Account', [account_address])
-        if response.get('result'):
-            return response['result'].get('nonce', 0)
+        account_info = self.query('System', 'Account', [account_address])
+        if account_info:
+            return account_info.value.get('nonce', 0)
 
     def generate_signature_payload(self, call, era=None, nonce=0, tip=0, include_call_length=False):
 
@@ -2054,23 +2054,54 @@ class SubstrateInterface:
 
         response = self.rpc_request("chain_getBlock", [self.block_hash]).get('result')
 
-        response['block']['header']['number'] = int(response['block']['header']['number'], 16)
+        if response:
+            response['block']['header']['number'] = int(response['block']['header']['number'], 16)
 
-        for idx, extrinsic_data in enumerate(response['block']['extrinsics']):
-            extrinsic_decoder = ExtrinsicsDecoder(
+            for idx, extrinsic_data in enumerate(response['block']['extrinsics']):
+                extrinsic_decoder = Extrinsic(
+                    data=ScaleBytes(extrinsic_data),
+                    metadata=self.metadata_decoder,
+                    runtime_config=self.runtime_config
+                )
+                extrinsic_decoder.decode()
+                response['block']['extrinsics'][idx] = extrinsic_decoder.value
+
+            for idx, log_data in enumerate(response['block']['header']["digest"]["logs"]):
+                log_digest = LogDigest(ScaleBytes(log_data), runtime_config=self.runtime_config)
+                log_digest.decode()
+                response['block']['header']["digest"]["logs"][idx] = log_digest.value
+
+        return response
+
+    def get_block_extrinsics(self, block_hash: str = None, block_id: int = None) -> list:
+        """
+        Retrieves a list of `Extrinsic` objects for given block_hash or block_id
+
+        Parameters
+        ----------
+        block_hash
+        block_id
+
+        Returns
+        -------
+        list
+        """
+        self.init_runtime(block_hash=block_hash, block_id=block_id)
+
+        response = self.rpc_request("chain_getBlock", [self.block_hash]).get('result')
+
+        extrinsics = []
+
+        for extrinsic_data in response['block']['extrinsics']:
+            extrinsic = Extrinsic(
                 data=ScaleBytes(extrinsic_data),
                 metadata=self.metadata_decoder,
                 runtime_config=self.runtime_config
             )
-            extrinsic_decoder.decode()
-            response['block']['extrinsics'][idx] = extrinsic_decoder.value
+            extrinsic.decode()
+            extrinsics.append(extrinsic)
 
-        for idx, log_data in enumerate(response['block']['header']["digest"]["logs"]):
-            log_digest = LogDigest(ScaleBytes(log_data), runtime_config=self.runtime_config)
-            log_digest.decode()
-            response['block']['header']["digest"]["logs"][idx] = log_digest.value
-
-        return response
+        return extrinsics
 
     def decode_scale(self, type_string, scale_bytes, block_hash=None):
         """
@@ -2335,7 +2366,7 @@ class ExtrinsicReceipt:
         self.finalized = finalized
 
         self.__extrinsic_idx = None
-        self.__extrinsic_data = None
+        self.__extrinsic = None
 
         self.__triggered_events = None
         self.__is_succes = None
@@ -2348,13 +2379,15 @@ class ExtrinsicReceipt:
             raise ValueError("ExtrinsicReceipt can't retrieve events because it's unknown which block_hash it is "
                              "included, manually set block_hash or use `wait_for_inclusion` when sending extrinsic")
         # Determine extrinsic idx
-        block = self.substrate.get_runtime_block(block_hash=self.block_hash)
+        extrinsics = self.substrate.get_block_extrinsics(block_hash=self.block_hash)
 
-        self.__extrinsic_idx = self.__get_extrinsic_index(
-            block_extrinsics=block['block']['extrinsics'],
-            extrinsic_hash=self.extrinsic_hash
-        )
-        self.__extrinsic_data = block['block']['extrinsics'][self.__extrinsic_idx]
+        if len(extrinsics) > 0:
+            self.__extrinsic_idx = self.__get_extrinsic_index(
+                block_extrinsics=extrinsics,
+                extrinsic_hash=self.extrinsic_hash
+            )
+
+            self.__extrinsic = extrinsics[self.__extrinsic_idx]
 
     @property
     def extrinsic_idx(self):
@@ -2363,10 +2396,10 @@ class ExtrinsicReceipt:
         return self.__extrinsic_idx
 
     @property
-    def extrinsic_data(self):
-        if self.__extrinsic_data is None:
+    def extrinsic(self):
+        if self.__extrinsic is None:
             self.retrieve_extrinsic()
-        return self.__extrinsic_data
+        return self.__extrinsic
 
     @property
     def triggered_events(self) -> list:
@@ -2485,8 +2518,8 @@ class ExtrinsicReceipt:
         """
         Returns the index of a provided extrinsic
         """
-        for idx, extrinsics in enumerate(block_extrinsics):
-            if extrinsics.get("extrinsic_hash") == extrinsic_hash.replace('0x', ''):
+        for idx, extrinsic in enumerate(block_extrinsics):
+            if extrinsic.extrinsic_hash == extrinsic_hash.replace('0x', ''):
                 return idx
         return -1
 
