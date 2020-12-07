@@ -1214,7 +1214,6 @@ class SubstrateInterface:
             events += storage_obj.elements
         return events
 
-
     def get_runtime_events(self, block_hash=None):
 
         warnings.warn("'get_runtime_events' will be replaced by 'get_events'", DeprecationWarning)
@@ -1497,7 +1496,7 @@ class SubstrateInterface:
                 result_handler=result_handler
             )
 
-            result = ExtrinsicResult(
+            result = ExtrinsicReceipt(
                 substrate=self,
                 extrinsic_hash=response['extrinsic_hash'],
                 block_hash=response['block_hash'],
@@ -1511,7 +1510,7 @@ class SubstrateInterface:
             if 'result' not in response:
                 raise SubstrateRequestException(response.get('error'))
 
-            result = ExtrinsicResult(
+            result = ExtrinsicReceipt(
                 substrate=self,
                 extrinsic_hash=response['result']
             )
@@ -2316,7 +2315,7 @@ class SubstrateInterface:
             return False
 
 
-class ExtrinsicResult:
+class ExtrinsicReceipt:
 
     def __init__(self, substrate: SubstrateInterface, extrinsic_hash: str, block_hash: str = None, finalized=None):
         """
@@ -2346,7 +2345,7 @@ class ExtrinsicResult:
 
     def retrieve_extrinsic(self):
         if not self.block_hash:
-            raise ValueError("ExtrinsicResult can't retrieve events because it's unknown which block_hash it is "
+            raise ValueError("ExtrinsicReceipt can't retrieve events because it's unknown which block_hash it is "
                              "included, manually set block_hash or use `wait_for_inclusion` when sending extrinsic")
         # Determine extrinsic idx
         block = self.substrate.get_runtime_block(block_hash=self.block_hash)
@@ -2381,7 +2380,7 @@ class ExtrinsicResult:
         """
         if self.__triggered_events is None:
             if not self.block_hash:
-                raise ValueError("ExtrinsicResult can't retrieve events because it's unknown which block_hash it is "
+                raise ValueError("ExtrinsicReceipt can't retrieve events because it's unknown which block_hash it is "
                                  "included, manually set block_hash or use `wait_for_inclusion` when sending extrinsic")
 
             if self.extrinsic_idx is None:

@@ -218,9 +218,9 @@ The `wait_for_inclusion` keyword argument used in the example above will block g
 confirmation from the node that the extrinsic is succesfully included in a block. The `wait_for_finalization` keyword
 will wait until extrinsic is finalized. Note this feature is only available for websocket connections. 
 
-### Examining the ExtrinsicResult object
+### Examining the ExtrinsicReceipt object
 
-The `substrate.submit_extrinsic` example above returns an `ExtrinsicResult` object, which contains information about the on-chain 
+The `substrate.submit_extrinsic` example above returns an `ExtrinsicReceipt` object, which contains information about the on-chain 
 execution of the extrinsic. Because the `block_hash` is necessary to retrieve the triggered events from storage, most
 information is only available when `wait_for_inclusion=True` or `wait_for_finalization=True` is used when submitting
 an extrinsic. 
@@ -235,11 +235,11 @@ print(result.total_fee_amount) # 2749998966
 print(result.error_message['name']) # 'LiquidityRestrictions'
 ```
 
-`ExtrinsicResult` objects can also be created with all existing extrinsics on-chain:
+`ExtrinsicReceipt` objects can also be created with all existing extrinsics on-chain:
 
 ```python
 
-result = ExtrinsicResult(
+result = ExtrinsicReceipt(
     substrate=substrate,
     extrinsic_hash="0x56fea3010910bd8c0c97253ffe308dc13d1613b7e952e7e2028257d2b83c027a",
     block_hash="0x04fb003f8bc999eeb284aa8e74f2c6f63cf5bd5c00d0d0da4cd4d253a643e4c9"
