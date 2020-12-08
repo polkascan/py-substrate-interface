@@ -439,21 +439,27 @@ class SubstrateInterface:
 
         self.debug = False
 
-        if not type_registry_preset:
-            # Try to auto discover type registry preset by chain name
-            if self.chain.lower() in ['polkadot', 'kusama', 'westend', 'kulupu']:
-                type_registry_preset = self.chain.lower()
-            else:
-                type_registry_preset = "default"
-            self.debug_message("Auto set type_registry_preset to {} ...".format(type_registry_preset))
-
-        # Set type registry
         if type_registry_preset:
+            # Load type registry according to preset
+            type_registry_preset_dict = load_type_registry_preset(type_registry_preset)
+
+            if not type_registry_preset_dict:
+                raise ValueError(f"Type registry preset '{type_registry_preset}' not found")
+        else:
+            # Try to auto discover type registry preset by chain name
+            type_registry_preset_dict = load_type_registry_preset(self.chain.lower())
+
+            if not type_registry_preset_dict:
+                raise ValueError(f"Could not auto-detect type registry preset for chain '{self.chain}'")
+
+            self.debug_message(f"Auto set type_registry_preset to {self.chain.lower()} ...")
+
+        if type_registry_preset_dict:
             # Load type registries in runtime configuration
             self.runtime_config.update_type_registry(load_type_registry_preset("default"))
 
-            if type_registry != "default":
-                self.runtime_config.update_type_registry(load_type_registry_preset(type_registry_preset))
+            if type_registry_preset != "default":
+                self.runtime_config.update_type_registry(type_registry_preset_dict)
 
         if type_registry:
             # Load type registries in runtime configuration
@@ -1361,7 +1367,7 @@ class SubstrateInterface:
         ----------
         call: GenericCall to create extrinsic for
         keypair: Keypair used to sign the extrinsic
-        era: Specify mortality in blocks in follow format: `{'period': <amount_blocks>}` If omitted the extrinsic is immortal
+        era: Specify mortality in blocks in follow format: {'period': <amount_blocks>} If omitted the extrinsic is immortal
         nonce: nonce to include in extrinsics, if omitted the current nonce is retrieved on-chain
         tip: specify tip to gain priority during network congestion
         signature: Optionally provide signature if externally signed

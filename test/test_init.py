@@ -68,7 +68,11 @@ class TestInit(unittest.TestCase):
     def test_override_incorrect_token_decimals(self):
         substrate = SubstrateInterface(url=settings.KUSAMA_NODE_URL)
         with self.assertRaises(TypeError):
-            substrate.token_decimals= 'test'
+            substrate.token_decimals = 'test'
+
+    def test_init_with_unknown_preset(self):
+        with self.assertRaises(ValueError):
+            SubstrateInterface(url='http://dummy', type_registry_preset='unknown')
 
 
 if __name__ == '__main__':
