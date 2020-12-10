@@ -1008,6 +1008,9 @@ class SubstrateInterface:
 
         runtime_info = self.get_block_runtime_version(block_hash=runtime_block_hash)
 
+        if runtime_info is None:
+            raise SubstrateRequestException(f"No runtime information for block '{block_hash}'")
+
         # Check if runtime state already set to current block
         if runtime_info.get("specVersion") == self.runtime_version:
             return
