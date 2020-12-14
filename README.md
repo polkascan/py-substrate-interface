@@ -277,7 +277,7 @@ code = ContractCode.create_from_contract_files(
 receipt = code.upload_wasm(keypair)
 
 if receipt.is_succes:
-    print('* Contrat WASM Uploaded')
+    print('* Contract WASM Uploaded')
 
     for event in receipt.triggered_events:
         print(f'* {event.value}')
@@ -299,22 +299,22 @@ else:
 
 ```python
 contract = ContractInstance.create_from_address(
-        contract_address="5FV9cnzFc2tDrWcDkmoup7VZWpH9HrTaw8STnWpAQqT7KvUK",
-        metadata_file=os.path.join(os.path.dirname(__file__), 'erc20.json'),
-        substrate=substrate
-    )
+    contract_address="5FV9cnzFc2tDrWcDkmoup7VZWpH9HrTaw8STnWpAQqT7KvUK",
+    metadata_file=os.path.join(os.path.dirname(__file__), 'erc20.json'),
+    substrate=substrate
+)
 ```
 
 #### Read data from a contract:
 
 ```python
 result = contract.read(keypair, 'total_supply')
-
 print('Total supply:', result.value)
+# Total supply: {'success': {'data': 1000000000000000000, 'flags': 0, 'gas_consumed': 2616500000}}
 
 result = contract.read(keypair, 'balance_of', args={'owner': '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'})
-
 print('Balance:', result.value)
+# Balance: {'success': {'data': 994000000000000000, 'flags': 0, 'gas_consumed': 7251500000}}
 ```
 
 #### Execute a contract call
