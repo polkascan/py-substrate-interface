@@ -555,31 +555,31 @@ class SubstrateInterface:
 
     @property
     def name(self):
-        if not self.__name:
+        if self.__name is None:
             self.__name = self.rpc_request("system_name", []).get('result')
         return self.__name
 
     @property
     def properties(self):
-        if not self.__properties:
+        if self.__properties is None:
             self.__properties = self.rpc_request("system_properties", []).get('result')
         return self.__properties
 
     @property
     def chain(self):
-        if not self.__chain:
+        if self.__chain is None:
             self.__chain = self.rpc_request("system_chain", []).get('result')
         return self.__chain
 
     @property
     def version(self):
-        if not self.__version:
+        if self.__version is None:
             self.__version = self.rpc_request("system_version", []).get('result')
         return self.__version
 
     @property
     def token_decimals(self):
-        if not self.__token_decimals:
+        if self.__token_decimals is None:
             self.__token_decimals = self.properties.get('tokenDecimals')
         return self.__token_decimals
 
@@ -591,8 +591,11 @@ class SubstrateInterface:
 
     @property
     def token_symbol(self):
-        if not self.__token_symbol:
-            self.__token_symbol = self.properties.get('tokenSymbol')
+        if self.__token_symbol is None:
+            if self.properties:
+                self.__token_symbol = self.properties.get('tokenSymbol')
+            else:
+                self.__token_symbol = 'UNIT'
         return self.__token_symbol
 
     @token_symbol.setter
@@ -601,8 +604,11 @@ class SubstrateInterface:
 
     @property
     def ss58_format(self):
-        if not self.__ss58_format:
-            self.__ss58_format = self.properties.get('ss58Format')
+        if self.__ss58_format is None:
+            if self.properties:
+                self.__ss58_format = self.properties.get('ss58Format')
+            else:
+                self.__ss58_format = 42
         return self.__ss58_format
 
     @ss58_format.setter
@@ -2161,6 +2167,34 @@ class SubstrateInterface:
             type_string=type_string, metadata=self.metadata_decoder, runtime_config=self.runtime_config
         )
         return obj.encode(value)
+
+    def ss58_encode(self, public_key: str) -> str:
+        """
+        Helper function to encode a public key to SS58 address
+
+        Parameters
+        ----------
+        public_key
+
+        Returns
+        -------
+        SS58 address
+        """
+        return ss58_encode(public_key, ss58_format=self.ss58_format)
+
+    def ss58_decode(self, ss58_address: str) -> str:
+        """
+        Helper function to decode a SS58 address to a public key
+
+        Parameters
+        ----------
+        ss58_address
+
+        Returns
+        -------
+        Public key
+        """
+        return ss58_decode(ss58_address, valid_ss58_format=self.ss58_format)
 
     # Serializing helper function
 

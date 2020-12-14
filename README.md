@@ -235,7 +235,7 @@ print(receipt.total_fee_amount) # 2749998966
 print(receipt.error_message['name']) # 'LiquidityRestrictions'
 ```
 
-`ExtrinsicReceipt` objects can also be created with all existing extrinsics on-chain:
+`ExtrinsicReceipt` objects can also be created for all existing extrinsics on-chain:
 
 ```python
 
@@ -249,6 +249,98 @@ print(receipt.is_success) # False
 print(receipt.weight) # 359262000
 print(receipt.total_fee_amount) # 2483332406
 print(receipt.error_message['docs']) # [' Sender is not a sub-account.']
+
+for event in receipt.triggered_events:
+    print(f'* {event.value}')
+```
+
+### ink! contract interfacing (work in progress)
+
+#### Deploy a contract 
+
+_Tested on Substrate 2.0.0-5ea23999 with the ERC20 contract from the tutorial_:
+
+```python
+substrate = SubstrateInterface(
+    url="ws://127.0.0.1:9944",
+)
+
+keypair = Keypair.create_from_uri('//Alice')
+
+# Upload WASM code
+code = ContractCode.create_from_contract_files(
+    metadata_file=os.path.join(os.path.dirname(__file__), 'erc20.json'),
+    wasm_file=os.path.join(os.path.dirname(__file__), 'erc20.wasm'),
+    substrate=substrate
+)
+
+receipt = code.upload_wasm(keypair)
+
+if receipt.is_succes:
+    print('* Contrat WASM Uploaded')
+
+    for event in receipt.triggered_events:
+        print(f'* {event.value}')
+
+    # Deploy contract
+    contract = code.deploy(
+        keypair=keypair, endowment=10**15, gas_limit=1000000000000,
+        constructor="new",
+        args={'initial_supply': 1000 * 10**15}
+    )
+
+    print(f'Deployed @ {contract.contract_address}')
+
+else:
+    print(f'Failed: {receipt.error_message}')
+```
+
+#### Work with an existing instance:
+
+```python
+contract = ContractInstance.create_from_address(
+        contract_address="5FV9cnzFc2tDrWcDkmoup7VZWpH9HrTaw8STnWpAQqT7KvUK",
+        metadata_file=os.path.join(os.path.dirname(__file__), 'erc20.json'),
+        substrate=substrate
+    )
+```
+
+#### Read data from a contract:
+
+```python
+result = contract.read(keypair, 'total_supply')
+
+print('Total supply:', result.value)
+
+result = contract.read(keypair, 'balance_of', args={'owner': '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'})
+
+print('Balance:', result.value)
+```
+
+#### Execute a contract call
+
+```python
+# Do a gas estimation of the transfer
+gas_predit_result = contract.read(keypair, 'transfer', args={
+    'to': '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty',
+    'value': 6 * 1000000000000000,
+})
+
+print('Gas estimate on local node: ', gas_predit_result.value['success']['gas_consumed'])
+
+# Do the actual transfer
+contract_receipt = contract.exec(keypair, 'transfer', args={
+    'to': '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty',
+    'value': 6 * 1000000000000000,
+}, gas_limit=gas_predit_result.value['success']['gas_consumed'])
+
+if contract_receipt.is_succes:
+
+    print('Transfer successful, triggered events:')
+    for event in contract_receipt.triggered_events:
+        print(f'* {event.value}')
+else:
+    print('ERROR: ', contract_receipt.error_message)
 ```
 
 

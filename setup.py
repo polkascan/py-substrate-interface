@@ -145,7 +145,7 @@ setup(
     # project page. What does your project relate to?
     #
     # Note that this is a string of words separated by whitespace, not a list.
-    keywords='interface polkascan polkadot substrate blockchain rpc',  # Optional
+    keywords='interface polkascan polkadot substrate blockchain rpc kusama',  # Optional
 
     # You can just specify package directories manually here if your project is
     # simple. Or you can use find_packages().
@@ -181,7 +181,7 @@ setup(
         'idna>=2.8',
         'requests>=2.25.0',
         'xxhash>=1.3.0',
-        'scalecodec>=0.10.37',
+        'scalecodec>=0.10.39',
         'py-sr25519-bindings>=0.1.2',
         'py-ed25519-bindings>=0.1.2',
         'py-bip39-bindings>=0.1.6'

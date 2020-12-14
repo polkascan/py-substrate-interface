@@ -25,3 +25,15 @@ class StorageFunctionNotFound(ValueError):
 
 class ConfigurationError(Exception):
     pass
+
+
+class ExtrinsicFailedException(Exception):
+    pass
+
+
+class DeployContractFailedException(Exception):
+    pass
+
+
+class ContractCallFailedException(Exception):
+    pass
