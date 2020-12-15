@@ -16,8 +16,11 @@
 
 import unittest
 
+from substrateinterface.constants import DEV_PHRASE
+from substrateinterface.key import extract_derive_path
+from substrateinterface.exceptions import ConfigurationError
 from scalecodec import ScaleBytes
-from substrateinterface import Keypair, KeypairType, extract_derive_path, ConfigurationError, DEV_PHRASE
+from substrateinterface import Keypair, KeypairType
 from bip39 import bip39_validate
 
 

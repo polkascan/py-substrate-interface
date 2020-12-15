@@ -185,7 +185,8 @@ all_bonded_stash_ctrls = substrate.iterate_map(
 The following code snippet illustrates how to create a call, wrap it in an signed extrinsic and send it to the network:
 
 ```python
-from substrateinterface import SubstrateInterface, SubstrateRequestException, Keypair
+from substrateinterface import SubstrateInterface, Keypair
+from substrateinterface.exceptions import SubstrateRequestException
 
 substrate = SubstrateInterface(
     url="ws://127.0.0.1:9944",

@@ -18,9 +18,11 @@ import json
 import os
 from hashlib import blake2b
 
-from exceptions import ExtrinsicFailedException, DeployContractFailedException
+from substrateinterface.exceptions import ExtrinsicFailedException, DeployContractFailedException
 from scalecodec import ScaleBytes
-from substrateinterface import SubstrateInterface, Keypair, ExtrinsicReceipt
+from substrateinterface.base import SubstrateInterface, Keypair, ExtrinsicReceipt
+
+__all__ = ['ContractExecutionReceipt', 'ContractMetadata', 'ContractCode', 'ContractInstance']
 
 
 class ContractExecutionReceipt(ExtrinsicReceipt):
