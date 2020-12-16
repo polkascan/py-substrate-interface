@@ -18,23 +18,12 @@ import json
 import os
 from hashlib import blake2b
 
-from substrateinterface.exceptions import ExtrinsicFailedException, DeployContractFailedException
-from scalecodec import ScaleBytes
+from substrateinterface.exceptions import ExtrinsicFailedException, DeployContractFailedException, \
+    ContractReadFailedException
+from scalecodec import ScaleBytes, Struct, ScaleType, ScaleDecoder
 from substrateinterface.base import SubstrateInterface, Keypair, ExtrinsicReceipt
 
 __all__ = ['ContractExecutionReceipt', 'ContractMetadata', 'ContractCode', 'ContractInstance']
-
-
-class ContractExecutionReceipt(ExtrinsicReceipt):
-
-    @classmethod
-    def create_from_extrinsic_receipt(cls, receipt: ExtrinsicReceipt):
-        return cls(
-            substrate=receipt.substrate,
-            extrinsic_hash=receipt.extrinsic_hash,
-            block_hash=receipt.block_hash,
-            finalized=receipt.finalized
-        )
 
 
 class ContractMetadata:
@@ -42,6 +31,11 @@ class ContractMetadata:
     def __init__(self, metadata_dict: dict, substrate: SubstrateInterface):
         self.metadata_dict = metadata_dict
         self.substrate = substrate
+        self.type_registry = {}
+
+        self.type_string_prefix = f"ink.{self.metadata_dict['source']['hash']}"
+
+        self.__parse_type_registry()
 
     @classmethod
     def create_from_file(cls, metadata_file: str, substrate: SubstrateInterface):
@@ -54,6 +48,12 @@ class ContractMetadata:
             return self.metadata_dict[item]
         else:
             raise AttributeError("'{}' object has no attribute '{}'".format(self.__class__.__name__, item))
+
+    def __parse_type_registry(self):
+
+        for idx, metadata_type in enumerate(self.metadata_dict['types']):
+            if idx + 1 not in self.type_registry:
+                self.type_registry[idx+1] = self.get_type_string_for_metadata_type(idx+1)
 
     def generate_constructor_data(self, name, args: dict = None) -> ScaleBytes:
 
@@ -76,20 +76,81 @@ class ContractMetadata:
 
         raise ValueError(f'Constructor "{name}" not found')
 
-    def get_type_string_for_metadata_type(self, type_id: int) -> str:
+    def get_type_string_for_metadata_type(self, type_id: int):
+
+        # Check if already processed
+        if type_id in self.type_registry:
+            return self.type_registry[type_id]
+
         if type_id > len(self.metadata_dict['types']):
             raise ValueError(f'type_id {type_id} not found in metadata')
 
         arg_type = self.metadata_dict['types'][type_id - 1]
 
-        if 'primitive' in arg_type['def']:
-            return arg_type['def']['primitive']
-        elif 'path' in arg_type:
+        if 'path' in arg_type:
             if arg_type['path'] == ['ink_env', 'types', 'AccountId']:
                 return 'AccountId'
 
-        # elif 'array' in arg_type['def']:
-        #     return ''
+        if 'primitive' in arg_type['def']:
+            return arg_type['def']['primitive']
+
+        elif 'array' in arg_type['def']:
+            array_type = self.get_type_string_for_metadata_type(arg_type['def']['array']['type'])
+            return f"[{array_type}; {arg_type['def']['array']['len']}]"
+
+        elif 'variant' in arg_type['def']:
+            # Create Enum
+            type_definition = {
+              "type": "enum",
+              "type_mapping": []
+            }
+            for variant in arg_type['def']['variant']['variants']:
+
+                if 'fields' in variant:
+                    if len(variant['fields']) > 1:
+                        raise NotImplementedError('Tuples as element of enums not supported')
+
+                    enum_value = self.get_type_string_for_metadata_type(variant['fields'][0]['type'])
+
+                else:
+                    enum_value = 'Null'
+
+                type_definition['type_mapping'].append(
+                    [variant['name'], enum_value]
+                )
+
+            # Add to type registry
+            self.substrate.runtime_config.update_type_registry_types(
+                {f'{self.type_string_prefix}.{type_id}': type_definition}
+            )
+            self.type_registry[type_id] = f'{self.type_string_prefix}.{type_id}'
+
+            return f'{self.type_string_prefix}.{type_id}'
+
+        elif 'composite' in arg_type['def']:
+            # Create Struct
+            type_definition = {
+                "type": "struct",
+                "type_mapping": []
+            }
+
+            for field in arg_type['def']['composite']['fields']:
+                type_definition['type_mapping'].append(
+                    [field['name'], self.get_type_string_for_metadata_type(field['type'])]
+                )
+
+            # Add to type registry
+            self.substrate.runtime_config.update_type_registry_types(
+                {f'{self.type_string_prefix}.{type_id}': type_definition}
+            )
+
+            self.type_registry[type_id] = f'{self.type_string_prefix}.{type_id}'
+
+            return f'{self.type_string_prefix}.{type_id}'
+        elif 'tuple' in arg_type['def']:
+            # Create tuple
+            elements = [self.get_type_string_for_metadata_type(element) for element in arg_type['def']['tuple']]
+            return f"({','.join(elements)})"
 
         raise NotImplementedError(f"Type '{arg_type}' not supported")
 
@@ -120,6 +181,89 @@ class ContractMetadata:
                 return data
 
         raise ValueError(f'Message "{name}" not found')
+
+    def get_event_data(self, event_id: int):
+        if event_id > len(self.metadata_dict['spec']['events']):
+            raise ValueError(f'Event ID {event_id} not found')
+
+        return self.metadata_dict['spec']['events'][event_id]
+
+
+class ContractEvent(ScaleType):
+
+    def __init__(self, *args, contract_metadata: ContractMetadata = None, **kwargs):
+        self.contract_metadata = contract_metadata
+        self.event_id = None
+        self.name = None
+        self.docs = None
+        self.args = []
+        super().__init__(*args, **kwargs)
+
+    def process(self):
+        self.event_id = self.process_type('u8').value
+
+        event_data = self.contract_metadata.get_event_data(self.event_id)
+
+        self.name = event_data['name']
+        self.docs = event_data['docs']
+        self.args = event_data['args']
+
+        for arg in self.args:
+            # Decode value of event arg with type_string registered in contract
+            arg_type_string = self.contract_metadata.get_type_string_for_metadata_type(arg['type']['type'])
+            arg['value'] = self.process_type(arg_type_string).value
+
+        return {
+            'name': self.name,
+            'docs': self.docs,
+            'args': self.args
+        }
+
+    def process_encode(self, value):
+        raise NotImplementedError()
+
+
+class ContractExecutionReceipt(ExtrinsicReceipt):
+
+    def __init__(self, *args, **kwargs):
+        self.__contract_execution_result = None
+        self.contract_metadata = kwargs.pop('contract_metadata')
+        super(ContractExecutionReceipt, self).__init__(*args, **kwargs)
+
+    @classmethod
+    def create_from_extrinsic_receipt(cls, receipt: ExtrinsicReceipt, contract_metadata: ContractMetadata):
+        return cls(
+            substrate=receipt.substrate,
+            extrinsic_hash=receipt.extrinsic_hash,
+            block_hash=receipt.block_hash,
+            finalized=receipt.finalized,
+            contract_metadata=contract_metadata
+        )
+
+    def process_events(self):
+        super().process_events()
+
+        if self.triggered_events:
+            for event in self.triggered_events:
+                if event.event_module.name == 'Contracts' and event.event.name == 'ContractExecution':
+
+                    # Create contract event
+                    contract_event_obj = ContractEvent(
+                        data=ScaleBytes(event.params[1]['value']),
+                        runtime_config=self.substrate.runtime_config,
+                        contract_metadata=self.contract_metadata
+                    )
+
+                    contract_event_obj.decode()
+
+                    self.__contract_execution_result = contract_event_obj
+
+    @property
+    def contract_execution_result(self):
+        if self.__contract_execution_result is None:
+            self.process_events()
+
+        return self.__contract_execution_result
 
 
 class ContractCode:
@@ -247,6 +391,8 @@ class ContractInstance:
 
             return contract_exec_result
 
+        raise ContractReadFailedException(response)
+
     def exec(self, keypair: Keypair, method: str, args: dict = None, value: int = 0, gas_limit: int = 200000):
 
         input_data = self.metadata.generate_message_data(name=method, args=args)
@@ -266,5 +412,5 @@ class ContractInstance:
 
         receipt = self.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
 
-        return ContractExecutionReceipt.create_from_extrinsic_receipt(receipt)
+        return ContractExecutionReceipt.create_from_extrinsic_receipt(receipt, self.metadata)
 

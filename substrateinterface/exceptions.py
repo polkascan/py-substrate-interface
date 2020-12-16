@@ -35,5 +35,10 @@ class DeployContractFailedException(Exception):
     pass
 
 
-class ContractCallFailedException(Exception):
+class ContractReadFailedException(Exception):
     pass
+
+
+class ContractExecFailedException(Exception):
+    pass
+

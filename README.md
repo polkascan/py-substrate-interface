@@ -336,8 +336,9 @@ contract_receipt = contract.exec(keypair, 'transfer', args={
 }, gas_limit=gas_predit_result.value['success']['gas_consumed'])
 
 if contract_receipt.is_succes:
-
-    print('Transfer successful, triggered events:')
+    print('Transfer success, contract event', contract_receipt.contract_execution_result)
+    # {'name': 'Transfer', 'docs': [' Event emitted when a token transfer occurs.'], 'args': [ ... ] }
+    print('All triggered events:')
     for event in contract_receipt.triggered_events:
         print(f'* {event.value}')
 else:
