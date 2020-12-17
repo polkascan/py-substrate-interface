@@ -44,7 +44,7 @@ import sr25519
 import ed25519
 
 
-__all__ = ['Keypair', 'KeypairType', 'SubstrateInterface', 'ExtrinsicReceipt']
+__all__ = ['Keypair', 'KeypairType', 'SubstrateInterface', 'ExtrinsicReceipt', 'logger']
 
 logger = logging.getLogger(__name__)
 
