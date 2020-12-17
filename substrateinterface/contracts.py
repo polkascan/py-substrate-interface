@@ -226,7 +226,7 @@ class ContractEvent(ScaleType):
 class ContractExecutionReceipt(ExtrinsicReceipt):
 
     def __init__(self, *args, **kwargs):
-        self.__contract_execution_result = None
+        self.__contract_events = None
         self.contract_metadata = kwargs.pop('contract_metadata')
         super(ContractExecutionReceipt, self).__init__(*args, **kwargs)
 
@@ -244,6 +244,9 @@ class ContractExecutionReceipt(ExtrinsicReceipt):
         super().process_events()
 
         if self.triggered_events:
+
+            self.__contract_events = []
+
             for event in self.triggered_events:
                 if event.event_module.name == 'Contracts' and event.event.name == 'ContractExecution':
 
@@ -256,14 +259,14 @@ class ContractExecutionReceipt(ExtrinsicReceipt):
 
                     contract_event_obj.decode()
 
-                    self.__contract_execution_result = contract_event_obj
+                    self.__contract_events.append(contract_event_obj)
 
     @property
-    def contract_execution_result(self):
-        if self.__contract_execution_result is None:
+    def contract_events(self):
+        if self.__contract_events is None:
             self.process_events()
 
-        return self.__contract_execution_result
+        return self.__contract_events
 
 
 class ContractCode:
