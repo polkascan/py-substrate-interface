@@ -321,19 +321,23 @@ print('Balance:', result.value)
 #### Execute a contract call
 
 ```python
-# Do a gas estimation of the transfer
+# Do a dry run of the transfer
 gas_predit_result = contract.read(keypair, 'transfer', args={
     'to': '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty',
     'value': 6 * 1000000000000000,
 })
 
-print('Gas estimate on local node: ', gas_predit_result.value['success']['gas_consumed'])
+print('Result of dry-run: ', gas_predit_result.contract_result_data)
+# Result of dry-run:  {'Ok': None}
+
+print('Gas estimate: ', gas_predit_result.gas_consumed)
+# Gas estimate:  24091000000
 
 # Do the actual transfer
 contract_receipt = contract.exec(keypair, 'transfer', args={
     'to': '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty',
     'value': 6 * 1000000000000000,
-}, gas_limit=gas_predit_result.value['success']['gas_consumed'])
+}, gas_limit=gas_predit_result.gas_consumed)
 
 if contract_receipt.is_succes:
     print('Transfer success, triggered contract event:')
