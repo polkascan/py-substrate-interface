@@ -1471,7 +1471,7 @@ class SubstrateInterface:
 
         return extrinsic
 
-    def submit_extrinsic(self, extrinsic, wait_for_inclusion=False, wait_for_finalization=False):
+    def submit_extrinsic(self, extrinsic, wait_for_inclusion=False, wait_for_finalization=False) -> "ExtrinsicReceipt":
         """
 
         Parameters
