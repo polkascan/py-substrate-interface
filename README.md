@@ -255,7 +255,7 @@ for event in receipt.triggered_events:
     print(f'* {event.value}')
 ```
 
-### ink! contract interfacing (work in progress)
+### ink! contract interfacing
 
 #### Deploy a contract 
 
@@ -337,9 +337,11 @@ contract_receipt = contract.exec(keypair, 'transfer', args={
 
 if contract_receipt.is_succes:
     print('Transfer success, triggered contract event:')
+
     for contract_event in contract_receipt.contract_events:
         print(f'* {contract_event.value}')
         # {'name': 'Transfer', 'docs': [' Event emitted when a token transfer occurs.'], 'args': [ ... ] }
+
     print('All triggered events:')
     for event in contract_receipt.triggered_events:
         print(f'* {event.value}')
