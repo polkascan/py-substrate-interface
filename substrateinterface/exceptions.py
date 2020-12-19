@@ -42,3 +42,11 @@ class ContractReadFailedException(Exception):
 class ContractExecFailedException(Exception):
     pass
 
+
+class BlockHashNotFound(Exception):
+    pass
+
+
+class ExtrinsicNotFound(Exception):
+    pass
+

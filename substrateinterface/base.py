@@ -35,7 +35,8 @@ from scalecodec.updater import update_type_registries
 
 from .key import extract_derive_path
 from .utils.hasher import blake2_256, two_x64_concat, xxh128, blake2_128, blake2_128_concat, identity
-from .exceptions import SubstrateRequestException, ConfigurationError, StorageFunctionNotFound
+from .exceptions import SubstrateRequestException, ConfigurationError, StorageFunctionNotFound, BlockHashNotFound, \
+    ExtrinsicNotFound
 from .constants import *
 from .utils.ss58 import ss58_decode, ss58_encode
 
@@ -2107,6 +2108,9 @@ class SubstrateInterface:
 
         response = self.rpc_request("chain_getBlock", [self.block_hash]).get('result')
 
+        if response is None:
+            raise BlockHashNotFound(f"{block_hash} not found")
+
         extrinsics = []
 
         for extrinsic_data in response['block']['extrinsics']:
@@ -2424,6 +2428,7 @@ class ExtrinsicReceipt:
             raise ValueError("ExtrinsicReceipt can't retrieve events because it's unknown which block_hash it is "
                              "included, manually set block_hash or use `wait_for_inclusion` when sending extrinsic")
         # Determine extrinsic idx
+
         extrinsics = self.substrate.get_block_extrinsics(block_hash=self.block_hash)
 
         if len(extrinsics) > 0:
@@ -2566,7 +2571,7 @@ class ExtrinsicReceipt:
         for idx, extrinsic in enumerate(block_extrinsics):
             if extrinsic.extrinsic_hash == extrinsic_hash.replace('0x', ''):
                 return idx
-        return -1
+        raise ExtrinsicNotFound()
 
     # Backwards compatibility methods
     def __getitem__(self, item):
