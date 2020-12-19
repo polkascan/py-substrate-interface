@@ -19,8 +19,7 @@ management and versioning of types.
 * [Initialization](#hello-world--the-flipper)
   * [Autodiscover mode](#autodiscover-mode)
   * [Manually set required properties](#manually-set-required-properties)  
-  * [Substrate Node Template](#substrate-node-template)  
-* [Keeping type registry presets up to date](#keeping-type-registry-presets-up-to-date)
+  * [Substrate Node Template](#substrate-node-template)
 * [Features](#features)
   * [Storage queries](#storage-queries)
   * [Create and send signed extrinsics](#create-and-send-signed-extrinsics)
@@ -32,6 +31,7 @@ management and versioning of types.
   * [Getting estimate of network fees for extrinsic in advance](#getting-estimate-of-network-fees-for-extrinsic-in-advance)
   * [Offline signing of extrinsics](#offline-signing-of-extrinsics)
   * [Get extrinsics for a certain block](#get-extrinsics-for-a-certain-block)
+* [Keeping type registry presets up to date](#keeping-type-registry-presets-up-to-date)  
 * [License](#license)
 
 ## Documentation
@@ -146,17 +146,6 @@ substrate = SubstrateInterface(
 )
  
 ```
-
-## Keeping type registry presets up to date
-
-When on-chain runtime upgrades occur, types used in call- or storage functions can be added or modified. Therefor it is
-important to keep the type registry presets up to date, otherwise this can lead to decoding errors like 
-`RemainingScaleBytesNotEmptyException`. At the moment the type registry for Polkadot, Kusama, Kulupu and
-Westend are being actively maintained for this library and an check and update procedure can be triggered with:
- 
-```python
-substrate.update_type_registry_presets()
-```   
 
 ## Features
 
@@ -524,6 +513,16 @@ for extrinsic in result['block']['extrinsics']:
             param['value'] = '{} DOT'.format(param['value'] / 10**12)
 
         print("Param '{}': {}".format(param['name'], param['value']))
+```
+## Keeping type registry presets up to date
+
+When on-chain runtime upgrades occur, types used in call- or storage functions can be added or modified. Therefor it is
+important to keep the type registry presets up to date, otherwise this can lead to decoding errors like 
+`RemainingScaleBytesNotEmptyException`. At the moment the type registry for Polkadot, Kusama, Kulupu and
+Westend are being actively maintained for this library and an check and update procedure can be triggered with:
+ 
+```python
+substrate.update_type_registry_presets()
 ```
 
 ## License
