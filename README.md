@@ -12,6 +12,28 @@ This library specializes in interfacing with a Substrate node, providing additio
 SCALE encoding/decoding (the default output and input format of the Substrate JSONRPC), metadata parsing, type registry
 management and versioning of types.
 
+## Table of Contents
+
+* [Documentation](#documentation)
+* [Installation](#installation)
+* [Initialization](#hello-world--the-flipper)
+  * [Autodiscover mode](#autodiscover-mode)
+  * [Manually set required properties](#manually-set-required-properties)  
+  * [Substrate Node Template](#substrate-node-template)  
+* [Keeping type registry presets up to date](#keeping-type-registry-presets-up-to-date)
+* [Features](#features)
+  * [Storage queries](#storage-queries)
+  * [Create and send signed extrinsics](#create-and-send-signed-extrinsics)
+  * [Examining the ExtrinsicReceipt object](#examining-the-extrinsicreceipt-object)
+  * [ink! contract interfacing](#ink-contract-interfacing)
+  * [Create mortal extrinsics](#create-mortal-extrinsics)
+  * [Keypair creation and signing](#keypair-creation-and-signing)
+  * [Creating keypairs with soft and hard key derivation paths](#creating-keypairs-with-soft-and-hard-key-derivation-paths)
+  * [Getting estimate of network fees for extrinsic in advance](#getting-estimate-of-network-fees-for-extrinsic-in-advance)
+  * [Offline signing of extrinsics](#offline-signing-of-extrinsics)
+  * [Get extrinsics for a certain block](#get-extrinsics-for-a-certain-block)
+* [License](#license)
+
 ## Documentation
 https://polkascan.github.io/py-substrate-interface/
 
@@ -20,11 +42,11 @@ https://polkascan.github.io/py-substrate-interface/
 pip install substrate-interface
 ```
 
-### Initialization
+## Initialization
 
 The following examples show how to initialize for supported chains:
 
-#### Autodiscover mode
+### Autodiscover mode
 
 ```python
 substrate = SubstrateInterface(
@@ -38,7 +60,7 @@ When only an `url` is provided, it tries to determine certain properties like `s
 At the moment this will work for Polkadot, Kusama, Kulupu and Westend nodes, for other chains the `ss58_format` 
 (default 42) and  `type_registry` (defaults to latest vanilla Substrate types) should be set manually. 
 
-#### Manually set required properties
+### Manually set required properties
 
 Polkadot
 
@@ -80,7 +102,7 @@ substrate = SubstrateInterface(
 )
 ```
 
-#### Substrate Node Template
+### Substrate Node Template
 Compatible with https://github.com/substrate-developer-hub/substrate-node-template 
 
 ```python
@@ -136,9 +158,9 @@ Westend are being actively maintained for this library and an check and update p
 substrate.update_type_registry_presets()
 ```   
 
-## Examples
+## Features
 
-### Read storage
+### Storage queries
 The modules and storage functions are provided in the metadata (see `substrate.get_metadata_storage_functions()`),
 parameters will be automatically converted to SCALE-bytes (also including decoding of SS58 addresses).
 
@@ -247,6 +269,8 @@ receipt = ExtrinsicReceipt(
 )
 
 print(receipt.is_success) # False
+print(receipt.extrinsic.call_module.name) # 'Identity'
+print(receipt.extrinsic.call.name) # 'remove_sub'
 print(receipt.weight) # 359262000
 print(receipt.total_fee_amount) # 2483332406
 print(receipt.error_message['docs']) # [' Sender is not a sub-account.']
