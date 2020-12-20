@@ -1548,7 +1548,7 @@ class SubstrateInterface:
         -------
         Dict with payment info
 
-        E.g. {'class': 'normal', 'partialFee': 151000000, 'weight': 217238000}
+        E.g. `{'class': 'normal', 'partialFee': 151000000, 'weight': 217238000}`
 
         """
 
@@ -1584,7 +1584,7 @@ class SubstrateInterface:
 
         Parameters
         ----------
-        type_string: RUST variable type, e.g. Vec<Address>
+        type_string: RUST variable type, e.g. `Vec<Address>`
 
         Returns
         -------
@@ -2440,13 +2440,27 @@ class ExtrinsicReceipt:
             self.__extrinsic = extrinsics[self.__extrinsic_idx]
 
     @property
-    def extrinsic_idx(self):
+    def extrinsic_idx(self) -> int:
+        """
+        Retrieves the index of this extrinsic in containing block
+
+        Returns
+        -------
+        int
+        """
         if self.__extrinsic_idx is None:
             self.retrieve_extrinsic()
         return self.__extrinsic_idx
 
     @property
-    def extrinsic(self):
+    def extrinsic(self) -> Extrinsic:
+        """
+        Retrieves the `Extrinsic` subject of this receipt
+
+        Returns
+        -------
+        Extrinsic
+        """
         if self.__extrinsic is None:
             self.retrieve_extrinsic()
         return self.__extrinsic
@@ -2537,13 +2551,31 @@ class ExtrinsicReceipt:
 
     @property
     def is_succes(self) -> bool:
+        """
+        Returns `True` if `ExtrinsicSuccess` event is triggered, `False` in case of `ExtrinsicFailed`
+        In case of False `error_message` will contain more details about the error
+
+
+        Returns
+        -------
+        bool
+        """
         if self.__is_succes is None:
             self.process_events()
 
         return self.__is_succes
 
     @property
-    def error_message(self):
+    def error_message(self) -> typing.Optional[dict]:
+        """
+        Returns the error message if the extrinsic failed in format e.g.:
+
+        `{'type': 'System', 'name': 'BadOrigin', 'docs': 'Bad origin'}`
+
+        Returns
+        -------
+        dict
+        """
         if self.__error_message is None:
             if self.is_succes:
                 return None
@@ -2552,12 +2584,27 @@ class ExtrinsicReceipt:
 
     @property
     def weight(self) -> int:
+        """
+        Contains the actual weight when executing this extrinsic
+
+        Returns
+        -------
+        int
+        """
         if self.__weight is None:
             self.process_events()
         return self.__weight
 
     @property
     def total_fee_amount(self) -> int:
+        """
+        Contains the total fee costs deducted when executing this extrinsic. This includes fee for the validator (
+        (`Balances.Deposit` event) and the fee deposited for the treasury (`Treasury.Deposit` event)
+
+        Returns
+        -------
+        int
+        """
         if self.__total_fee_amount is None:
             self.process_events()
         return self.__total_fee_amount

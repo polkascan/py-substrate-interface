@@ -1576,7 +1576,7 @@ class SubstrateInterface:
         -------
         Dict with payment info
 
-        E.g. {&#39;class&#39;: &#39;normal&#39;, &#39;partialFee&#39;: 151000000, &#39;weight&#39;: 217238000}
+        E.g. `{&#39;class&#39;: &#39;normal&#39;, &#39;partialFee&#39;: 151000000, &#39;weight&#39;: 217238000}`
 
         &#34;&#34;&#34;
 
@@ -1612,7 +1612,7 @@ class SubstrateInterface:
 
         Parameters
         ----------
-        type_string: RUST variable type, e.g. Vec&lt;Address&gt;
+        type_string: RUST variable type, e.g. `Vec&lt;Address&gt;`
 
         Returns
         -------
@@ -2468,13 +2468,27 @@ class ExtrinsicReceipt:
             self.__extrinsic = extrinsics[self.__extrinsic_idx]
 
     @property
-    def extrinsic_idx(self):
+    def extrinsic_idx(self) -&gt; int:
+        &#34;&#34;&#34;
+        Retrieves the index of this extrinsic in containing block
+
+        Returns
+        -------
+        int
+        &#34;&#34;&#34;
         if self.__extrinsic_idx is None:
             self.retrieve_extrinsic()
         return self.__extrinsic_idx
 
     @property
-    def extrinsic(self):
+    def extrinsic(self) -&gt; Extrinsic:
+        &#34;&#34;&#34;
+        Retrieves the `Extrinsic` subject of this receipt
+
+        Returns
+        -------
+        Extrinsic
+        &#34;&#34;&#34;
         if self.__extrinsic is None:
             self.retrieve_extrinsic()
         return self.__extrinsic
@@ -2565,13 +2579,31 @@ class ExtrinsicReceipt:
 
     @property
     def is_succes(self) -&gt; bool:
+        &#34;&#34;&#34;
+        Returns `True` if `ExtrinsicSuccess` event is triggered, `False` in case of `ExtrinsicFailed`
+        In case of False `error_message` will contain more details about the error
+
+
+        Returns
+        -------
+        bool
+        &#34;&#34;&#34;
         if self.__is_succes is None:
             self.process_events()
 
         return self.__is_succes
 
     @property
-    def error_message(self):
+    def error_message(self) -&gt; typing.Optional[dict]:
+        &#34;&#34;&#34;
+        Returns the error message if the extrinsic failed in format e.g.:
+
+        `{&#39;type&#39;: &#39;System&#39;, &#39;name&#39;: &#39;BadOrigin&#39;, &#39;docs&#39;: &#39;Bad origin&#39;}`
+
+        Returns
+        -------
+        dict
+        &#34;&#34;&#34;
         if self.__error_message is None:
             if self.is_succes:
                 return None
@@ -2580,12 +2612,27 @@ class ExtrinsicReceipt:
 
     @property
     def weight(self) -&gt; int:
+        &#34;&#34;&#34;
+        Contains the actual weight when executing this extrinsic
+
+        Returns
+        -------
+        int
+        &#34;&#34;&#34;
         if self.__weight is None:
             self.process_events()
         return self.__weight
 
     @property
     def total_fee_amount(self) -&gt; int:
+        &#34;&#34;&#34;
+        Contains the total fee costs deducted when executing this extrinsic. This includes fee for the validator (
+        (`Balances.Deposit` event) and the fee deposited for the treasury (`Treasury.Deposit` event)
+
+        Returns
+        -------
+        int
+        &#34;&#34;&#34;
         if self.__total_fee_amount is None:
             self.process_events()
         return self.__total_fee_amount
@@ -2689,13 +2736,27 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
             self.__extrinsic = extrinsics[self.__extrinsic_idx]
 
     @property
-    def extrinsic_idx(self):
+    def extrinsic_idx(self) -&gt; int:
+        &#34;&#34;&#34;
+        Retrieves the index of this extrinsic in containing block
+
+        Returns
+        -------
+        int
+        &#34;&#34;&#34;
         if self.__extrinsic_idx is None:
             self.retrieve_extrinsic()
         return self.__extrinsic_idx
 
     @property
-    def extrinsic(self):
+    def extrinsic(self) -&gt; Extrinsic:
+        &#34;&#34;&#34;
+        Retrieves the `Extrinsic` subject of this receipt
+
+        Returns
+        -------
+        Extrinsic
+        &#34;&#34;&#34;
         if self.__extrinsic is None:
             self.retrieve_extrinsic()
         return self.__extrinsic
@@ -2786,13 +2847,31 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
 
     @property
     def is_succes(self) -&gt; bool:
+        &#34;&#34;&#34;
+        Returns `True` if `ExtrinsicSuccess` event is triggered, `False` in case of `ExtrinsicFailed`
+        In case of False `error_message` will contain more details about the error
+
+
+        Returns
+        -------
+        bool
+        &#34;&#34;&#34;
         if self.__is_succes is None:
             self.process_events()
 
         return self.__is_succes
 
     @property
-    def error_message(self):
+    def error_message(self) -&gt; typing.Optional[dict]:
+        &#34;&#34;&#34;
+        Returns the error message if the extrinsic failed in format e.g.:
+
+        `{&#39;type&#39;: &#39;System&#39;, &#39;name&#39;: &#39;BadOrigin&#39;, &#39;docs&#39;: &#39;Bad origin&#39;}`
+
+        Returns
+        -------
+        dict
+        &#34;&#34;&#34;
         if self.__error_message is None:
             if self.is_succes:
                 return None
@@ -2801,12 +2880,27 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
 
     @property
     def weight(self) -&gt; int:
+        &#34;&#34;&#34;
+        Contains the actual weight when executing this extrinsic
+
+        Returns
+        -------
+        int
+        &#34;&#34;&#34;
         if self.__weight is None:
             self.process_events()
         return self.__weight
 
     @property
     def total_fee_amount(self) -&gt; int:
+        &#34;&#34;&#34;
+        Contains the total fee costs deducted when executing this extrinsic. This includes fee for the validator (
+        (`Balances.Deposit` event) and the fee deposited for the treasury (`Treasury.Deposit` event)
+
+        Returns
+        -------
+        int
+        &#34;&#34;&#34;
         if self.__total_fee_amount is None:
             self.process_events()
         return self.__total_fee_amount
@@ -2839,15 +2933,30 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
 </ul>
 <h3>Instance variables</h3>
 <dl>
-<dt id="substrateinterface.base.ExtrinsicReceipt.error_message"><code class="name">var <span class="ident">error_message</span></code></dt>
+<dt id="substrateinterface.base.ExtrinsicReceipt.error_message"><code class="name">var <span class="ident">error_message</span> : Union[dict, NoneType]</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Returns the error message if the extrinsic failed in format e.g.:</p>
+<p><code>{'type': 'System', 'name': 'BadOrigin', 'docs': 'Bad origin'}</code></p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def error_message(self):
+def error_message(self) -&gt; typing.Optional[dict]:
+    &#34;&#34;&#34;
+    Returns the error message if the extrinsic failed in format e.g.:
+
+    `{&#39;type&#39;: &#39;System&#39;, &#39;name&#39;: &#39;BadOrigin&#39;, &#39;docs&#39;: &#39;Bad origin&#39;}`
+
+    Returns
+    -------
+    dict
+    &#34;&#34;&#34;
     if self.__error_message is None:
         if self.is_succes:
             return None
@@ -2855,29 +2964,53 @@ def error_message(self):
     return self.__error_message</code></pre>
 </details>
 </dd>
-<dt id="substrateinterface.base.ExtrinsicReceipt.extrinsic"><code class="name">var <span class="ident">extrinsic</span></code></dt>
+<dt id="substrateinterface.base.ExtrinsicReceipt.extrinsic"><code class="name">var <span class="ident">extrinsic</span> : scalecodec.block.Extrinsic</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Retrieves the <code>Extrinsic</code> subject of this receipt</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Extrinsic</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def extrinsic(self):
+def extrinsic(self) -&gt; Extrinsic:
+    &#34;&#34;&#34;
+    Retrieves the `Extrinsic` subject of this receipt
+
+    Returns
+    -------
+    Extrinsic
+    &#34;&#34;&#34;
     if self.__extrinsic is None:
         self.retrieve_extrinsic()
     return self.__extrinsic</code></pre>
 </details>
 </dd>
-<dt id="substrateinterface.base.ExtrinsicReceipt.extrinsic_idx"><code class="name">var <span class="ident">extrinsic_idx</span></code></dt>
+<dt id="substrateinterface.base.ExtrinsicReceipt.extrinsic_idx"><code class="name">var <span class="ident">extrinsic_idx</span> : int</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Retrieves the index of this extrinsic in containing block</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def extrinsic_idx(self):
+def extrinsic_idx(self) -&gt; int:
+    &#34;&#34;&#34;
+    Retrieves the index of this extrinsic in containing block
+
+    Returns
+    -------
+    int
+    &#34;&#34;&#34;
     if self.__extrinsic_idx is None:
         self.retrieve_extrinsic()
     return self.__extrinsic_idx</code></pre>
@@ -2885,13 +3018,28 @@ def extrinsic_idx(self):
 </dd>
 <dt id="substrateinterface.base.ExtrinsicReceipt.is_succes"><code class="name">var <span class="ident">is_succes</span> : bool</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Returns <code>True</code> if <code>ExtrinsicSuccess</code> event is triggered, <code>False</code> in case of <code>ExtrinsicFailed</code>
+In case of False <code>error_message</code> will contain more details about the error</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
 def is_succes(self) -&gt; bool:
+    &#34;&#34;&#34;
+    Returns `True` if `ExtrinsicSuccess` event is triggered, `False` in case of `ExtrinsicFailed`
+    In case of False `error_message` will contain more details about the error
+
+
+    Returns
+    -------
+    bool
+    &#34;&#34;&#34;
     if self.__is_succes is None:
         self.process_events()
 
@@ -2900,13 +3048,27 @@ def is_succes(self) -&gt; bool:
 </dd>
 <dt id="substrateinterface.base.ExtrinsicReceipt.total_fee_amount"><code class="name">var <span class="ident">total_fee_amount</span> : int</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Contains the total fee costs deducted when executing this extrinsic. This includes fee for the validator (
+(<code>Balances.Deposit</code> event) and the fee deposited for the treasury (<code>Treasury.Deposit</code> event)</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
 def total_fee_amount(self) -&gt; int:
+    &#34;&#34;&#34;
+    Contains the total fee costs deducted when executing this extrinsic. This includes fee for the validator (
+    (`Balances.Deposit` event) and the fee deposited for the treasury (`Treasury.Deposit` event)
+
+    Returns
+    -------
+    int
+    &#34;&#34;&#34;
     if self.__total_fee_amount is None:
         self.process_events()
     return self.__total_fee_amount</code></pre>
@@ -2954,13 +3116,25 @@ def triggered_events(self) -&gt; list:
 </dd>
 <dt id="substrateinterface.base.ExtrinsicReceipt.weight"><code class="name">var <span class="ident">weight</span> : int</code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Contains the actual weight when executing this extrinsic</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>int</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
 def weight(self) -&gt; int:
+    &#34;&#34;&#34;
+    Contains the actual weight when executing this extrinsic
+
+    Returns
+    -------
+    int
+    &#34;&#34;&#34;
     if self.__weight is None:
         self.process_events()
     return self.__weight</code></pre>
@@ -5070,7 +5244,7 @@ def generate_mnemonic(cls, words=12):
         -------
         Dict with payment info
 
-        E.g. {&#39;class&#39;: &#39;normal&#39;, &#39;partialFee&#39;: 151000000, &#39;weight&#39;: 217238000}
+        E.g. `{&#39;class&#39;: &#39;normal&#39;, &#39;partialFee&#39;: 151000000, &#39;weight&#39;: 217238000}`
 
         &#34;&#34;&#34;
 
@@ -5106,7 +5280,7 @@ def generate_mnemonic(cls, words=12):
 
         Parameters
         ----------
-        type_string: RUST variable type, e.g. Vec&lt;Address&gt;
+        type_string: RUST variable type, e.g. `Vec&lt;Address&gt;`
 
         Returns
         -------
@@ -7512,9 +7686,8 @@ keypair Keypair of the sender, does not have to include private key because no v
 <dl>
 <dt><code>Dict with payment info</code></dt>
 <dd>&nbsp;</dd>
-<dt><code>E.g. {'class': 'normal', 'partialFee': 151000000, 'weight': 217238000}</code></dt>
-<dd>&nbsp;</dd>
-</dl></div>
+</dl>
+<p>E.g. <code>{'class': 'normal', 'partialFee': 151000000, 'weight': 217238000}</code></p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -7532,7 +7705,7 @@ keypair Keypair of the sender, does not have to include private key because no v
     -------
     Dict with payment info
 
-    E.g. {&#39;class&#39;: &#39;normal&#39;, &#39;partialFee&#39;: 151000000, &#39;weight&#39;: 217238000}
+    E.g. `{&#39;class&#39;: &#39;normal&#39;, &#39;partialFee&#39;: 151000000, &#39;weight&#39;: 217238000}`
 
     &#34;&#34;&#34;
 
@@ -8125,7 +8298,7 @@ block_hash: Optional block hash, when left to None the chain tip will be used.</
 <div class="desc"><p>Process how given type_string is decoded with active runtime and type registry</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>type_string</code></strong> :&ensp;<code>RUST variable type, e.g. Vec&lt;Address&gt;</code></dt>
+<dt><strong><code>type_string</code></strong> :&ensp;<code>RUST variable type, e.g. </code>Vec<Address>``</dt>
 <dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -8151,7 +8324,7 @@ block_hash: Optional block hash, when left to None the chain tip will be used.</
 
     Parameters
     ----------
-    type_string: RUST variable type, e.g. Vec&lt;Address&gt;
+    type_string: RUST variable type, e.g. `Vec&lt;Address&gt;`
 
     Returns
     -------
