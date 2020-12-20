@@ -52,6 +52,30 @@ class StorageFunctionNotFound(ValueError):
 
 
 class ConfigurationError(Exception):
+    pass
+
+
+class ExtrinsicFailedException(Exception):
+    pass
+
+
+class DeployContractFailedException(Exception):
+    pass
+
+
+class ContractReadFailedException(Exception):
+    pass
+
+
+class ContractExecFailedException(Exception):
+    pass
+
+
+class BlockHashNotFound(Exception):
+    pass
+
+
+class ExtrinsicNotFound(Exception):
     pass</code></pre>
 </details>
 </section>
@@ -64,6 +88,25 @@ class ConfigurationError(Exception):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
+<dt id="substrateinterface.exceptions.BlockHashNotFound"><code class="flex name class">
+<span>class <span class="ident">BlockHashNotFound</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Common base class for all non-exit exceptions.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BlockHashNotFound(Exception):
+    pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
 <dt id="substrateinterface.exceptions.ConfigurationError"><code class="flex name class">
 <span>class <span class="ident">ConfigurationError</span></span>
 <span>(</span><span>*args, **kwargs)</span>
@@ -75,6 +118,101 @@ class ConfigurationError(Exception):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class ConfigurationError(Exception):
+    pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+<dt id="substrateinterface.exceptions.ContractExecFailedException"><code class="flex name class">
+<span>class <span class="ident">ContractExecFailedException</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Common base class for all non-exit exceptions.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ContractExecFailedException(Exception):
+    pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+<dt id="substrateinterface.exceptions.ContractReadFailedException"><code class="flex name class">
+<span>class <span class="ident">ContractReadFailedException</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Common base class for all non-exit exceptions.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ContractReadFailedException(Exception):
+    pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+<dt id="substrateinterface.exceptions.DeployContractFailedException"><code class="flex name class">
+<span>class <span class="ident">DeployContractFailedException</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Common base class for all non-exit exceptions.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DeployContractFailedException(Exception):
+    pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+<dt id="substrateinterface.exceptions.ExtrinsicFailedException"><code class="flex name class">
+<span>class <span class="ident">ExtrinsicFailedException</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Common base class for all non-exit exceptions.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ExtrinsicFailedException(Exception):
+    pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+<dt id="substrateinterface.exceptions.ExtrinsicNotFound"><code class="flex name class">
+<span>class <span class="ident">ExtrinsicNotFound</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Common base class for all non-exit exceptions.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ExtrinsicNotFound(Exception):
     pass</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -139,7 +277,25 @@ class ConfigurationError(Exception):
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
+<h4><code><a title="substrateinterface.exceptions.BlockHashNotFound" href="#substrateinterface.exceptions.BlockHashNotFound">BlockHashNotFound</a></code></h4>
+</li>
+<li>
 <h4><code><a title="substrateinterface.exceptions.ConfigurationError" href="#substrateinterface.exceptions.ConfigurationError">ConfigurationError</a></code></h4>
+</li>
+<li>
+<h4><code><a title="substrateinterface.exceptions.ContractExecFailedException" href="#substrateinterface.exceptions.ContractExecFailedException">ContractExecFailedException</a></code></h4>
+</li>
+<li>
+<h4><code><a title="substrateinterface.exceptions.ContractReadFailedException" href="#substrateinterface.exceptions.ContractReadFailedException">ContractReadFailedException</a></code></h4>
+</li>
+<li>
+<h4><code><a title="substrateinterface.exceptions.DeployContractFailedException" href="#substrateinterface.exceptions.DeployContractFailedException">DeployContractFailedException</a></code></h4>
+</li>
+<li>
+<h4><code><a title="substrateinterface.exceptions.ExtrinsicFailedException" href="#substrateinterface.exceptions.ExtrinsicFailedException">ExtrinsicFailedException</a></code></h4>
+</li>
+<li>
+<h4><code><a title="substrateinterface.exceptions.ExtrinsicNotFound" href="#substrateinterface.exceptions.ExtrinsicNotFound">ExtrinsicNotFound</a></code></h4>
 </li>
 <li>
 <h4><code><a title="substrateinterface.exceptions.StorageFunctionNotFound" href="#substrateinterface.exceptions.StorageFunctionNotFound">StorageFunctionNotFound</a></code></h4>
