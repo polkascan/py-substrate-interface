@@ -133,10 +133,25 @@ class ContractMetadata:
 
         arg_type = self.metadata_dict['types'][type_id - 1]
 
+        # Predefined types defined in crate ink_env
         if 'path' in arg_type:
+
             if arg_type['path'] == ['ink_env', 'types', 'AccountId']:
                 return 'AccountId'
 
+            if arg_type['path'] == ['ink_env', 'types', 'Hash']:
+                return 'Hash'
+
+            if arg_type['path'] == ['ink_env', 'types', 'Balance']:
+                return 'Balance'
+
+            if arg_type['path'] == ['ink_env', 'types', 'Timestamp']:
+                return 'Moment'
+
+            if arg_type['path'] == ['ink_env', 'types', 'BlockNumber']:
+                return 'BlockNumber'
+
+        # RUST primitives
         if 'primitive' in arg_type['def']:
             return arg_type['def']['primitive']
 
