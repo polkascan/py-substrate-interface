@@ -590,23 +590,33 @@ class ContractInstance:
 
         if 'result' in response:
 
-            if 'success' in response['result']:
-
-                try:
-
-                    response['result']['success']['data'] = self.substrate.decode_scale(
-                        type_string=self.metadata.get_return_type_string_for_message(method),
-                        scale_bytes=ScaleBytes(response['result']['success']['data'])
-                    )
-                except NotImplementedError:
-                    pass
+            return_type_string = self.metadata.get_return_type_string_for_message(method)
 
             # Wrap the result in a ContractExecResult Enum because the exec will result in the same
             ContractExecResult = self.substrate.runtime_config.get_decoder_class('ContractExecResult')
 
-            contract_exec_result = ContractExecResult()
+            contract_exec_result = ContractExecResult(data_scale_type=return_type_string)
+
+            if 'success' in response['result']:
+
+                contract_exec_result.gas_consumed = response['result']['success']['gas_consumed']
+                contract_exec_result.flags = response['result']['success']['flags']
+
+                try:
+
+                    result_scale_obj = self.substrate.decode_scale(
+                        type_string=return_type_string,
+                        scale_bytes=ScaleBytes(response['result']['success']['data']),
+                        return_scale_obj=True
+                    )
+
+                    response['result']['success']['data'] = result_scale_obj.value
+                    contract_exec_result.contract_result_data = result_scale_obj
+
+                except NotImplementedError:
+                    pass
+
             contract_exec_result.value = response['result']
-            contract_exec_result.process_contract_result()
 
             return contract_exec_result
 

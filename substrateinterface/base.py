@@ -2124,7 +2124,7 @@ class SubstrateInterface:
 
         return extrinsics
 
-    def decode_scale(self, type_string, scale_bytes, block_hash=None):
+    def decode_scale(self, type_string, scale_bytes, block_hash=None, return_scale_obj=False):
         """
         Helper function to decode arbitrary SCALE-bytes (e.g. 0x02000000) according to given RUST type_string
         (e.g. BlockNumber). The relevant versioning information of the type (if defined) will be applied if block_hash
@@ -2135,6 +2135,7 @@ class SubstrateInterface:
         type_string
         scale_bytes
         block_hash
+        return_scale_obj: if True the SCALE object itself is returned, otherwise the serialized dict value of the object
 
         Returns
         -------
@@ -2151,7 +2152,13 @@ class SubstrateInterface:
             metadata=self.metadata_decoder,
             runtime_config=self.runtime_config
         )
-        return obj.decode()
+
+        obj.decode()
+
+        if return_scale_obj:
+            return obj
+        else:
+            return obj.value
 
     def encode_scale(self, type_string, value, block_hash=None):
         """
