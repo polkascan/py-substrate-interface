@@ -35,6 +35,10 @@ class DeployContractFailedException(Exception):
     pass
 
 
+class ContractMetadataParseException(ValueError):
+    pass
+
+
 class ContractReadFailedException(Exception):
     pass
 

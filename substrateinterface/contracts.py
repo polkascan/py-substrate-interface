@@ -19,11 +19,11 @@ import os
 from hashlib import blake2b
 
 from substrateinterface.exceptions import ExtrinsicFailedException, DeployContractFailedException, \
-    ContractReadFailedException
+    ContractReadFailedException, ContractMetadataParseException
 from scalecodec import ScaleBytes, ScaleType, GenericContractExecResult
 from substrateinterface.base import SubstrateInterface, Keypair, ExtrinsicReceipt
 
-__all__ = ['ContractExecutionReceipt', 'ContractMetadata', 'ContractCode', 'ContractInstance']
+__all__ = ['ContractExecutionReceipt', 'ContractMetadata', 'ContractCode', 'ContractInstance', 'ContractEvent']
 
 
 class ContractMetadata:
@@ -41,8 +41,6 @@ class ContractMetadata:
         self.metadata_dict = metadata_dict
         self.substrate = substrate
         self.type_registry = {}
-
-        self.type_string_prefix = f"ink.{self.metadata_dict['source']['hash']}"
 
         self.__parse_type_registry()
 
@@ -72,6 +70,24 @@ class ContractMetadata:
             raise AttributeError("'{}' object has no attribute '{}'".format(self.__class__.__name__, item))
 
     def __parse_type_registry(self):
+
+        # Check requirements
+        if 'types' not in self.metadata_dict:
+            raise ContractMetadataParseException("No 'types' directive present in metadata file")
+
+        if 'spec' not in self.metadata_dict:
+            raise ContractMetadataParseException("'spec' directive not present in metadata file")
+
+        if 'constructors' not in self.metadata_dict['spec']:
+            raise ContractMetadataParseException("No constructors present in metadata file")
+
+        if 'messages' not in self.metadata_dict['spec']:
+            raise ContractMetadataParseException("No messages present in metadata file")
+
+        if 'source' not in self.metadata_dict:
+            raise ContractMetadataParseException("'source' directive not present in metadata file")
+
+        self.type_string_prefix = f"ink.{self.metadata_dict['source']['hash']}"
 
         for idx, metadata_type in enumerate(self.metadata_dict['types']):
             if idx + 1 not in self.type_registry:
@@ -133,23 +149,32 @@ class ContractMetadata:
 
         arg_type = self.metadata_dict['types'][type_id - 1]
 
-        # Predefined types defined in crate ink_env
         if 'path' in arg_type:
 
-            if arg_type['path'] == ['ink_env', 'types', 'AccountId']:
-                return 'AccountId'
+            # Option field
+            if arg_type['path'] == ['Option']:
 
-            if arg_type['path'] == ['ink_env', 'types', 'Hash']:
-                return 'Hash'
+                # Examine the fields in the 'Some' variant
+                options_fields = arg_type['def']['variant']['variants'][1]['fields']
 
-            if arg_type['path'] == ['ink_env', 'types', 'Balance']:
-                return 'Balance'
+                if len(options_fields) == 1:
+                    sub_type = self.get_type_string_for_metadata_type(options_fields[0]['type'])
+                else:
+                    raise NotImplementedError('Tuples in Option field not yet supported')
 
-            if arg_type['path'] == ['ink_env', 'types', 'Timestamp']:
-                return 'Moment'
+                return f"Option<{sub_type}>"
 
-            if arg_type['path'] == ['ink_env', 'types', 'BlockNumber']:
-                return 'BlockNumber'
+            # Predefined types defined in crate ink_env
+            if arg_type['path'][0:2] == ['ink_env', 'types']:
+
+                if arg_type['path'][2] == 'Timestamp':
+                    return 'Moment'
+
+                elif arg_type['path'][2] in ['AccountId', 'Hash', 'Balance', 'BlockNumber']:
+                    return arg_type['path'][2]
+
+                else:
+                    raise NotImplementedError(f"Unsupported ink_env type '{arg_type['path'][2]}'")
 
         # RUST primitives
         if 'primitive' in arg_type['def']:
@@ -170,7 +195,7 @@ class ContractMetadata:
 
                 if 'fields' in variant:
                     if len(variant['fields']) > 1:
-                        raise NotImplementedError('Tuples as element of enums not supported')
+                        raise NotImplementedError('Tuples as field of enums not supported')
 
                     enum_value = self.get_type_string_for_metadata_type(variant['fields'][0]['type'])
 
@@ -595,7 +620,7 @@ class ContractInstance:
             # Wrap the result in a ContractExecResult Enum because the exec will result in the same
             ContractExecResult = self.substrate.runtime_config.get_decoder_class('ContractExecResult')
 
-            contract_exec_result = ContractExecResult(data_scale_type=return_type_string)
+            contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
 
             if 'success' in response['result']:
 
