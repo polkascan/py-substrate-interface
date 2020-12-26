@@ -504,7 +504,8 @@ class ContractCode:
 
         return self.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
 
-    def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None) -> "ContractInstance":
+    def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None,
+               deployment_salt: str = None) -> "ContractInstance":
         """
         Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
         constructor arguments
@@ -516,6 +517,7 @@ class ContractCode:
         gas_limit:
         constructor: name of the constructor to use, provided in the metadata
         args: arguments for the constructor
+        deployment_salt: optional string or hex-string that acts as a salt for this deployment
 
         Returns
         -------
@@ -532,7 +534,8 @@ class ContractCode:
                 'endowment': endowment,
                 'gas_limit': gas_limit,
                 'code_hash': f'0x{self.code_hash.hex()}',
-                'data': data.to_hex()
+                'data': data.to_hex(),
+                'salt': deployment_salt or ''
             }
         )
 

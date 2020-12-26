@@ -76,11 +76,11 @@ if contract:
 
     result = contract.read(keypair, 'total_supply')
 
-    print('Total supply:', result.value)
+    print('Total supply:', result.contract_result_data)
 
     result = contract.read(keypair, 'balance_of', args={'owner': '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'})
 
-    print('Current balance:', result.value)
+    print('Current balance:', result.contract_result_data)
 
     # Do a gas estimation of the transfer
     gas_predit_result = contract.read(keypair, 'transfer', args={
@@ -94,7 +94,7 @@ if contract:
     contract_receipt = contract.exec(keypair, 'transfer', args={
         'to': '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty',
         'value': 6 * 10**15,
-    }, gas_limit=gas_predit_result.value['success']['gas_consumed'])
+    }, gas_limit=gas_predit_result.gas_consumed)
 
     if contract_receipt.is_succes:
         print('✅ Transfer success, contract events: ')
