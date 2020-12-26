@@ -323,8 +323,8 @@ contract = ContractInstance.create_from_address(
 
 ```python
 result = contract.read(keypair, 'total_supply')
-print('Total supply:', result.value)
-# Total supply: {'success': {'data': 1000000000000000000, 'flags': 0, 'gas_consumed': 2616500000}}
+print('Total supply:', result.contract_result_data)
+# Total supply: 1000000000000000000
 
 result = contract.read(keypair, 'balance_of', args={'owner': '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'})
 print('Balance:', result.value)
