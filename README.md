@@ -272,7 +272,7 @@ for event in receipt.triggered_events:
 
 #### Deploy a contract 
 
-_Tested on Substrate 2.0.0-5ea23999 with the ERC20 contract from the tutorial_:
+_Tested on [Substrate 2.0.0-533bbbd](https://github.com/paritytech/substrate/tree/533bbbd2315d55906a6dac5726a722e094656d52) and [canvas-node](https://github.com/paritytech/canvas-node) with the [ERC20 contract from the tutorial](https://substrate.dev/substrate-contracts-workshop/#/2/introduction)_:
 
 ```python
 substrate = SubstrateInterface(

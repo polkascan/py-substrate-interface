@@ -25,7 +25,10 @@ from substrateinterface import SubstrateInterface, Keypair
 try:
     substrate = SubstrateInterface(
         url="ws://127.0.0.1:9944",
+        type_registry_preset='development'
+        # type_registry_preset='canvas'
     )
+
 except ConnectionRefusedError:
     print("⚠️ No local Substrate node running, try running 'start_local_substrate_node.sh' first")
     exit()
@@ -33,12 +36,12 @@ except ConnectionRefusedError:
 keypair = Keypair.create_from_uri('//Alice')
 
 # Check if contract is on chain
-contract_info = substrate.query("Contracts", "ContractInfoOf", params=['5FV9cnzFc2tDrWcDkmoup7VZWpH9HrTaw8STnWpAQqT7KvUK'])
+contract_info = substrate.query("Contracts", "ContractInfoOf", params=['5DS85d9YE5KHqoffuYpLHwL3XNjJPQKc7ftrxdqS7S282gkK'])
 
 if contract_info:
     # Create contract instance from deterministic address
     contract = ContractInstance.create_from_address(
-        contract_address="5FV9cnzFc2tDrWcDkmoup7VZWpH9HrTaw8STnWpAQqT7KvUK",
+        contract_address="5DS85d9YE5KHqoffuYpLHwL3XNjJPQKc7ftrxdqS7S282gkK",
         metadata_file=os.path.join(os.path.dirname(__file__), 'assets', 'erc20.json'),
         substrate=substrate
     )

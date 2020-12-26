@@ -625,7 +625,30 @@ class ContractInstance:
 
             contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
 
-            if 'success' in response['result']:
+            if 'result' in response['result']:
+
+                contract_exec_result.gas_consumed = response['result']['gasConsumed']
+
+                if 'Ok' in response['result']['result']:
+
+                    contract_exec_result.flags = response['result']['result']['Ok']['flags']
+
+                    try:
+
+                        result_scale_obj = self.substrate.decode_scale(
+                            type_string=return_type_string,
+                            scale_bytes=ScaleBytes(response['result']['result']['Ok']['data']),
+                            return_scale_obj=True
+                        )
+
+                        response['result']['result']['Ok']['data'] = result_scale_obj.value
+                        contract_exec_result.contract_result_data = result_scale_obj
+
+                    except NotImplementedError:
+                        pass
+
+            # Backwards compatibility
+            elif 'success' in response['result']:
 
                 contract_exec_result.gas_consumed = response['result']['success']['gas_consumed']
                 contract_exec_result.flags = response['result']['success']['flags']
