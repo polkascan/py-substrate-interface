@@ -2513,7 +2513,7 @@ class ExtrinsicReceipt:
                         if param['type'] == 'DispatchInfo':
                             self.__weight = param['value']['weight']
 
-                if event.event_module.name == 'System' and event.event.name == 'ExtrinsicFailed':
+                elif event.event_module.name == 'System' and event.event.name == 'ExtrinsicFailed':
                     self.__is_succes = False
 
                     for param in event.params:
@@ -2550,10 +2550,10 @@ class ExtrinsicReceipt:
                         if param['type'] == 'DispatchInfo':
                             self.__weight = param['value']['weight']
 
-                if event.event_module.name == 'Treasury' and event.event.name == 'Deposit':
+                elif event.event_module.name == 'Treasury' and event.event.name == 'Deposit':
                     self.__total_fee_amount += event.params[0]['value']
 
-                if event.event_module.name == 'Balances' and event.event.name == 'Deposit':
+                elif event.event_module.name == 'Balances' and event.event.name == 'Deposit':
                     self.__total_fee_amount += event.params[1]['value']
 
     @property
