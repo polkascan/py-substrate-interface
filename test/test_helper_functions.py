@@ -17,10 +17,13 @@
 import unittest
 from unittest.mock import MagicMock
 
+from substrateinterface.exceptions import SubstrateRequestException
+
 from scalecodec import ScaleBytes, Bytes
 from scalecodec.metadata import MetadataDecoder
 
 from substrateinterface import SubstrateInterface
+from test import settings
 from test.fixtures import metadata_v12_hex
 
 
@@ -58,6 +61,23 @@ class TestHelperFunctions(unittest.TestCase):
                 }
 
         cls.substrate.rpc_request = MagicMock(side_effect=mocked_request)
+
+        cls.empty_substrate = SubstrateInterface(url='dummy', ss58_format=42, type_registry_preset='kusama')
+
+        def mocked_request(method, params):
+
+            return {'jsonrpc': '2.0', 'result': None, 'id': 1}
+
+        cls.empty_substrate.rpc_request = MagicMock(side_effect=mocked_request)
+
+        cls.error_substrate = SubstrateInterface(url='dummy', ss58_format=42, type_registry_preset='kusama')
+
+        def mocked_request(method, params):
+            return {'jsonrpc': '2.0', 'error': {
+                'code': -32602, 'message': 'Generic error message'
+            }, 'id': 1}
+
+        cls.error_substrate.rpc_request = MagicMock(side_effect=mocked_request)
 
     def test_decode_scale(self):
         self.assertEqual(self.substrate.decode_scale('Compact<u32>', '0x08'), 2)
@@ -109,6 +129,26 @@ class TestHelperFunctions(unittest.TestCase):
         self.assertEqual(error['module_name'], "System")
         self.assertEqual(error['error_name'], "InvalidSpecName")
         self.assertEqual(error['spec_version'], 2023)
+
+    def test_helper_functions_should_return_null_not_exists(self):
+        self.assertIsNone(self.empty_substrate.get_block_number(
+            block_hash="0x6666666666666666666666666666666666666666666666666666666666666666"
+        ))
+
+        self.assertIsNone(self.empty_substrate.get_block_hash(block_id=99999999999999999))
+        self.assertIsNone(self.empty_substrate.get_block_header(block_hash='0x'))
+        self.assertIsNone(self.empty_substrate.get_block_metadata(block_hash='0x')['result'])
+        self.assertIsNone(self.empty_substrate.get_block_runtime_version(block_hash='0x'))
+
+    def test_helper_functions_invalid_input(self):
+        self.assertRaises(SubstrateRequestException, self.error_substrate.get_block_number, "0x6666666666666666")
+        self.assertRaises(SubstrateRequestException, self.error_substrate.get_block_hash, -1)
+        self.assertRaises(SubstrateRequestException, self.error_substrate.get_block_header, '0x')
+        self.assertRaises(SubstrateRequestException, self.error_substrate.get_block_metadata, '0x')
+        self.assertRaises(SubstrateRequestException, self.error_substrate.get_block_runtime_version, '0x')
+        self.assertRaises(SubstrateRequestException, self.error_substrate.iterate_map, 'System', 'Account')
+        self.assertRaises(SubstrateRequestException, self.error_substrate.query, 'System', 'Account', ['0x'])
+        self.assertRaises(SubstrateRequestException, self.error_substrate.get_runtime_metadata, '0x')
 
 
 if __name__ == '__main__':
