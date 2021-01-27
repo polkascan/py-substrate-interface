@@ -528,7 +528,7 @@ class ContractCode:
 
         result = self.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
 
-        if not result.is_succes:
+        if not result.is_success:
             raise ExtrinsicFailedException(result.error_message)
 
         for event in result.triggered_events:
@@ -825,7 +825,7 @@ the WASM bytes and metadata</p>
 
         result = self.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
 
-        if not result.is_succes:
+        if not result.is_success:
             raise ExtrinsicFailedException(result.error_message)
 
         for event in result.triggered_events:
@@ -1002,7 +1002,7 @@ constructor arguments</p>
 
     result = self.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
 
-    if not result.is_succes:
+    if not result.is_success:
         raise ExtrinsicFailedException(result.error_message)
 
     for event in result.triggered_events:
@@ -1264,7 +1264,7 @@ def contract_events(self):
 <li><code><a title="substrateinterface.base.ExtrinsicReceipt.error_message" href="base.html#substrateinterface.base.ExtrinsicReceipt.error_message">error_message</a></code></li>
 <li><code><a title="substrateinterface.base.ExtrinsicReceipt.extrinsic" href="base.html#substrateinterface.base.ExtrinsicReceipt.extrinsic">extrinsic</a></code></li>
 <li><code><a title="substrateinterface.base.ExtrinsicReceipt.extrinsic_idx" href="base.html#substrateinterface.base.ExtrinsicReceipt.extrinsic_idx">extrinsic_idx</a></code></li>
-<li><code><a title="substrateinterface.base.ExtrinsicReceipt.is_succes" href="base.html#substrateinterface.base.ExtrinsicReceipt.is_succes">is_succes</a></code></li>
+<li><code><a title="substrateinterface.base.ExtrinsicReceipt.is_success" href="base.html#substrateinterface.base.ExtrinsicReceipt.is_success">is_success</a></code></li>
 <li><code><a title="substrateinterface.base.ExtrinsicReceipt.total_fee_amount" href="base.html#substrateinterface.base.ExtrinsicReceipt.total_fee_amount">total_fee_amount</a></code></li>
 <li><code><a title="substrateinterface.base.ExtrinsicReceipt.triggered_events" href="base.html#substrateinterface.base.ExtrinsicReceipt.triggered_events">triggered_events</a></code></li>
 <li><code><a title="substrateinterface.base.ExtrinsicReceipt.weight" href="base.html#substrateinterface.base.ExtrinsicReceipt.weight">weight</a></code></li>

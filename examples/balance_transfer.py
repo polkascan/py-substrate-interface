@@ -63,7 +63,7 @@ try:
         receipt.extrinsic_hash, receipt.block_hash
     ))
 
-    if receipt.is_succes:
+    if receipt.is_success:
 
         print('✅ Success, triggered events:')
         for event in receipt.triggered_events:

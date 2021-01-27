@@ -184,7 +184,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
             block_hash="0x8dae706d0f4882a7db484e708e27d9363a3adfa53baaac8b58c30f7c519a2520"
         )
 
-        self.assertTrue(result.is_succes)
+        self.assertTrue(result.is_success)
 
     def test_check_extrinsic_failed_result(self):
         result = ExtrinsicReceipt(
@@ -193,7 +193,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
             block_hash="0x4b459839cc0b8c807061b5bfc68ca78b2039296174ed0a7754a70b84b287181e"
         )
 
-        self.assertFalse(result.is_succes)
+        self.assertFalse(result.is_success)
 
     def test_check_extrinsic_failed_error_message(self):
         result = ExtrinsicReceipt(
@@ -264,7 +264,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
             extrinsic_hash="0xa5f2b9f4b8ea9f357780dd49010c99708f580a02624e4500af24b20b92773100"
         )
         with self.assertRaises(AttributeError):
-            result.is_succes = False
+            result.is_success = False
 
         with self.assertRaises(AttributeError):
             result.triggered_events = False

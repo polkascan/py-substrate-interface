@@ -25,8 +25,8 @@ from substrateinterface import SubstrateInterface, Keypair
 try:
     substrate = SubstrateInterface(
         url="ws://127.0.0.1:9944",
-        type_registry_preset='development'
-        # type_registry_preset='canvas'
+        # type_registry_preset='development'
+        type_registry_preset='canvas'
     )
 
 except ConnectionRefusedError:
@@ -36,7 +36,7 @@ except ConnectionRefusedError:
 keypair = Keypair.create_from_uri('//Alice')
 
 # Check if contract is on chain
-contract_info = substrate.query("Contracts", "ContractInfoOf", params=['5DS85d9YE5KHqoffuYpLHwL3XNjJPQKc7ftrxdqS7S282gkK'])
+contract_info = substrate.query("Contracts", "ContractInfoOf", ['5DS85d9YE5KHqoffuYpLHwL3XNjJPQKc7ftrxdqS7S282gkK'])
 
 if contract_info:
     # Create contract instance from deterministic address
@@ -56,7 +56,7 @@ else:
 
     receipt = code.upload_wasm(keypair)
 
-    if receipt.is_succes:
+    if receipt.is_success:
         print('✅ Contract WASM Uploaded')
 
         for event in receipt.triggered_events:
@@ -99,7 +99,7 @@ if contract:
         'value': 6 * 10**15,
     }, gas_limit=gas_predit_result.gas_consumed)
 
-    if contract_receipt.is_succes:
+    if contract_receipt.is_success:
         print('✅ Transfer success, contract events: ')
         for contract_event in contract_receipt.contract_events:
             print(f'* {contract_event.name} {contract_event.docs}:  {contract_event.value}')

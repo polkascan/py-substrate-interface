@@ -2512,7 +2512,7 @@ class ExtrinsicReceipt:
         self.__extrinsic = None
 
         self.__triggered_events = None
-        self.__is_succes = None
+        self.__is_success = None
         self.__error_message = None
         self.__weight = None
         self.__total_fee_amount = None
@@ -2593,7 +2593,7 @@ class ExtrinsicReceipt:
             for event in self.triggered_events:
                 # Check events
                 if event.event_module.name == 'System' and event.event.name == 'ExtrinsicSuccess':
-                    self.__is_succes = True
+                    self.__is_success = True
                     self.__error_message = None
 
                     for param in event.params:
@@ -2601,7 +2601,7 @@ class ExtrinsicReceipt:
                             self.__weight = param['value']['weight']
 
                 elif event.event_module.name == 'System' and event.event.name == 'ExtrinsicFailed':
-                    self.__is_succes = False
+                    self.__is_success = False
 
                     for param in event.params:
                         if param['type'] == 'DispatchError':
@@ -2644,7 +2644,7 @@ class ExtrinsicReceipt:
                     self.__total_fee_amount += event.params[1]['value']
 
     @property
-    def is_succes(self) -> bool:
+    def is_success(self) -> bool:
         """
         Returns `True` if `ExtrinsicSuccess` event is triggered, `False` in case of `ExtrinsicFailed`
         In case of False `error_message` will contain more details about the error
@@ -2654,10 +2654,10 @@ class ExtrinsicReceipt:
         -------
         bool
         """
-        if self.__is_succes is None:
+        if self.__is_success is None:
             self.process_events()
 
-        return self.__is_succes
+        return self.__is_success
 
     @property
     def error_message(self) -> typing.Optional[dict]:
@@ -2671,7 +2671,7 @@ class ExtrinsicReceipt:
         dict
         """
         if self.__error_message is None:
-            if self.is_succes:
+            if self.is_success:
                 return None
             self.process_events()
         return self.__error_message

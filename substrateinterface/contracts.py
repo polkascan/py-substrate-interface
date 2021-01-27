@@ -543,7 +543,7 @@ class ContractCode:
 
         result = self.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
 
-        if not result.is_succes:
+        if not result.is_success:
             raise ExtrinsicFailedException(result.error_message)
 
         for event in result.triggered_events:

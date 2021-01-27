@@ -290,7 +290,7 @@ code = ContractCode.create_from_contract_files(
 
 receipt = code.upload_wasm(keypair)
 
-if receipt.is_succes:
+if receipt.is_success:
     print('* Contract WASM Uploaded')
 
     for event in receipt.triggered_events:
@@ -298,9 +298,9 @@ if receipt.is_succes:
 
     # Deploy contract
     contract = code.deploy(
-        keypair=keypair, endowment=10**15, gas_limit=1000000000000,
+        keypair=keypair, endowment=10 ** 15, gas_limit=1000000000000,
         constructor="new",
-        args={'initial_supply': 1000 * 10**15}
+        args={'initial_supply': 1000 * 10 ** 15}
     )
 
     print(f'Deployed @ {contract.contract_address}')
@@ -352,7 +352,7 @@ contract_receipt = contract.exec(keypair, 'transfer', args={
     'value': 6 * 1000000000000000,
 }, gas_limit=gas_predit_result.gas_consumed)
 
-if contract_receipt.is_succes:
+if contract_receipt.is_success:
     print('Transfer success, triggered contract event:')
 
     for contract_event in contract_receipt.contract_events:

@@ -2578,7 +2578,7 @@ class ExtrinsicReceipt:
                     self.__total_fee_amount += event.params[1][&#39;value&#39;]
 
     @property
-    def is_succes(self) -&gt; bool:
+    def is_success(self) -&gt; bool:
         &#34;&#34;&#34;
         Returns `True` if `ExtrinsicSuccess` event is triggered, `False` in case of `ExtrinsicFailed`
         In case of False `error_message` will contain more details about the error
@@ -2605,7 +2605,7 @@ class ExtrinsicReceipt:
         dict
         &#34;&#34;&#34;
         if self.__error_message is None:
-            if self.is_succes:
+            if self.is_success:
                 return None
             self.process_events()
         return self.__error_message
@@ -2846,7 +2846,7 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
                     self.__total_fee_amount += event.params[1][&#39;value&#39;]
 
     @property
-    def is_succes(self) -&gt; bool:
+    def is_success(self) -&gt; bool:
         &#34;&#34;&#34;
         Returns `True` if `ExtrinsicSuccess` event is triggered, `False` in case of `ExtrinsicFailed`
         In case of False `error_message` will contain more details about the error
@@ -2873,7 +2873,7 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
         dict
         &#34;&#34;&#34;
         if self.__error_message is None:
-            if self.is_succes:
+            if self.is_success:
                 return None
             self.process_events()
         return self.__error_message
@@ -2958,7 +2958,7 @@ def error_message(self) -&gt; typing.Optional[dict]:
     dict
     &#34;&#34;&#34;
     if self.__error_message is None:
-        if self.is_succes:
+        if self.is_success:
             return None
         self.process_events()
     return self.__error_message</code></pre>
@@ -3016,7 +3016,7 @@ def extrinsic_idx(self) -&gt; int:
     return self.__extrinsic_idx</code></pre>
 </details>
 </dd>
-<dt id="substrateinterface.base.ExtrinsicReceipt.is_succes"><code class="name">var <span class="ident">is_succes</span> : bool</code></dt>
+<dt id="substrateinterface.base.ExtrinsicReceipt.is_succes"><code class="name">var <span class="ident">is_success</span> : bool</code></dt>
 <dd>
 <div class="desc"><p>Returns <code>True</code> if <code>ExtrinsicSuccess</code> event is triggered, <code>False</code> in case of <code>ExtrinsicFailed</code>
 In case of False <code>error_message</code> will contain more details about the error</p>
@@ -3030,7 +3030,7 @@ In case of False <code>error_message</code> will contain more details about the 
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def is_succes(self) -&gt; bool:
+def is_success(self) -&gt; bool:
     &#34;&#34;&#34;
     Returns `True` if `ExtrinsicSuccess` event is triggered, `False` in case of `ExtrinsicFailed`
     In case of False `error_message` will contain more details about the error
@@ -9122,7 +9122,7 @@ use this method to perform the request.</p>
 <li><code><a title="substrateinterface.base.ExtrinsicReceipt.extrinsic" href="#substrateinterface.base.ExtrinsicReceipt.extrinsic">extrinsic</a></code></li>
 <li><code><a title="substrateinterface.base.ExtrinsicReceipt.extrinsic_idx" href="#substrateinterface.base.ExtrinsicReceipt.extrinsic_idx">extrinsic_idx</a></code></li>
 <li><code><a title="substrateinterface.base.ExtrinsicReceipt.get" href="#substrateinterface.base.ExtrinsicReceipt.get">get</a></code></li>
-<li><code><a title="substrateinterface.base.ExtrinsicReceipt.is_succes" href="#substrateinterface.base.ExtrinsicReceipt.is_succes">is_succes</a></code></li>
+<li><code><a title="substrateinterface.base.ExtrinsicReceipt.is_success" href="#substrateinterface.base.ExtrinsicReceipt.is_succes">is_success</a></code></li>
 <li><code><a title="substrateinterface.base.ExtrinsicReceipt.process_events" href="#substrateinterface.base.ExtrinsicReceipt.process_events">process_events</a></code></li>
 <li><code><a title="substrateinterface.base.ExtrinsicReceipt.retrieve_extrinsic" href="#substrateinterface.base.ExtrinsicReceipt.retrieve_extrinsic">retrieve_extrinsic</a></code></li>
 <li><code><a title="substrateinterface.base.ExtrinsicReceipt.total_fee_amount" href="#substrateinterface.base.ExtrinsicReceipt.total_fee_amount">total_fee_amount</a></code></li>
