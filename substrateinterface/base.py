@@ -24,6 +24,8 @@ import re
 
 import requests
 import typing
+
+from scalecodec.exceptions import RemainingScaleBytesNotEmptyException
 from websocket import create_connection, WebSocketConnectionClosedException
 
 from scalecodec import ScaleBytes, GenericCall
@@ -2112,7 +2114,7 @@ class SubstrateInterface:
                             module=module, error=error, spec_version=self.runtime_version
                         )
 
-    def get_runtime_block(self, block_hash=None, block_id=None):
+    def get_runtime_block(self, block_hash=None, block_id=None, ignore_decoding_errors=False):
         """
         Retrieves a block with method `chain_getBlock` and in addition decodes extrinsics and log items
 
@@ -2120,6 +2122,7 @@ class SubstrateInterface:
         ----------
         block_hash
         block_id
+        ignore_decoding_errors: When True no exception will be raised if decoding of extrinsics failes and add as `None` instead
 
         Returns
         -------
@@ -2143,17 +2146,29 @@ class SubstrateInterface:
                     metadata=self.metadata_decoder,
                     runtime_config=self.runtime_config
                 )
-                extrinsic_decoder.decode()
-                response['block']['extrinsics'][idx] = extrinsic_decoder.value
+                try:
+                    extrinsic_decoder.decode()
+                    response['block']['extrinsics'][idx] = extrinsic_decoder.value
+
+                except (RemainingScaleBytesNotEmptyException, KeyError, IndexError):
+                    if not ignore_decoding_errors:
+                        raise
+                    response['block']['extrinsics'][idx] = None
 
             for idx, log_data in enumerate(response['block']['header']["digest"]["logs"]):
                 log_digest = LogDigest(ScaleBytes(log_data), runtime_config=self.runtime_config)
-                log_digest.decode()
-                response['block']['header']["digest"]["logs"][idx] = log_digest.value
+                try:
+                    log_digest.decode()
+                    response['block']['header']["digest"]["logs"][idx] = log_digest.value
+
+                except (RemainingScaleBytesNotEmptyException, KeyError, IndexError):
+                    if not ignore_decoding_errors:
+                        raise
+                    response['block']['header']["digest"]["logs"][idx] = None
 
         return response
 
-    def get_block_extrinsics(self, block_hash: str = None, block_id: int = None) -> list:
+    def get_block_extrinsics(self, block_hash: str = None, block_id: int = None, ignore_decoding_errors=False) -> list:
         """
         Retrieves a list of `Extrinsic` objects for given block_hash or block_id
 
@@ -2161,6 +2176,7 @@ class SubstrateInterface:
         ----------
         block_hash
         block_id
+        ignore_decoding_errors: When True no exception will be raised if decoding of extrinsics failes and add as `None` instead
 
         Returns
         -------
@@ -2184,7 +2200,13 @@ class SubstrateInterface:
                 metadata=self.metadata_decoder,
                 runtime_config=self.runtime_config
             )
-            extrinsic.decode()
+            try:
+                extrinsic.decode()
+            except (RemainingScaleBytesNotEmptyException, KeyError, IndexError):
+                if not ignore_decoding_errors:
+                    raise
+                extrinsic = None
+
             extrinsics.append(extrinsic)
 
         return extrinsics
