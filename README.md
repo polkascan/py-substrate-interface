@@ -1,6 +1,6 @@
 # Python Substrate Interface
 
-[![Travis CI Build Status](https://api.travis-ci.org/polkascan/py-substrate-interface.svg?branch=master)](https://travis-ci.org/polkascan/py-substrate-interface)
+[![Build Status](https://img.shields.io/github/workflow/status/polkascan/py-substrate-interface/Run%20unit%20tests)](https://github.com/polkascan/py-substrate-interface/actions?query=workflow%3A%22Run+unit+tests%22)
 [![Latest Version](https://img.shields.io/pypi/v/substrate-interface.svg)](https://pypi.org/project/substrate-interface/)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/substrate-interface.svg)](https://pypi.org/project/substrate-interface/)
 [![License](https://img.shields.io/pypi/l/substrate-interface.svg)](https://github.com/polkascan/py-substrate-interface/blob/master/LICENSE)
