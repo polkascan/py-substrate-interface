@@ -518,12 +518,31 @@ for extrinsic in result['block']['extrinsics']:
 
 When on-chain runtime upgrades occur, types used in call- or storage functions can be added or modified. Therefor it is
 important to keep the type registry presets up to date, otherwise this can lead to decoding errors like 
-`RemainingScaleBytesNotEmptyException`. At the moment the type registry for Polkadot, Kusama, Kulupu and
-Westend are being actively maintained for this library and an check and update procedure can be triggered with:
+`RemainingScaleBytesNotEmptyException`. 
+
+At the moment the type registry presets for Polkadot, Kusama, Rococo and
+Westend are being actively maintained for this library, and a check and update procedure can be triggered with:
  
 ```python
-substrate.update_type_registry_presets()
+substrate.reload_type_registry()
 ```
+
+This will also activate the updated preset for the current instance.
+
+It is also possible to always use 
+the remote type registry preset from Github with the `use_remote_preset` kwarg when instantiating:
+
+```python
+substrate = SubstrateInterface(
+    url="wss://rpc.polkadot.io",
+    ss58_format=0,
+    type_registry_preset='polkadot',
+    use_remote_preset=True
+)
+```
+
+To check for updates after instantiating the `substrate` object, using `substrate.reload_type_registry()` will download 
+the most recent type registry preset from Github and apply changes to current object.  
 
 ## License
 https://github.com/polkascan/py-substrate-interface/blob/master/LICENSE

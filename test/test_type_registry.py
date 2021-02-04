@@ -95,5 +95,49 @@ class MultipleTypeRegistryTestCase(unittest.TestCase):
         self.assertEqual(self.polkadot_substrate.encode_scale('TestType', 16), ScaleBytes('0x10'))
 
 
+class ReloadTypeRegistryTestCase(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.substrate = SubstrateInterface(
+            url='dummy',
+            ss58_format=42,
+            type_registry_preset='test'
+        )
+
+    def test_initial_correct_type_local(self):
+        decoding_class = self.substrate.runtime_config.type_registry['types']['blocknumber']
+        self.assertEqual(self.substrate.runtime_config.get_decoder_class('u64'), decoding_class)
+
+    def test_reloading_use_remote_preset(self):
+
+        # Intentionally overwrite type in local preset
+        u32_cls = self.substrate.runtime_config.get_decoder_class('u32')
+        u64_cls = self.substrate.runtime_config.get_decoder_class('u64')
+
+        self.substrate.runtime_config.type_registry['types']['blocknumber'] = u32_cls
+
+        self.assertEqual(u32_cls, self.substrate.runtime_config.get_decoder_class('BlockNumber'))
+
+        # Reload type registry
+        self.substrate.reload_type_registry()
+
+        self.assertEqual(u64_cls, self.substrate.runtime_config.get_decoder_class('BlockNumber'))
+
+    def test_reloading_use_local_preset(self):
+
+        # Intentionally overwrite type in local preset
+        u32_cls = self.substrate.runtime_config.get_decoder_class('u32')
+        u64_cls = self.substrate.runtime_config.get_decoder_class('u64')
+
+        self.substrate.runtime_config.type_registry['types']['blocknumber'] = u32_cls
+
+        self.assertEqual(u32_cls, self.substrate.runtime_config.get_decoder_class('BlockNumber'))
+
+        # Reload type registry
+        self.substrate.reload_type_registry(use_remote_preset=False)
+
+        self.assertEqual(u64_cls, self.substrate.runtime_config.get_decoder_class('BlockNumber'))
+
+
 if __name__ == '__main__':
     unittest.main()

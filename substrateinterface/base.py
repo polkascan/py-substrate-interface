@@ -376,7 +376,7 @@ class Keypair:
 class SubstrateInterface:
 
     def __init__(self, url=None, websocket=None, ss58_format=None, type_registry=None, type_registry_preset=None,
-                 cache_region=None, address_type=None, runtime_config=None):
+                 cache_region=None, address_type=None, runtime_config=None, use_remote_preset=False):
         """
         A specialized class in interfacing with a Substrate node.
 
@@ -387,6 +387,7 @@ class SubstrateInterface:
         type_registry: A dict containing the custom type registry in format: {'types': {'customType': 'u32'},..}
         type_registry_preset: The name of the predefined type registry shipped with the SCALE-codec, e.g. kusama
         cache_region: a Dogpile cache region as a central store for the metadata cache
+        use_remote_preset: When True preset is downloaded from Github master, otherwise use files from local installed scalecodec package
         """
 
         if (not url and not websocket) or (url and websocket):
@@ -409,6 +410,8 @@ class SubstrateInterface:
         self.cache_region = cache_region
 
         self.ss58_format = ss58_format
+        self.type_registry_preset = type_registry_preset
+        self.type_registry = type_registry
 
         self.request_id = 1
         self.url = url
@@ -444,31 +447,7 @@ class SubstrateInterface:
 
         self.debug = False
 
-        if type_registry_preset:
-            # Load type registry according to preset
-            type_registry_preset_dict = load_type_registry_preset(type_registry_preset)
-
-            if not type_registry_preset_dict:
-                raise ValueError(f"Type registry preset '{type_registry_preset}' not found")
-        else:
-            # Try to auto discover type registry preset by chain name
-            type_registry_preset_dict = load_type_registry_preset(self.chain.lower())
-
-            if not type_registry_preset_dict:
-                raise ValueError(f"Could not auto-detect type registry preset for chain '{self.chain}'")
-
-            self.debug_message(f"Auto set type_registry_preset to {self.chain.lower()} ...")
-
-        if type_registry_preset_dict:
-            # Load type registries in runtime configuration
-            self.runtime_config.update_type_registry(load_type_registry_preset("default"))
-
-            if type_registry_preset != "default":
-                self.runtime_config.update_type_registry(type_registry_preset_dict)
-
-        if type_registry:
-            # Load type registries in runtime configuration
-            self.runtime_config.update_type_registry(type_registry)
+        self.reload_type_registry(use_remote_preset=use_remote_preset)
 
     def connect_websocket(self):
         if self.url and (self.url[0:6] == 'wss://' or self.url[0:5] == 'ws://'):
@@ -784,7 +763,7 @@ class SubstrateInterface:
             raise SubstrateRequestException(response['error']['message'])
 
         if response.get('result') and decode:
-            metadata_decoder = MetadataDecoder(ScaleBytes(response.get('result')))
+            metadata_decoder = MetadataDecoder(ScaleBytes(response.get('result')), runtime_config=self.runtime_config)
             metadata_decoder.decode()
 
             return metadata_decoder
@@ -1328,7 +1307,7 @@ class SubstrateInterface:
             raise SubstrateRequestException(response['error']['message'])
 
         if 'result' in response:
-            metadata_decoder = MetadataDecoder(ScaleBytes(response.get('result')))
+            metadata_decoder = MetadataDecoder(ScaleBytes(response.get('result')), runtime_config=self.runtime_config)
             response['result'] = metadata_decoder.decode()
 
         return response
@@ -2484,9 +2463,56 @@ class SubstrateInterface:
     def update_type_registry_presets(self):
         try:
             update_type_registries()
+            self.reload_type_registry(use_remote_preset=False)
             return True
         except Exception:
             return False
+
+    def reload_type_registry(self, use_remote_preset=True):
+        """
+        Reload type registry and preset used to instantiate the SubtrateInterface object. Useful to periodically apply
+        changes in type definitions when a runtime upgrade occurred
+
+        Parameters
+        ----------
+        use_remote_preset: When True preset is downloaded from Github master, otherwise use files from local installed scalecodec package
+
+        Returns
+        -------
+
+        """
+        self.runtime_config.clear_type_registry()
+
+        if self.type_registry_preset:
+            # Load type registry according to preset
+            type_registry_preset_dict = load_type_registry_preset(
+                name=self.type_registry_preset, use_remote_preset=use_remote_preset
+            )
+
+            if not type_registry_preset_dict:
+                raise ValueError(f"Type registry preset '{self.type_registry_preset}' not found")
+        else:
+            # Try to auto discover type registry preset by chain name
+            type_registry_preset_dict = load_type_registry_preset(self.chain.lower())
+
+            if not type_registry_preset_dict:
+                raise ValueError(f"Could not auto-detect type registry preset for chain '{self.chain}'")
+
+            self.debug_message(f"Auto set type_registry_preset to {self.chain.lower()} ...")
+            self.type_registry_preset = self.chain.lower()
+
+        if type_registry_preset_dict:
+            # Load type registries in runtime configuration
+            self.runtime_config.update_type_registry(
+                load_type_registry_preset("default", use_remote_preset=use_remote_preset)
+            )
+
+            if self.type_registry_preset != "default":
+                self.runtime_config.update_type_registry(type_registry_preset_dict)
+
+        if self.type_registry:
+            # Load type registries in runtime configuration
+            self.runtime_config.update_type_registry(self.type_registry)
 
 
 class ExtrinsicReceipt:
