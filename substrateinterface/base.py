@@ -199,7 +199,7 @@ class Keypair:
         public_key = public_key.hex()
         private_key = private_key.hex()
 
-        ss58_address = ss58_encode(public_key, ss58_format)
+        ss58_address = ss58_encode(f'0x{public_key}', ss58_format)
 
         return cls(
             ss58_address=ss58_address, public_key=public_key, private_key=private_key,
