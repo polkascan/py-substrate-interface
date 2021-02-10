@@ -68,17 +68,17 @@ class TestRuntimeState(unittest.TestCase):
         self.substrate.get_block_metadata = MagicMock(return_value=metadata_decoder)
         self.substrate.rpc_request = MagicMock(side_effect=mocked_request)
 
-        response = self.substrate.get_runtime_state(
+        result = self.substrate.query(
             module='System',
             storage_function='Events'
         )
 
-        self.assertEqual(len(response['result']), 2)
+        self.assertEqual(len(result.value), 2)
 
-        self.assertEqual(response['result'][0]['module_id'], 'System')
-        self.assertEqual(response['result'][0]['event_id'], 'ExtrinsicSuccess')
-        self.assertEqual(response['result'][1]['module_id'], 'System')
-        self.assertEqual(response['result'][1]['event_id'], 'ExtrinsicSuccess')
+        self.assertEqual(result.value[0]['module_id'], 'System')
+        self.assertEqual(result.value[0]['event_id'], 'ExtrinsicSuccess')
+        self.assertEqual(result.value[1]['module_id'], 'System')
+        self.assertEqual(result.value[1]['event_id'], 'ExtrinsicSuccess')
 
     def test_maptype_call(self):
 
@@ -116,13 +116,13 @@ class TestRuntimeState(unittest.TestCase):
         metadata_decoder.decode()
         self.substrate.get_block_metadata = MagicMock(return_value=metadata_decoder)
 
-        response = self.substrate.get_runtime_state(
+        result = self.substrate.query(
             module='System',
             storage_function='Account',
             params=['5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY']
         )
 
-        self.assertEqual(response['result'], {
+        self.assertEqual(result.value, {
             'data':
                 {
                     'feeFrozen': 10000000000000000,
