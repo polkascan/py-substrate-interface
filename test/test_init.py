@@ -74,6 +74,20 @@ class TestInit(unittest.TestCase):
         with self.assertRaises(ValueError):
             SubstrateInterface(url='http://dummy', type_registry_preset='unknown')
 
+    def test_is_valid_ss58_address(self):
+        self.assertTrue(self.kusama_substrate.is_valid_ss58_address('GLdQ4D4wkeEJUX8DBT9HkpycFVYQZ3fmJyQ5ZgBRxZ4LD3S'))
+        self.assertFalse(
+            self.kusama_substrate.is_valid_ss58_address('12gX42C4Fj1wgtfgoP624zeHrcPBqzhb4yAENyvFdGX6EUnN')
+        )
+        self.assertFalse(
+            self.kusama_substrate.is_valid_ss58_address('5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY')
+        )
+
+        self.assertFalse(self.polkadot_substrate.is_valid_ss58_address('GLdQ4D4wkeEJUX8DBT9HkpycFVYQZ3fmJyQ5ZgBRxZ4LD3S'))
+        self.assertTrue(
+            self.polkadot_substrate.is_valid_ss58_address('12gX42C4Fj1wgtfgoP624zeHrcPBqzhb4yAENyvFdGX6EUnN')
+        )
+
 
 if __name__ == '__main__':
     unittest.main()

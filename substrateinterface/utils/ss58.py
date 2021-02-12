@@ -22,13 +22,15 @@
 
 """
 import warnings
+from typing import Optional
+
 import base58
 from hashlib import blake2b
 
 from scalecodec.base import ScaleBytes, ScaleDecoder
 
 
-def ss58_decode(address, valid_ss58_format=None, valid_address_type=None):
+def ss58_decode(address: str, valid_ss58_format: Optional[int] = None, valid_address_type=None) -> str:
     """
     Decodes given SS58 encoded address to an account ID
     Parameters
@@ -147,7 +149,7 @@ def ss58_encode(address: str, ss58_format: int = 42, address_type=None) -> str:
     return base58.b58encode(input_bytes + checksum[:checksum_length]).decode()
 
 
-def ss58_encode_account_index(account_index, ss58_format=42, address_type=None):
+def ss58_encode_account_index(account_index: int, ss58_format: int = 42, address_type=None) -> str:
     """
     Encodes an AccountIndex to an Substrate address according to provided address_type
 
@@ -180,7 +182,7 @@ def ss58_encode_account_index(account_index, ss58_format=42, address_type=None):
     return ss58_encode(account_idx_encoder.encode(account_index).data, ss58_format)
 
 
-def ss58_decode_account_index(address, valid_ss58_format=None, valid_address_type=None):
+def ss58_decode_account_index(address: str, valid_ss58_format: Optional[int] = None, valid_address_type=None) -> int:
     """
     Decodes given SS58 encoded address to an AccountIndex
 
@@ -212,3 +214,29 @@ def ss58_decode_account_index(address, valid_ss58_format=None, valid_address_typ
     else:
         raise ValueError("Invalid account index length")
 
+
+def is_valid_ss58_address(value: str, valid_ss58_format: Optional[int] = None) -> bool:
+    """
+    Checks if given value is a valid SS58 formatted address, optionally check if address is valid for specified
+    ss58_format
+
+    Parameters
+    ----------
+    value: value to checked
+    valid_ss58_format: if valid_ss58_format is provided the address must be valid for specified ss58_format (network) as well
+
+    Returns
+    -------
+    bool
+    """
+
+    # Return False in case a public key is provided
+    if value.startswith('0x'):
+        return False
+
+    try:
+        ss58_decode(value, valid_ss58_format=valid_ss58_format)
+    except ValueError:
+        return False
+
+    return True

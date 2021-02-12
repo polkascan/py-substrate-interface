@@ -16,7 +16,8 @@
 
 import unittest
 
-from substrateinterface.utils.ss58 import ss58_decode, ss58_encode, ss58_encode_account_index, ss58_decode_account_index
+from substrateinterface.utils.ss58 import ss58_decode, ss58_encode, ss58_encode_account_index, \
+    ss58_decode_account_index, is_valid_ss58_address
 
 from substrateinterface import Keypair
 
@@ -158,6 +159,22 @@ class SS58TestCase(unittest.TestCase):
     def test_decode_invalid_length(self):
         with self.assertRaises(ValueError):
             ss58_decode('5GoKvZWG5ZPYL1WUovuHW3zJBWBP5eT8CbqjdRY4Q6iMaQubsdhfjksdhfkj')
+
+    def test_is_valid_ss58_address(self):
+        self.assertTrue(is_valid_ss58_address('5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'))
+        self.assertTrue(is_valid_ss58_address('5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', valid_ss58_format=42))
+        self.assertFalse(is_valid_ss58_address('5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', valid_ss58_format=2))
+
+        self.assertTrue(is_valid_ss58_address('GLdQ4D4wkeEJUX8DBT9HkpycFVYQZ3fmJyQ5ZgBRxZ4LD3S', valid_ss58_format=2))
+        self.assertFalse(is_valid_ss58_address('GLdQ4D4wkeEJUX8DBT9HkpycFVYQZ3fmJyQ5ZgBRxZ4LD3S', valid_ss58_format=42))
+        self.assertFalse(is_valid_ss58_address('GLdQ4D4wkeEJUX8DBT9HkpycFVYQZ3fmJyQ5ZgBRxZ4LD3S', valid_ss58_format=0))
+        self.assertTrue(is_valid_ss58_address('12gX42C4Fj1wgtfgoP624zeHrcPBqzhb4yAENyvFdGX6EUnN', valid_ss58_format=0))
+
+        self.assertFalse(is_valid_ss58_address('5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQ'))
+        self.assertFalse(is_valid_ss58_address('6GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'))
+        self.assertFalse(is_valid_ss58_address('0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d'))
+        self.assertFalse(is_valid_ss58_address('d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d'))
+        self.assertFalse(is_valid_ss58_address('incorrect_string'))
 
 
 if __name__ == '__main__':

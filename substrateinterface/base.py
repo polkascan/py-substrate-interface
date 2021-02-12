@@ -23,7 +23,7 @@ import logging
 import re
 
 import requests
-import typing
+from typing import Optional
 
 from scalecodec.exceptions import RemainingScaleBytesNotEmptyException
 from websocket import create_connection, WebSocketConnectionClosedException
@@ -40,7 +40,7 @@ from .utils.hasher import blake2_256, two_x64_concat, xxh128, blake2_128, blake2
 from .exceptions import SubstrateRequestException, ConfigurationError, StorageFunctionNotFound, BlockHashNotFound, \
     ExtrinsicNotFound
 from .constants import *
-from .utils.ss58 import ss58_decode, ss58_encode
+from .utils.ss58 import ss58_decode, ss58_encode, is_valid_ss58_address
 
 from bip39 import bip39_to_mini_secret, bip39_generate
 import sr25519
@@ -59,7 +59,7 @@ class KeypairType:
 
 class Keypair:
 
-    def __init__(self, ss58_address=None, public_key=None, private_key=None, ss58_format=42,
+    def __init__(self, ss58_address=None, public_key=None, private_key=None, ss58_format=None,
                  address_type=None, seed_hex=None,
                  crypto_type=KeypairType.SR25519):
         """
@@ -82,7 +82,7 @@ class Keypair:
         self.derive_path = None
 
         if ss58_address and not public_key:
-            public_key = ss58_decode(ss58_address)
+            public_key = ss58_decode(ss58_address, valid_ss58_format=ss58_format)
 
         if not public_key:
             raise ValueError('No SS58 formatted address or public key provided')
@@ -145,7 +145,7 @@ class Keypair:
         Parameters
         ----------
         mnemonic: Seed phrase
-        ss58_format: Substrate address format, default = 42
+        ss58_format: Substrate address format
         address_type: (deprecated)
         crypto_type: Use `KeypairType.SR25519` or `KeypairType.ED25519` cryptography for generating the Keypair
 
@@ -169,14 +169,16 @@ class Keypair:
         return keypair
 
     @classmethod
-    def create_from_seed(cls, seed_hex, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+    def create_from_seed(
+            cls, seed_hex: str, ss58_format: Optional[int] = 42, address_type=None, crypto_type=KeypairType.SR25519
+    ) -> 'Keypair':
         """
         Create a Keypair for given seed
 
         Parameters
         ----------
         seed_hex: hex string of seed
-        ss58_format: Substrate address format, default = 42
+        ss58_format: Substrate address format
         address_type: (deprecated)
         crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
 
@@ -207,14 +209,16 @@ class Keypair:
         )
 
     @classmethod
-    def create_from_uri(cls, suri, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+    def create_from_uri(
+            cls, suri: str, ss58_format: Optional[int] = 42, address_type=None, crypto_type=KeypairType.SR25519
+    ) -> 'Keypair':
         """
         Creates Keypair for specified suri in following format: `<mnemonic>/<soft-path>//<hard-path>`
 
         Parameters
         ----------
         suri:
-        ss58_format: Substrate address format, default = 42
+        ss58_format: Substrate address format
         address_type: (deprecated)
         crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
 
@@ -275,8 +279,8 @@ class Keypair:
 
     @classmethod
     def create_from_private_key(
-            cls, private_key, public_key=None, ss58_address=None, ss58_format=42, crypto_type=KeypairType.SR25519,
-            address_type=None
+        cls, private_key, public_key=None, ss58_address=None, ss58_format=None, crypto_type=KeypairType.SR25519,
+        address_type=None
     ):
         """
         Creates Keypair for specified public/private keys
@@ -1135,7 +1139,7 @@ class SubstrateInterface:
 
         return list(pairs)
 
-    def query(self, module, storage_function, params=None, block_hash=None) -> typing.Optional[ScaleType]:
+    def query(self, module, storage_function, params=None, block_hash=None) -> Optional[ScaleType]:
         """
         Retrieves the storage entry for given module, function and optional parameters at given block hash
 
@@ -2275,6 +2279,20 @@ class SubstrateInterface:
         """
         return ss58_decode(ss58_address, valid_ss58_format=self.ss58_format)
 
+    def is_valid_ss58_address(self, value: str) -> bool:
+        """
+        Helper function to validate given value as ss58_address for current network/ss58_format
+
+        Parameters
+        ----------
+        value
+
+        Returns
+        -------
+        bool
+        """
+        return is_valid_ss58_address(value, valid_ss58_format=self.ss58_format)
+
     # Serializing helper function
 
     def serialize_storage_item(self, storage_item, module, spec_version_id):
@@ -2686,7 +2704,7 @@ class ExtrinsicReceipt:
         return self.__is_success
 
     @property
-    def error_message(self) -> typing.Optional[dict]:
+    def error_message(self) -> Optional[dict]:
         """
         Returns the error message if the extrinsic failed in format e.g.:
 
