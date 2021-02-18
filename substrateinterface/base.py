@@ -1102,24 +1102,28 @@ class SubstrateInterface:
         key_type = None
         value_type = None
         concat_hash_len = None
-        for metadata_module in self.metadata_decoder.metadata.modules:
-            if metadata_module.name == module:
-                if metadata_module.storage:
-                    for storage_item in metadata_module.storage.items:
-                        if storage_item.name == storage_function:
-                            if 'MapType' in storage_item.type:
-                                key_type = storage_item.type['MapType']['key']
-                                value_type = storage_item.type['MapType']['value']
-                                if storage_item.type['MapType']['hasher'] == "Blake2_128Concat":
-                                    concat_hash_len = 32
-                                elif storage_item.type['MapType']['hasher'] == "Twox64Concat":
-                                    concat_hash_len = 16
-                                else:
-                                    raise ValueError('Unsupported hash type')
-                            else:
-                                raise ValueError('Given storage is not a map')
 
-        prefix = self.generate_storage_hash(module, storage_function)
+        storage_item = self.get_metadata_storage_function(module, storage_function, block_hash=block_hash)
+        storage_module = self.get_metadata_module(module)
+
+        if not storage_item or not storage_module:
+            raise ValueError(f'Specified storage function "{module}.{storage_function}" not found in metadata')
+
+        if 'MapType' in storage_item.type:
+            key_type = storage_item.type['MapType']['key']
+            value_type = storage_item.type['MapType']['value']
+            if storage_item.type['MapType']['hasher'] == "Blake2_128Concat":
+                concat_hash_len = 32
+            elif storage_item.type['MapType']['hasher'] == "Twox64Concat":
+                concat_hash_len = 16
+            elif storage_item.type['MapType']['hasher'] == "Identity":
+                concat_hash_len = 0
+            else:
+                raise ValueError('Unsupported hash type')
+        else:
+            raise ValueError('Given storage is not a map')
+
+        prefix = self.generate_storage_hash(storage_module.prefix, storage_item.name)
         prefix_len = len(prefix)
         response = self.rpc_request(method="state_getPairs", params=[prefix, block_hash])
 
@@ -1158,92 +1162,90 @@ class SubstrateInterface:
         self.init_runtime(block_hash=block_hash)
 
         # Search storage call in metadata
-        for metadata_module in self.metadata_decoder.metadata.modules:
-            if metadata_module.name == module:
-                if metadata_module.storage:
-                    for storage_item in metadata_module.storage.items:
-                        if storage_item.name == storage_function:
+        metadata_module = self.get_metadata_module(module, block_hash=block_hash)
+        storage_item = self.get_metadata_storage_function(module, storage_function, block_hash=block_hash)
 
-                            key2_hasher = None
+        if not metadata_module or not storage_item:
+            raise StorageFunctionNotFound('Storage function "{}.{}" not found'.format(module, storage_function))
 
-                            if 'PlainType' in storage_item.type:
-                                hasher = 'Twox64Concat'
-                                return_scale_type = storage_item.type.get('PlainType')
-                                if params:
-                                    raise ValueError('Storage call of type "PlainType" doesn\'t accept params')
+        key2_hasher = None
 
-                            elif 'MapType' in storage_item.type:
+        if 'PlainType' in storage_item.type:
+            hasher = 'Twox64Concat'
+            return_scale_type = storage_item.type.get('PlainType')
+            if params:
+                raise ValueError('Storage call of type "PlainType" doesn\'t accept params')
 
-                                map_type = storage_item.type.get('MapType')
-                                hasher = map_type.get('hasher')
-                                return_scale_type = map_type.get('value')
+        elif 'MapType' in storage_item.type:
 
-                                if not params or len(params) != 1:
-                                    raise ValueError('Storage call of type "MapType" requires 1 parameter')
+            map_type = storage_item.type.get('MapType')
+            hasher = map_type.get('hasher')
+            return_scale_type = map_type.get('value')
 
-                                # Encode parameter
-                                params[0] = self.convert_storage_parameter(map_type['key'], params[0])
-                                param_obj = ScaleDecoder.get_decoder_class(
-                                    type_string=map_type['key'], runtime_config=self.runtime_config
-                                )
-                                params[0] = param_obj.encode(params[0])
+            if not params or len(params) != 1:
+                raise ValueError('Storage call of type "MapType" requires 1 parameter')
 
-                            elif 'DoubleMapType' in storage_item.type:
+            # Encode parameter
+            params[0] = self.convert_storage_parameter(map_type['key'], params[0])
+            param_obj = ScaleDecoder.get_decoder_class(
+                type_string=map_type['key'], runtime_config=self.runtime_config
+            )
+            params[0] = param_obj.encode(params[0])
 
-                                map_type = storage_item.type.get('DoubleMapType')
-                                hasher = map_type.get('hasher')
-                                key2_hasher = map_type.get('key2Hasher')
-                                return_scale_type = map_type.get('value')
+        elif 'DoubleMapType' in storage_item.type:
 
-                                if not params or len(params) != 2:
-                                    raise ValueError('Storage call of type "DoubleMapType" requires 2 parameters')
+            map_type = storage_item.type.get('DoubleMapType')
+            hasher = map_type.get('hasher')
+            key2_hasher = map_type.get('key2Hasher')
+            return_scale_type = map_type.get('value')
 
-                                # Encode parameter 1
-                                params[0] = self.convert_storage_parameter(map_type['key1'], params[0])
-                                param_obj = ScaleDecoder.get_decoder_class(
-                                    type_string=map_type['key1'], runtime_config=self.runtime_config
-                                )
-                                params[0] = param_obj.encode(params[0])
+            if not params or len(params) != 2:
+                raise ValueError('Storage call of type "DoubleMapType" requires 2 parameters')
 
-                                # Encode parameter 2
-                                params[1] = self.convert_storage_parameter(map_type['key2'], params[1])
-                                param_obj = ScaleDecoder.get_decoder_class(
-                                    type_string=map_type['key2'], runtime_config=self.runtime_config
-                                )
-                                params[1] = param_obj.encode(params[1])
+            # Encode parameter 1
+            params[0] = self.convert_storage_parameter(map_type['key1'], params[0])
+            param_obj = ScaleDecoder.get_decoder_class(
+                type_string=map_type['key1'], runtime_config=self.runtime_config
+            )
+            params[0] = param_obj.encode(params[0])
 
-                            else:
-                                raise NotImplementedError("Storage type not implemented")
+            # Encode parameter 2
+            params[1] = self.convert_storage_parameter(map_type['key2'], params[1])
+            param_obj = ScaleDecoder.get_decoder_class(
+                type_string=map_type['key2'], runtime_config=self.runtime_config
+            )
+            params[1] = param_obj.encode(params[1])
 
-                            storage_hash = self.generate_storage_hash(
-                                storage_module=metadata_module.prefix,
-                                storage_function=storage_function,
-                                params=params,
-                                hasher=hasher,
-                                key2_hasher=key2_hasher,
-                                metadata_version=self.metadata_decoder.version.index
-                            )
+        else:
+            raise NotImplementedError("Storage type not implemented")
 
-                            response = self.rpc_request("state_getStorageAt", [storage_hash, block_hash])
+        storage_hash = self.generate_storage_hash(
+            storage_module=metadata_module.prefix,
+            storage_function=storage_function,
+            params=params,
+            hasher=hasher,
+            key2_hasher=key2_hasher,
+            metadata_version=self.metadata_decoder.version.index
+        )
 
-                            if 'error' in response:
-                                raise SubstrateRequestException(response['error']['message'])
+        response = self.rpc_request("state_getStorageAt", [storage_hash, block_hash])
 
-                            if 'result' in response:
+        if 'error' in response:
+            raise SubstrateRequestException(response['error']['message'])
 
-                                if return_scale_type and response.get('result'):
-                                    obj = ScaleDecoder.get_decoder_class(
-                                        type_string=return_scale_type,
-                                        data=ScaleBytes(response.get('result')),
-                                        metadata=self.metadata_decoder,
-                                        runtime_config=self.runtime_config
-                                    )
-                                    obj.decode()
-                                    return obj
+        if 'result' in response:
 
-                            return None
+            if return_scale_type and response.get('result'):
+                obj = ScaleDecoder.get_decoder_class(
+                    type_string=return_scale_type,
+                    data=ScaleBytes(response.get('result')),
+                    metadata=self.metadata_decoder,
+                    runtime_config=self.runtime_config
+                )
+                obj.decode()
+                return obj
 
-        raise StorageFunctionNotFound('Storage function "{}.{}" not found'.format(module, storage_function))
+        return None
 
     def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
         warnings.warn("'get_runtime_state' will be replaced by 'query'", DeprecationWarning)
@@ -1831,6 +1833,25 @@ class SubstrateInterface:
             'count_errors': len(module.errors or []),
         } for idx, module in enumerate(self.metadata_decoder.metadata.modules)]
 
+    def get_metadata_module(self, name, block_hash=None):
+        """
+        Retrieves modules in metadata by name for given block_hash (or chaintip if block_hash is omitted)
+
+        Parameters
+        ----------
+        name
+        block_hash
+
+        Returns
+        -------
+        MetadataModule
+        """
+        self.init_runtime(block_hash=block_hash)
+
+        for module in self.metadata_decoder.metadata.modules:
+            if module.name == name:
+                return module
+
     def get_metadata_call_functions(self, block_hash=None):
         """
         Retrieves a list of all call functions in metadata active for given block_hash (or chaintip if block_hash is omitted)
@@ -1872,17 +1893,10 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        result = None
-
         for call_index, (module, call) in self.metadata_decoder.call_index.items():
             if module.name == module_name and \
                     call.get_identifier() == call_function_name:
-                result = self.serialize_module_call(
-                    module, call, self.runtime_version, call_index
-                )
-                break
-
-        return result
+                return call
 
     def get_metadata_events(self, block_hash=None):
         """
@@ -1931,9 +1945,7 @@ class SubstrateInterface:
         for event_index, (module, event) in self.metadata_decoder.event_index.items():
             if module.name == module_name and \
                     event.name == event_name:
-                return self.serialize_module_event(
-                    module, event, self.runtime_version, event_index
-                )
+                return event
 
     def get_metadata_constants(self, block_hash=None):
         """
@@ -1986,9 +1998,7 @@ class SubstrateInterface:
 
                 for constant in module.constants:
                     if constant_name == constant.name:
-                        return self.serialize_constant(
-                            constant, module, self.runtime_version
-                        )
+                        return constant
 
     def get_metadata_storage_functions(self, block_hash=None):
         """
@@ -2040,11 +2050,7 @@ class SubstrateInterface:
             if module.name == module_name and module.storage:
                 for storage in module.storage.items:
                     if storage.name == storage_name:
-                        return self.serialize_storage_item(
-                            storage_item=storage,
-                            module=module,
-                            spec_version_id=self.runtime_version
-                        )
+                        return storage
 
     def get_metadata_errors(self, block_hash=None):
         """
@@ -2093,9 +2099,7 @@ class SubstrateInterface:
             if module.name == module_name and module.errors:
                 for error in module.errors:
                     if error_name == error.name:
-                        return self.serialize_module_error(
-                            module=module, error=error, spec_version=self.runtime_version
-                        )
+                        return error
 
     def get_runtime_block(self, block_hash=None, block_id=None, ignore_decoding_errors=False):
         """
@@ -2486,7 +2490,7 @@ class SubstrateInterface:
         except Exception:
             return False
 
-    def reload_type_registry(self, use_remote_preset=True):
+    def reload_type_registry(self, use_remote_preset: bool = True):
         """
         Reload type registry and preset used to instantiate the SubtrateInterface object. Useful to periodically apply
         changes in type definitions when a runtime upgrade occurred

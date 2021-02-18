@@ -102,33 +102,36 @@ class TestHelperFunctions(unittest.TestCase):
 
     def test_get_metadata_call_function(self):
         call_function = self.substrate.get_metadata_call_function("Balances", "transfer")
-        self.assertEqual(call_function['module_name'], "Balances")
-        self.assertEqual(call_function['call_name'], "transfer")
-        self.assertEqual(call_function['spec_version'], 2023)
+        self.assertEqual("transfer", call_function.name)
+        self.assertEqual('dest', call_function.args[0].name)
+        self.assertEqual('value', call_function.args[1].name)
 
     def test_get_metadata_event(self):
         event = self.substrate.get_metadata_event("Balances", "Transfer")
-        self.assertEqual(event['module_name'], "Balances")
-        self.assertEqual(event['event_name'], "Transfer")
-        self.assertEqual(event['spec_version'], 2023)
+        self.assertEqual("Transfer", event.name)
+        self.assertEqual('AccountId', event.args[0])
+        self.assertEqual('AccountId', event.args[1])
+        self.assertEqual('Balance', event.args[2])
 
     def test_get_metadata_constant(self):
         constant = self.substrate.get_metadata_constant("System", "BlockHashCount")
-        self.assertEqual(constant['module_name'], "System")
-        self.assertEqual(constant['constant_name'], "BlockHashCount")
-        self.assertEqual(constant['spec_version'], 2023)
+        self.assertEqual("BlockHashCount", constant.name)
+        self.assertEqual("BlockNumber", constant.type)
+        self.assertEqual('0x60090000', constant.constant_value)
 
     def test_get_metadata_storage_function(self):
         storage = self.substrate.get_metadata_storage_function("System", "Account")
-        self.assertEqual(storage['module_name'], "System")
-        self.assertEqual(storage['storage_name'], "Account")
-        self.assertEqual(storage['spec_version'], 2023)
+        self.assertEqual("Account", storage.name)
+        self.assertEqual("AccountId", storage.type['MapType']['key'])
+        self.assertEqual("Blake2_128Concat", storage.type['MapType']['hasher'])
 
     def test_get_metadata_error(self):
         error = self.substrate.get_metadata_error("System", "InvalidSpecName")
-        self.assertEqual(error['module_name'], "System")
-        self.assertEqual(error['error_name'], "InvalidSpecName")
-        self.assertEqual(error['spec_version'], 2023)
+        self.assertEqual("InvalidSpecName", error.name)
+        self.assertEqual(
+            [' The name of specification does not match between the current runtime', ' and the new runtime.'],
+            error.docs
+        )
 
     def test_helper_functions_should_return_null_not_exists(self):
         self.assertIsNone(self.empty_substrate.get_block_number(
