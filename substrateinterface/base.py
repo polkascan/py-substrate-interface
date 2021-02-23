@@ -2136,8 +2136,7 @@ class SubstrateInterface:
                 try:
                     extrinsic_decoder.decode()
                     response['block']['extrinsics'][idx] = extrinsic_decoder.value
-
-                except (RemainingScaleBytesNotEmptyException, KeyError, IndexError, ValueError):
+                except:
                     if not ignore_decoding_errors:
                         raise
                     response['block']['extrinsics'][idx] = None
@@ -2147,8 +2146,7 @@ class SubstrateInterface:
                 try:
                     log_digest.decode()
                     response['block']['header']["digest"]["logs"][idx] = log_digest.value
-
-                except (RemainingScaleBytesNotEmptyException, KeyError, IndexError, ValueError):
+                except:
                     if not ignore_decoding_errors:
                         raise
                     response['block']['header']["digest"]["logs"][idx] = None
@@ -2189,7 +2187,7 @@ class SubstrateInterface:
             )
             try:
                 extrinsic.decode()
-            except (RemainingScaleBytesNotEmptyException, KeyError, IndexError, ValueError):
+            except:
                 if not ignore_decoding_errors:
                     raise
                 extrinsic = None
