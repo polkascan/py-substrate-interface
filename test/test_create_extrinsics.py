@@ -276,8 +276,11 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
             extrinsic_hash="0xa5f2b9f4b8ea9f357780dd49010c99708f580a02624e4500af24b20b92773100"
         )
 
-        with self.assertRaises(ValueError):
-            events = result.triggered_events
+        with self.assertRaises(ValueError) as cm:
+            result.triggered_events
+        self.assertEqual('ExtrinsicReceipt can\'t retrieve events because it\'s unknown which block_hash it is '
+                         'included, manually set block_hash or use `wait_for_inclusion` when sending extrinsic',
+                         str(cm.exception))
 
 
 if __name__ == '__main__':

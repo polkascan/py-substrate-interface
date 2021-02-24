@@ -125,18 +125,32 @@ class SS58TestCase(unittest.TestCase):
             )
 
     def test_invalid_ss58_format_range_exceptions(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             ss58_encode(self.alice_keypair.public_key, ss58_format=-1)
+
+        self.assertEqual('Invalid value for ss58_format', str(cm.exception))
+
+        with self.assertRaises(ValueError) as cm:
             ss58_encode(self.alice_keypair.public_key, ss58_format=16384)
 
+        self.assertEqual('Invalid value for ss58_format', str(cm.exception))
+
     def test_invalid_reserved_ss58_format(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             ss58_encode(self.alice_keypair.public_key, ss58_format=46)
+
+        self.assertEqual('Invalid value for ss58_format', str(cm.exception))
+
+        with self.assertRaises(ValueError) as cm:
             ss58_encode(self.alice_keypair.public_key, ss58_format=47)
 
+        self.assertEqual('Invalid value for ss58_format', str(cm.exception))
+
     def test_invalid_public_key(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             ss58_encode(self.alice_keypair.public_key[:30])
+
+        self.assertEqual('Invalid length for address', str(cm.exception))
 
     def test_decode_public_key(self):
         self.assertEqual(
@@ -145,20 +159,33 @@ class SS58TestCase(unittest.TestCase):
         )
 
     def test_decode_reserved_ss58_formats(self):
-        self.assertRaises(ValueError, ss58_decode, 'MGP3U1wqNhFofseKXU7B6FcZuLbvQvJFyin1EvQM65mBcNsY8')
-        self.assertRaises(ValueError, ss58_decode, 'MhvaLBvSb5jhjrftHLQPAvJegnpXgyDTE1ZprRNzAcfQSRdbL')
+        with self.assertRaises(ValueError) as cm:
+            ss58_decode('MGP3U1wqNhFofseKXU7B6FcZuLbvQvJFyin1EvQM65mBcNsY8')
+
+        self.assertEqual('46 is a reserved SS58 format', str(cm.exception))
+
+        with self.assertRaises(ValueError) as cm:
+            ss58_decode('MhvaLBvSb5jhjrftHLQPAvJegnpXgyDTE1ZprRNzAcfQSRdbL')
+
+        self.assertEqual('47 is a reserved SS58 format', str(cm.exception))
 
     def test_invalid_ss58_format_check(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             ss58_decode('5GoKvZWG5ZPYL1WUovuHW3zJBWBP5eT8CbqjdRY4Q6iMaQua', valid_ss58_format=2)
 
+        self.assertEqual('Invalid SS58 format', str(cm.exception))
+
     def test_decode_invalid_checksum(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             ss58_decode('5GoKvZWG5ZPYL1WUovuHW3zJBWBP5eT8CbqjdRY4Q6iMaQub')
 
+        self.assertEqual('Invalid checksum', str(cm.exception))
+
     def test_decode_invalid_length(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             ss58_decode('5GoKvZWG5ZPYL1WUovuHW3zJBWBP5eT8CbqjdRY4Q6iMaQubsdhfjksdhfkj')
+
+        self.assertEqual('Invalid address length', str(cm.exception))
 
     def test_is_valid_ss58_address(self):
         self.assertTrue(is_valid_ss58_address('5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'))

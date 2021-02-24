@@ -54,8 +54,10 @@ class ContractMetadataTestCase(unittest.TestCase):
         self.assertEqual('Option<AccountId>', self.contract_metadata.get_type_string_for_metadata_type(15))
 
     def test_invalid_type_id(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             self.contract_metadata.get_type_string_for_metadata_type(99)
+
+        self.assertEqual('type_id 99 not found in metadata', str(cm.exception))
 
     def test_contract_types_added_type_registry(self):
 
@@ -72,12 +74,16 @@ class ContractMetadataTestCase(unittest.TestCase):
         )
 
     def test_invalid_constructor_name(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             self.contract_metadata.generate_constructor_data("invalid")
 
+        self.assertEqual('Constructor "invalid" not found', str(cm.exception))
+
     def test_constructor_missing_arg(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             self.contract_metadata.generate_constructor_data("new", args={'test': 2})
+
+        self.assertEqual('Argument "initial_supply" is missing', str(cm.exception))
 
     def test_constructor_data(self):
 
@@ -85,8 +91,10 @@ class ContractMetadataTestCase(unittest.TestCase):
         self.assertEqual('0xd183512be8030000000000000000000000000000', scale_data.to_hex())
 
     def test_invalid_message_name(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             self.contract_metadata.generate_message_data("invalid_msg_name")
+
+        self.assertEqual('Message "invalid_msg_name" not found', str(cm.exception))
 
     def test_generate_message_data(self):
 
@@ -105,10 +113,11 @@ class ContractMetadataTestCase(unittest.TestCase):
         )
 
     def test_generate_message_data_missing_arg(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             self.contract_metadata.generate_message_data("transfer", args={
                 'value': 10000
             })
+        self.assertEqual('Argument "to" is missing', str(cm.exception))
 
     def test_contract_event_decoding(self):
         contract_event_data = '0x0001d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d018eaf04151687' + \

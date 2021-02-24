@@ -59,8 +59,10 @@ class QueryTestCase(unittest.TestCase):
         self.assertIsNone(result)
 
     def test_non_existing_query(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as cm:
             self.kusama_substrate.query("Unknown", "StorageFunction")
+
+        self.assertEqual('Storage function "Unknown.StorageFunction" not found', str(cm.exception))
 
     def test_identity_hasher(self):
         result = self.kusama_substrate.query("Claims", "Claims", ["0x00000a9c44f24e314127af63ae55b864a28d7aee"])
