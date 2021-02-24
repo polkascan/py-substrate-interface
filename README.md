@@ -22,6 +22,7 @@ management and versioning of types.
   * [Substrate Node Template](#substrate-node-template)
 * [Features](#features)
   * [Storage queries](#storage-queries)
+  * [Query a mapped storage function](#query-a-mapped-storage-function)
   * [Create and send signed extrinsics](#create-and-send-signed-extrinsics)
   * [Examining the ExtrinsicReceipt object](#examining-the-extrinsicreceipt-object)
   * [ink! contract interfacing](#ink-contract-interfacing)
