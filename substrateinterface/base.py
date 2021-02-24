@@ -1083,7 +1083,7 @@ class SubstrateInterface:
 
     def iterate_map(self, module, storage_function, block_hash=None):
         """
-        iterates over all key-pairs localted at the given module and storage_function. The storage
+        iterates over all key-pairs located at the given module and storage_function. The storage
         item must be a map.
 
         Parameters
@@ -1097,6 +1097,8 @@ class SubstrateInterface:
         A two dimensional list of key-value pairs, both decoded into the given type, e.g.
         [[k1, v1], [k2, v2], ...]
         """
+        warnings.warn("'iterate_map' will be replaced by 'query_map'", DeprecationWarning)
+
         self.init_runtime(block_hash=block_hash)
 
         key_type = None
@@ -1142,6 +1144,98 @@ class SubstrateInterface:
         )
 
         return list(pairs)
+
+    def query_map(self, module: str, storage_function: str, block_hash: str = None, max_results: int = None,
+                  start_key: str = None, page_size: int = 100) -> 'QueryMapResult':
+        """
+        iterates over all key-pairs located at the given module and storage_function. The storage
+        item must be a map.
+
+        Parameters
+        ----------
+        module: The module name in the metadata, e.g. System or Balances.
+        storage_function: The storage function name, e.g. Account or Locks.
+        block_hash: Optional block hash, when left to None the chain tip will be used.
+        max_results: the maximum of results required, if set the query will stop fetching results when number is reached
+        start_key: The storage key used as offset for the results, for pagination purposes
+        page_size: The results are fetched from the node RPC in chunks of this size
+
+        Returns
+        -------
+        QueryMapResult
+        """
+
+        self.init_runtime(block_hash=block_hash)
+
+        # Retrieve storage module and function from metadata
+        storage_module = self.get_metadata_module(module, block_hash=block_hash)
+        storage_item = self.get_metadata_storage_function(module, storage_function, block_hash=block_hash)
+
+        if not storage_module or not storage_item:
+            raise StorageFunctionNotFound('Storage function "{}.{}" not found'.format(module, storage_function))
+
+        # Check MapType condititions and determine prefix length
+        if 'MapType' in storage_item.type:
+            key_type = storage_item.type['MapType']['key']
+            value_type = storage_item.type['MapType']['value']
+            if storage_item.type['MapType']['hasher'] == "Blake2_128Concat":
+                concat_hash_len = 32
+            elif storage_item.type['MapType']['hasher'] == "Twox64Concat":
+                concat_hash_len = 16
+            elif storage_item.type['MapType']['hasher'] == "Identity":
+                concat_hash_len = 0
+            else:
+                raise ValueError('Unsupported hash type')
+        else:
+            raise ValueError('Given storage function is not a map')
+
+        prefix = self.generate_storage_hash(storage_module.prefix, storage_item.name)
+
+        if not start_key:
+            start_key = prefix
+
+        # Make sure if the max result is smaller than the page size, adjust the page size
+        if max_results is not None and max_results < page_size:
+            page_size = max_results
+
+        # Retrieve storage keys
+        response = self.rpc_request(method="state_getKeysPaged", params=[prefix, page_size, start_key, block_hash])
+
+        if 'error' in response:
+            raise SubstrateRequestException(response['error']['message'])
+
+        result_keys = response.get('result')
+
+        # Retrieve corresponding value
+        response = self.rpc_request(method="state_queryStorageAt", params=[result_keys, block_hash])
+
+        if 'error' in response:
+            raise SubstrateRequestException(response['error']['message'])
+
+        result = []
+
+        last_key = None
+
+        for result_group in response['result']:
+            for item in result_group['changes']:
+                last_key = item[0]
+
+                item_key = self.decode_scale(
+                    type_string=key_type,
+                    scale_bytes='0x' + item[0][len(prefix) + concat_hash_len:],
+                    return_scale_obj=True
+                )
+                item_value = self.decode_scale(
+                    type_string=value_type,
+                    scale_bytes=item[1],
+                    return_scale_obj=True
+                )
+                result.append([item_key, item_value])
+
+        return QueryMapResult(
+            records=result, page_size=page_size, module=module, storage_function=storage_function,
+            block_hash=block_hash, substrate=self, last_key=last_key, max_results=max_results
+        )
 
     def query(self, module, storage_function, params=None, block_hash=None) -> Optional[ScaleType]:
         """
@@ -2770,3 +2864,51 @@ class ExtrinsicReceipt:
 
     def get(self, name):
         return self[name]
+
+
+class QueryMapResult:
+
+    def __init__(self, records: list, page_size: int, module: str = None, storage_function: str = None,
+                 block_hash: str = None, substrate: SubstrateInterface = None, last_key: str = None,
+                 max_results: int = None):
+        self.current_index = -1
+        self.records = records
+        self.page_size = page_size
+        self.module = module
+        self.storage_function = storage_function
+        self.block_hash = block_hash
+        self.substrate = substrate
+        self.last_key = last_key
+        self.max_results = max_results
+
+    def retrieve_next_page(self, start_key) -> list:
+        if not self.substrate:
+            return []
+
+        result = self.substrate.query_map(module=self.module, storage_function=self.storage_function,
+                                          page_size=self.page_size, block_hash=self.block_hash, start_key=start_key,
+                                          max_results=self.max_results)
+        return result.records
+
+    def __iter__(self):
+        self.current_index = -1
+        return self
+
+    def __next__(self):
+        self.current_index += 1
+
+        if self.max_results is not None and self.current_index >= self.max_results:
+            raise StopIteration
+
+        if self.current_index >= len(self.records):
+            # try to retrieve next page from node
+            self.records += self.retrieve_next_page(start_key=self.last_key)
+
+        if self.current_index >= len(self.records):
+            raise StopIteration
+
+        return self.records[self.current_index]
+
+    def __getitem__(self, item):
+        return self.records[item]
+

@@ -180,20 +180,33 @@ print(account_info.value['nonce']) #  7673
 print(account_info.value['data']['free']) # 637747267365404068
 ```
 
-Or get all the key pairs of a map:
+### Query a mapped storage function
+Mapped storage functions can be iterated over all key/value pairs, for these storage functions `query_map` can be used.
+
+The result is a `QueryMapResult` object, which is an iterator:
 
 ```python
-# Get all the stash and controller bondings.
-all_bonded_stash_ctrls = substrate.iterate_map(
-    module='Staking',
-    storage_function='Bonded',
-    block_hash=block_hash
-)
+# Retrieve the first 199 System.Account entries
+result = substrate.query_map('System', 'Account', max_results=199)
+
+for account, account_info in result:
+    print(f"Free balance of account '{account.value}': {account_info.value['data']['free']}")
+```
+
+These results are transparantly retrieved in batches capped by the `page_size` kwarg, currently the 
+maximum `page_size` restricted by the RPC node is 1000    
+
+```python
+# Retrieve all System.Account entries in batches of 200 (automatically appended by `QueryMapResult` iterator)
+result = substrate.query_map('System', 'Account', page_size=200)
+
+for account, account_info in result:
+    print(f"Free balance of account '{account.value}': {account_info.value['data']['free']}")
 ```
 
 ### Create and send signed extrinsics
 
-The following code snippet illustrates how to create a call, wrap it in an signed extrinsic and send it to the network:
+The following code snippet illustrates how to create a call, wrap it in a signed extrinsic and send it to the network:
 
 ```python
 from substrateinterface import SubstrateInterface, Keypair
