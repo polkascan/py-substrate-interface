@@ -1,12 +1,12 @@
-websocket-client==0.57.0
+websocket-client~=0.58.0
 base58>=2.0.1
 certifi>=2020.11.8
 idna>=2.10
-requests~=2.25.0
+requests~=2.25.1
 xxhash>=2.0.0
-pytest>=6.1.2
+pytest>=6.2.2
 
-scalecodec~=0.10.61
+scalecodec~=0.10.62
 py-sr25519-bindings~=0.1.2
 py-ed25519-bindings~=0.1.2
 py-bip39-bindings~=0.1.6
