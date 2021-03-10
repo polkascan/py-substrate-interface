@@ -83,13 +83,13 @@ substrate = SubstrateInterface(
 )
 ```
 
-Kulupu
+Rococo
 
 ```python
 substrate = SubstrateInterface(
-    url="wss://rpc.kulupu.corepaper.org/ws",
-    ss58_format=16,
-    type_registry_preset='kulupu'
+    url="wss://rococo-rpc.polkadot.io",
+    ss58_format=42,
+    type_registry_preset='rococo'
 )
 ```
 
