@@ -2236,9 +2236,9 @@ class SubstrateInterface:
                     response['block']['extrinsics'][idx] = None
 
             for idx, log_data in enumerate(response['block']['header']["digest"]["logs"]):
-                log_digest = LogDigest(ScaleBytes(log_data), runtime_config=self.runtime_config)
+
                 try:
-                    log_digest.decode()
+                    log_digest = self.decode_scale('DigestItem', scale_bytes=ScaleBytes(log_data), return_scale_obj=True)
                     response['block']['header']["digest"]["logs"][idx] = log_digest.value
                 except:
                     if not ignore_decoding_errors:
