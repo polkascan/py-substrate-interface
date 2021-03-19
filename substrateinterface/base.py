@@ -1,6 +1,6 @@
 # Python Substrate Interface Library
 #
-# Copyright 2018-2020 Stichting Polkascan (Polkascan Foundation).
+# Copyright 2018-2021 Stichting Polkascan (Polkascan Foundation).
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1716,13 +1716,14 @@ class SubstrateInterface:
         else:
             raise SubstrateRequestException(payment_info['error']['message'])
 
-    def process_metadata_typestring(self, type_string):
+    def process_metadata_typestring(self, type_string, parent_type_strings: list = None):
         """
         Process how given type_string is decoded with active runtime and type registry
 
         Parameters
         ----------
         type_string: RUST variable type, e.g. `Vec<Address>`
+        parent_type_strings: add a process trail of parent types to prevent recursion
 
         Returns
         -------
@@ -1757,6 +1758,11 @@ class SubstrateInterface:
         if type_string.lower() in self.type_registry_cache[self.runtime_version]:
             return self.type_registry_cache[self.runtime_version][type_string.lower()]['decoder_class']
 
+        if not parent_type_strings:
+            parent_type_strings = []
+
+        parent_type_strings.append(type_string)
+
         # Try to get decoder class
         decoder_class = self.runtime_config.get_decoder_class(type_string)
 
@@ -1778,8 +1784,8 @@ class SubstrateInterface:
             # Try to split on ',' (e.g. ActiveRecovery<BlockNumber, BalanceOf, AccountId>)
             if not re.search('[<()>]', decoder_class_obj.sub_type):
                 for element in decoder_class_obj.sub_type.split(','):
-                    if element not in ['T', 'I']:
-                        self.process_metadata_typestring(element.strip())
+                    if element not in ['T', 'I'] and element.strip() not in parent_type_strings:
+                        self.process_metadata_typestring(element.strip(), parent_type_strings=parent_type_strings)
 
         # Process classes that contain type_mapping (e.g. Struct and Enum)
         if decoder_class and hasattr(decoder_class, 'type_mapping') and decoder_class.type_mapping:
@@ -1788,7 +1794,9 @@ class SubstrateInterface:
                 type_info["is_primitive_runtime"] = False
 
             for key, data_type in decoder_class.type_mapping:
-                self.process_metadata_typestring(data_type)
+
+                if data_type not in parent_type_strings:
+                    self.process_metadata_typestring(data_type, parent_type_strings=parent_type_strings)
 
         # Try to get superclass as actual decoding class if not root level 'ScaleType'
         if decoder_class and len(decoder_class.__mro__) > 1 and decoder_class.__mro__[1].__name__ != 'ScaleType':

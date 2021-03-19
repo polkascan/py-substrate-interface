@@ -59,6 +59,25 @@ class PolkadotTypeRegistryTestCase(unittest.TestCase):
             self.assertIsNotNone(obj, '{} not supported'.format(scale_type))
 
 
+class RococoTypeRegistryTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.substrate = SubstrateInterface(
+            url=settings.ROCOCO_NODE_URL,
+            ss58_format=42,
+            type_registry_preset='rococo'
+        )
+
+    def test_type_registry_compatibility(self):
+
+        for scale_type in self.substrate.get_type_registry():
+
+            obj = self.substrate.runtime_config.get_decoder_class(scale_type)
+
+            self.assertIsNotNone(obj, '{} not supported'.format(scale_type))
+
+
 class MultipleTypeRegistryTestCase(unittest.TestCase):
 
     @classmethod
