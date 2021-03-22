@@ -494,23 +494,39 @@ class SubstrateInterface:
             try:
                 self.websocket.send(json.dumps(payload))
 
+                # If result handler is set, pass result through and loop until handler return value is not None
                 if callable(result_handler):
-                    # If result handler is set, pass result through and loop until handler return not None
+
+                    subscription_result = json.loads(self.websocket.recv())
+
+                    # Check if response has error
+                    if 'error' in subscription_result:
+                        raise SubstrateRequestException(subscription_result['error'])
+
+                    # Set subscription ID and only listen to messages containing this ID
+                    subscription_id = subscription_result['result']
+                    self.debug_message(f"Websocket subscription [{subscription_id}] created")
+
                     event_number = 0
                     json_body = None
                     while not json_body:
                         result = json.loads(self.websocket.recv())
-                        self.debug_message("Websocket result [{}] Received from node: {}".format(event_number, result))
 
-                        # Check if response has error
-                        if 'error' in result:
-                            raise SubstrateRequestException(result['error'])
+                        # Check if message is meant for this subscription
+                        if result['params']['subscription'] == subscription_id:
 
-                        callback_result = result_handler(result)
-                        if callback_result:
-                            json_body = callback_result
+                            self.debug_message(f"Websocket result [{subscription_id} #{event_number}]: {result}")
 
-                        event_number += 1
+                            # Check if response has error
+                            if 'error' in result:
+                                raise SubstrateRequestException(result['error'])
+
+                            callback_result = result_handler(result)
+                            if callback_result:
+                                json_body = callback_result
+
+                            event_number += 1
+
                 else:
 
                     json_body = json.loads(self.websocket.recv())
