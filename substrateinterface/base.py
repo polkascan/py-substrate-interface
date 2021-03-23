@@ -36,6 +36,7 @@ from scalecodec.type_registry import load_type_registry_preset
 from scalecodec.updater import update_type_registries
 
 from .key import extract_derive_path
+from .utils.caching import block_dependent_lru_cache
 from .utils.hasher import blake2_256, two_x64_concat, xxh128, blake2_128, blake2_128_concat, identity
 from .exceptions import SubstrateRequestException, ConfigurationError, StorageFunctionNotFound, BlockHashNotFound, \
     ExtrinsicNotFound
@@ -720,6 +721,7 @@ class SubstrateInterface:
         else:
             return response.get('result')
 
+    @block_dependent_lru_cache(maxsize=1000, block_arg_index=1)
     def get_block_header(self, block_hash):
         """
         A pass-though to existing JSONRPC method `chain_getHeader`
@@ -739,6 +741,7 @@ class SubstrateInterface:
         else:
             return response.get('result')
 
+    @block_dependent_lru_cache(maxsize=1000, block_arg_index=1)
     def get_block_number(self, block_hash):
         """
         A convenience method to get the block number for given block_hash
@@ -761,6 +764,7 @@ class SubstrateInterface:
             if response['result']:
                 return int(response['result']['number'], 16)
 
+    @block_dependent_lru_cache(maxsize=10)
     def get_block_metadata(self, block_hash=None, decode=True):
         """
         A pass-though to existing JSONRPC method `state_getMetadata`. For a decoded version see `get_runtime_metadata()`
@@ -1161,6 +1165,7 @@ class SubstrateInterface:
 
         return list(pairs)
 
+    @block_dependent_lru_cache(maxsize=100)
     def query_map(self, module: str, storage_function: str, block_hash: str = None, max_results: int = None,
                   start_key: str = None, page_size: int = 100) -> 'QueryMapResult':
         """
@@ -2219,7 +2224,9 @@ class SubstrateInterface:
                     if error_name == error.name:
                         return error
 
-    def get_runtime_block(self, block_hash=None, block_id=None, ignore_decoding_errors=False):
+    @block_dependent_lru_cache(maxsize=100)
+    def get_runtime_block(self, block_hash: str = None, block_id: int = None, ignore_decoding_errors: bool = False,
+                          include_author: bool = False):
         """
         Retrieves a block with method `chain_getBlock` and in addition decodes extrinsics and log items
 
@@ -2228,6 +2235,7 @@ class SubstrateInterface:
         block_hash
         block_id
         ignore_decoding_errors: When True no exception will be raised if decoding of extrinsics failes and add as `None` instead
+        include_author: Extract block author from validator set and include in result
 
         Returns
         -------
@@ -2254,7 +2262,7 @@ class SubstrateInterface:
                 try:
                     extrinsic_decoder.decode()
                     response['block']['extrinsics'][idx] = extrinsic_decoder.value
-                except:
+                except Exception:
                     if not ignore_decoding_errors:
                         raise
                     response['block']['extrinsics'][idx] = None
@@ -2264,13 +2272,24 @@ class SubstrateInterface:
                 try:
                     log_digest = self.decode_scale('DigestItem', scale_bytes=ScaleBytes(log_data), return_scale_obj=True)
                     response['block']['header']["digest"]["logs"][idx] = log_digest.value
-                except:
+
+                    if include_author and 'PreRuntime' in log_digest.value:
+
+                        if log_digest.value['PreRuntime']['engine'] == 'BABE':
+                            validator_set = self.query("Session", "Validators", block_hash=block_hash)
+                            rank_validator = log_digest.value['PreRuntime']['data']['authorityIndex']
+
+                            block_author = validator_set.elements[rank_validator]
+                            response['block']['header']['author'] = self.ss58_encode(block_author.value)
+
+                except Exception:
                     if not ignore_decoding_errors:
                         raise
                     response['block']['header']["digest"]["logs"][idx] = None
 
         return response
 
+    @block_dependent_lru_cache(maxsize=100)
     def get_block_extrinsics(self, block_hash: str = None, block_id: int = None, ignore_decoding_errors=False) -> list:
         """
         Retrieves a list of `Extrinsic` objects for given block_hash or block_id
