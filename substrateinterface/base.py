@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import warnings
+from functools import lru_cache
 from hashlib import blake2b
 
 import binascii
@@ -46,7 +47,6 @@ from .utils.ss58 import ss58_decode, ss58_encode, is_valid_ss58_address
 from bip39 import bip39_to_mini_secret, bip39_generate
 import sr25519
 import ed25519
-
 
 __all__ = ['Keypair', 'KeypairType', 'SubstrateInterface', 'ExtrinsicReceipt', 'logger']
 
@@ -280,8 +280,8 @@ class Keypair:
 
     @classmethod
     def create_from_private_key(
-        cls, private_key, public_key=None, ss58_address=None, ss58_format=None, crypto_type=KeypairType.SR25519,
-        address_type=None
+            cls, private_key, public_key=None, ss58_address=None, ss58_format=None, crypto_type=KeypairType.SR25519,
+            address_type=None
     ):
         """
         Creates Keypair for specified public/private keys
@@ -422,6 +422,8 @@ class SubstrateInterface:
         self.url = url
         self.websocket = None
 
+        self.__rpc_message_queue = []
+
         if self.url and (self.url[0:6] == 'wss://' or self.url[0:5] == 'ws://'):
             self.connect_websocket()
 
@@ -474,7 +476,7 @@ class SubstrateInterface:
 
         Parameters
         ----------
-        result_handler: Callback of function that processes the result received from the node
+        result_handler: Callback function that processes the result received from the node
         method: method of the JSONRPC request
         params: a list containing the parameters of the JSONRPC request
 
@@ -495,42 +497,48 @@ class SubstrateInterface:
             try:
                 self.websocket.send(json.dumps(payload))
 
-                # If result handler is set, pass result through and loop until handler return value is not None
-                if callable(result_handler):
+                update_nr = 0
+                json_body = None
+                subscription_id = None
 
-                    subscription_result = json.loads(self.websocket.recv())
+                while json_body is None:
 
-                    # Check if response has error
-                    if 'error' in subscription_result:
-                        raise SubstrateRequestException(subscription_result['error'])
+                    self.__rpc_message_queue.append(json.loads(self.websocket.recv()))
 
-                    # Set subscription ID and only listen to messages containing this ID
-                    subscription_id = subscription_result['result']
-                    self.debug_message(f"Websocket subscription [{subscription_id}] created")
+                    for message in self.__rpc_message_queue:
 
-                    event_number = 0
-                    json_body = None
-                    while not json_body:
-                        result = json.loads(self.websocket.recv())
+                        # Check if result message is matching request ID
+                        if 'id' in message and message['id'] == self.request_id:
 
-                        # Check if message is meant for this subscription
-                        if result['params']['subscription'] == subscription_id:
-
-                            self.debug_message(f"Websocket result [{subscription_id} #{event_number}]: {result}")
+                            self.__rpc_message_queue.remove(message)
 
                             # Check if response has error
-                            if 'error' in result:
-                                raise SubstrateRequestException(result['error'])
+                            if 'error' in message:
+                                raise SubstrateRequestException(message['error'])
 
-                            callback_result = result_handler(result)
-                            if callback_result:
+                            # If result handler is set, pass result through and loop until handler return value is set
+                            if callable(result_handler):
+
+                                # Set subscription ID and only listen to messages containing this ID
+                                subscription_id = message['result']
+                                self.debug_message(f"Websocket subscription [{subscription_id}] created")
+
+                            else:
+                                json_body = message
+
+                        # Check if message is meant for this subscription
+                        elif 'params' in message and message['params']['subscription'] == subscription_id:
+
+                            self.__rpc_message_queue.remove(message)
+
+                            self.debug_message(f"Websocket result [{subscription_id} #{update_nr}]: {message}")
+
+                            # Call result_handler with message for processing
+                            callback_result = result_handler(message, update_nr)
+                            if callback_result is not None:
                                 json_body = callback_result
 
-                            event_number += 1
-
-                else:
-
-                    json_body = json.loads(self.websocket.recv())
+                            update_nr += 1
 
             except WebSocketConnectionClosedException:
                 if self.url:
@@ -551,7 +559,8 @@ class SubstrateInterface:
             response = requests.request("POST", self.url, data=json.dumps(payload), headers=self.default_headers)
 
             if response.status_code != 200:
-                raise SubstrateRequestException("RPC request failed with HTTP status code {}".format(response.status_code))
+                raise SubstrateRequestException(
+                    "RPC request failed with HTTP status code {}".format(response.status_code))
 
             json_body = response.json()
 
@@ -702,6 +711,7 @@ class SubstrateInterface:
 
             return result
 
+    @lru_cache(maxsize=1000)
     def get_block_hash(self, block_id):
         """
         A pass-though to existing JSONRPC method `chain_getBlockHash`
@@ -715,26 +725,6 @@ class SubstrateInterface:
 
         """
         response = self.rpc_request("chain_getBlockHash", [block_id])
-
-        if 'error' in response:
-            raise SubstrateRequestException(response['error']['message'])
-        else:
-            return response.get('result')
-
-    @block_dependent_lru_cache(maxsize=1000, block_arg_index=1)
-    def get_block_header(self, block_hash):
-        """
-        A pass-though to existing JSONRPC method `chain_getHeader`
-
-        Parameters
-        ----------
-        block_hash
-
-        Returns
-        -------
-
-        """
-        response = self.rpc_request("chain_getHeader", [block_hash])
 
         if 'error' in response:
             raise SubstrateRequestException(response['error']['message'])
@@ -926,7 +916,8 @@ class SubstrateInterface:
 
         return response.get('result')
 
-    def generate_storage_hash(self, storage_module, storage_function, params=None, hasher=None, key2_hasher=None, metadata_version=None):
+    def generate_storage_hash(self, storage_module, storage_function, params=None, hasher=None, key2_hasher=None,
+                              metadata_version=None):
         """
         Generate a storage key for given module/function
 
@@ -1056,7 +1047,7 @@ class SubstrateInterface:
 
         # In fact calls and storage functions are decoded against runtime of previous block, therefor retrieve
         # metadata and apply type registry of runtime of parent block
-        block_header = self.get_block_header(block_hash=self.block_hash) or {}
+        block_header = self.rpc_request('chain_getHeader', [self.block_hash]) or {}
         parent_block_hash = block_header.get('parentHash')
 
         if parent_block_hash == '0x0000000000000000000000000000000000000000000000000000000000000000':
@@ -1258,9 +1249,29 @@ class SubstrateInterface:
             block_hash=block_hash, substrate=self, last_key=last_key, max_results=max_results
         )
 
-    def query(self, module, storage_function, params=None, block_hash=None) -> Optional[ScaleType]:
+    def query(self, module, storage_function, params=None, block_hash=None,
+              subscription_handler=None) -> Optional[ScaleType]:
         """
-        Retrieves the storage entry for given module, function and optional parameters at given block hash
+        Retrieves the storage entry for given module, function and optional parameters at given block hash.
+
+        When a subscription_handler callback function is passed, a subscription will be maintained as long as this
+        handler doesn't return a value.
+
+        Example of subscription handler:
+        ```
+        def subscription_handler(obj, update_nr, subscription_id):
+
+            if update_nr == 0:
+                print('Initial data:', obj.value)
+
+            if update_nr > 0:
+                # Do something with the update
+                print('data changed:', obj.value)
+
+            # The execution will block until an arbitrary value is returned, which will be the result of the `query`
+            if update_nr > 1:
+                return obj
+        ```
 
         Parameters
         ----------
@@ -1268,6 +1279,7 @@ class SubstrateInterface:
         storage_function: The storage function name, e.g. FreeBalance or AccountNonce
         params: list of params, in the decoded format of the applicable ScaleTypes
         block_hash: Optional block hash, when omitted the chain tip will be used
+        subscription_handler: Callback function that processes the updates of the storage query subscription
 
         Returns
         -------
@@ -1343,22 +1355,55 @@ class SubstrateInterface:
             metadata_version=self.metadata_decoder.version.index
         )
 
-        response = self.rpc_request("state_getStorageAt", [storage_hash, block_hash])
+        def result_handler(message, update_nr):
+            if return_scale_type:
 
-        if 'error' in response:
-            raise SubstrateRequestException(response['error']['message'])
+                subscription_id = message['params']['subscription']
 
-        if 'result' in response:
+                for change_storage_key, change_data in message['params']['result']['changes']:
+                    if change_storage_key == storage_hash:
 
-            if return_scale_type and response.get('result'):
-                obj = ScaleDecoder.get_decoder_class(
-                    type_string=return_scale_type,
-                    data=ScaleBytes(response.get('result')),
-                    metadata=self.metadata_decoder,
-                    runtime_config=self.runtime_config
-                )
-                obj.decode()
-                return obj
+                        updated_obj = ScaleDecoder.get_decoder_class(
+                            type_string=return_scale_type,
+                            data=ScaleBytes(change_data),
+                            metadata=self.metadata_decoder,
+                            runtime_config=self.runtime_config
+                        )
+                        updated_obj.decode()
+                        subscription_result = subscription_handler(updated_obj, update_nr, subscription_id)
+
+                        if subscription_result is not None:
+                            # Handler returned end result: unsubscribe from further updates
+                            self.rpc_request("state_unsubscribeStorage", [subscription_id])
+
+                        return subscription_result
+
+        if callable(subscription_handler):
+
+            if block_hash:
+                raise ValueError("Subscriptions can only be registered for current state; block_hash cannot be set")
+
+            result = self.rpc_request("state_subscribeStorage", [[storage_hash]], result_handler=result_handler)
+
+            return result
+
+        else:
+
+            response = self.rpc_request("state_getStorageAt", [storage_hash, block_hash])
+
+            if 'error' in response:
+                raise SubstrateRequestException(response['error']['message'])
+
+            if 'result' in response:
+                if return_scale_type and response.get('result'):
+                    obj = ScaleDecoder.get_decoder_class(
+                        type_string=return_scale_type,
+                        data=ScaleBytes(response.get('result')),
+                        metadata=self.metadata_decoder,
+                        runtime_config=self.runtime_config
+                    )
+                    obj.decode()
+                    return obj
 
         return None
 
@@ -1368,7 +1413,7 @@ class SubstrateInterface:
         obj = self.query(module, storage_function, params=params, block_hash=block_hash)
         return {'result': obj.value if obj else None}
 
-    def get_events(self, block_hash=None) -> list:
+    def get_events(self, block_hash: str = None, block_id: int = None) -> list:
         """
         Convenience method to get events for a certain block (storage call for module 'System' and function 'Events')
 
@@ -1381,6 +1426,10 @@ class SubstrateInterface:
         list
         """
         events = []
+
+        if not block_hash:
+            block_hash = self.get_chain_head()
+
         storage_obj = self.query(module="System", storage_function="Events", block_hash=block_hash)
         if storage_obj:
             events += storage_obj.elements
@@ -1474,7 +1523,8 @@ class SubstrateInterface:
         -------
         int
         """
-        account_info = self.query('System', 'Account', [account_address])
+        block_hash = self.get_chain_head()
+        account_info = self.query('System', 'Account', [account_address], block_hash=block_hash)
         if account_info:
             return account_info.value.get('nonce', 0)
 
@@ -1650,18 +1700,20 @@ class SubstrateInterface:
         if extrinsic.__class__.__name__ != 'ExtrinsicsDecoder':
             raise TypeError("'extrinsic' must be of type ExtrinsicsDecoder")
 
-        def result_handler(result):
+        def result_handler(message, update_nr, subscription_id):
             # Check if extrinsic is included and finalized
-            if 'params' in result and type(result['params']['result']) is dict:
-                if 'finalized' in result['params']['result'] and wait_for_finalization:
+            if 'params' in message and type(message['params']['result']) is dict:
+                if 'finalized' in message['params']['result'] and wait_for_finalization:
+                    self.rpc_request('author_unwatchExtrinsic', [subscription_id])
                     return {
-                        'block_hash': result['params']['result']['finalized'],
+                        'block_hash': message['params']['result']['finalized'],
                         'extrinsic_hash': '0x{}'.format(extrinsic.extrinsic_hash),
                         'finalized': True
                     }
-                elif 'inBlock' in result['params']['result'] and wait_for_inclusion and not wait_for_finalization:
+                elif 'inBlock' in message['params']['result'] and wait_for_inclusion and not wait_for_finalization:
+                    self.rpc_request('author_unwatchExtrinsic', [subscription_id])
                     return {
-                        'block_hash': result['params']['result']['inBlock'],
+                        'block_hash': message['params']['result']['inBlock'],
                         'extrinsic_hash': '0x{}'.format(extrinsic.extrinsic_hash),
                         'finalized': False
                     }
@@ -1907,7 +1959,6 @@ class SubstrateInterface:
 
                 if len(module.constants or []) > 0:
                     for idx, constant in enumerate(module.constants):
-
                         # Check if types already registered in database
                         self.process_metadata_typestring(constant.type)
 
@@ -2225,6 +2276,111 @@ class SubstrateInterface:
                         return error
 
     @block_dependent_lru_cache(maxsize=100)
+    def __get_block_handler(self, block_hash: str = None, ignore_decoding_errors: bool = False,
+                  include_author: bool = False, header_only=False, finalized_only=False, subscription_handler=None):
+
+        self.init_runtime(block_hash=block_hash)
+
+        def decode_block(block_data):
+
+            if block_data:
+                block_data['header']['number'] = int(block_data['header']['number'], 16)
+
+                if 'extrinsics' in block_data:
+                    for idx, extrinsic_data in enumerate(block_data['extrinsics']):
+                        extrinsic_decoder = Extrinsic(
+                            data=ScaleBytes(extrinsic_data),
+                            metadata=self.metadata_decoder,
+                            runtime_config=self.runtime_config
+                        )
+                        try:
+                            extrinsic_decoder.decode()
+                            block_data['extrinsics'][idx] = extrinsic_decoder
+
+                        except Exception:
+                            if not ignore_decoding_errors:
+                                raise
+                            block_data['extrinsics'][idx] = None
+
+                for idx, log_data in enumerate(block_data['header']["digest"]["logs"]):
+
+                    try:
+                        log_digest = self.decode_scale('DigestItem', scale_bytes=ScaleBytes(log_data),
+                                                       return_scale_obj=True)
+                        block_data['header']["digest"]["logs"][idx] = log_digest
+
+                        if include_author and 'PreRuntime' in log_digest.value:
+
+                            if log_digest.value['PreRuntime']['engine'] == 'BABE':
+                                validator_set = self.query("Session", "Validators", block_hash=block_hash)
+                                rank_validator = log_digest.value['PreRuntime']['data']['authorityIndex']
+
+                                block_author = validator_set.elements[rank_validator]
+                                block_data['header']['author'] = self.ss58_encode(block_author.value)
+
+                    except Exception:
+                        if not ignore_decoding_errors:
+                            raise
+                        block_data['header']["digest"]["logs"][idx] = None
+
+            return block_data
+
+        if callable(subscription_handler):
+
+            if block_hash:
+                raise ValueError("Subscriptions can only be registered for current state; block_hash cannot be set")
+
+            rpc_method_prefix = 'Finalized' if finalized_only else 'New'
+
+            def result_handler(message, update_nr):
+
+                new_block = decode_block({'header': message['params']['result']})
+                subscription_id = message['params']['subscription']
+
+                subscription_result = subscription_handler(new_block, update_nr, subscription_id)
+
+                if subscription_result is not None:
+                    # Handler returned end result: unsubscribe from further updates
+                    self.rpc_request(f"chain_unsubscribe{rpc_method_prefix}Heads", [subscription_id])
+
+                return subscription_result
+
+            result = self.rpc_request(f"chain_subscribe{rpc_method_prefix}Heads", [], result_handler=result_handler)
+
+            return result
+
+        else:
+
+            if header_only:
+                response = self.rpc_request('chain_getHeader', [block_hash])
+                return decode_block({'header': response['result']})
+
+            else:
+                response = self.rpc_request('chain_getBlock', [block_hash])
+                return decode_block(response['result']['block'])
+
+    @block_dependent_lru_cache(maxsize=100)
+    def get_block(self, block_hash: str = None, ignore_decoding_errors: bool = False, include_author: bool = False):
+        return self.__get_block_handler(
+            block_hash=block_hash, ignore_decoding_errors=ignore_decoding_errors, header_only=False,
+            include_author=include_author
+        )
+
+    @block_dependent_lru_cache(maxsize=1000)
+    def get_block_header(self, block_hash: str = None, ignore_decoding_errors: bool = False,
+                         include_author: bool = False):
+        return self.__get_block_handler(
+            block_hash=block_hash, ignore_decoding_errors=ignore_decoding_errors, header_only=True,
+            include_author=include_author
+        )
+
+    def subscribe_block_headers(self, subscription_handler: callable, ignore_decoding_errors: bool = False,
+                                include_author: bool = False, finalized_only=False):
+        return self.__get_block_handler(
+            subscription_handler=subscription_handler, ignore_decoding_errors=ignore_decoding_errors,
+            include_author=include_author, finalized_only=finalized_only
+        )
+
     def get_runtime_block(self, block_hash: str = None, block_id: int = None, ignore_decoding_errors: bool = False,
                           include_author: bool = False):
         """
@@ -2241,53 +2397,21 @@ class SubstrateInterface:
         -------
 
         """
-        self.init_runtime(block_hash=block_hash, block_id=block_id)
+        warnings.warn("'get_runtime_block' will be replaced by 'get_block'", DeprecationWarning)
 
-        response = self.rpc_request("chain_getBlock", [self.block_hash])
+        if block_id is not None:
+            block_hash = self.get_block_hash(block_id)
 
-        if 'error' in response:
-            raise SubstrateRequestException(response['error']['message'])
+            if block_hash is None:
+                return
 
-        response = response.get('result')
+        block = self.__get_block_handler(
+            block_hash=block_hash, ignore_decoding_errors=ignore_decoding_errors,
+            include_author=include_author, header_only=False
+        )
 
-        if response:
-            response['block']['header']['number'] = int(response['block']['header']['number'], 16)
-
-            for idx, extrinsic_data in enumerate(response['block']['extrinsics']):
-                extrinsic_decoder = Extrinsic(
-                    data=ScaleBytes(extrinsic_data),
-                    metadata=self.metadata_decoder,
-                    runtime_config=self.runtime_config
-                )
-                try:
-                    extrinsic_decoder.decode()
-                    response['block']['extrinsics'][idx] = extrinsic_decoder.value
-                except Exception:
-                    if not ignore_decoding_errors:
-                        raise
-                    response['block']['extrinsics'][idx] = None
-
-            for idx, log_data in enumerate(response['block']['header']["digest"]["logs"]):
-
-                try:
-                    log_digest = self.decode_scale('DigestItem', scale_bytes=ScaleBytes(log_data), return_scale_obj=True)
-                    response['block']['header']["digest"]["logs"][idx] = log_digest.value
-
-                    if include_author and 'PreRuntime' in log_digest.value:
-
-                        if log_digest.value['PreRuntime']['engine'] == 'BABE':
-                            validator_set = self.query("Session", "Validators", block_hash=block_hash)
-                            rank_validator = log_digest.value['PreRuntime']['data']['authorityIndex']
-
-                            block_author = validator_set.elements[rank_validator]
-                            response['block']['header']['author'] = self.ss58_encode(block_author.value)
-
-                except Exception:
-                    if not ignore_decoding_errors:
-                        raise
-                    response['block']['header']["digest"]["logs"][idx] = None
-
-        return response
+        if block:
+            return {'block': block}
 
     @block_dependent_lru_cache(maxsize=100)
     def get_block_extrinsics(self, block_hash: str = None, block_id: int = None, ignore_decoding_errors=False) -> list:
@@ -2581,11 +2705,11 @@ class SubstrateInterface:
             "event_id": event.name,
             "event_name": event.name,
             "event_args": [
-                  {
+                {
                     "event_arg_index": idx,
                     "type": arg
-                  } for idx, arg in enumerate(event.args)
-                ],
+                } for idx, arg in enumerate(event.args)
+            ],
             "lookup": '0x{}'.format(event_index),
             "documentation": '\n'.join(event.docs),
             "module_id": module.get_identifier(),
@@ -2954,4 +3078,3 @@ class QueryMapResult:
 
     def __getitem__(self, item):
         return self.records[item]
-
