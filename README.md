@@ -237,18 +237,18 @@ Updates will be pushed to the callable and will block execution until a final va
 as a result of the query and finally automatically unsubscribed from further updates.
 
 ```python
-def subscription_handler(obj, update_nr, subscription_id):
+def subscription_handler(account_info_obj, update_nr, subscription_id):
 
     if update_nr == 0:
-        print('Initial account data:', obj.value)
+        print('Initial account data:', account_info_obj.value)
 
     if update_nr > 0:
         # Do something with the update
-        print('Account data changed:', obj.value)
+        print('Account data changed:', account_info_obj.value)
 
     # The execution will block until an arbitrary value is returned, which will be the result of the `query`
-    if update_nr > 1:
-        return obj
+    if update_nr > 5:
+        return account_info_obj
 
 
 result = substrate.query("System", "Account", ["5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY"],

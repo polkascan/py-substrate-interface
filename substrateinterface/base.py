@@ -39,7 +39,7 @@ from scalecodec.updater import update_type_registries
 from .key import extract_derive_path
 from .utils.caching import block_dependent_lru_cache
 from .utils.hasher import blake2_256, two_x64_concat, xxh128, blake2_128, blake2_128_concat, identity
-from .exceptions import SubstrateRequestException, ConfigurationError, StorageFunctionNotFound, BlockHashNotFound, \
+from .exceptions import SubstrateRequestException, ConfigurationError, StorageFunctionNotFound, BlockNotFound, \
     ExtrinsicNotFound
 from .constants import *
 from .utils.ss58 import ss58_decode, ss58_encode, is_valid_ss58_address
@@ -564,6 +564,10 @@ class SubstrateInterface:
 
             json_body = response.json()
 
+            # Check if response has error
+            if 'error' in json_body:
+                raise SubstrateRequestException(json_body['error'])
+
         self.request_id += 1
         return json_body
 
@@ -641,10 +645,11 @@ class SubstrateInterface:
         """
         response = self.rpc_request("chain_getHead", [])
 
-        if 'error' in response:
-            raise SubstrateRequestException(response['error']['message'])
+        if response is not None:
+            if 'error' in response:
+                raise SubstrateRequestException(response['error']['message'])
 
-        return response.get('result')
+            return response.get('result')
 
     def get_chain_finalised_head(self):
         """
@@ -656,10 +661,11 @@ class SubstrateInterface:
         """
         response = self.rpc_request("chain_getFinalisedHead", [])
 
-        if 'error' in response:
-            raise SubstrateRequestException(response['error']['message'])
+        if response is not None:
+            if 'error' in response:
+                raise SubstrateRequestException(response['error']['message'])
 
-        return response.get('result')
+            return response.get('result')
 
     def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
         """
@@ -675,6 +681,7 @@ class SubstrateInterface:
         -------
 
         """
+        warnings.warn("'get_chain_block' will be replaced by 'get_block'", DeprecationWarning)
 
         if block_id:
             block_hash = self.get_block_hash(block_id)
@@ -1042,13 +1049,20 @@ class SubstrateInterface:
         if block_id is not None:
             block_hash = self.get_block_hash(block_id)
 
+        if not block_hash:
+            block_hash = self.get_chain_head()
+
         self.block_hash = block_hash
         self.block_id = block_id
 
         # In fact calls and storage functions are decoded against runtime of previous block, therefor retrieve
         # metadata and apply type registry of runtime of parent block
-        block_header = self.rpc_request('chain_getHeader', [self.block_hash]) or {}
-        parent_block_hash = block_header.get('parentHash')
+        block_header = self.rpc_request('chain_getHeader', [self.block_hash])
+
+        if block_header['result'] is None:
+            raise BlockNotFound(f'Block not found for "{self.block_hash}"')
+
+        parent_block_hash = block_header['result']['parentHash']
 
         if parent_block_hash == '0x0000000000000000000000000000000000000000000000000000000000000000':
             runtime_block_hash = self.block_hash
@@ -2275,15 +2289,20 @@ class SubstrateInterface:
                     if error_name == error.name:
                         return error
 
-    @block_dependent_lru_cache(maxsize=100)
-    def __get_block_handler(self, block_hash: str = None, ignore_decoding_errors: bool = False,
-                  include_author: bool = False, header_only=False, finalized_only=False, subscription_handler=None):
+    @block_dependent_lru_cache(maxsize=1000)
+    def __get_block_handler(self, block_hash: str, ignore_decoding_errors: bool = False, include_author: bool = False,
+                            header_only: bool = False, finalized_only: bool = False,
+                            subscription_handler: callable = None):
 
-        self.init_runtime(block_hash=block_hash)
+        try:
+            self.init_runtime(block_hash=block_hash)
+        except BlockNotFound:
+            return None
 
         def decode_block(block_data):
 
             if block_data:
+                block_data['header']['hash'] = block_hash
                 block_data['header']['number'] = int(block_data['header']['number'], 16)
 
                 if 'extrinsics' in block_data:
@@ -2305,8 +2324,10 @@ class SubstrateInterface:
                 for idx, log_data in enumerate(block_data['header']["digest"]["logs"]):
 
                     try:
-                        log_digest = self.decode_scale('DigestItem', scale_bytes=ScaleBytes(log_data),
-                                                       return_scale_obj=True)
+                        log_digest_cls = self.runtime_config.get_decoder_class('DigestItem')
+                        log_digest = log_digest_cls(data=ScaleBytes(log_data))
+                        log_digest.decode()
+
                         block_data['header']["digest"]["logs"][idx] = log_digest
 
                         if include_author and 'PreRuntime' in log_digest.value:
@@ -2316,7 +2337,11 @@ class SubstrateInterface:
                                 rank_validator = log_digest.value['PreRuntime']['data']['authorityIndex']
 
                                 block_author = validator_set.elements[rank_validator]
-                                block_data['header']['author'] = self.ss58_encode(block_author.value)
+                                block_data['author'] = self.ss58_encode(block_author.value)
+                            else:
+                                raise NotImplementedError(
+                                    f"Cannot extract author for engine {log_digest.value['PreRuntime']['engine']}"
+                                )
 
                     except Exception:
                         if not ignore_decoding_errors:
@@ -2326,9 +2351,6 @@ class SubstrateInterface:
             return block_data
 
         if callable(subscription_handler):
-
-            if block_hash:
-                raise ValueError("Subscriptions can only be registered for current state; block_hash cannot be set")
 
             rpc_method_prefix = 'Finalized' if finalized_only else 'New'
 
@@ -2359,16 +2381,60 @@ class SubstrateInterface:
                 response = self.rpc_request('chain_getBlock', [block_hash])
                 return decode_block(response['result']['block'])
 
-    @block_dependent_lru_cache(maxsize=100)
-    def get_block(self, block_hash: str = None, ignore_decoding_errors: bool = False, include_author: bool = False):
+    def get_block(self, block_hash: str = None, block_number: int = None, ignore_decoding_errors: bool = False,
+                  include_author: bool = False, finalized_only: bool = False):
+
+        if block_hash and block_number:
+            raise ValueError('Either block_hash or block_number should be be set')
+
+        if block_number is not None:
+            block_hash = self.get_block_hash(block_number)
+
+            if block_hash is None:
+                return
+
+        if block_hash and finalized_only:
+            raise ValueError('finalized_only cannot be True when block_hash is provided')
+
+        if block_hash is None:
+            # Retrieve block hash
+            if finalized_only:
+                block_hash = self.get_chain_finalised_head()
+            else:
+                block_hash = self.get_chain_head()
+
         return self.__get_block_handler(
             block_hash=block_hash, ignore_decoding_errors=ignore_decoding_errors, header_only=False,
             include_author=include_author
         )
 
-    @block_dependent_lru_cache(maxsize=1000)
-    def get_block_header(self, block_hash: str = None, ignore_decoding_errors: bool = False,
-                         include_author: bool = False):
+    def get_block_header(self, block_hash: str = None, block_number: int = None, ignore_decoding_errors: bool = False,
+                         include_author: bool = False, finalized_only: bool = False):
+
+        if block_hash and block_number:
+            raise ValueError('Either block_hash or block_number should be be set')
+
+        if block_number is not None:
+            block_hash = self.get_block_hash(block_number)
+
+            if block_hash is None:
+                return
+
+        if block_hash and finalized_only:
+            raise ValueError('finalized_only cannot be True when block_hash is provided')
+
+        if block_hash is None:
+            # Retrieve block hash
+            if finalized_only:
+                block_hash = self.get_chain_finalised_head()
+            else:
+                block_hash = self.get_chain_head()
+
+        else:
+            # Check conflicting scenarios
+            if finalized_only:
+                raise ValueError('finalized_only cannot be True when block_hash is provided')
+
         return self.__get_block_handler(
             block_hash=block_hash, ignore_decoding_errors=ignore_decoding_errors, header_only=True,
             include_author=include_author
@@ -2376,8 +2442,14 @@ class SubstrateInterface:
 
     def subscribe_block_headers(self, subscription_handler: callable, ignore_decoding_errors: bool = False,
                                 include_author: bool = False, finalized_only=False):
+        # Retrieve block hash
+        if finalized_only:
+            block_hash = self.get_chain_finalised_head()
+        else:
+            block_hash = self.get_chain_head()
+
         return self.__get_block_handler(
-            subscription_handler=subscription_handler, ignore_decoding_errors=ignore_decoding_errors,
+            block_hash, subscription_handler=subscription_handler, ignore_decoding_errors=ignore_decoding_errors,
             include_author=include_author, finalized_only=finalized_only
         )
 
@@ -2412,50 +2484,6 @@ class SubstrateInterface:
 
         if block:
             return {'block': block}
-
-    @block_dependent_lru_cache(maxsize=100)
-    def get_block_extrinsics(self, block_hash: str = None, block_id: int = None, ignore_decoding_errors=False) -> list:
-        """
-        Retrieves a list of `Extrinsic` objects for given block_hash or block_id
-
-        Parameters
-        ----------
-        block_hash
-        block_id
-        ignore_decoding_errors: When True no exception will be raised if decoding of extrinsics failes and add as `None` instead
-
-        Returns
-        -------
-        list
-        """
-        self.init_runtime(block_hash=block_hash, block_id=block_id)
-
-        response = self.rpc_request("chain_getBlock", [self.block_hash])
-
-        if 'error' in response:
-            raise SubstrateRequestException(response['error']['message'])
-
-        if response.get('result') is None:
-            raise BlockHashNotFound(f"{block_hash} not found")
-
-        extrinsics = []
-
-        for extrinsic_data in response['result']['block']['extrinsics']:
-            extrinsic = Extrinsic(
-                data=ScaleBytes(extrinsic_data),
-                metadata=self.metadata_decoder,
-                runtime_config=self.runtime_config
-            )
-            try:
-                extrinsic.decode()
-            except:
-                if not ignore_decoding_errors:
-                    raise
-                extrinsic = None
-
-            extrinsics.append(extrinsic)
-
-        return extrinsics
 
     def decode_scale(self, type_string, scale_bytes, block_hash=None, return_scale_obj=False):
         """
@@ -2830,7 +2858,9 @@ class ExtrinsicReceipt:
                              "included, manually set block_hash or use `wait_for_inclusion` when sending extrinsic")
         # Determine extrinsic idx
 
-        extrinsics = self.substrate.get_block_extrinsics(block_hash=self.block_hash)
+        block = self.substrate.get_block(block_hash=self.block_hash)
+
+        extrinsics = block['extrinsics']
 
         if len(extrinsics) > 0:
             self.__extrinsic_idx = self.__get_extrinsic_index(

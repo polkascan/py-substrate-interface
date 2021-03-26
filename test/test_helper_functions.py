@@ -59,6 +59,14 @@ class TestHelperFunctions(unittest.TestCase):
                     },
                     "id": 1
                 }
+            elif method == 'chain_getHead':
+                return {
+                    "jsonrpc": "2.0",
+                    "result": "0xe1781813275653a970b4260298b3858b36d38e072256dad674f7c786a0cae236",
+                    "id": 1
+                }
+
+            raise NotImplementedError(method)
 
         cls.substrate.rpc_request = MagicMock(side_effect=mocked_request)
 
@@ -70,14 +78,14 @@ class TestHelperFunctions(unittest.TestCase):
 
         cls.empty_substrate.rpc_request = MagicMock(side_effect=mocked_request)
 
-        cls.error_substrate = SubstrateInterface(url='dummy', ss58_format=42, type_registry_preset='kusama')
+        cls.error_substrate = SubstrateInterface(url='wss://kusama-rpc.polkadot.io', ss58_format=2, type_registry_preset='kusama')
 
-        def mocked_request(method, params):
-            return {'jsonrpc': '2.0', 'error': {
-                'code': -32602, 'message': 'Generic error message'
-            }, 'id': 1}
-
-        cls.error_substrate.rpc_request = MagicMock(side_effect=mocked_request)
+        # def mocked_request(method, params):
+        #     return {'jsonrpc': '2.0', 'error': {
+        #         'code': -32602, 'message': 'Generic error message'
+        #     }, 'id': 1}
+        #
+        # cls.error_substrate.rpc_request = MagicMock(side_effect=mocked_request)
 
     def test_decode_scale(self):
         self.assertEqual(self.substrate.decode_scale('Compact<u32>', '0x08'), 2)
@@ -149,8 +157,7 @@ class TestHelperFunctions(unittest.TestCase):
         self.assertRaises(SubstrateRequestException, self.error_substrate.get_block_header, '0x')
         self.assertRaises(SubstrateRequestException, self.error_substrate.get_block_metadata, '0x')
         self.assertRaises(SubstrateRequestException, self.error_substrate.get_block_runtime_version, '0x')
-        self.assertRaises(SubstrateRequestException, self.error_substrate.iterate_map, 'System', 'Account')
-        self.assertRaises(SubstrateRequestException, self.error_substrate.query, 'System', 'Account', ['0x'])
+        self.assertRaises(ValueError, self.error_substrate.query, 'System', 'Account', ['0x'])
         self.assertRaises(SubstrateRequestException, self.error_substrate.get_runtime_metadata, '0x')
 
 
