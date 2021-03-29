@@ -63,6 +63,10 @@ class DeployContractFailedException(Exception):
     pass
 
 
+class ContractMetadataParseException(ValueError):
+    pass
+
+
 class ContractReadFailedException(Exception):
     pass
 
@@ -71,7 +75,7 @@ class ContractExecFailedException(Exception):
     pass
 
 
-class BlockHashNotFound(Exception):
+class BlockNotFound(Exception):
     pass
 
 
@@ -88,8 +92,8 @@ class ExtrinsicNotFound(Exception):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="substrateinterface.exceptions.BlockHashNotFound"><code class="flex name class">
-<span>class <span class="ident">BlockHashNotFound</span></span>
+<dt id="substrateinterface.exceptions.BlockNotFound"><code class="flex name class">
+<span>class <span class="ident">BlockNotFound</span></span>
 <span>(</span><span>*args, **kwargs)</span>
 </code></dt>
 <dd>
@@ -98,7 +102,7 @@ class ExtrinsicNotFound(Exception):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class BlockHashNotFound(Exception):
+<pre><code class="python">class BlockNotFound(Exception):
     pass</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -141,6 +145,26 @@ class ExtrinsicNotFound(Exception):
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+<dt id="substrateinterface.exceptions.ContractMetadataParseException"><code class="flex name class">
+<span>class <span class="ident">ContractMetadataParseException</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Inappropriate argument value (of correct type).</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ContractMetadataParseException(ValueError):
+    pass</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.ValueError</li>
 <li>builtins.Exception</li>
 <li>builtins.BaseException</li>
 </ul>
@@ -277,13 +301,16 @@ class ExtrinsicNotFound(Exception):
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="substrateinterface.exceptions.BlockHashNotFound" href="#substrateinterface.exceptions.BlockHashNotFound">BlockHashNotFound</a></code></h4>
+<h4><code><a title="substrateinterface.exceptions.BlockNotFound" href="#substrateinterface.exceptions.BlockNotFound">BlockNotFound</a></code></h4>
 </li>
 <li>
 <h4><code><a title="substrateinterface.exceptions.ConfigurationError" href="#substrateinterface.exceptions.ConfigurationError">ConfigurationError</a></code></h4>
 </li>
 <li>
 <h4><code><a title="substrateinterface.exceptions.ContractExecFailedException" href="#substrateinterface.exceptions.ContractExecFailedException">ContractExecFailedException</a></code></h4>
+</li>
+<li>
+<h4><code><a title="substrateinterface.exceptions.ContractMetadataParseException" href="#substrateinterface.exceptions.ContractMetadataParseException">ContractMetadataParseException</a></code></h4>
 </li>
 <li>
 <h4><code><a title="substrateinterface.exceptions.ContractReadFailedException" href="#substrateinterface.exceptions.ContractReadFailedException">ContractReadFailedException</a></code></h4>

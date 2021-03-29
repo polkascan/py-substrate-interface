@@ -258,7 +258,8 @@ print(result)
 ```
 
 ### Query a mapped storage function
-Mapped storage functions can be iterated over all key/value pairs, for these storage functions `query_map` can be used.
+Mapped storage functions can be iterated over all key/value pairs, for these type of storage functions `query_map` 
+can be used.
 
 The result is a `QueryMapResult` object, which is an iterator:
 
@@ -267,7 +268,7 @@ The result is a `QueryMapResult` object, which is an iterator:
 result = substrate.query_map('System', 'Account', max_results=199)
 
 for account, account_info in result:
-    print(f"Free balance of account '{account.value}': {account_info.value['data']['free']}")
+    print(f"Free balance of account '{substrate.ss58_encode(account.value)}': {account_info.value['data']['free']}")
 ```
 
 These results are transparantly retrieved in batches capped by the `page_size` kwarg, currently the 
@@ -275,7 +276,7 @@ maximum `page_size` restricted by the RPC node is 1000
 
 ```python
 # Retrieve all System.Account entries in batches of 200 (automatically appended by `QueryMapResult` iterator)
-result = substrate.query_map('System', 'Account', page_size=200)
+result = substrate.query_map('System', 'Account', page_size=200, max_results=400)
 
 for account, account_info in result:
     print(f"Free balance of account '{account.value}': {account_info.value['data']['free']}")

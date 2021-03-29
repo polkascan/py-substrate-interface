@@ -877,6 +877,8 @@ class SubstrateInterface:
 
         """
 
+        warnings.warn("'get_block_events' will be replaced by 'get_events'", DeprecationWarning)
+
         if metadata_decoder and metadata_decoder.version.index >= 9:
             storage_hash = STORAGE_HASH_SYSTEM_EVENTS_V9
         else:
@@ -1124,6 +1126,10 @@ class SubstrateInterface:
         """
         warnings.warn("'iterate_map' will be replaced by 'query_map'", DeprecationWarning)
 
+        if block_hash is None:
+            # Retrieve chain tip
+            block_hash = self.get_chain_head()
+
         self.init_runtime(block_hash=block_hash)
 
         key_type = None
@@ -1164,24 +1170,35 @@ class SubstrateInterface:
 
         # decode both of them
         pairs = map(
-            lambda kp: [self.decode_scale(key_type, kp[0]), self.decode_scale(value_type, kp[1])],
+            lambda kp: [
+                self.decode_scale(key_type, kp[0], block_hash=block_hash),
+                self.decode_scale(value_type, kp[1], block_hash=block_hash)
+            ],
             list(pairs)
         )
 
         return list(pairs)
 
-    @block_dependent_lru_cache(maxsize=100)
     def query_map(self, module: str, storage_function: str, block_hash: str = None, max_results: int = None,
                   start_key: str = None, page_size: int = 100) -> 'QueryMapResult':
         """
-        iterates over all key-pairs located at the given module and storage_function. The storage
+        Iterates over all key-pairs located at the given module and storage_function. The storage
         item must be a map.
+
+        Example:
+
+        ```
+        result = substrate.query_map('System', 'Account', max_results=100)
+
+        for account, account_info in result:
+            print(f"Free balance of account '{substrate.ss58_encode(account.value)}': {account_info.value['data']['free']}")
+        ```
 
         Parameters
         ----------
         module: The module name in the metadata, e.g. System or Balances.
         storage_function: The storage function name, e.g. Account or Locks.
-        block_hash: Optional block hash, when left to None the chain tip will be used.
+        block_hash: Optional block hash for result at given block, when left to None the chain tip will be used.
         max_results: the maximum of results required, if set the query will stop fetching results when number is reached
         start_key: The storage key used as offset for the results, for pagination purposes
         page_size: The results are fetched from the node RPC in chunks of this size
@@ -1190,6 +1207,10 @@ class SubstrateInterface:
         -------
         QueryMapResult
         """
+
+        if block_hash is None:
+            # Retrieve chain tip
+            block_hash = self.get_chain_head()
 
         self.init_runtime(block_hash=block_hash)
 
@@ -1249,12 +1270,14 @@ class SubstrateInterface:
                 item_key = self.decode_scale(
                     type_string=key_type,
                     scale_bytes='0x' + item[0][len(prefix) + concat_hash_len:],
-                    return_scale_obj=True
+                    return_scale_obj=True,
+                    block_hash=block_hash
                 )
                 item_value = self.decode_scale(
                     type_string=value_type,
                     scale_bytes=item[1],
-                    return_scale_obj=True
+                    return_scale_obj=True,
+                    block_hash=block_hash
                 )
                 result.append([item_key, item_value])
 
@@ -1299,6 +1322,10 @@ class SubstrateInterface:
         -------
         ScaleType
         """
+
+        if block_hash is None:
+            # Retrieve chain tip
+            block_hash = self.get_chain_head()
 
         self.init_runtime(block_hash=block_hash)
 
@@ -2383,7 +2410,24 @@ class SubstrateInterface:
 
     def get_block(self, block_hash: str = None, block_number: int = None, ignore_decoding_errors: bool = False,
                   include_author: bool = False, finalized_only: bool = False):
+        """
+        Retrieves a block and decodes its containing extrinsics and log digest items. If `block_hash` and `block_number`
+        is omited the chain tip will be retrieve, or the finalized head if `finalized_only` is set to true.
 
+        Either `block_hash` or `block_number` should be set, or both omitted.
+
+        Parameters
+        ----------
+        block_hash: the hash of the block to be retrieved
+        block_number: the block number to retrieved
+        ignore_decoding_errors: When set this will catch all decoding errors, set the item to None and continue decoding
+        include_author: This will retrieve the block author from the validator set and add to the result
+        finalized_only: when no `block_hash` or `block_number` is set, this will retrieve the finalized head
+
+        Returns
+        -------
+        A dict containing the extrinsic and digest logs data
+        """
         if block_hash and block_number:
             raise ValueError('Either block_hash or block_number should be be set')
 
@@ -2410,7 +2454,26 @@ class SubstrateInterface:
 
     def get_block_header(self, block_hash: str = None, block_number: int = None, ignore_decoding_errors: bool = False,
                          include_author: bool = False, finalized_only: bool = False):
+        """
+        Retrieves a block header and decodes its containing log digest items. If `block_hash` and `block_number`
+        is omited the chain tip will be retrieve, or the finalized head if `finalized_only` is set to true.
 
+        Either `block_hash` or `block_number` should be set, or both omitted.
+
+        See `get_block()` to also include the extrinsics in the result
+
+        Parameters
+        ----------
+        block_hash: the hash of the block to be retrieved
+        block_number: the block number to retrieved
+        ignore_decoding_errors: When set this will catch all decoding errors, set the item to None and continue decoding
+        include_author: This will retrieve the block author from the validator set and add to the result
+        finalized_only: when no `block_hash` or `block_number` is set, this will retrieve the finalized head
+
+        Returns
+        -------
+        A dict containing the header and digest logs data
+        """
         if block_hash and block_number:
             raise ValueError('Either block_hash or block_number should be be set')
 
@@ -2442,6 +2505,36 @@ class SubstrateInterface:
 
     def subscribe_block_headers(self, subscription_handler: callable, ignore_decoding_errors: bool = False,
                                 include_author: bool = False, finalized_only=False):
+        """
+        Subscribe to new block headers as soon as they are available. The callable `subscription_handler` will be
+        executed when a new block is available and execution will block until `subscription_handler` will return
+        a result other than `None`.
+
+        Example:
+
+        ```
+        def subscription_handler(obj, update_nr, subscription_id):
+
+            print(f"New block #{obj['header']['number']} produced by {obj['header']['author']}")
+
+            if update_nr > 10
+              return {'message': 'Subscription will cancel when a value is returned', 'updates_processed': update_nr}
+
+
+        result = substrate.subscribe_block_headers(subscription_handler, include_author=True)
+        ```
+
+        Parameters
+        ----------
+        subscription_handler
+        ignore_decoding_errors: When set this will catch all decoding errors, set the item to None and continue decoding
+        include_author: This will retrieve the block author from the validator set and add to the result
+        finalized_only: when no `block_hash` or `block_number` is set, this will retrieve the finalized head
+
+        Returns
+        -------
+        Value return by `subscription_handler`
+        """
         # Retrieve block hash
         if finalized_only:
             block_hash = self.get_chain_finalised_head()
