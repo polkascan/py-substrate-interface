@@ -47,11 +47,11 @@ import os
 from hashlib import blake2b
 
 from substrateinterface.exceptions import ExtrinsicFailedException, DeployContractFailedException, \
-    ContractReadFailedException
+    ContractReadFailedException, ContractMetadataParseException
 from scalecodec import ScaleBytes, ScaleType, GenericContractExecResult
 from substrateinterface.base import SubstrateInterface, Keypair, ExtrinsicReceipt
 
-__all__ = [&#39;ContractExecutionReceipt&#39;, &#39;ContractMetadata&#39;, &#39;ContractCode&#39;, &#39;ContractInstance&#39;]
+__all__ = [&#39;ContractExecutionReceipt&#39;, &#39;ContractMetadata&#39;, &#39;ContractCode&#39;, &#39;ContractInstance&#39;, &#39;ContractEvent&#39;]
 
 
 class ContractMetadata:
@@ -69,8 +69,6 @@ class ContractMetadata:
         self.metadata_dict = metadata_dict
         self.substrate = substrate
         self.type_registry = {}
-
-        self.type_string_prefix = f&#34;ink.{self.metadata_dict[&#39;source&#39;][&#39;hash&#39;]}&#34;
 
         self.__parse_type_registry()
 
@@ -100,6 +98,24 @@ class ContractMetadata:
             raise AttributeError(&#34;&#39;{}&#39; object has no attribute &#39;{}&#39;&#34;.format(self.__class__.__name__, item))
 
     def __parse_type_registry(self):
+
+        # Check requirements
+        if &#39;types&#39; not in self.metadata_dict:
+            raise ContractMetadataParseException(&#34;No &#39;types&#39; directive present in metadata file&#34;)
+
+        if &#39;spec&#39; not in self.metadata_dict:
+            raise ContractMetadataParseException(&#34;&#39;spec&#39; directive not present in metadata file&#34;)
+
+        if &#39;constructors&#39; not in self.metadata_dict[&#39;spec&#39;]:
+            raise ContractMetadataParseException(&#34;No constructors present in metadata file&#34;)
+
+        if &#39;messages&#39; not in self.metadata_dict[&#39;spec&#39;]:
+            raise ContractMetadataParseException(&#34;No messages present in metadata file&#34;)
+
+        if &#39;source&#39; not in self.metadata_dict:
+            raise ContractMetadataParseException(&#34;&#39;source&#39; directive not present in metadata file&#34;)
+
+        self.type_string_prefix = f&#34;ink.{self.metadata_dict[&#39;source&#39;][&#39;hash&#39;]}&#34;
 
         for idx, metadata_type in enumerate(self.metadata_dict[&#39;types&#39;]):
             if idx + 1 not in self.type_registry:
@@ -162,9 +178,33 @@ class ContractMetadata:
         arg_type = self.metadata_dict[&#39;types&#39;][type_id - 1]
 
         if &#39;path&#39; in arg_type:
-            if arg_type[&#39;path&#39;] == [&#39;ink_env&#39;, &#39;types&#39;, &#39;AccountId&#39;]:
-                return &#39;AccountId&#39;
 
+            # Option field
+            if arg_type[&#39;path&#39;] == [&#39;Option&#39;]:
+
+                # Examine the fields in the &#39;Some&#39; variant
+                options_fields = arg_type[&#39;def&#39;][&#39;variant&#39;][&#39;variants&#39;][1][&#39;fields&#39;]
+
+                if len(options_fields) == 1:
+                    sub_type = self.get_type_string_for_metadata_type(options_fields[0][&#39;type&#39;])
+                else:
+                    raise NotImplementedError(&#39;Tuples in Option field not yet supported&#39;)
+
+                return f&#34;Option&lt;{sub_type}&gt;&#34;
+
+            # Predefined types defined in crate ink_env
+            if arg_type[&#39;path&#39;][0:2] == [&#39;ink_env&#39;, &#39;types&#39;]:
+
+                if arg_type[&#39;path&#39;][2] == &#39;Timestamp&#39;:
+                    return &#39;Moment&#39;
+
+                elif arg_type[&#39;path&#39;][2] in [&#39;AccountId&#39;, &#39;Hash&#39;, &#39;Balance&#39;, &#39;BlockNumber&#39;]:
+                    return arg_type[&#39;path&#39;][2]
+
+                else:
+                    raise NotImplementedError(f&#34;Unsupported ink_env type &#39;{arg_type[&#39;path&#39;][2]}&#39;&#34;)
+
+        # RUST primitives
         if &#39;primitive&#39; in arg_type[&#39;def&#39;]:
             return arg_type[&#39;def&#39;][&#39;primitive&#39;]
 
@@ -183,7 +223,7 @@ class ContractMetadata:
 
                 if &#39;fields&#39; in variant:
                     if len(variant[&#39;fields&#39;]) &gt; 1:
-                        raise NotImplementedError(&#39;Tuples as element of enums not supported&#39;)
+                        raise NotImplementedError(&#39;Tuples as field of enums not supported&#39;)
 
                     enum_value = self.get_type_string_for_metadata_type(variant[&#39;fields&#39;][0][&#39;type&#39;])
 
@@ -492,7 +532,8 @@ class ContractCode:
 
         return self.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
 
-    def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None) -&gt; &#34;ContractInstance&#34;:
+    def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None,
+               deployment_salt: str = None) -&gt; &#34;ContractInstance&#34;:
         &#34;&#34;&#34;
         Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
         constructor arguments
@@ -504,6 +545,7 @@ class ContractCode:
         gas_limit:
         constructor: name of the constructor to use, provided in the metadata
         args: arguments for the constructor
+        deployment_salt: optional string or hex-string that acts as a salt for this deployment
 
         Returns
         -------
@@ -520,7 +562,8 @@ class ContractCode:
                 &#39;endowment&#39;: endowment,
                 &#39;gas_limit&#39;: gas_limit,
                 &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
-                &#39;data&#39;: data.to_hex()
+                &#39;data&#39;: data.to_hex(),
+                &#39;salt&#39;: deployment_salt or &#39;&#39;
             }
         )
 
@@ -603,23 +646,56 @@ class ContractInstance:
 
         if &#39;result&#39; in response:
 
-            if &#39;success&#39; in response[&#39;result&#39;]:
-
-                try:
-
-                    response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;] = self.substrate.decode_scale(
-                        type_string=self.metadata.get_return_type_string_for_message(method),
-                        scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;])
-                    )
-                except NotImplementedError:
-                    pass
+            return_type_string = self.metadata.get_return_type_string_for_message(method)
 
             # Wrap the result in a ContractExecResult Enum because the exec will result in the same
             ContractExecResult = self.substrate.runtime_config.get_decoder_class(&#39;ContractExecResult&#39;)
 
-            contract_exec_result = ContractExecResult()
+            contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
+
+            if &#39;result&#39; in response[&#39;result&#39;]:
+
+                contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;gasConsumed&#39;]
+
+                if &#39;Ok&#39; in response[&#39;result&#39;][&#39;result&#39;]:
+
+                    contract_exec_result.flags = response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;flags&#39;]
+
+                    try:
+
+                        result_scale_obj = self.substrate.decode_scale(
+                            type_string=return_type_string,
+                            scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;]),
+                            return_scale_obj=True
+                        )
+
+                        response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;] = result_scale_obj.value
+                        contract_exec_result.contract_result_data = result_scale_obj
+
+                    except NotImplementedError:
+                        pass
+
+            # Backwards compatibility
+            elif &#39;success&#39; in response[&#39;result&#39;]:
+
+                contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;success&#39;][&#39;gas_consumed&#39;]
+                contract_exec_result.flags = response[&#39;result&#39;][&#39;success&#39;][&#39;flags&#39;]
+
+                try:
+
+                    result_scale_obj = self.substrate.decode_scale(
+                        type_string=return_type_string,
+                        scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;]),
+                        return_scale_obj=True
+                    )
+
+                    response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;] = result_scale_obj.value
+                    contract_exec_result.contract_result_data = result_scale_obj
+
+                except NotImplementedError:
+                    pass
+
             contract_exec_result.value = response[&#39;result&#39;]
-            contract_exec_result.process_contract_result()
 
             return contract_exec_result
 
@@ -789,7 +865,8 @@ the WASM bytes and metadata</p>
 
         return self.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
 
-    def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None) -&gt; &#34;ContractInstance&#34;:
+    def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None,
+               deployment_salt: str = None) -&gt; &#34;ContractInstance&#34;:
         &#34;&#34;&#34;
         Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
         constructor arguments
@@ -801,6 +878,7 @@ the WASM bytes and metadata</p>
         gas_limit:
         constructor: name of the constructor to use, provided in the metadata
         args: arguments for the constructor
+        deployment_salt: optional string or hex-string that acts as a salt for this deployment
 
         Returns
         -------
@@ -817,7 +895,8 @@ the WASM bytes and metadata</p>
                 &#39;endowment&#39;: endowment,
                 &#39;gas_limit&#39;: gas_limit,
                 &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
-                &#39;data&#39;: data.to_hex()
+                &#39;data&#39;: data.to_hex(),
+                &#39;salt&#39;: deployment_salt or &#39;&#39;
             }
         )
 
@@ -940,7 +1019,7 @@ def create_from_contract_files(cls, wasm_file: str, metadata_file: str,
 <h3>Methods</h3>
 <dl>
 <dt id="substrateinterface.contracts.ContractCode.deploy"><code class="name flex">
-<span>def <span class="ident">deploy</span></span>(<span>self, keypair, endowment, gas_limit, constructor, args: dict = None) ‑> <a title="substrateinterface.contracts.ContractInstance" href="#substrateinterface.contracts.ContractInstance">ContractInstance</a></span>
+<span>def <span class="ident">deploy</span></span>(<span>self, keypair, endowment, gas_limit, constructor, args: dict = None, deployment_salt: str = None) ‑> <a title="substrateinterface.contracts.ContractInstance" href="#substrateinterface.contracts.ContractInstance">ContractInstance</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
@@ -956,6 +1035,8 @@ constructor arguments</p>
 <dd>&nbsp;</dd>
 <dt><strong><code>args</code></strong> :&ensp;<code>arguments for the constructor</code></dt>
 <dd>&nbsp;</dd>
+<dt><strong><code>deployment_salt</code></strong> :&ensp;<code>optional string</code> or <code>hex-string that acts as a salt for this deployment</code></dt>
+<dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -966,7 +1047,8 @@ constructor arguments</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None) -&gt; &#34;ContractInstance&#34;:
+<pre><code class="python">def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None,
+           deployment_salt: str = None) -&gt; &#34;ContractInstance&#34;:
     &#34;&#34;&#34;
     Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
     constructor arguments
@@ -978,6 +1060,7 @@ constructor arguments</p>
     gas_limit:
     constructor: name of the constructor to use, provided in the metadata
     args: arguments for the constructor
+    deployment_salt: optional string or hex-string that acts as a salt for this deployment
 
     Returns
     -------
@@ -994,7 +1077,8 @@ constructor arguments</p>
             &#39;endowment&#39;: endowment,
             &#39;gas_limit&#39;: gas_limit,
             &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
-            &#39;data&#39;: data.to_hex()
+            &#39;data&#39;: data.to_hex(),
+            &#39;salt&#39;: deployment_salt or &#39;&#39;
         }
     )
 
@@ -1061,6 +1145,110 @@ constructor arguments</p>
     extrinsic = self.substrate.create_signed_extrinsic(call=call, keypair=keypair)
 
     return self.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="substrateinterface.contracts.ContractEvent"><code class="flex name class">
+<span>class <span class="ident">ContractEvent</span></span>
+<span>(</span><span>*args, contract_metadata: <a title="substrateinterface.contracts.ContractMetadata" href="#substrateinterface.contracts.ContractMetadata">ContractMetadata</a> = None, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Helper class that provides a standard way to create an ABC using
+inheritance.</p>
+<p>ScaleType class containing information about a specific Contract Event, it decodes the "data" field in
+the generic "Contracts.ContractExecution" event that is triggered after a successfull "Contracts.call" call.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ContractEvent(ScaleType):
+
+    def __init__(self, *args, contract_metadata: ContractMetadata = None, **kwargs):
+        &#34;&#34;&#34;
+        ScaleType class containing information about a specific Contract Event, it decodes the &#34;data&#34; field in
+        the generic &#34;Contracts.ContractExecution&#34; event that is triggered after a successfull &#34;Contracts.call&#34; call.
+        &#34;&#34;&#34;
+
+        self.contract_metadata = contract_metadata
+        self.event_id = None
+        self.name = None
+        self.docs = None
+        self.args = []
+        super().__init__(*args, **kwargs)
+
+    def process(self):
+        self.event_id = self.process_type(&#39;u8&#39;).value
+
+        event_data = self.contract_metadata.get_event_data(self.event_id)
+
+        self.name = event_data[&#39;name&#39;]
+        self.docs = event_data[&#39;docs&#39;]
+        self.args = event_data[&#39;args&#39;]
+
+        for arg in self.args:
+            # Decode value of event arg with type_string registered in contract
+            arg_type_string = self.contract_metadata.get_type_string_for_metadata_type(arg[&#39;type&#39;][&#39;type&#39;])
+            arg[&#39;value&#39;] = self.process_type(arg_type_string).value
+
+        return {
+            &#39;name&#39;: self.name,
+            &#39;docs&#39;: self.docs,
+            &#39;args&#39;: self.args
+        }
+
+    def process_encode(self, value):
+        raise NotImplementedError()</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>scalecodec.base.ScaleType</li>
+<li>scalecodec.base.ScaleDecoder</li>
+<li>abc.ABC</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="substrateinterface.contracts.ContractEvent.process"><code class="name flex">
+<span>def <span class="ident">process</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def process(self):
+    self.event_id = self.process_type(&#39;u8&#39;).value
+
+    event_data = self.contract_metadata.get_event_data(self.event_id)
+
+    self.name = event_data[&#39;name&#39;]
+    self.docs = event_data[&#39;docs&#39;]
+    self.args = event_data[&#39;args&#39;]
+
+    for arg in self.args:
+        # Decode value of event arg with type_string registered in contract
+        arg_type_string = self.contract_metadata.get_type_string_for_metadata_type(arg[&#39;type&#39;][&#39;type&#39;])
+        arg[&#39;value&#39;] = self.process_type(arg_type_string).value
+
+    return {
+        &#39;name&#39;: self.name,
+        &#39;docs&#39;: self.docs,
+        &#39;args&#39;: self.args
+    }</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.contracts.ContractEvent.process_encode"><code class="name flex">
+<span>def <span class="ident">process_encode</span></span>(<span>self, value)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def process_encode(self, value):
+    raise NotImplementedError()</code></pre>
 </details>
 </dd>
 </dl>
@@ -1343,23 +1531,56 @@ def contract_events(self):
 
         if &#39;result&#39; in response:
 
-            if &#39;success&#39; in response[&#39;result&#39;]:
-
-                try:
-
-                    response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;] = self.substrate.decode_scale(
-                        type_string=self.metadata.get_return_type_string_for_message(method),
-                        scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;])
-                    )
-                except NotImplementedError:
-                    pass
+            return_type_string = self.metadata.get_return_type_string_for_message(method)
 
             # Wrap the result in a ContractExecResult Enum because the exec will result in the same
             ContractExecResult = self.substrate.runtime_config.get_decoder_class(&#39;ContractExecResult&#39;)
 
-            contract_exec_result = ContractExecResult()
+            contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
+
+            if &#39;result&#39; in response[&#39;result&#39;]:
+
+                contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;gasConsumed&#39;]
+
+                if &#39;Ok&#39; in response[&#39;result&#39;][&#39;result&#39;]:
+
+                    contract_exec_result.flags = response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;flags&#39;]
+
+                    try:
+
+                        result_scale_obj = self.substrate.decode_scale(
+                            type_string=return_type_string,
+                            scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;]),
+                            return_scale_obj=True
+                        )
+
+                        response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;] = result_scale_obj.value
+                        contract_exec_result.contract_result_data = result_scale_obj
+
+                    except NotImplementedError:
+                        pass
+
+            # Backwards compatibility
+            elif &#39;success&#39; in response[&#39;result&#39;]:
+
+                contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;success&#39;][&#39;gas_consumed&#39;]
+                contract_exec_result.flags = response[&#39;result&#39;][&#39;success&#39;][&#39;flags&#39;]
+
+                try:
+
+                    result_scale_obj = self.substrate.decode_scale(
+                        type_string=return_type_string,
+                        scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;]),
+                        return_scale_obj=True
+                    )
+
+                    response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;] = result_scale_obj.value
+                    contract_exec_result.contract_result_data = result_scale_obj
+
+                except NotImplementedError:
+                    pass
+
             contract_exec_result.value = response[&#39;result&#39;]
-            contract_exec_result.process_contract_result()
 
             return contract_exec_result
 
@@ -1582,23 +1803,56 @@ This method does not submit an extrinsic.</p>
 
     if &#39;result&#39; in response:
 
-        if &#39;success&#39; in response[&#39;result&#39;]:
-
-            try:
-
-                response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;] = self.substrate.decode_scale(
-                    type_string=self.metadata.get_return_type_string_for_message(method),
-                    scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;])
-                )
-            except NotImplementedError:
-                pass
+        return_type_string = self.metadata.get_return_type_string_for_message(method)
 
         # Wrap the result in a ContractExecResult Enum because the exec will result in the same
         ContractExecResult = self.substrate.runtime_config.get_decoder_class(&#39;ContractExecResult&#39;)
 
-        contract_exec_result = ContractExecResult()
+        contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
+
+        if &#39;result&#39; in response[&#39;result&#39;]:
+
+            contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;gasConsumed&#39;]
+
+            if &#39;Ok&#39; in response[&#39;result&#39;][&#39;result&#39;]:
+
+                contract_exec_result.flags = response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;flags&#39;]
+
+                try:
+
+                    result_scale_obj = self.substrate.decode_scale(
+                        type_string=return_type_string,
+                        scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;]),
+                        return_scale_obj=True
+                    )
+
+                    response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;] = result_scale_obj.value
+                    contract_exec_result.contract_result_data = result_scale_obj
+
+                except NotImplementedError:
+                    pass
+
+        # Backwards compatibility
+        elif &#39;success&#39; in response[&#39;result&#39;]:
+
+            contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;success&#39;][&#39;gas_consumed&#39;]
+            contract_exec_result.flags = response[&#39;result&#39;][&#39;success&#39;][&#39;flags&#39;]
+
+            try:
+
+                result_scale_obj = self.substrate.decode_scale(
+                    type_string=return_type_string,
+                    scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;]),
+                    return_scale_obj=True
+                )
+
+                response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;] = result_scale_obj.value
+                contract_exec_result.contract_result_data = result_scale_obj
+
+            except NotImplementedError:
+                pass
+
         contract_exec_result.value = response[&#39;result&#39;]
-        contract_exec_result.process_contract_result()
 
         return contract_exec_result
 
@@ -1641,8 +1895,6 @@ parsed and the used types are extracted, composed and added to the type registry
         self.substrate = substrate
         self.type_registry = {}
 
-        self.type_string_prefix = f&#34;ink.{self.metadata_dict[&#39;source&#39;][&#39;hash&#39;]}&#34;
-
         self.__parse_type_registry()
 
     @classmethod
@@ -1671,6 +1923,24 @@ parsed and the used types are extracted, composed and added to the type registry
             raise AttributeError(&#34;&#39;{}&#39; object has no attribute &#39;{}&#39;&#34;.format(self.__class__.__name__, item))
 
     def __parse_type_registry(self):
+
+        # Check requirements
+        if &#39;types&#39; not in self.metadata_dict:
+            raise ContractMetadataParseException(&#34;No &#39;types&#39; directive present in metadata file&#34;)
+
+        if &#39;spec&#39; not in self.metadata_dict:
+            raise ContractMetadataParseException(&#34;&#39;spec&#39; directive not present in metadata file&#34;)
+
+        if &#39;constructors&#39; not in self.metadata_dict[&#39;spec&#39;]:
+            raise ContractMetadataParseException(&#34;No constructors present in metadata file&#34;)
+
+        if &#39;messages&#39; not in self.metadata_dict[&#39;spec&#39;]:
+            raise ContractMetadataParseException(&#34;No messages present in metadata file&#34;)
+
+        if &#39;source&#39; not in self.metadata_dict:
+            raise ContractMetadataParseException(&#34;&#39;source&#39; directive not present in metadata file&#34;)
+
+        self.type_string_prefix = f&#34;ink.{self.metadata_dict[&#39;source&#39;][&#39;hash&#39;]}&#34;
 
         for idx, metadata_type in enumerate(self.metadata_dict[&#39;types&#39;]):
             if idx + 1 not in self.type_registry:
@@ -1733,9 +2003,33 @@ parsed and the used types are extracted, composed and added to the type registry
         arg_type = self.metadata_dict[&#39;types&#39;][type_id - 1]
 
         if &#39;path&#39; in arg_type:
-            if arg_type[&#39;path&#39;] == [&#39;ink_env&#39;, &#39;types&#39;, &#39;AccountId&#39;]:
-                return &#39;AccountId&#39;
 
+            # Option field
+            if arg_type[&#39;path&#39;] == [&#39;Option&#39;]:
+
+                # Examine the fields in the &#39;Some&#39; variant
+                options_fields = arg_type[&#39;def&#39;][&#39;variant&#39;][&#39;variants&#39;][1][&#39;fields&#39;]
+
+                if len(options_fields) == 1:
+                    sub_type = self.get_type_string_for_metadata_type(options_fields[0][&#39;type&#39;])
+                else:
+                    raise NotImplementedError(&#39;Tuples in Option field not yet supported&#39;)
+
+                return f&#34;Option&lt;{sub_type}&gt;&#34;
+
+            # Predefined types defined in crate ink_env
+            if arg_type[&#39;path&#39;][0:2] == [&#39;ink_env&#39;, &#39;types&#39;]:
+
+                if arg_type[&#39;path&#39;][2] == &#39;Timestamp&#39;:
+                    return &#39;Moment&#39;
+
+                elif arg_type[&#39;path&#39;][2] in [&#39;AccountId&#39;, &#39;Hash&#39;, &#39;Balance&#39;, &#39;BlockNumber&#39;]:
+                    return arg_type[&#39;path&#39;][2]
+
+                else:
+                    raise NotImplementedError(f&#34;Unsupported ink_env type &#39;{arg_type[&#39;path&#39;][2]}&#39;&#34;)
+
+        # RUST primitives
         if &#39;primitive&#39; in arg_type[&#39;def&#39;]:
             return arg_type[&#39;def&#39;][&#39;primitive&#39;]
 
@@ -1754,7 +2048,7 @@ parsed and the used types are extracted, composed and added to the type registry
 
                 if &#39;fields&#39; in variant:
                     if len(variant[&#39;fields&#39;]) &gt; 1:
-                        raise NotImplementedError(&#39;Tuples as element of enums not supported&#39;)
+                        raise NotImplementedError(&#39;Tuples as field of enums not supported&#39;)
 
                     enum_value = self.get_type_string_for_metadata_type(variant[&#39;fields&#39;][0][&#39;type&#39;])
 
@@ -2111,9 +2405,33 @@ produces a type string that can be used in the scope of the <code>RuntimeConfigu
     arg_type = self.metadata_dict[&#39;types&#39;][type_id - 1]
 
     if &#39;path&#39; in arg_type:
-        if arg_type[&#39;path&#39;] == [&#39;ink_env&#39;, &#39;types&#39;, &#39;AccountId&#39;]:
-            return &#39;AccountId&#39;
 
+        # Option field
+        if arg_type[&#39;path&#39;] == [&#39;Option&#39;]:
+
+            # Examine the fields in the &#39;Some&#39; variant
+            options_fields = arg_type[&#39;def&#39;][&#39;variant&#39;][&#39;variants&#39;][1][&#39;fields&#39;]
+
+            if len(options_fields) == 1:
+                sub_type = self.get_type_string_for_metadata_type(options_fields[0][&#39;type&#39;])
+            else:
+                raise NotImplementedError(&#39;Tuples in Option field not yet supported&#39;)
+
+            return f&#34;Option&lt;{sub_type}&gt;&#34;
+
+        # Predefined types defined in crate ink_env
+        if arg_type[&#39;path&#39;][0:2] == [&#39;ink_env&#39;, &#39;types&#39;]:
+
+            if arg_type[&#39;path&#39;][2] == &#39;Timestamp&#39;:
+                return &#39;Moment&#39;
+
+            elif arg_type[&#39;path&#39;][2] in [&#39;AccountId&#39;, &#39;Hash&#39;, &#39;Balance&#39;, &#39;BlockNumber&#39;]:
+                return arg_type[&#39;path&#39;][2]
+
+            else:
+                raise NotImplementedError(f&#34;Unsupported ink_env type &#39;{arg_type[&#39;path&#39;][2]}&#39;&#34;)
+
+    # RUST primitives
     if &#39;primitive&#39; in arg_type[&#39;def&#39;]:
         return arg_type[&#39;def&#39;][&#39;primitive&#39;]
 
@@ -2132,7 +2450,7 @@ produces a type string that can be used in the scope of the <code>RuntimeConfigu
 
             if &#39;fields&#39; in variant:
                 if len(variant[&#39;fields&#39;]) &gt; 1:
-                    raise NotImplementedError(&#39;Tuples as element of enums not supported&#39;)
+                    raise NotImplementedError(&#39;Tuples as field of enums not supported&#39;)
 
                 enum_value = self.get_type_string_for_metadata_type(variant[&#39;fields&#39;][0][&#39;type&#39;])
 
@@ -2206,6 +2524,13 @@ produces a type string that can be used in the scope of the <code>RuntimeConfigu
 <li><code><a title="substrateinterface.contracts.ContractCode.create_from_contract_files" href="#substrateinterface.contracts.ContractCode.create_from_contract_files">create_from_contract_files</a></code></li>
 <li><code><a title="substrateinterface.contracts.ContractCode.deploy" href="#substrateinterface.contracts.ContractCode.deploy">deploy</a></code></li>
 <li><code><a title="substrateinterface.contracts.ContractCode.upload_wasm" href="#substrateinterface.contracts.ContractCode.upload_wasm">upload_wasm</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="substrateinterface.contracts.ContractEvent" href="#substrateinterface.contracts.ContractEvent">ContractEvent</a></code></h4>
+<ul class="">
+<li><code><a title="substrateinterface.contracts.ContractEvent.process" href="#substrateinterface.contracts.ContractEvent.process">process</a></code></li>
+<li><code><a title="substrateinterface.contracts.ContractEvent.process_encode" href="#substrateinterface.contracts.ContractEvent.process_encode">process_encode</a></code></li>
 </ul>
 </li>
 <li>

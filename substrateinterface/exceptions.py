@@ -47,7 +47,7 @@ class ContractExecFailedException(Exception):
     pass
 
 
-class BlockHashNotFound(Exception):
+class BlockNotFound(Exception):
     pass
 
 

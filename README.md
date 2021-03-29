@@ -21,6 +21,8 @@ management and versioning of types.
   * [Manually set required properties](#manually-set-required-properties)  
   * [Substrate Node Template](#substrate-node-template)
 * [Features](#features)
+  * [Get extrinsics for a certain block](#retrieve-extrinsics-for-a-certain-block)
+  * [Subscribe to new block headers](#subscribe-to-new-block-headers)
   * [Storage queries](#storage-queries)
   * [Query a mapped storage function](#query-a-mapped-storage-function)
   * [Create and send signed extrinsics](#create-and-send-signed-extrinsics)
@@ -31,7 +33,6 @@ management and versioning of types.
   * [Creating keypairs with soft and hard key derivation paths](#creating-keypairs-with-soft-and-hard-key-derivation-paths)
   * [Getting estimate of network fees for extrinsic in advance](#getting-estimate-of-network-fees-for-extrinsic-in-advance)
   * [Offline signing of extrinsics](#offline-signing-of-extrinsics)
-  * [Get extrinsics for a certain block](#get-extrinsics-for-a-certain-block)
 * [Keeping type registry presets up to date](#keeping-type-registry-presets-up-to-date)  
 * [License](#license)
 
@@ -150,6 +151,54 @@ substrate = SubstrateInterface(
 
 ## Features
 
+### Retrieve extrinsics for a certain block
+
+```python
+# Set block_hash to None for chaintip
+block_hash = "0x51d15792ff3c5ee9c6b24ddccd95b377d5cccc759b8e76e5de9250cf58225087"
+
+# Retrieve extrinsics in block
+result = substrate.get_block(block_hash=block_hash)
+
+for extrinsic in result['extrinsics']:
+
+    if extrinsic.address:
+        signed_by_address = substrate.ss58_encode(extrinsic.address.value)
+    else:
+        signed_by_address = None
+
+    print('\nPallet: {}\nCall: {}\nSigned by: {}'.format(
+        extrinsic.call_module.name,
+        extrinsic.call.name,
+        signed_by_address
+    ))
+
+    # Loop through call params
+    for param in extrinsic.params:
+
+        if param['type'] == 'LookupSource':
+            param['value'] = substrate.ss58_encode((param['value']))
+
+        if param['type'] == 'Compact<Balance>':
+            param['value'] = '{} {}'.format(param['value'] / 10 ** substrate.token_decimals, substrate.token_symbol)
+
+        print("Param '{}': {}".format(param['name'], param['value']))
+```
+
+### Subscribe to new block headers
+
+```python
+def subscription_handler(obj, update_nr, subscription_id):
+    
+    print(f"New block #{obj['header']['number']} produced by {obj['header']['author']}")
+    
+    if update_nr > 10
+      return {'message': 'Subscription will cancel when a value is returned', 'updates_processed': update_nr}
+    
+
+result = substrate.subscribe_block_headers(subscription_handler, include_author=True)
+```
+
 ### Storage queries
 The modules and storage functions are provided in the metadata (see `substrate.get_metadata_storage_functions()`),
 parameters will be automatically converted to SCALE-bytes (also including decoding of SS58 addresses).
@@ -181,8 +230,36 @@ print(account_info.value['nonce']) #  7673
 print(account_info.value['data']['free']) # 637747267365404068
 ```
 
+### Storage subscriptions
+
+When a callable is passed as kwarg `subscription_handler`, there will be a subscription created for given storage query. 
+Updates will be pushed to the callable and will block execution until a final value is returned. This value will be returned
+as a result of the query and finally automatically unsubscribed from further updates.
+
+```python
+def subscription_handler(account_info_obj, update_nr, subscription_id):
+
+    if update_nr == 0:
+        print('Initial account data:', account_info_obj.value)
+
+    if update_nr > 0:
+        # Do something with the update
+        print('Account data changed:', account_info_obj.value)
+
+    # The execution will block until an arbitrary value is returned, which will be the result of the `query`
+    if update_nr > 5:
+        return account_info_obj
+
+
+result = substrate.query("System", "Account", ["5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY"],
+                         subscription_handler=subscription_handler)
+
+print(result)
+```
+
 ### Query a mapped storage function
-Mapped storage functions can be iterated over all key/value pairs, for these storage functions `query_map` can be used.
+Mapped storage functions can be iterated over all key/value pairs, for these type of storage functions `query_map` 
+can be used.
 
 The result is a `QueryMapResult` object, which is an iterator:
 
@@ -191,7 +268,7 @@ The result is a `QueryMapResult` object, which is an iterator:
 result = substrate.query_map('System', 'Account', max_results=199)
 
 for account, account_info in result:
-    print(f"Free balance of account '{account.value}': {account_info.value['data']['free']}")
+    print(f"Free balance of account '{substrate.ss58_encode(account.value)}': {account_info.value['data']['free']}")
 ```
 
 These results are transparantly retrieved in batches capped by the `page_size` kwarg, currently the 
@@ -199,7 +276,7 @@ maximum `page_size` restricted by the RPC node is 1000
 
 ```python
 # Retrieve all System.Account entries in batches of 200 (automatically appended by `QueryMapResult` iterator)
-result = substrate.query_map('System', 'Account', page_size=200)
+result = substrate.query_map('System', 'Account', page_size=200, max_results=400)
 
 for account, account_info in result:
     print(f"Free balance of account '{account.value}': {account_info.value['data']['free']}")
@@ -495,39 +572,6 @@ result = substrate.submit_extrinsic(
 print(result['extrinsic_hash'])
 ```
 
-### Get extrinsics for a certain block
-
-```python
-# Set block_hash to None for chaintip
-block_hash = "0x588930468212316d8a75ede0bec0bc949451c164e2cea07ccfc425f497b077b7"
-
-# Retrieve extrinsics in block
-result = substrate.get_runtime_block(block_hash=block_hash)
-
-for extrinsic in result['block']['extrinsics']:
-
-    if 'account_id' in extrinsic:
-        signed_by_address = ss58_encode(address=extrinsic['account_id'], address_type=2)
-    else:
-        signed_by_address = None
-
-    print('\nModule: {}\nCall: {}\nSigned by: {}'.format(
-        extrinsic['call_module'],
-        extrinsic['call_function'],
-        signed_by_address
-    ))
-
-    # Loop through params
-    for param in extrinsic['params']:
-
-        if param['type'] == 'Address':
-            param['value'] = ss58_encode(address=param['value'], address_type=2)
-
-        if param['type'] == 'Compact<Balance>':
-            param['value'] = '{} DOT'.format(param['value'] / 10**12)
-
-        print("Param '{}': {}".format(param['name'], param['value']))
-```
 ## Keeping type registry presets up to date
 
 When on-chain runtime upgrades occur, types used in call- or storage functions can be added or modified. Therefor it is
