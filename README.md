@@ -24,6 +24,7 @@ management and versioning of types.
   * [Get extrinsics for a certain block](#retrieve-extrinsics-for-a-certain-block)
   * [Subscribe to new block headers](#subscribe-to-new-block-headers)
   * [Storage queries](#storage-queries)
+  * [Storage subscriptions](#storage-subscriptions)
   * [Query a mapped storage function](#query-a-mapped-storage-function)
   * [Create and send signed extrinsics](#create-and-send-signed-extrinsics)
   * [Examining the ExtrinsicReceipt object](#examining-the-extrinsicreceipt-object)
