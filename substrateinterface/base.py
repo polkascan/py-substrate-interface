@@ -26,7 +26,6 @@ import re
 import requests
 from typing import Optional
 
-from scalecodec.exceptions import RemainingScaleBytesNotEmptyException
 from websocket import create_connection, WebSocketConnectionClosedException
 
 from scalecodec import ScaleBytes, GenericCall
@@ -1323,7 +1322,11 @@ class SubstrateInterface:
         ScaleType
         """
 
-        if block_hash is None:
+        if block_hash is not None:
+            # Check requirements
+            if callable(subscription_handler):
+                raise ValueError("Subscriptions can only be registered for current state; block_hash cannot be set")
+        else:
             # Retrieve chain tip
             block_hash = self.get_chain_head()
 
@@ -1420,9 +1423,6 @@ class SubstrateInterface:
                         return subscription_result
 
         if callable(subscription_handler):
-
-            if block_hash:
-                raise ValueError("Subscriptions can only be registered for current state; block_hash cannot be set")
 
             result = self.rpc_request("state_subscribeStorage", [[storage_hash]], result_handler=result_handler)
 
