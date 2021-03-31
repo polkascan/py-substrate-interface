@@ -483,14 +483,18 @@ class SubstrateInterface:
         -------
         a dict with the parsed result of the request.
         """
+
+        request_id = self.request_id
+        self.request_id += 1
+
         payload = {
             "jsonrpc": "2.0",
             "method": method,
             "params": params,
-            "id": self.request_id
+            "id": request_id
         }
 
-        self.debug_message('RPC request #{}: "{}"'.format(self.request_id, method))
+        self.debug_message('RPC request #{}: "{}"'.format(request_id, method))
 
         if self.websocket:
             try:
@@ -507,7 +511,7 @@ class SubstrateInterface:
                     for message in self.__rpc_message_queue:
 
                         # Check if result message is matching request ID
-                        if 'id' in message and message['id'] == self.request_id:
+                        if 'id' in message and message['id'] == request_id:
 
                             self.__rpc_message_queue.remove(message)
 
@@ -567,7 +571,6 @@ class SubstrateInterface:
             if 'error' in json_body:
                 raise SubstrateRequestException(json_body['error'])
 
-        self.request_id += 1
         return json_body
 
     @property
