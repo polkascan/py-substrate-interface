@@ -537,7 +537,7 @@ class SubstrateInterface:
                             self.debug_message(f"Websocket result [{subscription_id} #{update_nr}]: {message}")
 
                             # Call result_handler with message for processing
-                            callback_result = result_handler(message, update_nr)
+                            callback_result = result_handler(message, update_nr, subscription_id)
                             if callback_result is not None:
                                 json_body = callback_result
 
