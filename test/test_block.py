@@ -145,7 +145,7 @@ class BlockTestCase(unittest.TestCase):
                         },
                         "subscription": 'test1'
                     }
-                }, 0)
+                }, 0, 'test1')
             elif method == 'chain_unsubscribeNewHeads':
                 return {
                     "jsonrpc": "2.0",
