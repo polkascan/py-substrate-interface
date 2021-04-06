@@ -537,7 +537,7 @@ class SubstrateInterface:
                             self.debug_message(f"Websocket result [{subscription_id} #{update_nr}]: {message}")
 
                             # Call result_handler with message for processing
-                            callback_result = result_handler(message, update_nr)
+                            callback_result = result_handler(message, update_nr, subscription_id)
                             if callback_result is not None:
                                 json_body = callback_result
 
@@ -1402,10 +1402,8 @@ class SubstrateInterface:
             metadata_version=self.metadata_decoder.version.index
         )
 
-        def result_handler(message, update_nr):
+        def result_handler(message, update_nr, subscription_id):
             if return_scale_type:
-
-                subscription_id = message['params']['subscription']
 
                 for change_storage_key, change_data in message['params']['result']['changes']:
                     if change_storage_key == storage_hash:
@@ -2384,10 +2382,9 @@ class SubstrateInterface:
 
             rpc_method_prefix = 'Finalized' if finalized_only else 'New'
 
-            def result_handler(message, update_nr):
+            def result_handler(message, update_nr, subscription_id):
 
                 new_block = decode_block({'header': message['params']['result']})
-                subscription_id = message['params']['subscription']
 
                 subscription_result = subscription_handler(new_block, update_nr, subscription_id)
 
