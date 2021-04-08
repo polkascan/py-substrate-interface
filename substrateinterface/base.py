@@ -28,7 +28,7 @@ from typing import Optional
 
 from websocket import create_connection, WebSocketConnectionClosedException
 
-from scalecodec import ScaleBytes, GenericCall
+from scalecodec import ScaleBytes, GenericCall, GenericAccountId
 from scalecodec.base import ScaleDecoder, RuntimeConfigurationObject, ScaleType
 from scalecodec.block import ExtrinsicsDecoder, EventsDecoder, LogDigest, Extrinsic
 from scalecodec.metadata import MetadataDecoder
@@ -1181,8 +1181,8 @@ class SubstrateInterface:
 
         return list(pairs)
 
-    def query_map(self, module: str, storage_function: str, block_hash: str = None, max_results: int = None,
-                  start_key: str = None, page_size: int = 100) -> 'QueryMapResult':
+    def query_map(self, module: str, storage_function: str, params: Optional[list] = None, block_hash: str = None,
+                  max_results: int = None, start_key: str = None, page_size: int = 100) -> 'QueryMapResult':
         """
         Iterates over all key-pairs located at the given module and storage_function. The storage
         item must be a map.
@@ -1200,6 +1200,7 @@ class SubstrateInterface:
         ----------
         module: The module name in the metadata, e.g. System or Balances.
         storage_function: The storage function name, e.g. Account or Locks.
+        params: The input parameters in case of for example a `DoubleMap` storage function
         block_hash: Optional block hash for result at given block, when left to None the chain tip will be used.
         max_results: the maximum of results required, if set the query will stop fetching results when number is reached
         start_key: The storage key used as offset for the results, for pagination purposes
@@ -1225,6 +1226,10 @@ class SubstrateInterface:
 
         # Check MapType condititions and determine prefix length
         if 'MapType' in storage_item.type:
+
+            if params is not None:
+                raise ValueError('"params" is only used with a DoubleMap storage function')
+
             key_type = storage_item.type['MapType']['key']
             value_type = storage_item.type['MapType']['value']
             if storage_item.type['MapType']['hasher'] == "Blake2_128Concat":
@@ -1235,10 +1240,39 @@ class SubstrateInterface:
                 concat_hash_len = 0
             else:
                 raise ValueError('Unsupported hash type')
+
+            prefix = self.generate_storage_hash(storage_module.prefix, storage_item.name)
+
+        elif 'DoubleMapType' in storage_item.type:
+
+            if params is None or len(params) != 1:
+                raise ValueError('"params" with 1 element is mandatory with a DoubleMap storage function')
+
+            key_type = storage_item.type['DoubleMapType']['key2']
+            value_type = storage_item.type['DoubleMapType']['value']
+            key_hasher = storage_item.type['DoubleMapType']['key2Hasher']
+
+            if key_hasher == "Blake2_128Concat":
+                concat_hash_len = 32
+            elif key_hasher == "Twox64Concat":
+                concat_hash_len = 16
+            elif key_hasher == "Identity":
+                concat_hash_len = 0
+            else:
+                raise ValueError('Unsupported hash type')
+
+            # Encode parameter
+            param = self.convert_storage_parameter(storage_item.type['DoubleMapType']['key1'], params[0])
+            param_obj = ScaleDecoder.get_decoder_class(
+                type_string=storage_item.type['DoubleMapType']['key1'], runtime_config=self.runtime_config
+            )
+
+            prefix = self.generate_storage_hash(
+                storage_module=storage_module.prefix, storage_function=storage_item.name,
+                params=[param_obj.encode(param)], hasher=storage_item.type['DoubleMapType']['hasher']
+            )
         else:
             raise ValueError('Given storage function is not a map')
-
-        prefix = self.generate_storage_hash(storage_module.prefix, storage_item.name)
 
         if not start_key:
             start_key = prefix
@@ -1275,12 +1309,22 @@ class SubstrateInterface:
                     return_scale_obj=True,
                     block_hash=block_hash
                 )
+
+                # Automatic SS58 encode AccountId
+                if type(item_key) is GenericAccountId:
+                    item_key.ss58_address = self.ss58_encode(item_key.value)
+
                 item_value = self.decode_scale(
                     type_string=value_type,
                     scale_bytes=item[1],
                     return_scale_obj=True,
                     block_hash=block_hash
                 )
+
+                # Automatic SS58 encode AccountId
+                if type(item_value) is GenericAccountId:
+                    item_value.ss58_address = self.ss58_encode(item_value.value)
+
                 result.append([item_key, item_value])
 
         return QueryMapResult(

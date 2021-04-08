@@ -161,6 +161,50 @@ class QueryMapTestCase(unittest.TestCase):
                 'System', 'Account', page_size=9999999
             )
 
+    def test_double_map(self):
+        era_stakers = self.kusama_substrate.query_map(
+            module='Staking',
+            storage_function='ErasStakers',
+            params=[2100],
+            max_results=2
+        )
+        self.assertEqual(len(era_stakers.records), 2)
+        self.assertEqual(era_stakers.records[0][0].ss58_address, 'JCghFN7mD4ETKzMbvSVmMMPwWutJGk6Bm1yKWk8Z9KhPGeZ')
+
+    def test_double_map_no_result(self):
+        era_stakers = self.kusama_substrate.query_map(
+            module='Staking',
+            storage_function='ErasStakers',
+            params=[21000000]
+        )
+        self.assertEqual(era_stakers.records, [])
+
+    def test_double_map_missing_param(self):
+        with self.assertRaises(ValueError) as cm:
+            self.kusama_substrate.query_map(
+                module='Staking',
+                storage_function='ErasStakers'
+            )
+        self.assertEqual('"params" with 1 element is mandatory with a DoubleMap storage function', str(cm.exception))
+
+    def test_double_map_too_many_params(self):
+        with self.assertRaises(ValueError) as cm:
+            self.kusama_substrate.query_map(
+                module='Staking',
+                storage_function='ErasStakers',
+                params=[21000000, 2]
+            )
+        self.assertEqual('"params" with 1 element is mandatory with a DoubleMap storage function', str(cm.exception))
+
+    def test_map_with_param(self):
+        with self.assertRaises(ValueError) as cm:
+            self.kusama_substrate.query_map(
+                module='System',
+                storage_function='Account',
+                params=[2]
+            )
+        self.assertEqual('"params" is only used with a DoubleMap storage function', str(cm.exception))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -283,6 +283,16 @@ for account, account_info in result:
     print(f"Free balance of account '{account.value}': {account_info.value['data']['free']}")
 ```
 
+Querying a `DoubleMap` storage function:
+
+```python
+era_stakers = substrate.query_map(
+    module='Staking',
+    storage_function='ErasStakers',
+    params=[2100]
+)
+```
+
 ### Create and send signed extrinsics
 
 The following code snippet illustrates how to create a call, wrap it in a signed extrinsic and send it to the network:
