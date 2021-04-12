@@ -170,6 +170,23 @@ class QueryMapTestCase(unittest.TestCase):
         )
         self.assertEqual(len(era_stakers.records), 2)
         self.assertEqual(era_stakers.records[0][0].ss58_address, 'JCghFN7mD4ETKzMbvSVmMMPwWutJGk6Bm1yKWk8Z9KhPGeZ')
+        self.assertEqual(era_stakers.records[1][0].ss58_address, 'CmNv7yFV13CMM6r9dJYgdi4UTJK7tzFEF17gmK9c3mTc2PG')
+
+    def test_double_map_page_size(self):
+        era_stakers = self.kusama_substrate.query_map(
+            module='Staking',
+            storage_function='ErasStakers',
+            params=[2100],
+            max_results=2,
+            page_size=1
+        )
+        record_count = 0
+        for _ in era_stakers:
+            record_count += 1
+
+        self.assertEqual(record_count, 2)
+        self.assertEqual(era_stakers.records[0][0].ss58_address, 'JCghFN7mD4ETKzMbvSVmMMPwWutJGk6Bm1yKWk8Z9KhPGeZ')
+        self.assertEqual(era_stakers.records[1][0].ss58_address, 'CmNv7yFV13CMM6r9dJYgdi4UTJK7tzFEF17gmK9c3mTc2PG')
 
     def test_double_map_no_result(self):
         era_stakers = self.kusama_substrate.query_map(

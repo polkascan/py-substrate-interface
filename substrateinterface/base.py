@@ -1328,7 +1328,7 @@ class SubstrateInterface:
                 result.append([item_key, item_value])
 
         return QueryMapResult(
-            records=result, page_size=page_size, module=module, storage_function=storage_function,
+            records=result, page_size=page_size, module=module, storage_function=storage_function, params=params,
             block_hash=block_hash, substrate=self, last_key=last_key, max_results=max_results
         )
 
@@ -3203,8 +3203,8 @@ class ExtrinsicReceipt:
 class QueryMapResult:
 
     def __init__(self, records: list, page_size: int, module: str = None, storage_function: str = None,
-                 block_hash: str = None, substrate: SubstrateInterface = None, last_key: str = None,
-                 max_results: int = None):
+                 params: list = None, block_hash: str = None, substrate: SubstrateInterface = None,
+                 last_key: str = None, max_results: int = None):
         self.current_index = -1
         self.records = records
         self.page_size = page_size
@@ -3214,14 +3214,15 @@ class QueryMapResult:
         self.substrate = substrate
         self.last_key = last_key
         self.max_results = max_results
+        self.params = params
 
     def retrieve_next_page(self, start_key) -> list:
         if not self.substrate:
             return []
 
         result = self.substrate.query_map(module=self.module, storage_function=self.storage_function,
-                                          page_size=self.page_size, block_hash=self.block_hash, start_key=start_key,
-                                          max_results=self.max_results)
+                                          params=self.params, page_size=self.page_size, block_hash=self.block_hash,
+                                          start_key=start_key, max_results=self.max_results)
         return result.records
 
     def __iter__(self):
