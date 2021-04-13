@@ -1288,42 +1288,46 @@ class SubstrateInterface:
             raise SubstrateRequestException(response['error']['message'])
 
         result_keys = response.get('result')
-        last_key = result_keys[-1]
-
-        # Retrieve corresponding value
-        response = self.rpc_request(method="state_queryStorageAt", params=[result_keys, block_hash])
-
-        if 'error' in response:
-            raise SubstrateRequestException(response['error']['message'])
 
         result = []
+        last_key = None
 
-        for result_group in response['result']:
-            for item in result_group['changes']:
+        if len(result_keys) > 0:
 
-                item_key = self.decode_scale(
-                    type_string=key_type,
-                    scale_bytes='0x' + item[0][len(prefix) + concat_hash_len:],
-                    return_scale_obj=True,
-                    block_hash=block_hash
-                )
+            last_key = result_keys[-1]
 
-                # Automatic SS58 encode AccountId
-                if type(item_key) is GenericAccountId:
-                    item_key.ss58_address = self.ss58_encode(item_key.value)
+            # Retrieve corresponding value
+            response = self.rpc_request(method="state_queryStorageAt", params=[result_keys, block_hash])
 
-                item_value = self.decode_scale(
-                    type_string=value_type,
-                    scale_bytes=item[1],
-                    return_scale_obj=True,
-                    block_hash=block_hash
-                )
+            if 'error' in response:
+                raise SubstrateRequestException(response['error']['message'])
 
-                # Automatic SS58 encode AccountId
-                if type(item_value) is GenericAccountId:
-                    item_value.ss58_address = self.ss58_encode(item_value.value)
+            for result_group in response['result']:
+                for item in result_group['changes']:
 
-                result.append([item_key, item_value])
+                    item_key = self.decode_scale(
+                        type_string=key_type,
+                        scale_bytes='0x' + item[0][len(prefix) + concat_hash_len:],
+                        return_scale_obj=True,
+                        block_hash=block_hash
+                    )
+
+                    # Automatic SS58 encode AccountId
+                    if type(item_key) is GenericAccountId:
+                        item_key.ss58_address = self.ss58_encode(item_key.value)
+
+                    item_value = self.decode_scale(
+                        type_string=value_type,
+                        scale_bytes=item[1],
+                        return_scale_obj=True,
+                        block_hash=block_hash
+                    )
+
+                    # Automatic SS58 encode AccountId
+                    if type(item_value) is GenericAccountId:
+                        item_value.ss58_address = self.ss58_encode(item_value.value)
+
+                    result.append([item_key, item_value])
 
         return QueryMapResult(
             records=result, page_size=page_size, module=module, storage_function=storage_function, params=params,
