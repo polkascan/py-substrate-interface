@@ -1288,6 +1288,7 @@ class SubstrateInterface:
             raise SubstrateRequestException(response['error']['message'])
 
         result_keys = response.get('result')
+        last_key = result_keys[-1]
 
         # Retrieve corresponding value
         response = self.rpc_request(method="state_queryStorageAt", params=[result_keys, block_hash])
@@ -1297,11 +1298,8 @@ class SubstrateInterface:
 
         result = []
 
-        last_key = None
-
         for result_group in response['result']:
             for item in result_group['changes']:
-                last_key = item[0]
 
                 item_key = self.decode_scale(
                     type_string=key_type,
@@ -3223,6 +3221,10 @@ class QueryMapResult:
         result = self.substrate.query_map(module=self.module, storage_function=self.storage_function,
                                           params=self.params, page_size=self.page_size, block_hash=self.block_hash,
                                           start_key=start_key, max_results=self.max_results)
+
+        # Update last key from new result set to use as offset for next page
+        self.last_key = result.last_key
+
         return result.records
 
     def __iter__(self):

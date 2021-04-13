@@ -66,13 +66,17 @@ class QueryMapTestCase(unittest.TestCase):
 
     def test_claims_claim_map(self):
 
-        result = self.kusama_substrate.query_map('Claims', 'Claims', max_results=2)
+        result = self.kusama_substrate.query_map('Claims', 'Claims', max_results=3)
 
-        self.assertEqual(2, len(result.records))
-        self.assertEqual('H160', result[0][0].__class__.__name__)
-        self.assertEqual('U128', result[0][1].__class__.__name__)
-        self.assertEqual(45880000000000, result[0][1].value)
-        self.assertEqual('0x00000a9c44f24e314127af63ae55b864a28d7aee', result[0][0].value)
+        records = [item for item in result]
+
+        self.assertEqual(3, len(records))
+        self.assertEqual('H160', records[0][0].__class__.__name__)
+        self.assertEqual('U128', records[0][1].__class__.__name__)
+        self.assertEqual(45880000000000, records[0][1].value)
+        self.assertEqual('0x00000a9c44f24e314127af63ae55b864a28d7aee', records[0][0].value)
+        self.assertEqual('0x00002f21194993a750972574e2d82ce8c95078a6', records[1][0].value)
+        self.assertEqual('0x0000a940f973ccf435ae9c040c253e1c043c5fb2', records[2][0].value)
 
     def test_system_account_map_block_hash(self):
 
@@ -113,23 +117,29 @@ class QueryMapTestCase(unittest.TestCase):
         self.assertEqual(record_1_2[1].value, record_2_2[1].value)
 
     def test_max_results(self):
-        result = self.kusama_substrate.query_map('Claims', 'Claims', max_results=3, page_size=100)
+        result = self.kusama_substrate.query_map('Claims', 'Claims', max_results=5, page_size=100)
 
         # Keep iterating shouldn't trigger retrieve next page
         result_count = 0
         for _ in result:
             result_count += 1
 
-        self.assertEqual(3, result_count)
+        self.assertEqual(5, result_count)
 
-        result = self.kusama_substrate.query_map('Claims', 'Claims', max_results=3, page_size=1)
+        result = self.kusama_substrate.query_map('Claims', 'Claims', max_results=5, page_size=2)
 
         # Keep iterating shouldn't exceed max_results
         result_count = 0
-        for _ in result:
+        for record in result:
             result_count += 1
+            if result_count == 1:
+                self.assertEqual('0x00000a9c44f24e314127af63ae55b864a28d7aee', record[0].value)
+            elif result_count == 2:
+                self.assertEqual('0x00002f21194993a750972574e2d82ce8c95078a6', record[0].value)
+            elif result_count == 3:
+                self.assertEqual('0x0000a940f973ccf435ae9c040c253e1c043c5fb2', record[0].value)
 
-        self.assertEqual(3, result_count)
+        self.assertEqual(5, result_count)
 
     def test_result_exhausted(self):
         result = self.kusama_substrate.query_map(
@@ -166,27 +176,33 @@ class QueryMapTestCase(unittest.TestCase):
             module='Staking',
             storage_function='ErasStakers',
             params=[2100],
-            max_results=2
+            max_results=4
         )
-        self.assertEqual(len(era_stakers.records), 2)
-        self.assertEqual(era_stakers.records[0][0].ss58_address, 'JCghFN7mD4ETKzMbvSVmMMPwWutJGk6Bm1yKWk8Z9KhPGeZ')
-        self.assertEqual(era_stakers.records[1][0].ss58_address, 'CmNv7yFV13CMM6r9dJYgdi4UTJK7tzFEF17gmK9c3mTc2PG')
+
+        records = list(era_stakers)
+
+        self.assertEqual(len(records), 4)
+        self.assertEqual(records[0][0].ss58_address, 'JCghFN7mD4ETKzMbvSVmMMPwWutJGk6Bm1yKWk8Z9KhPGeZ')
+        self.assertEqual(records[1][0].ss58_address, 'CmNv7yFV13CMM6r9dJYgdi4UTJK7tzFEF17gmK9c3mTc2PG')
+        self.assertEqual(records[2][0].ss58_address, 'DfishveZoxSRNRb8FtyS7ignbw6cr32eCY2w6ctLDRM1NQz')
+        self.assertEqual(records[3][0].ss58_address, 'HmsTAS1bCtZc9FSq9nqJzZCEkhhSygtXj9TDxNgEWTHnpyQ')
 
     def test_double_map_page_size(self):
         era_stakers = self.kusama_substrate.query_map(
             module='Staking',
             storage_function='ErasStakers',
             params=[2100],
-            max_results=2,
+            max_results=4,
             page_size=1
         )
-        record_count = 0
-        for _ in era_stakers:
-            record_count += 1
 
-        self.assertEqual(record_count, 2)
-        self.assertEqual(era_stakers.records[0][0].ss58_address, 'JCghFN7mD4ETKzMbvSVmMMPwWutJGk6Bm1yKWk8Z9KhPGeZ')
-        self.assertEqual(era_stakers.records[1][0].ss58_address, 'CmNv7yFV13CMM6r9dJYgdi4UTJK7tzFEF17gmK9c3mTc2PG')
+        records = list(era_stakers)
+
+        self.assertEqual(len(records), 4)
+        self.assertEqual(records[0][0].ss58_address, 'JCghFN7mD4ETKzMbvSVmMMPwWutJGk6Bm1yKWk8Z9KhPGeZ')
+        self.assertEqual(records[1][0].ss58_address, 'CmNv7yFV13CMM6r9dJYgdi4UTJK7tzFEF17gmK9c3mTc2PG')
+        self.assertEqual(records[2][0].ss58_address, 'DfishveZoxSRNRb8FtyS7ignbw6cr32eCY2w6ctLDRM1NQz')
+        self.assertEqual(records[3][0].ss58_address, 'HmsTAS1bCtZc9FSq9nqJzZCEkhhSygtXj9TDxNgEWTHnpyQ')
 
     def test_double_map_no_result(self):
         era_stakers = self.kusama_substrate.query_map(
