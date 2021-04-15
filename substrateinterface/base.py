@@ -465,6 +465,16 @@ class SubstrateInterface:
                 write_limit=2 ** 32,
             )
 
+    def close(self):
+        self.debug_message("Closing websocket connection")
+        self.websocket.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     def debug_message(self, message):
         logger.debug(message)
 

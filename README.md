@@ -34,7 +34,8 @@ management and versioning of types.
   * [Creating keypairs with soft and hard key derivation paths](#creating-keypairs-with-soft-and-hard-key-derivation-paths)
   * [Getting estimate of network fees for extrinsic in advance](#getting-estimate-of-network-fees-for-extrinsic-in-advance)
   * [Offline signing of extrinsics](#offline-signing-of-extrinsics)
-* [Keeping type registry presets up to date](#keeping-type-registry-presets-up-to-date)  
+* [Keeping type registry presets up to date](#keeping-type-registry-presets-up-to-date)
+* [Cleanup and context manager](#cleanup-and-context-manager)  
 * [License](#license)
 
 ## Documentation
@@ -581,6 +582,20 @@ result = substrate.submit_extrinsic(
 )
 
 print(result['extrinsic_hash'])
+```
+
+## Cleanup and context manager
+
+At the end of the lifecycle of a `SubstrateInterface` instance, calling the `close()` method will do all the necessary 
+cleanup, like closing the websocket connection.
+
+When using the context manager this will be done automatically:
+
+```python
+with SubstrateInterface(url="wss://rpc.polkadot.io") as substrate:
+    events = substrate.query("System", "Events")
+
+# connection is now closed
 ```
 
 ## Keeping type registry presets up to date
