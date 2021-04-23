@@ -1192,7 +1192,8 @@ class SubstrateInterface:
         return list(pairs)
 
     def query_map(self, module: str, storage_function: str, params: Optional[list] = None, block_hash: str = None,
-                  max_results: int = None, start_key: str = None, page_size: int = 100) -> 'QueryMapResult':
+                  max_results: int = None, start_key: str = None, page_size: int = 100,
+                  ignore_decoding_errors: bool = False) -> 'QueryMapResult':
         """
         Iterates over all key-pairs located at the given module and storage_function. The storage
         item must be a map.
@@ -1215,6 +1216,7 @@ class SubstrateInterface:
         max_results: the maximum of results required, if set the query will stop fetching results when number is reached
         start_key: The storage key used as offset for the results, for pagination purposes
         page_size: The results are fetched from the node RPC in chunks of this size
+        ignore_decoding_errors: When set this will catch all decoding errors, set the item to None and continue decoding
 
         Returns
         -------
@@ -1314,24 +1316,33 @@ class SubstrateInterface:
 
             for result_group in response['result']:
                 for item in result_group['changes']:
-
-                    item_key = self.decode_scale(
-                        type_string=key_type,
-                        scale_bytes='0x' + item[0][len(prefix) + concat_hash_len:],
-                        return_scale_obj=True,
-                        block_hash=block_hash
-                    )
+                    try:
+                        item_key = self.decode_scale(
+                            type_string=key_type,
+                            scale_bytes='0x' + item[0][len(prefix) + concat_hash_len:],
+                            return_scale_obj=True,
+                            block_hash=block_hash
+                        )
+                    except Exception:
+                        if not ignore_decoding_errors:
+                            raise
+                        item_key = None
 
                     # Automatic SS58 encode AccountId
                     if type(item_key) is GenericAccountId:
                         item_key.ss58_address = self.ss58_encode(item_key.value)
 
-                    item_value = self.decode_scale(
-                        type_string=value_type,
-                        scale_bytes=item[1],
-                        return_scale_obj=True,
-                        block_hash=block_hash
-                    )
+                    try:
+                        item_value = self.decode_scale(
+                            type_string=value_type,
+                            scale_bytes=item[1],
+                            return_scale_obj=True,
+                            block_hash=block_hash
+                        )
+                    except Exception:
+                        if not ignore_decoding_errors:
+                            raise
+                        item_value = None
 
                     # Automatic SS58 encode AccountId
                     if type(item_value) is GenericAccountId:
@@ -1341,7 +1352,8 @@ class SubstrateInterface:
 
         return QueryMapResult(
             records=result, page_size=page_size, module=module, storage_function=storage_function, params=params,
-            block_hash=block_hash, substrate=self, last_key=last_key, max_results=max_results
+            block_hash=block_hash, substrate=self, last_key=last_key, max_results=max_results,
+            ignore_decoding_errors=ignore_decoding_errors
         )
 
     def query(self, module, storage_function, params=None, block_hash=None,
@@ -3216,7 +3228,7 @@ class QueryMapResult:
 
     def __init__(self, records: list, page_size: int, module: str = None, storage_function: str = None,
                  params: list = None, block_hash: str = None, substrate: SubstrateInterface = None,
-                 last_key: str = None, max_results: int = None):
+                 last_key: str = None, max_results: int = None, ignore_decoding_errors: bool = False):
         self.current_index = -1
         self.records = records
         self.page_size = page_size
@@ -3227,6 +3239,7 @@ class QueryMapResult:
         self.last_key = last_key
         self.max_results = max_results
         self.params = params
+        self.ignore_decoding_errors = ignore_decoding_errors
 
     def retrieve_next_page(self, start_key) -> list:
         if not self.substrate:
@@ -3234,7 +3247,8 @@ class QueryMapResult:
 
         result = self.substrate.query_map(module=self.module, storage_function=self.storage_function,
                                           params=self.params, page_size=self.page_size, block_hash=self.block_hash,
-                                          start_key=start_key, max_results=self.max_results)
+                                          start_key=start_key, max_results=self.max_results,
+                                          ignore_decoding_errors=self.ignore_decoding_errors)
 
         # Update last key from new result set to use as offset for next page
         self.last_key = result.last_key
