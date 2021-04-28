@@ -1523,7 +1523,7 @@ class SubstrateInterface:
         obj = self.query(module, storage_function, params=params, block_hash=block_hash)
         return {'result': obj.value if obj else None}
 
-    def get_events(self, block_hash: str = None, block_id: int = None) -> list:
+    def get_events(self, block_hash: str = None) -> list:
         """
         Convenience method to get events for a certain block (storage call for module 'System' and function 'Events')
 

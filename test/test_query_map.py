@@ -175,7 +175,7 @@ class QueryMapTestCase(unittest.TestCase):
         era_stakers = self.kusama_substrate.query_map(
             module='Staking',
             storage_function='ErasStakers',
-            params=[2100],
+            params=[2185],
             max_results=4
         )
 
@@ -191,7 +191,7 @@ class QueryMapTestCase(unittest.TestCase):
         era_stakers = self.kusama_substrate.query_map(
             module='Staking',
             storage_function='ErasStakers',
-            params=[2100],
+            params=[2185],
             max_results=4,
             page_size=1
         )

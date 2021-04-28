@@ -246,7 +246,10 @@ class ContractMetadata:
     def get_return_type_string_for_message(self, name) -> str:
         for message in self.metadata_dict['spec']['messages']:
             if name in message['name']:
-                return self.get_type_string_for_metadata_type(message['returnType']['type'])
+                if message['returnType'] is None:
+                    return 'Null'
+                else:
+                    return self.get_type_string_for_metadata_type(message['returnType']['type'])
 
         raise ValueError(f'Message "{name}" not found')
 
@@ -505,7 +508,7 @@ class ContractCode:
         return self.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
 
     def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None,
-               deployment_salt: str = None) -> "ContractInstance":
+               deployment_salt: str = None, upload_code: bool = False) -> "ContractInstance":
         """
         Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
         constructor arguments
@@ -518,6 +521,7 @@ class ContractCode:
         constructor: name of the constructor to use, provided in the metadata
         args: arguments for the constructor
         deployment_salt: optional string or hex-string that acts as a salt for this deployment
+        upload_code: When True the WASM blob itself will be uploaded with the deploy, False if the WASM is already present on-chain
 
         Returns
         -------
@@ -527,17 +531,54 @@ class ContractCode:
         # Lookup constructor
         data = self.metadata.generate_constructor_data(name=constructor, args=args)
 
-        call = self.substrate.compose_call(
-            call_module='Contracts',
-            call_function='instantiate',
-            call_params={
-                'endowment': endowment,
-                'gas_limit': gas_limit,
-                'code_hash': f'0x{self.code_hash.hex()}',
-                'data': data.to_hex(),
-                'salt': deployment_salt or ''
-            }
-        )
+        if upload_code is True:
+
+            # Check metadata for available call functions
+            if self.substrate.get_metadata_call_function('Contracts', 'instantiate_with_code') is not None:
+
+                if not self.wasm_bytes:
+                    raise ValueError("No WASM bytes to upload")
+
+                call = self.substrate.compose_call(
+                    call_module='Contracts',
+                    call_function='instantiate_with_code',
+                    call_params={
+                        'endowment': endowment,
+                        'gas_limit': gas_limit,
+                        'code': '0x{}'.format(self.wasm_bytes.hex()),
+                        'data': data.to_hex(),
+                        'salt': deployment_salt or ''
+                    }
+                )
+            else:
+                # Legacy mode: put code in seperate call
+
+                self.upload_wasm(keypair)
+
+                call = self.substrate.compose_call(
+                    call_module='Contracts',
+                    call_function='instantiate',
+                    call_params={
+                        'endowment': endowment,
+                        'gas_limit': gas_limit,
+                        'code_hash': f'0x{self.code_hash.hex()}',
+                        'data': data.to_hex(),
+                        'salt': deployment_salt or ''
+                    }
+                )
+        else:
+
+            call = self.substrate.compose_call(
+                call_module='Contracts',
+                call_function='instantiate',
+                call_params={
+                    'endowment': endowment,
+                    'gas_limit': gas_limit,
+                    'code_hash': f'0x{self.code_hash.hex()}',
+                    'data': data.to_hex(),
+                    'salt': deployment_salt or ''
+                }
+            )
 
         extrinsic = self.substrate.create_signed_extrinsic(call=call, keypair=keypair)
 

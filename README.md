@@ -391,25 +391,16 @@ code = ContractCode.create_from_contract_files(
     substrate=substrate
 )
 
-receipt = code.upload_wasm(keypair)
 
-if receipt.is_success:
-    print('* Contract WASM Uploaded')
+# Deploy contract
+contract = code.deploy(
+    keypair=keypair, endowment=10 ** 15, gas_limit=1000000000000,
+    constructor="new",
+    args={'initial_supply': 1000 * 10 ** 15},
+    upload_code=True
+)
 
-    for event in receipt.triggered_events:
-        print(f'* {event.value}')
-
-    # Deploy contract
-    contract = code.deploy(
-        keypair=keypair, endowment=10 ** 15, gas_limit=1000000000000,
-        constructor="new",
-        args={'initial_supply': 1000 * 10 ** 15}
-    )
-
-    print(f'Deployed @ {contract.contract_address}')
-
-else:
-    print(f'Failed: {receipt.error_message}')
+print(f'Deployed @ {contract.contract_address}')
 ```
 
 #### Work with an existing instance:
