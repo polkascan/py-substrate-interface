@@ -2282,6 +2282,8 @@ class SubstrateInterface:
 
                 for constant in module.constants:
                     if constant_name == constant.name:
+                        # Decode value
+                        constant.constant_value = self.decode_scale(constant.type, ScaleBytes(constant.constant_value))
                         return constant
 
     def get_metadata_storage_functions(self, block_hash=None):
