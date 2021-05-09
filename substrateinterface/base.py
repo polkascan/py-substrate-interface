@@ -1505,10 +1505,17 @@ class SubstrateInterface:
                 raise SubstrateRequestException(response['error']['message'])
 
             if 'result' in response:
-                if return_scale_type and response.get('result'):
+                if return_scale_type:
+
+                    if response.get('result') is not None:
+                        query_value = response.get('result')
+                    else:
+                        # Fallback to default value of storage function if no result
+                        query_value = storage_item.fallback
+
                     obj = ScaleDecoder.get_decoder_class(
                         type_string=return_scale_type,
-                        data=ScaleBytes(response.get('result')),
+                        data=ScaleBytes(query_value),
                         metadata=self.metadata_decoder,
                         runtime_config=self.runtime_config
                     )

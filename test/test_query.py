@@ -56,13 +56,28 @@ class QueryTestCase(unittest.TestCase):
             params=['GSEX8kR4Kz5UZGhvRUCJG93D5hhTAoVZ5tAe6Zne7V42DSi']
         )
 
-        self.assertIsNone(result)
+        self.assertEqual(
+            {
+                'nonce': 0, 'consumers': 0, 'providers': 0, 'sufficients': 0,
+                'data': {
+                    'free': 0, 'reserved': 0, 'miscFrozen': 0, 'feeFrozen': 0
+                }
+            }, result.value)
 
     def test_non_existing_query(self):
         with self.assertRaises(ValueError) as cm:
             self.kusama_substrate.query("Unknown", "StorageFunction")
 
         self.assertEqual('Storage function "Unknown.StorageFunction" not found', str(cm.exception))
+
+    def test_fallback_value(self):
+        result = self.kusama_substrate.query(
+            module='Staking',
+            storage_function='HistoryDepth',
+            block_hash='0x4b313e72e3a524b98582c31cd3ff6f7f2ef5c38a3c899104a833e468bb1370a2'
+        )
+
+        self.assertEqual(84, result.value)
 
     def test_identity_hasher(self):
         result = self.kusama_substrate.query("Claims", "Claims", ["0x00000a9c44f24e314127af63ae55b864a28d7aee"])
