@@ -107,10 +107,10 @@ class QueryTestCase(unittest.TestCase):
 
         self.assertEqual(1, len(all_bonded_stash_ctrls))
         self.assertEqual(
-            '0xbe5ddb1579b72e84524fc29e78609e3caf42e85aa118ebfe0b0ad404b5bdd25f', all_bonded_stash_ctrls[0][0]
+            'GsvVmjr1CBHwQHw84pPHMDxgNY3iBLz6Qn7qS3CH8qPhrHz', all_bonded_stash_ctrls[0][0]
         )
         self.assertEqual(
-            '0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d', all_bonded_stash_ctrls[0][1]
+            'HNZata7iMYWmk5RvZRTiAsSDhV8366zq2YGb3tLH5Upf74F', all_bonded_stash_ctrls[0][1]
         )
 
     def test_identity_iterate_map(self):

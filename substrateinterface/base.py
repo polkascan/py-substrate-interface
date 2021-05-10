@@ -447,7 +447,7 @@ class SubstrateInterface:
         self.type_registry_cache = {}
 
         if not runtime_config:
-            runtime_config = RuntimeConfigurationObject()
+            runtime_config = RuntimeConfigurationObject(ss58_format=self.ss58_format)
 
         self.runtime_config = runtime_config
 
@@ -1328,10 +1328,6 @@ class SubstrateInterface:
                             raise
                         item_key = None
 
-                    # Automatic SS58 encode AccountId
-                    if type(item_key) is GenericAccountId:
-                        item_key.ss58_address = self.ss58_encode(item_key.value)
-
                     try:
                         item_value = self.decode_scale(
                             type_string=value_type,
@@ -1343,10 +1339,6 @@ class SubstrateInterface:
                         if not ignore_decoding_errors:
                             raise
                         item_value = None
-
-                    # Automatic SS58 encode AccountId
-                    if type(item_value) is GenericAccountId:
-                        item_value.ss58_address = self.ss58_encode(item_value.value)
 
                     result.append([item_key, item_value])
 

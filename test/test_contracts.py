@@ -132,10 +132,10 @@ class ContractMetadataTestCase(unittest.TestCase):
         contract_event_obj.decode()
 
         self.assertEqual(
-            '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', ss58_encode(contract_event_obj.args[0]['value'], 42)
+            'HNZata7iMYWmk5RvZRTiAsSDhV8366zq2YGb3tLH5Upf74F', contract_event_obj.args[0]['value']
         )
         self.assertEqual(
-            '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty', ss58_encode(contract_event_obj.args[1]['value'], 42)
+            'FoQJpPyadYccjavVdTWxpxU7rUEaYhfLCPwXgkfD6Zat9QP', contract_event_obj.args[1]['value']
         )
         self.assertEqual(6000000000000000, contract_event_obj.args[2]['value'])
 
