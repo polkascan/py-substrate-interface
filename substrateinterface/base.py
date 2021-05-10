@@ -1975,7 +1975,10 @@ class SubstrateInterface:
             if type_string[0] == '(':
                 type_info["is_primitive_runtime"] = False
 
-            for key, data_type in decoder_class.type_mapping:
+            for data_type in decoder_class.type_mapping:
+
+                if type(data_type) in [list, tuple]:
+                    data_type = data_type[1]
 
                 if data_type not in parent_type_strings:
                     self.process_metadata_typestring(data_type, parent_type_strings=parent_type_strings)
