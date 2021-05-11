@@ -590,7 +590,7 @@ class ContractCode:
         for event in result.triggered_events:
             if event.event.name == 'Instantiated':
                 return ContractInstance(
-                    contract_address=self.substrate.ss58_encode(event.params[1]['value']),
+                    contract_address=event.params[1]['value'],
                     metadata=self.metadata,
                     substrate=self.substrate
                 )
