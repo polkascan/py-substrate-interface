@@ -1501,8 +1501,12 @@ class SubstrateInterface:
 
                     if response.get('result') is not None:
                         query_value = response.get('result')
-                    else:
+                    elif storage_item.modifier == 'Default':
                         # Fallback to default value of storage function if no result
+                        query_value = storage_item.fallback
+                    else:
+                        # No result is interpreted as an Option<...> result
+                        return_scale_type = f'Option<{return_scale_type}>'
                         query_value = storage_item.fallback
 
                     obj = ScaleDecoder.get_decoder_class(
