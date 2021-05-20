@@ -176,7 +176,8 @@ class QueryMapTestCase(unittest.TestCase):
             module='Staking',
             storage_function='ErasStakers',
             params=[2185],
-            max_results=4
+            max_results=4,
+            block_hash="0x61dd66907df3187fd1438463f2c87f0d596797936e0a292f6f98d12841da2325"
         )
 
         records = list(era_stakers)
@@ -193,7 +194,8 @@ class QueryMapTestCase(unittest.TestCase):
             storage_function='ErasStakers',
             params=[2185],
             max_results=4,
-            page_size=1
+            page_size=1,
+            block_hash="0x61dd66907df3187fd1438463f2c87f0d596797936e0a292f6f98d12841da2325"
         )
 
         records = list(era_stakers)
@@ -208,7 +210,8 @@ class QueryMapTestCase(unittest.TestCase):
         era_stakers = self.kusama_substrate.query_map(
             module='Staking',
             storage_function='ErasStakers',
-            params=[21000000]
+            params=[21000000],
+            block_hash="0x61dd66907df3187fd1438463f2c87f0d596797936e0a292f6f98d12841da2325"
         )
         self.assertEqual(era_stakers.records, [])
 
