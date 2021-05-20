@@ -1193,7 +1193,7 @@ class SubstrateInterface:
 
     def query_map(self, module: str, storage_function: str, params: Optional[list] = None, block_hash: str = None,
                   max_results: int = None, start_key: str = None, page_size: int = 100,
-                  ignore_decoding_errors: bool = False) -> 'QueryMapResult':
+                  ignore_decoding_errors: bool = True) -> 'QueryMapResult':
         """
         Iterates over all key-pairs located at the given module and storage_function. The storage
         item must be a map.
