@@ -125,7 +125,18 @@ class TestHelperFunctions(unittest.TestCase):
         constant = self.substrate.get_metadata_constant("System", "BlockHashCount")
         self.assertEqual("BlockHashCount", constant.name)
         self.assertEqual("BlockNumber", constant.type)
-        self.assertEqual(2400, constant.constant_value)
+        self.assertEqual("0x60090000", constant.constant_value)
+
+    def test_get_constant(self):
+        constant = self.substrate.get_constant("System", "BlockHashCount")
+        self.assertEqual(2400, constant.value)
+
+        constant = self.substrate.get_constant("Balances", "ExistentialDeposit")
+        self.assertEqual(100000000000000, constant.value)
+
+        # Also test cache method doesn't mix up results
+        constant = self.substrate.get_constant("System", "BlockHashCount")
+        self.assertEqual(2400, constant.value)
 
     def test_get_metadata_storage_function(self):
         storage = self.substrate.get_metadata_storage_function("System", "Account")

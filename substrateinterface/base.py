@@ -2277,7 +2277,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        MetadataModuleConstants
         """
 
         self.init_runtime(block_hash=block_hash)
@@ -2288,9 +2288,29 @@ class SubstrateInterface:
 
                 for constant in module.constants:
                     if constant_name == constant.name:
-                        # Decode value
-                        constant.constant_value = self.decode_scale(constant.type, ScaleBytes(constant.constant_value))
                         return constant
+
+    @lru_cache(maxsize=1000)
+    def get_constant(self, module_name, constant_name, block_hash=None) -> Optional[ScaleType]:
+        """
+        Returns the decoded `ScaleType` object of the constant for given module name, call function name and block_hash
+        (or chaintip if block_hash is omitted)
+
+        Parameters
+        ----------
+        module_name
+        constant_name
+        block_hash
+
+        Returns
+        -------
+        ScaleType
+        """
+
+        constant = self.get_metadata_constant(module_name, constant_name, block_hash=block_hash)
+        if constant:
+            # Decode to ScaleType
+            return self.decode_scale(constant.type, ScaleBytes(constant.constant_value), return_scale_obj=True)
 
     def get_metadata_storage_functions(self, block_hash=None):
         """

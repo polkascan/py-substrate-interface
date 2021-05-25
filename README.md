@@ -34,6 +34,7 @@ management and versioning of types.
   * [Creating keypairs with soft and hard key derivation paths](#creating-keypairs-with-soft-and-hard-key-derivation-paths)
   * [Getting estimate of network fees for extrinsic in advance](#getting-estimate-of-network-fees-for-extrinsic-in-advance)
   * [Offline signing of extrinsics](#offline-signing-of-extrinsics)
+  * [Accessing runtime constants](#accessing-runtime-constants)
 * [Keeping type registry presets up to date](#keeping-type-registry-presets-up-to-date)
 * [Cleanup and context manager](#cleanup-and-context-manager)  
 * [License](#license)
@@ -572,7 +573,18 @@ result = substrate.submit_extrinsic(
     extrinsic=extrinsic
 )
 
-print(result['extrinsic_hash'])
+print(result.extrinsic_hash)
+```
+
+### Accessing runtime constants
+All runtime constants are provided in the metadata (see `substrate.get_metadata_constants()`),
+to access these as a decoded `ScaleType` you can use the function `substrate.get_constant()`:
+
+```python
+
+constant = substrate.get_constant("Balances", "ExistentialDeposit")
+
+print(constant.value) # 10000000000
 ```
 
 ## Cleanup and context manager
