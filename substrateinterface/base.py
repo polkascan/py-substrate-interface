@@ -3268,6 +3268,7 @@ class QueryMapResult:
         self.max_results = max_results
         self.params = params
         self.ignore_decoding_errors = ignore_decoding_errors
+        self.loading_complete = False
 
     def retrieve_next_page(self, start_key) -> list:
         if not self.substrate:
@@ -3291,13 +3292,15 @@ class QueryMapResult:
         self.current_index += 1
 
         if self.max_results is not None and self.current_index >= self.max_results:
+            self.loading_complete = True
             raise StopIteration
 
-        if self.current_index >= len(self.records):
+        if self.current_index >= len(self.records) and not self.loading_complete:
             # try to retrieve next page from node
             self.records += self.retrieve_next_page(start_key=self.last_key)
 
         if self.current_index >= len(self.records):
+            self.loading_complete = True
             raise StopIteration
 
         return self.records[self.current_index]
