@@ -938,8 +938,8 @@ class SubstrateInterface:
 
         return response.get('result')
 
-    def generate_storage_hash(self, storage_module, storage_function, params=None, hasher=None, key2_hasher=None,
-                              metadata_version=None):
+    def generate_storage_hash(self, storage_module: str, storage_function: str, params: list = None,
+                              hashers: list = None):
         """
         Generate a storage key for given module/function
 
@@ -947,84 +947,60 @@ class SubstrateInterface:
         ----------
         storage_module
         storage_function
-        params: Parameters of the storage function, provided in scale encoded hex-bytes
-        hasher: Hashing method used to determine storage key, defaults to 'Twox64Concat' if not provided
-        metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
+        params: Parameters of the storage function, provided in scale encoded hex-bytes or ScaleBytes instances
+        hashers: Hashing methods used to determine storage key, defaults to 'Twox64Concat' if not provided
 
         Returns
         -------
-
+        str Hexstring respresentation of the storage key
         """
 
-        if not metadata_version or metadata_version >= 9:
-            storage_hash = xxh128(storage_module.encode()) + xxh128(storage_function.encode())
+        storage_hash = xxh128(storage_module.encode()) + xxh128(storage_function.encode())
 
-            if params:
+        if params:
 
-                if type(params) is not list:
-                    params = [params]
+            for idx, param in enumerate(params):
+                # Get hasher assiociated with param
+                try:
+                    param_hasher = hashers[idx]
+                except IndexError:
+                    raise ValueError(f'No hasher found for param #{idx + 1}')
 
-                for idx, param in enumerate(params):
-                    if idx == 0:
-                        param_hasher = hasher
-                    elif idx == 1:
-                        param_hasher = key2_hasher
-                    else:
-                        raise ValueError('Unexpected third parameter for storage call')
+                params_key = bytes()
 
-                    params_key = bytes()
+                # Convert param to bytes
+                if type(param) is str:
+                    params_key += binascii.unhexlify(param)
+                elif type(param) is ScaleBytes:
+                    params_key += param.data
+                elif isinstance(param, ScaleDecoder):
+                    params_key += param.data.data
 
-                    if type(param) is str:
-                        params_key += binascii.unhexlify(param)
-                    elif type(param) is ScaleBytes:
-                        params_key += param.data
-                    elif isinstance(param, ScaleDecoder):
-                        params_key += param.data.data
+                if not param_hasher:
+                    param_hasher = 'Twox128'
 
-                    if not param_hasher:
-                        param_hasher = 'Twox128'
+                if param_hasher == 'Blake2_256':
+                    storage_hash += blake2_256(params_key)
 
-                    if param_hasher == 'Blake2_256':
-                        storage_hash += blake2_256(params_key)
+                elif param_hasher == 'Blake2_128':
+                    storage_hash += blake2_128(params_key)
 
-                    elif param_hasher == 'Blake2_128':
-                        storage_hash += blake2_128(params_key)
+                elif param_hasher == 'Blake2_128Concat':
+                    storage_hash += blake2_128_concat(params_key)
 
-                    elif param_hasher == 'Blake2_128Concat':
-                        storage_hash += blake2_128_concat(params_key)
+                elif param_hasher == 'Twox128':
+                    storage_hash += xxh128(params_key)
 
-                    elif param_hasher == 'Twox128':
-                        storage_hash += xxh128(params_key)
+                elif param_hasher == 'Twox64Concat':
+                    storage_hash += two_x64_concat(params_key)
 
-                    elif param_hasher == 'Twox64Concat':
-                        storage_hash += two_x64_concat(params_key)
+                elif param_hasher == 'Identity':
+                    storage_hash += identity(params_key)
 
-                    elif param_hasher == 'Identity':
-                        storage_hash += identity(params_key)
+                else:
+                    raise ValueError('Unknown storage hasher "{}"'.format(param_hasher))
 
-                    else:
-                        raise ValueError('Unknown storage hasher "{}"'.format(param_hasher))
-
-            return '0x{}'.format(storage_hash)
-
-        else:
-            storage_hash = storage_module.encode() + b" " + storage_function.encode()
-
-            if params:
-                storage_hash += binascii.unhexlify(params)
-
-            # Determine hasher function
-            if not hasher:
-                hasher = 'Twox128'
-
-            if hasher == 'Blake2_256':
-                return "0x{}".format(blake2_256(storage_hash))
-
-            elif hasher == 'Twox128':
-                return "0x{}".format(xxh128(storage_hash))
-
-            elif hasher == 'Twox64Concat':
-                return "0x{}".format(two_x64_concat(storage_hash))
+        return '0x{}'.format(storage_hash)
 
     def convert_storage_parameter(self, scale_type, value):
         if scale_type == 'AccountId':
@@ -1240,52 +1216,51 @@ class SubstrateInterface:
         # Check MapType condititions and determine prefix length
         if 'MapType' in storage_item.type:
 
-            if params is not None:
+            if params:
                 raise ValueError('"params" is only used with a DoubleMap storage function')
 
-            key_type = storage_item.type['MapType']['key']
-            value_type = storage_item.type['MapType']['value']
-            if storage_item.type['MapType']['hasher'] == "Blake2_128Concat":
-                concat_hash_len = 32
-            elif storage_item.type['MapType']['hasher'] == "Twox64Concat":
-                concat_hash_len = 16
-            elif storage_item.type['MapType']['hasher'] == "Identity":
-                concat_hash_len = 0
-            else:
-                raise ValueError('Unsupported hash type')
+            params = []
 
-            prefix = self.generate_storage_hash(storage_module.prefix, storage_item.name)
+            param_types = [storage_item.type['MapType']['key']]
+            key_hashers = [storage_item.type['MapType']['hasher']]
+
+            value_type = storage_item.type['MapType']['value']
 
         elif 'DoubleMapType' in storage_item.type:
 
             if params is None or len(params) != 1:
                 raise ValueError('"params" with 1 element is mandatory with a DoubleMap storage function')
 
-            key_type = storage_item.type['DoubleMapType']['key2']
+            param_types = [storage_item.type['DoubleMapType']['key1'], storage_item.type['DoubleMapType']['key2']]
             value_type = storage_item.type['DoubleMapType']['value']
-            key_hasher = storage_item.type['DoubleMapType']['key2Hasher']
+            key_hashers = [storage_item.type['DoubleMapType']['hasher'], storage_item.type['DoubleMapType']['key2Hasher']]
 
-            if key_hasher == "Blake2_128Concat":
-                concat_hash_len = 32
-            elif key_hasher == "Twox64Concat":
-                concat_hash_len = 16
-            elif key_hasher == "Identity":
-                concat_hash_len = 0
-            else:
-                raise ValueError('Unsupported hash type')
+        elif 'NMapType' in storage_item.type:
 
-            # Encode parameter
-            param = self.convert_storage_parameter(storage_item.type['DoubleMapType']['key1'], params[0])
-            param_obj = ScaleDecoder.get_decoder_class(
-                type_string=storage_item.type['DoubleMapType']['key1'], runtime_config=self.runtime_config
-            )
+            param_types = storage_item.type['NMapType']['keys']
+            value_type = storage_item.type['NMapType']['value']
+            key_hashers = storage_item.type['NMapType']['hashers']
 
-            prefix = self.generate_storage_hash(
-                storage_module=storage_module.prefix, storage_function=storage_item.name,
-                params=[param_obj.encode(param)], hasher=storage_item.type['DoubleMapType']['hasher']
-            )
+            if params is None or len(params) != len(param_types) - 1:
+                raise ValueError(f'{len(param_types) - 1} length params is mandatory with this storage function')
+
         else:
             raise ValueError('Given storage function is not a map')
+
+        # Encode parameters
+        for idx, param in enumerate(params):
+            if type(param) is not ScaleBytes:
+                param = self.convert_storage_parameter(param_types[idx], param)
+                param_obj = ScaleDecoder.get_decoder_class(
+                    type_string=param_types[idx], runtime_config=self.runtime_config
+                )
+                params[idx] = param_obj.encode(param)
+
+        # Generate storage key prefix
+        prefix = self.generate_storage_hash(
+            storage_module=storage_module.prefix, storage_function=storage_item.name,
+            params=params, hashers=key_hashers
+        )
 
         if not start_key:
             start_key = prefix
@@ -1305,6 +1280,16 @@ class SubstrateInterface:
         result = []
         last_key = None
 
+        def concat_hash_len(key_hasher: str) -> int:
+            if key_hasher == "Blake2_128Concat":
+                return 32
+            elif key_hasher == "Twox64Concat":
+                return 16
+            elif key_hasher == "Identity":
+                return 0
+            else:
+                raise ValueError('Unsupported hash type')
+
         if len(result_keys) > 0:
 
             last_key = result_keys[-1]
@@ -1319,8 +1304,8 @@ class SubstrateInterface:
                 for item in result_group['changes']:
                     try:
                         item_key = self.decode_scale(
-                            type_string=key_type,
-                            scale_bytes='0x' + item[0][len(prefix) + concat_hash_len:],
+                            type_string=param_types[len(params)],
+                            scale_bytes='0x' + item[0][len(prefix) + concat_hash_len(key_hashers[len(params)]):],
                             return_scale_obj=True,
                             block_hash=block_hash
                         )
@@ -1349,8 +1334,8 @@ class SubstrateInterface:
             ignore_decoding_errors=ignore_decoding_errors
         )
 
-    def query(self, module, storage_function, params=None, block_hash=None,
-              subscription_handler=None) -> Optional[ScaleType]:
+    def query(self, module: str, storage_function: str, params: list = None, block_hash: str = None,
+              subscription_handler: callable = None) -> Optional[ScaleType]:
         """
         Retrieves the storage entry for given module, function and optional parameters at given block hash.
 
@@ -1394,6 +1379,9 @@ class SubstrateInterface:
             # Retrieve chain tip
             block_hash = self.get_chain_head()
 
+        if params is None:
+            params = []
+
         self.init_runtime(block_hash=block_hash)
 
         # Search storage call in metadata
@@ -1403,64 +1391,58 @@ class SubstrateInterface:
         if not metadata_module or not storage_item:
             raise StorageFunctionNotFound('Storage function "{}.{}" not found'.format(module, storage_function))
 
-        key2_hasher = None
-
+        # Process specific type of storage function
         if 'PlainType' in storage_item.type:
-            hasher = 'Twox64Concat'
+            hashers = ['Twox64Concat']
+            param_types = []
             return_scale_type = storage_item.type.get('PlainType')
-            if params:
+
+            if len(params) != 0:
                 raise ValueError('Storage call of type "PlainType" doesn\'t accept params')
 
         elif 'MapType' in storage_item.type:
 
             map_type = storage_item.type.get('MapType')
-            hasher = map_type.get('hasher')
+            hashers = [map_type.get('hasher')]
+            param_types = [map_type['key']]
             return_scale_type = map_type.get('value')
 
-            if not params or len(params) != 1:
+            if len(params) != 1:
                 raise ValueError('Storage call of type "MapType" requires 1 parameter')
-
-            # Encode parameter
-            params[0] = self.convert_storage_parameter(map_type['key'], params[0])
-            param_obj = ScaleDecoder.get_decoder_class(
-                type_string=map_type['key'], runtime_config=self.runtime_config
-            )
-            params[0] = param_obj.encode(params[0])
 
         elif 'DoubleMapType' in storage_item.type:
 
             map_type = storage_item.type.get('DoubleMapType')
-            hasher = map_type.get('hasher')
-            key2_hasher = map_type.get('key2Hasher')
+            hashers = [map_type.get('hasher'), map_type.get('key2Hasher')]
+            param_types = [map_type['key1'], map_type['key2']]
             return_scale_type = map_type.get('value')
 
-            if not params or len(params) != 2:
+            if len(params) != 2:
                 raise ValueError('Storage call of type "DoubleMapType" requires 2 parameters')
 
-            # Encode parameter 1
-            params[0] = self.convert_storage_parameter(map_type['key1'], params[0])
-            param_obj = ScaleDecoder.get_decoder_class(
-                type_string=map_type['key1'], runtime_config=self.runtime_config
-            )
-            params[0] = param_obj.encode(params[0])
+        elif 'NMapType' in storage_item.type:
 
-            # Encode parameter 2
-            params[1] = self.convert_storage_parameter(map_type['key2'], params[1])
-            param_obj = ScaleDecoder.get_decoder_class(
-                type_string=map_type['key2'], runtime_config=self.runtime_config
-            )
-            params[1] = param_obj.encode(params[1])
+            map_type = storage_item.type.get('NMapType')
+            hashers = map_type.get('hashers')
+            param_types = map_type.get('keys')
+            return_scale_type = map_type.get('value')
 
         else:
             raise NotImplementedError("Storage type not implemented")
+
+        # Encode parameters
+        for idx, param in enumerate(params):
+            param = self.convert_storage_parameter(param_types[idx], param)
+            param_obj = ScaleDecoder.get_decoder_class(
+                type_string=param_types[idx], runtime_config=self.runtime_config
+            )
+            params[idx] = param_obj.encode(param)
 
         storage_hash = self.generate_storage_hash(
             storage_module=metadata_module.prefix,
             storage_function=storage_function,
             params=params,
-            hasher=hasher,
-            key2_hasher=key2_hasher,
-            metadata_version=self.metadata_decoder.version.index
+            hashers=hashers
         )
 
         def result_handler(message, update_nr, subscription_id):
@@ -1942,7 +1924,7 @@ class SubstrateInterface:
             self.type_registry_cache[self.runtime_version] = {}
 
         # Check if already added
-        if type_string.lower() in self.type_registry_cache[self.runtime_version]:
+        if type_string and type_string.lower() in self.type_registry_cache[self.runtime_version]:
             return self.type_registry_cache[self.runtime_version][type_string.lower()]['decoder_class']
 
         if not parent_type_strings:
@@ -2050,29 +2032,34 @@ class SubstrateInterface:
                     for idx, storage in enumerate(storage_functions):
 
                         # Determine type
-                        type_key1 = None
-                        type_key2 = None
-                        type_value = None
 
                         if storage.type.get('PlainType'):
+                            type_keys = []
                             type_value = storage.type.get('PlainType')
 
                         elif storage.type.get('MapType'):
-                            type_key1 = storage.type['MapType'].get('key')
+                            type_keys = [storage.type['MapType'].get('key')]
                             type_value = storage.type['MapType'].get('value')
 
                         elif storage.type.get('DoubleMapType'):
-                            type_key1 = storage.type['DoubleMapType'].get('key1')
-                            type_key2 = storage.type['DoubleMapType'].get('key2')
+                            type_keys = [
+                                storage.type['DoubleMapType'].get('key1'), storage.type['DoubleMapType'].get('key2')
+                            ]
                             type_value = storage.type['DoubleMapType'].get('value')
 
+                        elif storage.type.get('NMapType'):
+                            type_keys = storage.type['NMapType'].get('keys')
+                            type_value = storage.type['NMapType'].get('value')
+
+                        else:
+                            raise ValueError("Unsupported storage type")
+
+                        # Add type value
                         self.process_metadata_typestring(type_value)
 
-                        if type_key1:
-                            self.process_metadata_typestring(type_key1)
-
-                        if type_key2:
-                            self.process_metadata_typestring(type_key2)
+                        # Add type keys
+                        for type_key in type_keys:
+                            self.process_metadata_typestring(type_key)
 
                 if len(module.constants or []) > 0:
                     for idx, constant in enumerate(module.constants):
