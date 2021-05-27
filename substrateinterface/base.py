@@ -466,8 +466,9 @@ class SubstrateInterface:
             )
 
     def close(self):
-        self.debug_message("Closing websocket connection")
-        self.websocket.close()
+        if self.websocket:
+            self.debug_message("Closing websocket connection")
+            self.websocket.close()
 
     def __enter__(self):
         return self

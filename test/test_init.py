@@ -98,6 +98,13 @@ class TestInit(unittest.TestCase):
         self.assertIsNotNone(block_number)
         self.assertIsNone(block_number2)
 
+    def test_context_manager(self):
+        with SubstrateInterface(url=settings.KUSAMA_NODE_URL) as substrate:
+            self.assertTrue(substrate.websocket.connected)
+            self.assertEqual(2, substrate.ss58_format)
+
+        self.assertFalse(substrate.websocket.connected)
+
 
 if __name__ == '__main__':
     unittest.main()
