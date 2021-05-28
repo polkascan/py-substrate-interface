@@ -40,7 +40,7 @@ class BlockTestCase(unittest.TestCase):
                 if block_hash == '0xec828914eca09331dad704404479e2899a971a9b5948345dc40abca4ac818f93':
                     vec = Vec()
                     author = GenericAddress()
-                    author.value = '0xbe5ddb1579b72e84524fc29e78609e3caf42e85aa118ebfe0b0ad404b5bdd25f'
+                    author.value = '5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY'
                     vec.elements = [author]
                     return vec
 
