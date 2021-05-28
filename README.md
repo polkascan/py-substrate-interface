@@ -189,12 +189,12 @@ for extrinsic in result['extrinsics']:
 
 ```python
 def subscription_handler(obj, update_nr, subscription_id):
-    
-    print(f"New block #{obj['header']['number']} produced by {obj['header']['author']}")
-    
-    if update_nr > 10
-      return {'message': 'Subscription will cancel when a value is returned', 'updates_processed': update_nr}
-    
+
+    print(f"New block #{obj['header']['number']} produced by {obj['author']}")
+
+    if update_nr > 10:
+        return {'message': 'Subscription will cancel when a value is returned', 'updates_processed': update_nr}
+
 
 result = substrate.subscribe_block_headers(subscription_handler, include_author=True)
 ```
