@@ -1181,7 +1181,7 @@ class SubstrateInterface:
         result = substrate.query_map('System', 'Account', max_results=100)
 
         for account, account_info in result:
-            print(f"Free balance of account '{substrate.ss58_encode(account.value)}': {account_info.value['data']['free']}")
+            print(f"Free balance of account '{account.value}': {account_info.value['data']['free']}")
         ```
 
         Parameters
@@ -2449,7 +2449,7 @@ class SubstrateInterface:
                                 rank_validator = log_digest.value['PreRuntime']['data']['authorityIndex']
 
                                 block_author = validator_set.elements[rank_validator]
-                                block_data['author'] = self.ss58_encode(block_author.value)
+                                block_data['author'] = block_author.value
                             else:
                                 raise NotImplementedError(
                                     f"Cannot extract author for engine {log_digest.value['PreRuntime']['engine']}"

@@ -166,7 +166,7 @@ result = substrate.get_block(block_hash=block_hash)
 for extrinsic in result['extrinsics']:
 
     if extrinsic.address:
-        signed_by_address = substrate.ss58_encode(extrinsic.address.value)
+        signed_by_address = extrinsic.address.value
     else:
         signed_by_address = None
 
@@ -178,9 +178,6 @@ for extrinsic in result['extrinsics']:
 
     # Loop through call params
     for param in extrinsic.params:
-
-        if param['type'] == 'LookupSource':
-            param['value'] = substrate.ss58_encode((param['value']))
 
         if param['type'] == 'Compact<Balance>':
             param['value'] = '{} {}'.format(param['value'] / 10 ** substrate.token_decimals, substrate.token_symbol)
@@ -271,7 +268,7 @@ The result is a `QueryMapResult` object, which is an iterator:
 result = substrate.query_map('System', 'Account', max_results=199)
 
 for account, account_info in result:
-    print(f"Free balance of account '{substrate.ss58_encode(account.value)}': {account_info.value['data']['free']}")
+    print(f"Free balance of account '{account.value}': {account_info.value['data']['free']}")
 ```
 
 These results are transparantly retrieved in batches capped by the `page_size` kwarg, currently the 
