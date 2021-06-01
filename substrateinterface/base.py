@@ -1619,10 +1619,8 @@ class SubstrateInterface:
         -------
         int
         """
-        block_hash = self.get_chain_head()
-        account_info = self.query('System', 'Account', [account_address], block_hash=block_hash)
-        if account_info:
-            return account_info.value.get('nonce', 0)
+        response = self.rpc_request("system_accountNextIndex", [account_address])
+        return response.get('result', 0)
 
     def generate_signature_payload(self, call, era=None, nonce=0, tip=0, include_call_length=False):
 
@@ -1700,7 +1698,7 @@ class SubstrateInterface:
 
         # Retrieve nonce
         if nonce is None:
-            nonce = self.get_account_nonce(keypair.public_key) or 0
+            nonce = self.get_account_nonce(keypair.ss58_address) or 0
 
         # Process era
         if era is None:
