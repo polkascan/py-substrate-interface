@@ -23,6 +23,7 @@ from substrateinterface.exceptions import SubstrateRequestException
 try:
     substrate = SubstrateInterface(
         url="ws://127.0.0.1:9944",
+        type_registry_preset='development'
     )
 except ConnectionRefusedError:
     print("⚠️ No local Substrate node running, try running 'start_local_substrate_node.sh' first")

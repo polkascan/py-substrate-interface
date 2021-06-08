@@ -1607,7 +1607,7 @@ class SubstrateInterface:
 
         return call
 
-    def get_account_nonce(self, account_address):
+    def get_account_nonce(self, account_address) -> int:
         """
         Returns current nonce for given account address
 
