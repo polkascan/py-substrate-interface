@@ -91,5 +91,5 @@ try:
     print('Current value of "get":', result.contract_result_data)
 
 except ConnectionRefusedError:
-    print("⚠️ No local Substrate node running, try running 'start_local_substrate_node.sh' first")
+    print("⚠️ Could not connect to (local) Canvas node, please read the instructions at https://github.com/paritytech/canvas-node")
     exit()
