@@ -201,7 +201,7 @@ the WASM bytes and metadata</p>
         return self.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
 
     def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None,
-               deployment_salt: str = None) -&gt; &#34;ContractInstance&#34;:
+               deployment_salt: str = None, upload_code: bool = False) -&gt; &#34;ContractInstance&#34;:
         &#34;&#34;&#34;
         Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
         constructor arguments
@@ -214,6 +214,7 @@ the WASM bytes and metadata</p>
         constructor: name of the constructor to use, provided in the metadata
         args: arguments for the constructor
         deployment_salt: optional string or hex-string that acts as a salt for this deployment
+        upload_code: When True the WASM blob itself will be uploaded with the deploy, False if the WASM is already present on-chain
 
         Returns
         -------
@@ -223,17 +224,54 @@ the WASM bytes and metadata</p>
         # Lookup constructor
         data = self.metadata.generate_constructor_data(name=constructor, args=args)
 
-        call = self.substrate.compose_call(
-            call_module=&#39;Contracts&#39;,
-            call_function=&#39;instantiate&#39;,
-            call_params={
-                &#39;endowment&#39;: endowment,
-                &#39;gas_limit&#39;: gas_limit,
-                &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
-                &#39;data&#39;: data.to_hex(),
-                &#39;salt&#39;: deployment_salt or &#39;&#39;
-            }
-        )
+        if upload_code is True:
+
+            # Check metadata for available call functions
+            if self.substrate.get_metadata_call_function(&#39;Contracts&#39;, &#39;instantiate_with_code&#39;) is not None:
+
+                if not self.wasm_bytes:
+                    raise ValueError(&#34;No WASM bytes to upload&#34;)
+
+                call = self.substrate.compose_call(
+                    call_module=&#39;Contracts&#39;,
+                    call_function=&#39;instantiate_with_code&#39;,
+                    call_params={
+                        &#39;endowment&#39;: endowment,
+                        &#39;gas_limit&#39;: gas_limit,
+                        &#39;code&#39;: &#39;0x{}&#39;.format(self.wasm_bytes.hex()),
+                        &#39;data&#39;: data.to_hex(),
+                        &#39;salt&#39;: deployment_salt or &#39;&#39;
+                    }
+                )
+            else:
+                # Legacy mode: put code in seperate call
+
+                self.upload_wasm(keypair)
+
+                call = self.substrate.compose_call(
+                    call_module=&#39;Contracts&#39;,
+                    call_function=&#39;instantiate&#39;,
+                    call_params={
+                        &#39;endowment&#39;: endowment,
+                        &#39;gas_limit&#39;: gas_limit,
+                        &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
+                        &#39;data&#39;: data.to_hex(),
+                        &#39;salt&#39;: deployment_salt or &#39;&#39;
+                    }
+                )
+        else:
+
+            call = self.substrate.compose_call(
+                call_module=&#39;Contracts&#39;,
+                call_function=&#39;instantiate&#39;,
+                call_params={
+                    &#39;endowment&#39;: endowment,
+                    &#39;gas_limit&#39;: gas_limit,
+                    &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
+                    &#39;data&#39;: data.to_hex(),
+                    &#39;salt&#39;: deployment_salt or &#39;&#39;
+                }
+            )
 
         extrinsic = self.substrate.create_signed_extrinsic(call=call, keypair=keypair)
 
@@ -245,7 +283,7 @@ the WASM bytes and metadata</p>
         for event in result.triggered_events:
             if event.event.name == &#39;Instantiated&#39;:
                 return ContractInstance(
-                    contract_address=self.substrate.ss58_encode(event.params[1][&#39;value&#39;]),
+                    contract_address=event.params[1][&#39;value&#39;],
                     metadata=self.metadata,
                     substrate=self.substrate
                 )
@@ -354,7 +392,7 @@ def create_from_contract_files(cls, wasm_file: str, metadata_file: str,
 <h3>Methods</h3>
 <dl>
 <dt id="substrateinterface.ContractCode.deploy"><code class="name flex">
-<span>def <span class="ident">deploy</span></span>(<span>self, keypair, endowment, gas_limit, constructor, args: dict = None, deployment_salt: str = None) ‑> <a title="substrateinterface.contracts.ContractInstance" href="contracts.html#substrateinterface.contracts.ContractInstance">ContractInstance</a></span>
+<span>def <span class="ident">deploy</span></span>(<span>self, keypair, endowment, gas_limit, constructor, args: dict = None, deployment_salt: str = None, upload_code: bool = False) ‑> <a title="substrateinterface.contracts.ContractInstance" href="contracts.html#substrateinterface.contracts.ContractInstance">ContractInstance</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
@@ -372,6 +410,8 @@ constructor arguments</p>
 <dd>&nbsp;</dd>
 <dt><strong><code>deployment_salt</code></strong> :&ensp;<code>optional string</code> or <code>hex-string that acts as a salt for this deployment</code></dt>
 <dd>&nbsp;</dd>
+<dt><strong><code>upload_code</code></strong> :&ensp;<code>When True the WASM blob itself will be uploaded with the deploy, False if the WASM is already present on-chain</code></dt>
+<dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -383,7 +423,7 @@ constructor arguments</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None,
-           deployment_salt: str = None) -&gt; &#34;ContractInstance&#34;:
+           deployment_salt: str = None, upload_code: bool = False) -&gt; &#34;ContractInstance&#34;:
     &#34;&#34;&#34;
     Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
     constructor arguments
@@ -396,6 +436,7 @@ constructor arguments</p>
     constructor: name of the constructor to use, provided in the metadata
     args: arguments for the constructor
     deployment_salt: optional string or hex-string that acts as a salt for this deployment
+    upload_code: When True the WASM blob itself will be uploaded with the deploy, False if the WASM is already present on-chain
 
     Returns
     -------
@@ -405,17 +446,54 @@ constructor arguments</p>
     # Lookup constructor
     data = self.metadata.generate_constructor_data(name=constructor, args=args)
 
-    call = self.substrate.compose_call(
-        call_module=&#39;Contracts&#39;,
-        call_function=&#39;instantiate&#39;,
-        call_params={
-            &#39;endowment&#39;: endowment,
-            &#39;gas_limit&#39;: gas_limit,
-            &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
-            &#39;data&#39;: data.to_hex(),
-            &#39;salt&#39;: deployment_salt or &#39;&#39;
-        }
-    )
+    if upload_code is True:
+
+        # Check metadata for available call functions
+        if self.substrate.get_metadata_call_function(&#39;Contracts&#39;, &#39;instantiate_with_code&#39;) is not None:
+
+            if not self.wasm_bytes:
+                raise ValueError(&#34;No WASM bytes to upload&#34;)
+
+            call = self.substrate.compose_call(
+                call_module=&#39;Contracts&#39;,
+                call_function=&#39;instantiate_with_code&#39;,
+                call_params={
+                    &#39;endowment&#39;: endowment,
+                    &#39;gas_limit&#39;: gas_limit,
+                    &#39;code&#39;: &#39;0x{}&#39;.format(self.wasm_bytes.hex()),
+                    &#39;data&#39;: data.to_hex(),
+                    &#39;salt&#39;: deployment_salt or &#39;&#39;
+                }
+            )
+        else:
+            # Legacy mode: put code in seperate call
+
+            self.upload_wasm(keypair)
+
+            call = self.substrate.compose_call(
+                call_module=&#39;Contracts&#39;,
+                call_function=&#39;instantiate&#39;,
+                call_params={
+                    &#39;endowment&#39;: endowment,
+                    &#39;gas_limit&#39;: gas_limit,
+                    &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
+                    &#39;data&#39;: data.to_hex(),
+                    &#39;salt&#39;: deployment_salt or &#39;&#39;
+                }
+            )
+    else:
+
+        call = self.substrate.compose_call(
+            call_module=&#39;Contracts&#39;,
+            call_function=&#39;instantiate&#39;,
+            call_params={
+                &#39;endowment&#39;: endowment,
+                &#39;gas_limit&#39;: gas_limit,
+                &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
+                &#39;data&#39;: data.to_hex(),
+                &#39;salt&#39;: deployment_salt or &#39;&#39;
+            }
+        )
 
     extrinsic = self.substrate.create_signed_extrinsic(call=call, keypair=keypair)
 
@@ -427,7 +505,7 @@ constructor arguments</p>
     for event in result.triggered_events:
         if event.event.name == &#39;Instantiated&#39;:
             return ContractInstance(
-                contract_address=self.substrate.ss58_encode(event.params[1][&#39;value&#39;]),
+                contract_address=event.params[1][&#39;value&#39;],
                 metadata=self.metadata,
                 substrate=self.substrate
             )
@@ -1434,7 +1512,10 @@ parsed and the used types are extracted, composed and added to the type registry
     def get_return_type_string_for_message(self, name) -&gt; str:
         for message in self.metadata_dict[&#39;spec&#39;][&#39;messages&#39;]:
             if name in message[&#39;name&#39;]:
-                return self.get_type_string_for_metadata_type(message[&#39;returnType&#39;][&#39;type&#39;])
+                if message[&#39;returnType&#39;] is None:
+                    return &#39;Null&#39;
+                else:
+                    return self.get_type_string_for_metadata_type(message[&#39;returnType&#39;][&#39;type&#39;])
 
         raise ValueError(f&#39;Message &#34;{name}&#34; not found&#39;)
 
@@ -1694,7 +1775,10 @@ of provided message name</p>
 <pre><code class="python">def get_return_type_string_for_message(self, name) -&gt; str:
     for message in self.metadata_dict[&#39;spec&#39;][&#39;messages&#39;]:
         if name in message[&#39;name&#39;]:
-            return self.get_type_string_for_metadata_type(message[&#39;returnType&#39;][&#39;type&#39;])
+            if message[&#39;returnType&#39;] is None:
+                return &#39;Null&#39;
+            else:
+                return self.get_type_string_for_metadata_type(message[&#39;returnType&#39;][&#39;type&#39;])
 
     raise ValueError(f&#39;Message &#34;{name}&#34; not found&#39;)</code></pre>
 </details>
@@ -3318,7 +3402,7 @@ def generate_mnemonic(cls, words=12):
         self.type_registry_cache = {}
 
         if not runtime_config:
-            runtime_config = RuntimeConfigurationObject()
+            runtime_config = RuntimeConfigurationObject(ss58_format=self.ss58_format)
 
         self.runtime_config = runtime_config
 
@@ -3335,6 +3419,17 @@ def generate_mnemonic(cls, words=12):
                 read_limit=2 ** 32,
                 write_limit=2 ** 32,
             )
+
+    def close(self):
+        if self.websocket:
+            self.debug_message(&#34;Closing websocket connection&#34;)
+            self.websocket.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def debug_message(self, message):
         logger.debug(message)
@@ -3354,14 +3449,18 @@ def generate_mnemonic(cls, words=12):
         -------
         a dict with the parsed result of the request.
         &#34;&#34;&#34;
+
+        request_id = self.request_id
+        self.request_id += 1
+
         payload = {
             &#34;jsonrpc&#34;: &#34;2.0&#34;,
             &#34;method&#34;: method,
             &#34;params&#34;: params,
-            &#34;id&#34;: self.request_id
+            &#34;id&#34;: request_id
         }
 
-        self.debug_message(&#39;RPC request #{}: &#34;{}&#34;&#39;.format(self.request_id, method))
+        self.debug_message(&#39;RPC request #{}: &#34;{}&#34;&#39;.format(request_id, method))
 
         if self.websocket:
             try:
@@ -3378,7 +3477,7 @@ def generate_mnemonic(cls, words=12):
                     for message in self.__rpc_message_queue:
 
                         # Check if result message is matching request ID
-                        if &#39;id&#39; in message and message[&#39;id&#39;] == self.request_id:
+                        if &#39;id&#39; in message and message[&#39;id&#39;] == request_id:
 
                             self.__rpc_message_queue.remove(message)
 
@@ -3404,7 +3503,7 @@ def generate_mnemonic(cls, words=12):
                             self.debug_message(f&#34;Websocket result [{subscription_id} #{update_nr}]: {message}&#34;)
 
                             # Call result_handler with message for processing
-                            callback_result = result_handler(message, update_nr)
+                            callback_result = result_handler(message, update_nr, subscription_id)
                             if callback_result is not None:
                                 json_body = callback_result
 
@@ -3438,7 +3537,6 @@ def generate_mnemonic(cls, words=12):
             if &#39;error&#39; in json_body:
                 raise SubstrateRequestException(json_body[&#39;error&#39;])
 
-        self.request_id += 1
         return json_body
 
     @property
@@ -3795,8 +3893,8 @@ def generate_mnemonic(cls, words=12):
 
         return response.get(&#39;result&#39;)
 
-    def generate_storage_hash(self, storage_module, storage_function, params=None, hasher=None, key2_hasher=None,
-                              metadata_version=None):
+    def generate_storage_hash(self, storage_module: str, storage_function: str, params: list = None,
+                              hashers: list = None):
         &#34;&#34;&#34;
         Generate a storage key for given module/function
 
@@ -3804,84 +3902,60 @@ def generate_mnemonic(cls, words=12):
         ----------
         storage_module
         storage_function
-        params: Parameters of the storage function, provided in scale encoded hex-bytes
-        hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
-        metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
+        params: Parameters of the storage function, provided in scale encoded hex-bytes or ScaleBytes instances
+        hashers: Hashing methods used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
 
         Returns
         -------
-
+        str Hexstring respresentation of the storage key
         &#34;&#34;&#34;
 
-        if not metadata_version or metadata_version &gt;= 9:
-            storage_hash = xxh128(storage_module.encode()) + xxh128(storage_function.encode())
+        storage_hash = xxh128(storage_module.encode()) + xxh128(storage_function.encode())
 
-            if params:
+        if params:
 
-                if type(params) is not list:
-                    params = [params]
+            for idx, param in enumerate(params):
+                # Get hasher assiociated with param
+                try:
+                    param_hasher = hashers[idx]
+                except IndexError:
+                    raise ValueError(f&#39;No hasher found for param #{idx + 1}&#39;)
 
-                for idx, param in enumerate(params):
-                    if idx == 0:
-                        param_hasher = hasher
-                    elif idx == 1:
-                        param_hasher = key2_hasher
-                    else:
-                        raise ValueError(&#39;Unexpected third parameter for storage call&#39;)
+                params_key = bytes()
 
-                    params_key = bytes()
+                # Convert param to bytes
+                if type(param) is str:
+                    params_key += binascii.unhexlify(param)
+                elif type(param) is ScaleBytes:
+                    params_key += param.data
+                elif isinstance(param, ScaleDecoder):
+                    params_key += param.data.data
 
-                    if type(param) is str:
-                        params_key += binascii.unhexlify(param)
-                    elif type(param) is ScaleBytes:
-                        params_key += param.data
-                    elif isinstance(param, ScaleDecoder):
-                        params_key += param.data.data
+                if not param_hasher:
+                    param_hasher = &#39;Twox128&#39;
 
-                    if not param_hasher:
-                        param_hasher = &#39;Twox128&#39;
+                if param_hasher == &#39;Blake2_256&#39;:
+                    storage_hash += blake2_256(params_key)
 
-                    if param_hasher == &#39;Blake2_256&#39;:
-                        storage_hash += blake2_256(params_key)
+                elif param_hasher == &#39;Blake2_128&#39;:
+                    storage_hash += blake2_128(params_key)
 
-                    elif param_hasher == &#39;Blake2_128&#39;:
-                        storage_hash += blake2_128(params_key)
+                elif param_hasher == &#39;Blake2_128Concat&#39;:
+                    storage_hash += blake2_128_concat(params_key)
 
-                    elif param_hasher == &#39;Blake2_128Concat&#39;:
-                        storage_hash += blake2_128_concat(params_key)
+                elif param_hasher == &#39;Twox128&#39;:
+                    storage_hash += xxh128(params_key)
 
-                    elif param_hasher == &#39;Twox128&#39;:
-                        storage_hash += xxh128(params_key)
+                elif param_hasher == &#39;Twox64Concat&#39;:
+                    storage_hash += two_x64_concat(params_key)
 
-                    elif param_hasher == &#39;Twox64Concat&#39;:
-                        storage_hash += two_x64_concat(params_key)
+                elif param_hasher == &#39;Identity&#39;:
+                    storage_hash += identity(params_key)
 
-                    elif param_hasher == &#39;Identity&#39;:
-                        storage_hash += identity(params_key)
+                else:
+                    raise ValueError(&#39;Unknown storage hasher &#34;{}&#34;&#39;.format(param_hasher))
 
-                    else:
-                        raise ValueError(&#39;Unknown storage hasher &#34;{}&#34;&#39;.format(param_hasher))
-
-            return &#39;0x{}&#39;.format(storage_hash)
-
-        else:
-            storage_hash = storage_module.encode() + b&#34; &#34; + storage_function.encode()
-
-            if params:
-                storage_hash += binascii.unhexlify(params)
-
-            # Determine hasher function
-            if not hasher:
-                hasher = &#39;Twox128&#39;
-
-            if hasher == &#39;Blake2_256&#39;:
-                return &#34;0x{}&#34;.format(blake2_256(storage_hash))
-
-            elif hasher == &#39;Twox128&#39;:
-                return &#34;0x{}&#34;.format(xxh128(storage_hash))
-
-            elif hasher == &#39;Twox64Concat&#39;:
-                return &#34;0x{}&#34;.format(two_x64_concat(storage_hash))
+        return &#39;0x{}&#39;.format(storage_hash)
 
     def convert_storage_parameter(self, scale_type, value):
         if scale_type == &#39;AccountId&#39;:
@@ -3911,21 +3985,19 @@ def generate_mnemonic(cls, words=12):
 
         &#34;&#34;&#34;
 
-        if block_id and block_hash:
+        if block_id is not None and block_hash is not None:
             raise ValueError(&#39;Cannot provide block_hash and block_id at the same time&#39;)
 
         # Check if runtime state already set to current block
-        if (block_hash and block_hash == self.block_hash) or (block_id and block_id == self.block_id):
+        if (block_hash is not None and block_hash == self.block_hash) or \
+                (block_id is not None and block_id == self.block_id):
             return
 
         if block_id is not None:
-            block_hash = self.get_block_hash(block_id)
+            self.block_hash = self.get_block_hash(block_id)
 
         if not block_hash:
-            block_hash = self.get_chain_head()
-
-        self.block_hash = block_hash
-        self.block_id = block_id
+            self.block_hash = self.get_chain_head()
 
         # In fact calls and storage functions are decoded against runtime of previous block, therefor retrieve
         # metadata and apply type registry of runtime of parent block
@@ -3933,6 +4005,8 @@ def generate_mnemonic(cls, words=12):
 
         if block_header[&#39;result&#39;] is None:
             raise BlockNotFound(f&#39;Block not found for &#34;{self.block_hash}&#34;&#39;)
+
+        self.block_id = int(block_header[&#39;result&#39;][&#39;number&#39;], 16)
 
         parent_block_hash = block_header[&#39;result&#39;][&#39;parentHash&#39;]
 
@@ -4049,8 +4123,9 @@ def generate_mnemonic(cls, words=12):
 
         return list(pairs)
 
-    def query_map(self, module: str, storage_function: str, block_hash: str = None, max_results: int = None,
-                  start_key: str = None, page_size: int = 100) -&gt; &#39;QueryMapResult&#39;:
+    def query_map(self, module: str, storage_function: str, params: Optional[list] = None, block_hash: str = None,
+                  max_results: int = None, start_key: str = None, page_size: int = 100,
+                  ignore_decoding_errors: bool = True) -&gt; &#39;QueryMapResult&#39;:
         &#34;&#34;&#34;
         Iterates over all key-pairs located at the given module and storage_function. The storage
         item must be a map.
@@ -4061,17 +4136,19 @@ def generate_mnemonic(cls, words=12):
         result = substrate.query_map(&#39;System&#39;, &#39;Account&#39;, max_results=100)
 
         for account, account_info in result:
-            print(f&#34;Free balance of account &#39;{substrate.ss58_encode(account.value)}&#39;: {account_info.value[&#39;data&#39;][&#39;free&#39;]}&#34;)
+            print(f&#34;Free balance of account &#39;{account.value}&#39;: {account_info.value[&#39;data&#39;][&#39;free&#39;]}&#34;)
         ```
 
         Parameters
         ----------
         module: The module name in the metadata, e.g. System or Balances.
         storage_function: The storage function name, e.g. Account or Locks.
+        params: The input parameters in case of for example a `DoubleMap` storage function
         block_hash: Optional block hash for result at given block, when left to None the chain tip will be used.
         max_results: the maximum of results required, if set the query will stop fetching results when number is reached
         start_key: The storage key used as offset for the results, for pagination purposes
         page_size: The results are fetched from the node RPC in chunks of this size
+        ignore_decoding_errors: When set this will catch all decoding errors, set the item to None and continue decoding
 
         Returns
         -------
@@ -4093,20 +4170,52 @@ def generate_mnemonic(cls, words=12):
 
         # Check MapType condititions and determine prefix length
         if &#39;MapType&#39; in storage_item.type:
-            key_type = storage_item.type[&#39;MapType&#39;][&#39;key&#39;]
+
+            if params:
+                raise ValueError(&#39;&#34;params&#34; is only used with a DoubleMap storage function&#39;)
+
+            params = []
+
+            param_types = [storage_item.type[&#39;MapType&#39;][&#39;key&#39;]]
+            key_hashers = [storage_item.type[&#39;MapType&#39;][&#39;hasher&#39;]]
+
             value_type = storage_item.type[&#39;MapType&#39;][&#39;value&#39;]
-            if storage_item.type[&#39;MapType&#39;][&#39;hasher&#39;] == &#34;Blake2_128Concat&#34;:
-                concat_hash_len = 32
-            elif storage_item.type[&#39;MapType&#39;][&#39;hasher&#39;] == &#34;Twox64Concat&#34;:
-                concat_hash_len = 16
-            elif storage_item.type[&#39;MapType&#39;][&#39;hasher&#39;] == &#34;Identity&#34;:
-                concat_hash_len = 0
-            else:
-                raise ValueError(&#39;Unsupported hash type&#39;)
+
+        elif &#39;DoubleMapType&#39; in storage_item.type:
+
+            if params is None or len(params) != 1:
+                raise ValueError(&#39;&#34;params&#34; with 1 element is mandatory with a DoubleMap storage function&#39;)
+
+            param_types = [storage_item.type[&#39;DoubleMapType&#39;][&#39;key1&#39;], storage_item.type[&#39;DoubleMapType&#39;][&#39;key2&#39;]]
+            value_type = storage_item.type[&#39;DoubleMapType&#39;][&#39;value&#39;]
+            key_hashers = [storage_item.type[&#39;DoubleMapType&#39;][&#39;hasher&#39;], storage_item.type[&#39;DoubleMapType&#39;][&#39;key2Hasher&#39;]]
+
+        elif &#39;NMapType&#39; in storage_item.type:
+
+            param_types = storage_item.type[&#39;NMapType&#39;][&#39;keys&#39;]
+            value_type = storage_item.type[&#39;NMapType&#39;][&#39;value&#39;]
+            key_hashers = storage_item.type[&#39;NMapType&#39;][&#39;hashers&#39;]
+
+            if params is None or len(params) != len(param_types) - 1:
+                raise ValueError(f&#39;{len(param_types) - 1} length params is mandatory with this storage function&#39;)
+
         else:
             raise ValueError(&#39;Given storage function is not a map&#39;)
 
-        prefix = self.generate_storage_hash(storage_module.prefix, storage_item.name)
+        # Encode parameters
+        for idx, param in enumerate(params):
+            if type(param) is not ScaleBytes:
+                param = self.convert_storage_parameter(param_types[idx], param)
+                param_obj = ScaleDecoder.get_decoder_class(
+                    type_string=param_types[idx], runtime_config=self.runtime_config
+                )
+                params[idx] = param_obj.encode(param)
+
+        # Generate storage key prefix
+        prefix = self.generate_storage_hash(
+            storage_module=storage_module.prefix, storage_function=storage_item.name,
+            params=params, hashers=key_hashers
+        )
 
         if not start_key:
             start_key = prefix
@@ -4123,41 +4232,65 @@ def generate_mnemonic(cls, words=12):
 
         result_keys = response.get(&#39;result&#39;)
 
-        # Retrieve corresponding value
-        response = self.rpc_request(method=&#34;state_queryStorageAt&#34;, params=[result_keys, block_hash])
-
-        if &#39;error&#39; in response:
-            raise SubstrateRequestException(response[&#39;error&#39;][&#39;message&#39;])
-
         result = []
-
         last_key = None
 
-        for result_group in response[&#39;result&#39;]:
-            for item in result_group[&#39;changes&#39;]:
-                last_key = item[0]
+        def concat_hash_len(key_hasher: str) -&gt; int:
+            if key_hasher == &#34;Blake2_128Concat&#34;:
+                return 32
+            elif key_hasher == &#34;Twox64Concat&#34;:
+                return 16
+            elif key_hasher == &#34;Identity&#34;:
+                return 0
+            else:
+                raise ValueError(&#39;Unsupported hash type&#39;)
 
-                item_key = self.decode_scale(
-                    type_string=key_type,
-                    scale_bytes=&#39;0x&#39; + item[0][len(prefix) + concat_hash_len:],
-                    return_scale_obj=True,
-                    block_hash=block_hash
-                )
-                item_value = self.decode_scale(
-                    type_string=value_type,
-                    scale_bytes=item[1],
-                    return_scale_obj=True,
-                    block_hash=block_hash
-                )
-                result.append([item_key, item_value])
+        if len(result_keys) &gt; 0:
+
+            last_key = result_keys[-1]
+
+            # Retrieve corresponding value
+            response = self.rpc_request(method=&#34;state_queryStorageAt&#34;, params=[result_keys, block_hash])
+
+            if &#39;error&#39; in response:
+                raise SubstrateRequestException(response[&#39;error&#39;][&#39;message&#39;])
+
+            for result_group in response[&#39;result&#39;]:
+                for item in result_group[&#39;changes&#39;]:
+                    try:
+                        item_key = self.decode_scale(
+                            type_string=param_types[len(params)],
+                            scale_bytes=&#39;0x&#39; + item[0][len(prefix) + concat_hash_len(key_hashers[len(params)]):],
+                            return_scale_obj=True,
+                            block_hash=block_hash
+                        )
+                    except Exception:
+                        if not ignore_decoding_errors:
+                            raise
+                        item_key = None
+
+                    try:
+                        item_value = self.decode_scale(
+                            type_string=value_type,
+                            scale_bytes=item[1],
+                            return_scale_obj=True,
+                            block_hash=block_hash
+                        )
+                    except Exception:
+                        if not ignore_decoding_errors:
+                            raise
+                        item_value = None
+
+                    result.append([item_key, item_value])
 
         return QueryMapResult(
-            records=result, page_size=page_size, module=module, storage_function=storage_function,
-            block_hash=block_hash, substrate=self, last_key=last_key, max_results=max_results
+            records=result, page_size=page_size, module=module, storage_function=storage_function, params=params,
+            block_hash=block_hash, substrate=self, last_key=last_key, max_results=max_results,
+            ignore_decoding_errors=ignore_decoding_errors
         )
 
-    def query(self, module, storage_function, params=None, block_hash=None,
-              subscription_handler=None) -&gt; Optional[ScaleType]:
+    def query(self, module: str, storage_function: str, params: list = None, block_hash: str = None,
+              subscription_handler: callable = None) -&gt; Optional[ScaleType]:
         &#34;&#34;&#34;
         Retrieves the storage entry for given module, function and optional parameters at given block hash.
 
@@ -4193,9 +4326,16 @@ def generate_mnemonic(cls, words=12):
         ScaleType
         &#34;&#34;&#34;
 
-        if block_hash is None:
+        if block_hash is not None:
+            # Check requirements
+            if callable(subscription_handler):
+                raise ValueError(&#34;Subscriptions can only be registered for current state; block_hash cannot be set&#34;)
+        else:
             # Retrieve chain tip
             block_hash = self.get_chain_head()
+
+        if params is None:
+            params = []
 
         self.init_runtime(block_hash=block_hash)
 
@@ -4206,70 +4346,62 @@ def generate_mnemonic(cls, words=12):
         if not metadata_module or not storage_item:
             raise StorageFunctionNotFound(&#39;Storage function &#34;{}.{}&#34; not found&#39;.format(module, storage_function))
 
-        key2_hasher = None
-
+        # Process specific type of storage function
         if &#39;PlainType&#39; in storage_item.type:
-            hasher = &#39;Twox64Concat&#39;
+            hashers = [&#39;Twox64Concat&#39;]
+            param_types = []
             return_scale_type = storage_item.type.get(&#39;PlainType&#39;)
-            if params:
+
+            if len(params) != 0:
                 raise ValueError(&#39;Storage call of type &#34;PlainType&#34; doesn\&#39;t accept params&#39;)
 
         elif &#39;MapType&#39; in storage_item.type:
 
             map_type = storage_item.type.get(&#39;MapType&#39;)
-            hasher = map_type.get(&#39;hasher&#39;)
+            hashers = [map_type.get(&#39;hasher&#39;)]
+            param_types = [map_type[&#39;key&#39;]]
             return_scale_type = map_type.get(&#39;value&#39;)
 
-            if not params or len(params) != 1:
+            if len(params) != 1:
                 raise ValueError(&#39;Storage call of type &#34;MapType&#34; requires 1 parameter&#39;)
-
-            # Encode parameter
-            params[0] = self.convert_storage_parameter(map_type[&#39;key&#39;], params[0])
-            param_obj = ScaleDecoder.get_decoder_class(
-                type_string=map_type[&#39;key&#39;], runtime_config=self.runtime_config
-            )
-            params[0] = param_obj.encode(params[0])
 
         elif &#39;DoubleMapType&#39; in storage_item.type:
 
             map_type = storage_item.type.get(&#39;DoubleMapType&#39;)
-            hasher = map_type.get(&#39;hasher&#39;)
-            key2_hasher = map_type.get(&#39;key2Hasher&#39;)
+            hashers = [map_type.get(&#39;hasher&#39;), map_type.get(&#39;key2Hasher&#39;)]
+            param_types = [map_type[&#39;key1&#39;], map_type[&#39;key2&#39;]]
             return_scale_type = map_type.get(&#39;value&#39;)
 
-            if not params or len(params) != 2:
+            if len(params) != 2:
                 raise ValueError(&#39;Storage call of type &#34;DoubleMapType&#34; requires 2 parameters&#39;)
 
-            # Encode parameter 1
-            params[0] = self.convert_storage_parameter(map_type[&#39;key1&#39;], params[0])
-            param_obj = ScaleDecoder.get_decoder_class(
-                type_string=map_type[&#39;key1&#39;], runtime_config=self.runtime_config
-            )
-            params[0] = param_obj.encode(params[0])
+        elif &#39;NMapType&#39; in storage_item.type:
 
-            # Encode parameter 2
-            params[1] = self.convert_storage_parameter(map_type[&#39;key2&#39;], params[1])
-            param_obj = ScaleDecoder.get_decoder_class(
-                type_string=map_type[&#39;key2&#39;], runtime_config=self.runtime_config
-            )
-            params[1] = param_obj.encode(params[1])
+            map_type = storage_item.type.get(&#39;NMapType&#39;)
+            hashers = map_type.get(&#39;hashers&#39;)
+            param_types = map_type.get(&#39;keys&#39;)
+            return_scale_type = map_type.get(&#39;value&#39;)
 
         else:
             raise NotImplementedError(&#34;Storage type not implemented&#34;)
+
+        # Encode parameters
+        for idx, param in enumerate(params):
+            param = self.convert_storage_parameter(param_types[idx], param)
+            param_obj = ScaleDecoder.get_decoder_class(
+                type_string=param_types[idx], runtime_config=self.runtime_config
+            )
+            params[idx] = param_obj.encode(param)
 
         storage_hash = self.generate_storage_hash(
             storage_module=metadata_module.prefix,
             storage_function=storage_function,
             params=params,
-            hasher=hasher,
-            key2_hasher=key2_hasher,
-            metadata_version=self.metadata_decoder.version.index
+            hashers=hashers
         )
 
-        def result_handler(message, update_nr):
+        def result_handler(message, update_nr, subscription_id):
             if return_scale_type:
-
-                subscription_id = message[&#39;params&#39;][&#39;subscription&#39;]
 
                 for change_storage_key, change_data in message[&#39;params&#39;][&#39;result&#39;][&#39;changes&#39;]:
                     if change_storage_key == storage_hash:
@@ -4291,9 +4423,6 @@ def generate_mnemonic(cls, words=12):
 
         if callable(subscription_handler):
 
-            if block_hash:
-                raise ValueError(&#34;Subscriptions can only be registered for current state; block_hash cannot be set&#34;)
-
             result = self.rpc_request(&#34;state_subscribeStorage&#34;, [[storage_hash]], result_handler=result_handler)
 
             return result
@@ -4306,10 +4435,21 @@ def generate_mnemonic(cls, words=12):
                 raise SubstrateRequestException(response[&#39;error&#39;][&#39;message&#39;])
 
             if &#39;result&#39; in response:
-                if return_scale_type and response.get(&#39;result&#39;):
+                if return_scale_type:
+
+                    if response.get(&#39;result&#39;) is not None:
+                        query_value = response.get(&#39;result&#39;)
+                    elif storage_item.modifier == &#39;Default&#39;:
+                        # Fallback to default value of storage function if no result
+                        query_value = storage_item.fallback
+                    else:
+                        # No result is interpreted as an Option&lt;...&gt; result
+                        return_scale_type = f&#39;Option&lt;{return_scale_type}&gt;&#39;
+                        query_value = storage_item.fallback
+
                     obj = ScaleDecoder.get_decoder_class(
                         type_string=return_scale_type,
-                        data=ScaleBytes(response.get(&#39;result&#39;)),
+                        data=ScaleBytes(query_value),
                         metadata=self.metadata_decoder,
                         runtime_config=self.runtime_config
                     )
@@ -4324,7 +4464,7 @@ def generate_mnemonic(cls, words=12):
         obj = self.query(module, storage_function, params=params, block_hash=block_hash)
         return {&#39;result&#39;: obj.value if obj else None}
 
-    def get_events(self, block_hash: str = None, block_id: int = None) -&gt; list:
+    def get_events(self, block_hash: str = None) -&gt; list:
         &#34;&#34;&#34;
         Convenience method to get events for a certain block (storage call for module &#39;System&#39; and function &#39;Events&#39;)
 
@@ -4422,7 +4562,7 @@ def generate_mnemonic(cls, words=12):
 
         return call
 
-    def get_account_nonce(self, account_address):
+    def get_account_nonce(self, account_address) -&gt; int:
         &#34;&#34;&#34;
         Returns current nonce for given account address
 
@@ -4434,12 +4574,10 @@ def generate_mnemonic(cls, words=12):
         -------
         int
         &#34;&#34;&#34;
-        block_hash = self.get_chain_head()
-        account_info = self.query(&#39;System&#39;, &#39;Account&#39;, [account_address], block_hash=block_hash)
-        if account_info:
-            return account_info.value.get(&#39;nonce&#39;, 0)
+        response = self.rpc_request(&#34;system_accountNextIndex&#34;, [account_address])
+        return response.get(&#39;result&#39;, 0)
 
-    def generate_signature_payload(self, call, era=None, nonce=0, tip=0, include_call_length=False):
+    def generate_signature_payload(self, call, era=None, nonce=0, tip=0, include_call_length=False) -&gt; ScaleBytes:
 
         # Retrieve genesis hash
         genesis_hash = self.get_block_hash(0)
@@ -4515,7 +4653,7 @@ def generate_mnemonic(cls, words=12):
 
         # Retrieve nonce
         if nonce is None:
-            nonce = self.get_account_nonce(keypair.public_key) or 0
+            nonce = self.get_account_nonce(keypair.ss58_address) or 0
 
         # Process era
         if era is None:
@@ -4739,7 +4877,7 @@ def generate_mnemonic(cls, words=12):
             self.type_registry_cache[self.runtime_version] = {}
 
         # Check if already added
-        if type_string.lower() in self.type_registry_cache[self.runtime_version]:
+        if type_string and type_string.lower() in self.type_registry_cache[self.runtime_version]:
             return self.type_registry_cache[self.runtime_version][type_string.lower()][&#39;decoder_class&#39;]
 
         if not parent_type_strings:
@@ -4777,7 +4915,10 @@ def generate_mnemonic(cls, words=12):
             if type_string[0] == &#39;(&#39;:
                 type_info[&#34;is_primitive_runtime&#34;] = False
 
-            for key, data_type in decoder_class.type_mapping:
+            for data_type in decoder_class.type_mapping:
+
+                if type(data_type) in [list, tuple]:
+                    data_type = data_type[1]
 
                 if data_type not in parent_type_strings:
                     self.process_metadata_typestring(data_type, parent_type_strings=parent_type_strings)
@@ -4844,29 +4985,34 @@ def generate_mnemonic(cls, words=12):
                     for idx, storage in enumerate(storage_functions):
 
                         # Determine type
-                        type_key1 = None
-                        type_key2 = None
-                        type_value = None
 
                         if storage.type.get(&#39;PlainType&#39;):
+                            type_keys = []
                             type_value = storage.type.get(&#39;PlainType&#39;)
 
                         elif storage.type.get(&#39;MapType&#39;):
-                            type_key1 = storage.type[&#39;MapType&#39;].get(&#39;key&#39;)
+                            type_keys = [storage.type[&#39;MapType&#39;].get(&#39;key&#39;)]
                             type_value = storage.type[&#39;MapType&#39;].get(&#39;value&#39;)
 
                         elif storage.type.get(&#39;DoubleMapType&#39;):
-                            type_key1 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key1&#39;)
-                            type_key2 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key2&#39;)
+                            type_keys = [
+                                storage.type[&#39;DoubleMapType&#39;].get(&#39;key1&#39;), storage.type[&#39;DoubleMapType&#39;].get(&#39;key2&#39;)
+                            ]
                             type_value = storage.type[&#39;DoubleMapType&#39;].get(&#39;value&#39;)
 
+                        elif storage.type.get(&#39;NMapType&#39;):
+                            type_keys = storage.type[&#39;NMapType&#39;].get(&#39;keys&#39;)
+                            type_value = storage.type[&#39;NMapType&#39;].get(&#39;value&#39;)
+
+                        else:
+                            raise ValueError(&#34;Unsupported storage type&#34;)
+
+                        # Add type value
                         self.process_metadata_typestring(type_value)
 
-                        if type_key1:
-                            self.process_metadata_typestring(type_key1)
-
-                        if type_key2:
-                            self.process_metadata_typestring(type_key2)
+                        # Add type keys
+                        for type_key in type_keys:
+                            self.process_metadata_typestring(type_key)
 
                 if len(module.constants or []) &gt; 0:
                     for idx, constant in enumerate(module.constants):
@@ -5072,7 +5218,7 @@ def generate_mnemonic(cls, words=12):
 
         Returns
         -------
-
+        MetadataModuleConstants
         &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
@@ -5084,6 +5230,28 @@ def generate_mnemonic(cls, words=12):
                 for constant in module.constants:
                     if constant_name == constant.name:
                         return constant
+
+    @lru_cache(maxsize=1000)
+    def get_constant(self, module_name, constant_name, block_hash=None) -&gt; Optional[ScaleType]:
+        &#34;&#34;&#34;
+        Returns the decoded `ScaleType` object of the constant for given module name, call function name and block_hash
+        (or chaintip if block_hash is omitted)
+
+        Parameters
+        ----------
+        module_name
+        constant_name
+        block_hash
+
+        Returns
+        -------
+        ScaleType
+        &#34;&#34;&#34;
+
+        constant = self.get_metadata_constant(module_name, constant_name, block_hash=block_hash)
+        if constant:
+            # Decode to ScaleType
+            return self.decode_scale(constant.type, ScaleBytes(constant.constant_value), return_scale_obj=True)
 
     def get_metadata_storage_functions(self, block_hash=None):
         &#34;&#34;&#34;
@@ -5234,7 +5402,7 @@ def generate_mnemonic(cls, words=12):
                                 rank_validator = log_digest.value[&#39;PreRuntime&#39;][&#39;data&#39;][&#39;authorityIndex&#39;]
 
                                 block_author = validator_set.elements[rank_validator]
-                                block_data[&#39;author&#39;] = self.ss58_encode(block_author.value)
+                                block_data[&#39;author&#39;] = block_author.value
                             else:
                                 raise NotImplementedError(
                                     f&#34;Cannot extract author for engine {log_digest.value[&#39;PreRuntime&#39;][&#39;engine&#39;]}&#34;
@@ -5251,10 +5419,9 @@ def generate_mnemonic(cls, words=12):
 
             rpc_method_prefix = &#39;Finalized&#39; if finalized_only else &#39;New&#39;
 
-            def result_handler(message, update_nr):
+            def result_handler(message, update_nr, subscription_id):
 
                 new_block = decode_block({&#39;header&#39;: message[&#39;params&#39;][&#39;result&#39;]})
-                subscription_id = message[&#39;params&#39;][&#39;subscription&#39;]
 
                 subscription_result = subscription_handler(new_block, update_nr, subscription_id)
 
@@ -5573,10 +5740,8 @@ def generate_mnemonic(cls, words=12):
             &#34;module_prefix&#34;: module.prefix,
             &#34;module_name&#34;: module.name,
             &#34;spec_version&#34;: spec_version_id,
-            &#34;type_key1&#34;: None,
-            &#34;type_key2&#34;: None,
-            &#34;type_hasher_key1&#34;: None,
-            &#34;type_hasher_key2&#34;: None,
+            &#34;type_keys&#34;: None,
+            &#34;type_hashers&#34;: None,
             &#34;type_value&#34;: None,
             &#34;type_is_linked&#34;: None
         }
@@ -5590,17 +5755,21 @@ def generate_mnemonic(cls, words=12):
 
         elif type_class == &#39;MapType&#39;:
             storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-            storage_dict[&#34;type_key1&#34;] = type_info[&#34;key&#34;]
-            storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
+            storage_dict[&#34;type_keys&#34;] = [type_info[&#34;key&#34;]]
+            storage_dict[&#34;type_hashers&#34;] = [type_info[&#34;hasher&#34;]]
             storage_dict[&#34;type_is_linked&#34;] = type_info[&#34;isLinked&#34;]
 
         elif type_class == &#39;DoubleMapType&#39;:
 
             storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-            storage_dict[&#34;type_key1&#34;] = type_info[&#34;key1&#34;]
-            storage_dict[&#34;type_key2&#34;] = type_info[&#34;key2&#34;]
-            storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
-            storage_dict[&#34;type_hasher_key2&#34;] = type_info[&#34;key2Hasher&#34;]
+            storage_dict[&#34;type_keys&#34;] = [type_info[&#34;key1&#34;], type_info[&#34;key2&#34;]]
+            storage_dict[&#34;type_hashers&#34;] = [type_info[&#34;hasher&#34;], type_info[&#34;key2Hasher&#34;]]
+
+        elif type_class == &#39;NMapType&#39;:
+
+            storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
+            storage_dict[&#34;type_keys&#34;] = type_info[&#34;keys&#34;]
+            storage_dict[&#34;type_hashers&#34;] = type_info[&#34;hashers&#34;]
 
         if storage_item.fallback != &#39;0x00&#39;:
             # Decode fallback
@@ -5895,6 +6064,21 @@ def version(self):
 </dl>
 <h3>Methods</h3>
 <dl>
+<dt id="substrateinterface.SubstrateInterface.close"><code class="name flex">
+<span>def <span class="ident">close</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def close(self):
+    if self.websocket:
+        self.debug_message(&#34;Closing websocket connection&#34;)
+        self.websocket.close()</code></pre>
+</details>
+</dd>
 <dt id="substrateinterface.SubstrateInterface.compose_call"><code class="name flex">
 <span>def <span class="ident">compose_call</span></span>(<span>self, call_module, call_function, call_params=(), block_hash=None)</span>
 </code></dt>
@@ -6040,7 +6224,7 @@ def version(self):
 
     # Retrieve nonce
     if nonce is None:
-        nonce = self.get_account_nonce(keypair.public_key) or 0
+        nonce = self.get_account_nonce(keypair.ss58_address) or 0
 
     # Process era
     if era is None:
@@ -6254,7 +6438,7 @@ is set</p>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.generate_signature_payload"><code class="name flex">
-<span>def <span class="ident">generate_signature_payload</span></span>(<span>self, call, era=None, nonce=0, tip=0, include_call_length=False)</span>
+<span>def <span class="ident">generate_signature_payload</span></span>(<span>self, call, era=None, nonce=0, tip=0, include_call_length=False) ‑> scalecodec.base.ScaleBytes</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -6262,7 +6446,7 @@ is set</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def generate_signature_payload(self, call, era=None, nonce=0, tip=0, include_call_length=False):
+<pre><code class="python">def generate_signature_payload(self, call, era=None, nonce=0, tip=0, include_call_length=False) -&gt; ScaleBytes:
 
     # Retrieve genesis hash
     genesis_hash = self.get_block_hash(0)
@@ -6316,7 +6500,7 @@ is set</p>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.generate_storage_hash"><code class="name flex">
-<span>def <span class="ident">generate_storage_hash</span></span>(<span>self, storage_module, storage_function, params=None, hasher=None, key2_hasher=None, metadata_version=None)</span>
+<span>def <span class="ident">generate_storage_hash</span></span>(<span>self, storage_module: str, storage_function: str, params: list = None, hashers: list = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Generate a storage key for given module/function</p>
@@ -6326,20 +6510,22 @@ is set</p>
 <dd>&nbsp;</dd>
 <dt><strong><code>storage_function</code></strong></dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>params</code></strong> :&ensp;<code>Parameters</code> of <code>the storage function, provided in scale encoded hex-bytes</code></dt>
+<dt><strong><code>params</code></strong> :&ensp;<code>Parameters</code> of <code>the storage function, provided in scale encoded hex-bytes</code> or <code>ScaleBytes instances</code></dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>hasher</code></strong> :&ensp;<code>Hashing method used to determine storage key, defaults to 'Twox64Concat' if not provided</code></dt>
-<dd>&nbsp;</dd>
-<dt><strong><code>metadata_version</code></strong> :&ensp;<code>Version index</code> of <code>Metadata, e.g. 9 for MetadataV9</code></dt>
+<dt><strong><code>hashers</code></strong> :&ensp;<code>Hashing methods used to determine storage key, defaults to 'Twox64Concat' if not provided</code></dt>
 <dd>&nbsp;</dd>
 </dl>
-<h2 id="returns">Returns</h2></div>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>str Hexstring respresentation</code> of <code>the storage <a title="substrateinterface.key" href="key.html">substrateinterface.key</a></code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def generate_storage_hash(self, storage_module, storage_function, params=None, hasher=None, key2_hasher=None,
-                          metadata_version=None):
+<pre><code class="python">def generate_storage_hash(self, storage_module: str, storage_function: str, params: list = None,
+                          hashers: list = None):
     &#34;&#34;&#34;
     Generate a storage key for given module/function
 
@@ -6347,88 +6533,64 @@ is set</p>
     ----------
     storage_module
     storage_function
-    params: Parameters of the storage function, provided in scale encoded hex-bytes
-    hasher: Hashing method used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
-    metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
+    params: Parameters of the storage function, provided in scale encoded hex-bytes or ScaleBytes instances
+    hashers: Hashing methods used to determine storage key, defaults to &#39;Twox64Concat&#39; if not provided
 
     Returns
     -------
-
+    str Hexstring respresentation of the storage key
     &#34;&#34;&#34;
 
-    if not metadata_version or metadata_version &gt;= 9:
-        storage_hash = xxh128(storage_module.encode()) + xxh128(storage_function.encode())
+    storage_hash = xxh128(storage_module.encode()) + xxh128(storage_function.encode())
 
-        if params:
+    if params:
 
-            if type(params) is not list:
-                params = [params]
+        for idx, param in enumerate(params):
+            # Get hasher assiociated with param
+            try:
+                param_hasher = hashers[idx]
+            except IndexError:
+                raise ValueError(f&#39;No hasher found for param #{idx + 1}&#39;)
 
-            for idx, param in enumerate(params):
-                if idx == 0:
-                    param_hasher = hasher
-                elif idx == 1:
-                    param_hasher = key2_hasher
-                else:
-                    raise ValueError(&#39;Unexpected third parameter for storage call&#39;)
+            params_key = bytes()
 
-                params_key = bytes()
+            # Convert param to bytes
+            if type(param) is str:
+                params_key += binascii.unhexlify(param)
+            elif type(param) is ScaleBytes:
+                params_key += param.data
+            elif isinstance(param, ScaleDecoder):
+                params_key += param.data.data
 
-                if type(param) is str:
-                    params_key += binascii.unhexlify(param)
-                elif type(param) is ScaleBytes:
-                    params_key += param.data
-                elif isinstance(param, ScaleDecoder):
-                    params_key += param.data.data
+            if not param_hasher:
+                param_hasher = &#39;Twox128&#39;
 
-                if not param_hasher:
-                    param_hasher = &#39;Twox128&#39;
+            if param_hasher == &#39;Blake2_256&#39;:
+                storage_hash += blake2_256(params_key)
 
-                if param_hasher == &#39;Blake2_256&#39;:
-                    storage_hash += blake2_256(params_key)
+            elif param_hasher == &#39;Blake2_128&#39;:
+                storage_hash += blake2_128(params_key)
 
-                elif param_hasher == &#39;Blake2_128&#39;:
-                    storage_hash += blake2_128(params_key)
+            elif param_hasher == &#39;Blake2_128Concat&#39;:
+                storage_hash += blake2_128_concat(params_key)
 
-                elif param_hasher == &#39;Blake2_128Concat&#39;:
-                    storage_hash += blake2_128_concat(params_key)
+            elif param_hasher == &#39;Twox128&#39;:
+                storage_hash += xxh128(params_key)
 
-                elif param_hasher == &#39;Twox128&#39;:
-                    storage_hash += xxh128(params_key)
+            elif param_hasher == &#39;Twox64Concat&#39;:
+                storage_hash += two_x64_concat(params_key)
 
-                elif param_hasher == &#39;Twox64Concat&#39;:
-                    storage_hash += two_x64_concat(params_key)
+            elif param_hasher == &#39;Identity&#39;:
+                storage_hash += identity(params_key)
 
-                elif param_hasher == &#39;Identity&#39;:
-                    storage_hash += identity(params_key)
+            else:
+                raise ValueError(&#39;Unknown storage hasher &#34;{}&#34;&#39;.format(param_hasher))
 
-                else:
-                    raise ValueError(&#39;Unknown storage hasher &#34;{}&#34;&#39;.format(param_hasher))
-
-        return &#39;0x{}&#39;.format(storage_hash)
-
-    else:
-        storage_hash = storage_module.encode() + b&#34; &#34; + storage_function.encode()
-
-        if params:
-            storage_hash += binascii.unhexlify(params)
-
-        # Determine hasher function
-        if not hasher:
-            hasher = &#39;Twox128&#39;
-
-        if hasher == &#39;Blake2_256&#39;:
-            return &#34;0x{}&#34;.format(blake2_256(storage_hash))
-
-        elif hasher == &#39;Twox128&#39;:
-            return &#34;0x{}&#34;.format(xxh128(storage_hash))
-
-        elif hasher == &#39;Twox64Concat&#39;:
-            return &#34;0x{}&#34;.format(two_x64_concat(storage_hash))</code></pre>
+    return &#39;0x{}&#39;.format(storage_hash)</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.get_account_nonce"><code class="name flex">
-<span>def <span class="ident">get_account_nonce</span></span>(<span>self, account_address)</span>
+<span>def <span class="ident">get_account_nonce</span></span>(<span>self, account_address) ‑> int</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns current nonce for given account address</p>
@@ -6446,7 +6608,7 @@ is set</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_account_nonce(self, account_address):
+<pre><code class="python">def get_account_nonce(self, account_address) -&gt; int:
     &#34;&#34;&#34;
     Returns current nonce for given account address
 
@@ -6458,10 +6620,8 @@ is set</p>
     -------
     int
     &#34;&#34;&#34;
-    block_hash = self.get_chain_head()
-    account_info = self.query(&#39;System&#39;, &#39;Account&#39;, [account_address], block_hash=block_hash)
-    if account_info:
-        return account_info.value.get(&#39;nonce&#39;, 0)</code></pre>
+    response = self.rpc_request(&#34;system_accountNextIndex&#34;, [account_address])
+    return response.get(&#39;result&#39;, 0)</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.get_block"><code class="name flex">
@@ -6930,8 +7090,55 @@ Parameters</p>
         return response.get(&#39;result&#39;)</code></pre>
 </details>
 </dd>
+<dt id="substrateinterface.SubstrateInterface.get_constant"><code class="name flex">
+<span>def <span class="ident">get_constant</span></span>(<span>self, module_name, constant_name, block_hash=None) ‑> Union[scalecodec.base.ScaleType, NoneType]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the decoded <code>ScaleType</code> object of the constant for given module name, call function name and block_hash
+(or chaintip if block_hash is omitted)</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>module_name</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>constant_name</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>ScaleType</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@lru_cache(maxsize=1000)
+def get_constant(self, module_name, constant_name, block_hash=None) -&gt; Optional[ScaleType]:
+    &#34;&#34;&#34;
+    Returns the decoded `ScaleType` object of the constant for given module name, call function name and block_hash
+    (or chaintip if block_hash is omitted)
+
+    Parameters
+    ----------
+    module_name
+    constant_name
+    block_hash
+
+    Returns
+    -------
+    ScaleType
+    &#34;&#34;&#34;
+
+    constant = self.get_metadata_constant(module_name, constant_name, block_hash=block_hash)
+    if constant:
+        # Decode to ScaleType
+        return self.decode_scale(constant.type, ScaleBytes(constant.constant_value), return_scale_obj=True)</code></pre>
+</details>
+</dd>
 <dt id="substrateinterface.SubstrateInterface.get_events"><code class="name flex">
-<span>def <span class="ident">get_events</span></span>(<span>self, block_hash: str = None, block_id: int = None) ‑> list</span>
+<span>def <span class="ident">get_events</span></span>(<span>self, block_hash: str = None) ‑> list</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Convenience method to get events for a certain block (storage call for module 'System' and function 'Events')</p>
@@ -6949,7 +7156,7 @@ Parameters</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_events(self, block_hash: str = None, block_id: int = None) -&gt; list:
+<pre><code class="python">def get_events(self, block_hash: str = None) -&gt; list:
     &#34;&#34;&#34;
     Convenience method to get events for a certain block (storage call for module &#39;System&#39; and function &#39;Events&#39;)
 
@@ -7070,7 +7277,11 @@ Parameters</p>
 <dt><strong><code>block_hash</code></strong></dt>
 <dd>&nbsp;</dd>
 </dl>
-<h2 id="returns">Returns</h2></div>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>MetadataModuleConstants</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -7088,7 +7299,7 @@ Parameters</p>
 
     Returns
     -------
-
+    MetadataModuleConstants
     &#34;&#34;&#34;
 
     self.init_runtime(block_hash=block_hash)
@@ -7909,29 +8120,34 @@ chaintip if block_hash is omitted)</p>
                 for idx, storage in enumerate(storage_functions):
 
                     # Determine type
-                    type_key1 = None
-                    type_key2 = None
-                    type_value = None
 
                     if storage.type.get(&#39;PlainType&#39;):
+                        type_keys = []
                         type_value = storage.type.get(&#39;PlainType&#39;)
 
                     elif storage.type.get(&#39;MapType&#39;):
-                        type_key1 = storage.type[&#39;MapType&#39;].get(&#39;key&#39;)
+                        type_keys = [storage.type[&#39;MapType&#39;].get(&#39;key&#39;)]
                         type_value = storage.type[&#39;MapType&#39;].get(&#39;value&#39;)
 
                     elif storage.type.get(&#39;DoubleMapType&#39;):
-                        type_key1 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key1&#39;)
-                        type_key2 = storage.type[&#39;DoubleMapType&#39;].get(&#39;key2&#39;)
+                        type_keys = [
+                            storage.type[&#39;DoubleMapType&#39;].get(&#39;key1&#39;), storage.type[&#39;DoubleMapType&#39;].get(&#39;key2&#39;)
+                        ]
                         type_value = storage.type[&#39;DoubleMapType&#39;].get(&#39;value&#39;)
 
+                    elif storage.type.get(&#39;NMapType&#39;):
+                        type_keys = storage.type[&#39;NMapType&#39;].get(&#39;keys&#39;)
+                        type_value = storage.type[&#39;NMapType&#39;].get(&#39;value&#39;)
+
+                    else:
+                        raise ValueError(&#34;Unsupported storage type&#34;)
+
+                    # Add type value
                     self.process_metadata_typestring(type_value)
 
-                    if type_key1:
-                        self.process_metadata_typestring(type_key1)
-
-                    if type_key2:
-                        self.process_metadata_typestring(type_key2)
+                    # Add type keys
+                    for type_key in type_keys:
+                        self.process_metadata_typestring(type_key)
 
             if len(module.constants or []) &gt; 0:
                 for idx, constant in enumerate(module.constants):
@@ -7981,21 +8197,19 @@ In the future there could be support for caching backends like Redis to make thi
 
     &#34;&#34;&#34;
 
-    if block_id and block_hash:
+    if block_id is not None and block_hash is not None:
         raise ValueError(&#39;Cannot provide block_hash and block_id at the same time&#39;)
 
     # Check if runtime state already set to current block
-    if (block_hash and block_hash == self.block_hash) or (block_id and block_id == self.block_id):
+    if (block_hash is not None and block_hash == self.block_hash) or \
+            (block_id is not None and block_id == self.block_id):
         return
 
     if block_id is not None:
-        block_hash = self.get_block_hash(block_id)
+        self.block_hash = self.get_block_hash(block_id)
 
     if not block_hash:
-        block_hash = self.get_chain_head()
-
-    self.block_hash = block_hash
-    self.block_id = block_id
+        self.block_hash = self.get_chain_head()
 
     # In fact calls and storage functions are decoded against runtime of previous block, therefor retrieve
     # metadata and apply type registry of runtime of parent block
@@ -8003,6 +8217,8 @@ In the future there could be support for caching backends like Redis to make thi
 
     if block_header[&#39;result&#39;] is None:
         raise BlockNotFound(f&#39;Block not found for &#34;{self.block_hash}&#34;&#39;)
+
+    self.block_id = int(block_header[&#39;result&#39;][&#39;number&#39;], 16)
 
     parent_block_hash = block_header[&#39;result&#39;][&#39;parentHash&#39;]
 
@@ -8240,7 +8456,7 @@ block_hash: Optional block hash, when left to None the chain tip will be used.</
         self.type_registry_cache[self.runtime_version] = {}
 
     # Check if already added
-    if type_string.lower() in self.type_registry_cache[self.runtime_version]:
+    if type_string and type_string.lower() in self.type_registry_cache[self.runtime_version]:
         return self.type_registry_cache[self.runtime_version][type_string.lower()][&#39;decoder_class&#39;]
 
     if not parent_type_strings:
@@ -8278,7 +8494,10 @@ block_hash: Optional block hash, when left to None the chain tip will be used.</
         if type_string[0] == &#39;(&#39;:
             type_info[&#34;is_primitive_runtime&#34;] = False
 
-        for key, data_type in decoder_class.type_mapping:
+        for data_type in decoder_class.type_mapping:
+
+            if type(data_type) in [list, tuple]:
+                data_type = data_type[1]
 
             if data_type not in parent_type_strings:
                 self.process_metadata_typestring(data_type, parent_type_strings=parent_type_strings)
@@ -8305,7 +8524,7 @@ block_hash: Optional block hash, when left to None the chain tip will be used.</
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.query"><code class="name flex">
-<span>def <span class="ident">query</span></span>(<span>self, module, storage_function, params=None, block_hash=None, subscription_handler=None) ‑> Union[scalecodec.base.ScaleType, NoneType]</span>
+<span>def <span class="ident">query</span></span>(<span>self, module: str, storage_function: str, params: list = None, block_hash: str = None, subscription_handler: <built-in function callable> = None) ‑> Union[scalecodec.base.ScaleType, NoneType]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Retrieves the storage entry for given module, function and optional parameters at given block hash.</p>
@@ -8347,8 +8566,8 @@ handler doesn't return a value.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def query(self, module, storage_function, params=None, block_hash=None,
-          subscription_handler=None) -&gt; Optional[ScaleType]:
+<pre><code class="python">def query(self, module: str, storage_function: str, params: list = None, block_hash: str = None,
+          subscription_handler: callable = None) -&gt; Optional[ScaleType]:
     &#34;&#34;&#34;
     Retrieves the storage entry for given module, function and optional parameters at given block hash.
 
@@ -8384,9 +8603,16 @@ handler doesn't return a value.</p>
     ScaleType
     &#34;&#34;&#34;
 
-    if block_hash is None:
+    if block_hash is not None:
+        # Check requirements
+        if callable(subscription_handler):
+            raise ValueError(&#34;Subscriptions can only be registered for current state; block_hash cannot be set&#34;)
+    else:
         # Retrieve chain tip
         block_hash = self.get_chain_head()
+
+    if params is None:
+        params = []
 
     self.init_runtime(block_hash=block_hash)
 
@@ -8397,70 +8623,62 @@ handler doesn't return a value.</p>
     if not metadata_module or not storage_item:
         raise StorageFunctionNotFound(&#39;Storage function &#34;{}.{}&#34; not found&#39;.format(module, storage_function))
 
-    key2_hasher = None
-
+    # Process specific type of storage function
     if &#39;PlainType&#39; in storage_item.type:
-        hasher = &#39;Twox64Concat&#39;
+        hashers = [&#39;Twox64Concat&#39;]
+        param_types = []
         return_scale_type = storage_item.type.get(&#39;PlainType&#39;)
-        if params:
+
+        if len(params) != 0:
             raise ValueError(&#39;Storage call of type &#34;PlainType&#34; doesn\&#39;t accept params&#39;)
 
     elif &#39;MapType&#39; in storage_item.type:
 
         map_type = storage_item.type.get(&#39;MapType&#39;)
-        hasher = map_type.get(&#39;hasher&#39;)
+        hashers = [map_type.get(&#39;hasher&#39;)]
+        param_types = [map_type[&#39;key&#39;]]
         return_scale_type = map_type.get(&#39;value&#39;)
 
-        if not params or len(params) != 1:
+        if len(params) != 1:
             raise ValueError(&#39;Storage call of type &#34;MapType&#34; requires 1 parameter&#39;)
-
-        # Encode parameter
-        params[0] = self.convert_storage_parameter(map_type[&#39;key&#39;], params[0])
-        param_obj = ScaleDecoder.get_decoder_class(
-            type_string=map_type[&#39;key&#39;], runtime_config=self.runtime_config
-        )
-        params[0] = param_obj.encode(params[0])
 
     elif &#39;DoubleMapType&#39; in storage_item.type:
 
         map_type = storage_item.type.get(&#39;DoubleMapType&#39;)
-        hasher = map_type.get(&#39;hasher&#39;)
-        key2_hasher = map_type.get(&#39;key2Hasher&#39;)
+        hashers = [map_type.get(&#39;hasher&#39;), map_type.get(&#39;key2Hasher&#39;)]
+        param_types = [map_type[&#39;key1&#39;], map_type[&#39;key2&#39;]]
         return_scale_type = map_type.get(&#39;value&#39;)
 
-        if not params or len(params) != 2:
+        if len(params) != 2:
             raise ValueError(&#39;Storage call of type &#34;DoubleMapType&#34; requires 2 parameters&#39;)
 
-        # Encode parameter 1
-        params[0] = self.convert_storage_parameter(map_type[&#39;key1&#39;], params[0])
-        param_obj = ScaleDecoder.get_decoder_class(
-            type_string=map_type[&#39;key1&#39;], runtime_config=self.runtime_config
-        )
-        params[0] = param_obj.encode(params[0])
+    elif &#39;NMapType&#39; in storage_item.type:
 
-        # Encode parameter 2
-        params[1] = self.convert_storage_parameter(map_type[&#39;key2&#39;], params[1])
-        param_obj = ScaleDecoder.get_decoder_class(
-            type_string=map_type[&#39;key2&#39;], runtime_config=self.runtime_config
-        )
-        params[1] = param_obj.encode(params[1])
+        map_type = storage_item.type.get(&#39;NMapType&#39;)
+        hashers = map_type.get(&#39;hashers&#39;)
+        param_types = map_type.get(&#39;keys&#39;)
+        return_scale_type = map_type.get(&#39;value&#39;)
 
     else:
         raise NotImplementedError(&#34;Storage type not implemented&#34;)
+
+    # Encode parameters
+    for idx, param in enumerate(params):
+        param = self.convert_storage_parameter(param_types[idx], param)
+        param_obj = ScaleDecoder.get_decoder_class(
+            type_string=param_types[idx], runtime_config=self.runtime_config
+        )
+        params[idx] = param_obj.encode(param)
 
     storage_hash = self.generate_storage_hash(
         storage_module=metadata_module.prefix,
         storage_function=storage_function,
         params=params,
-        hasher=hasher,
-        key2_hasher=key2_hasher,
-        metadata_version=self.metadata_decoder.version.index
+        hashers=hashers
     )
 
-    def result_handler(message, update_nr):
+    def result_handler(message, update_nr, subscription_id):
         if return_scale_type:
-
-            subscription_id = message[&#39;params&#39;][&#39;subscription&#39;]
 
             for change_storage_key, change_data in message[&#39;params&#39;][&#39;result&#39;][&#39;changes&#39;]:
                 if change_storage_key == storage_hash:
@@ -8482,9 +8700,6 @@ handler doesn't return a value.</p>
 
     if callable(subscription_handler):
 
-        if block_hash:
-            raise ValueError(&#34;Subscriptions can only be registered for current state; block_hash cannot be set&#34;)
-
         result = self.rpc_request(&#34;state_subscribeStorage&#34;, [[storage_hash]], result_handler=result_handler)
 
         return result
@@ -8497,10 +8712,21 @@ handler doesn't return a value.</p>
             raise SubstrateRequestException(response[&#39;error&#39;][&#39;message&#39;])
 
         if &#39;result&#39; in response:
-            if return_scale_type and response.get(&#39;result&#39;):
+            if return_scale_type:
+
+                if response.get(&#39;result&#39;) is not None:
+                    query_value = response.get(&#39;result&#39;)
+                elif storage_item.modifier == &#39;Default&#39;:
+                    # Fallback to default value of storage function if no result
+                    query_value = storage_item.fallback
+                else:
+                    # No result is interpreted as an Option&lt;...&gt; result
+                    return_scale_type = f&#39;Option&lt;{return_scale_type}&gt;&#39;
+                    query_value = storage_item.fallback
+
                 obj = ScaleDecoder.get_decoder_class(
                     type_string=return_scale_type,
-                    data=ScaleBytes(response.get(&#39;result&#39;)),
+                    data=ScaleBytes(query_value),
                     metadata=self.metadata_decoder,
                     runtime_config=self.runtime_config
                 )
@@ -8511,7 +8737,7 @@ handler doesn't return a value.</p>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.query_map"><code class="name flex">
-<span>def <span class="ident">query_map</span></span>(<span>self, module: str, storage_function: str, block_hash: str = None, max_results: int = None, start_key: str = None, page_size: int = 100) ‑> substrateinterface.base.QueryMapResult</span>
+<span>def <span class="ident">query_map</span></span>(<span>self, module: str, storage_function: str, params: Union[list, NoneType] = None, block_hash: str = None, max_results: int = None, start_key: str = None, page_size: int = 100, ignore_decoding_errors: bool = True) ‑> substrateinterface.base.QueryMapResult</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Iterates over all key-pairs located at the given module and storage_function. The storage
@@ -8520,18 +8746,22 @@ item must be a map.</p>
 <pre><code>result = substrate.query_map('System', 'Account', max_results=100)
 
 for account, account_info in result:
-    print(f&quot;Free balance of account '{substrate.ss58_encode(account.value)}': {account_info.value['data']['free']}&quot;)
+    print(f&quot;Free balance of account '{account.value}': {account_info.value['data']['free']}&quot;)
 </code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt>module: The module name in the metadata, e.g. System or Balances.</dt>
 <dt>storage_function: The storage function name, e.g. Account or Locks.</dt>
+<dt><strong><code>params</code></strong> :&ensp;<code>The input parameters in case</code> of <code>for example a </code>DoubleMap<code> storage function</code></dt>
+<dd>&nbsp;</dd>
 <dt>block_hash: Optional block hash for result at given block, when left to None the chain tip will be used.</dt>
 <dt><strong><code>max_results</code></strong> :&ensp;<code>the maximum</code> of <code>results required, if set the query will stop fetching results when number is reached</code></dt>
 <dd>&nbsp;</dd>
 <dt><strong><code>start_key</code></strong> :&ensp;<code>The storage <a title="substrateinterface.key" href="key.html">substrateinterface.key</a> used as offset for the results, for pagination purposes</code></dt>
 <dd>&nbsp;</dd>
 <dt><strong><code>page_size</code></strong> :&ensp;<code>The results are fetched from the node RPC in chunks</code> of <code>this size</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>ignore_decoding_errors</code></strong> :&ensp;<code>When set this will catch all decoding errors, set the item to None and continue decoding</code></dt>
 <dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -8543,8 +8773,9 @@ for account, account_info in result:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def query_map(self, module: str, storage_function: str, block_hash: str = None, max_results: int = None,
-              start_key: str = None, page_size: int = 100) -&gt; &#39;QueryMapResult&#39;:
+<pre><code class="python">def query_map(self, module: str, storage_function: str, params: Optional[list] = None, block_hash: str = None,
+              max_results: int = None, start_key: str = None, page_size: int = 100,
+              ignore_decoding_errors: bool = True) -&gt; &#39;QueryMapResult&#39;:
     &#34;&#34;&#34;
     Iterates over all key-pairs located at the given module and storage_function. The storage
     item must be a map.
@@ -8555,17 +8786,19 @@ for account, account_info in result:
     result = substrate.query_map(&#39;System&#39;, &#39;Account&#39;, max_results=100)
 
     for account, account_info in result:
-        print(f&#34;Free balance of account &#39;{substrate.ss58_encode(account.value)}&#39;: {account_info.value[&#39;data&#39;][&#39;free&#39;]}&#34;)
+        print(f&#34;Free balance of account &#39;{account.value}&#39;: {account_info.value[&#39;data&#39;][&#39;free&#39;]}&#34;)
     ```
 
     Parameters
     ----------
     module: The module name in the metadata, e.g. System or Balances.
     storage_function: The storage function name, e.g. Account or Locks.
+    params: The input parameters in case of for example a `DoubleMap` storage function
     block_hash: Optional block hash for result at given block, when left to None the chain tip will be used.
     max_results: the maximum of results required, if set the query will stop fetching results when number is reached
     start_key: The storage key used as offset for the results, for pagination purposes
     page_size: The results are fetched from the node RPC in chunks of this size
+    ignore_decoding_errors: When set this will catch all decoding errors, set the item to None and continue decoding
 
     Returns
     -------
@@ -8587,20 +8820,52 @@ for account, account_info in result:
 
     # Check MapType condititions and determine prefix length
     if &#39;MapType&#39; in storage_item.type:
-        key_type = storage_item.type[&#39;MapType&#39;][&#39;key&#39;]
+
+        if params:
+            raise ValueError(&#39;&#34;params&#34; is only used with a DoubleMap storage function&#39;)
+
+        params = []
+
+        param_types = [storage_item.type[&#39;MapType&#39;][&#39;key&#39;]]
+        key_hashers = [storage_item.type[&#39;MapType&#39;][&#39;hasher&#39;]]
+
         value_type = storage_item.type[&#39;MapType&#39;][&#39;value&#39;]
-        if storage_item.type[&#39;MapType&#39;][&#39;hasher&#39;] == &#34;Blake2_128Concat&#34;:
-            concat_hash_len = 32
-        elif storage_item.type[&#39;MapType&#39;][&#39;hasher&#39;] == &#34;Twox64Concat&#34;:
-            concat_hash_len = 16
-        elif storage_item.type[&#39;MapType&#39;][&#39;hasher&#39;] == &#34;Identity&#34;:
-            concat_hash_len = 0
-        else:
-            raise ValueError(&#39;Unsupported hash type&#39;)
+
+    elif &#39;DoubleMapType&#39; in storage_item.type:
+
+        if params is None or len(params) != 1:
+            raise ValueError(&#39;&#34;params&#34; with 1 element is mandatory with a DoubleMap storage function&#39;)
+
+        param_types = [storage_item.type[&#39;DoubleMapType&#39;][&#39;key1&#39;], storage_item.type[&#39;DoubleMapType&#39;][&#39;key2&#39;]]
+        value_type = storage_item.type[&#39;DoubleMapType&#39;][&#39;value&#39;]
+        key_hashers = [storage_item.type[&#39;DoubleMapType&#39;][&#39;hasher&#39;], storage_item.type[&#39;DoubleMapType&#39;][&#39;key2Hasher&#39;]]
+
+    elif &#39;NMapType&#39; in storage_item.type:
+
+        param_types = storage_item.type[&#39;NMapType&#39;][&#39;keys&#39;]
+        value_type = storage_item.type[&#39;NMapType&#39;][&#39;value&#39;]
+        key_hashers = storage_item.type[&#39;NMapType&#39;][&#39;hashers&#39;]
+
+        if params is None or len(params) != len(param_types) - 1:
+            raise ValueError(f&#39;{len(param_types) - 1} length params is mandatory with this storage function&#39;)
+
     else:
         raise ValueError(&#39;Given storage function is not a map&#39;)
 
-    prefix = self.generate_storage_hash(storage_module.prefix, storage_item.name)
+    # Encode parameters
+    for idx, param in enumerate(params):
+        if type(param) is not ScaleBytes:
+            param = self.convert_storage_parameter(param_types[idx], param)
+            param_obj = ScaleDecoder.get_decoder_class(
+                type_string=param_types[idx], runtime_config=self.runtime_config
+            )
+            params[idx] = param_obj.encode(param)
+
+    # Generate storage key prefix
+    prefix = self.generate_storage_hash(
+        storage_module=storage_module.prefix, storage_function=storage_item.name,
+        params=params, hashers=key_hashers
+    )
 
     if not start_key:
         start_key = prefix
@@ -8617,37 +8882,61 @@ for account, account_info in result:
 
     result_keys = response.get(&#39;result&#39;)
 
-    # Retrieve corresponding value
-    response = self.rpc_request(method=&#34;state_queryStorageAt&#34;, params=[result_keys, block_hash])
-
-    if &#39;error&#39; in response:
-        raise SubstrateRequestException(response[&#39;error&#39;][&#39;message&#39;])
-
     result = []
-
     last_key = None
 
-    for result_group in response[&#39;result&#39;]:
-        for item in result_group[&#39;changes&#39;]:
-            last_key = item[0]
+    def concat_hash_len(key_hasher: str) -&gt; int:
+        if key_hasher == &#34;Blake2_128Concat&#34;:
+            return 32
+        elif key_hasher == &#34;Twox64Concat&#34;:
+            return 16
+        elif key_hasher == &#34;Identity&#34;:
+            return 0
+        else:
+            raise ValueError(&#39;Unsupported hash type&#39;)
 
-            item_key = self.decode_scale(
-                type_string=key_type,
-                scale_bytes=&#39;0x&#39; + item[0][len(prefix) + concat_hash_len:],
-                return_scale_obj=True,
-                block_hash=block_hash
-            )
-            item_value = self.decode_scale(
-                type_string=value_type,
-                scale_bytes=item[1],
-                return_scale_obj=True,
-                block_hash=block_hash
-            )
-            result.append([item_key, item_value])
+    if len(result_keys) &gt; 0:
+
+        last_key = result_keys[-1]
+
+        # Retrieve corresponding value
+        response = self.rpc_request(method=&#34;state_queryStorageAt&#34;, params=[result_keys, block_hash])
+
+        if &#39;error&#39; in response:
+            raise SubstrateRequestException(response[&#39;error&#39;][&#39;message&#39;])
+
+        for result_group in response[&#39;result&#39;]:
+            for item in result_group[&#39;changes&#39;]:
+                try:
+                    item_key = self.decode_scale(
+                        type_string=param_types[len(params)],
+                        scale_bytes=&#39;0x&#39; + item[0][len(prefix) + concat_hash_len(key_hashers[len(params)]):],
+                        return_scale_obj=True,
+                        block_hash=block_hash
+                    )
+                except Exception:
+                    if not ignore_decoding_errors:
+                        raise
+                    item_key = None
+
+                try:
+                    item_value = self.decode_scale(
+                        type_string=value_type,
+                        scale_bytes=item[1],
+                        return_scale_obj=True,
+                        block_hash=block_hash
+                    )
+                except Exception:
+                    if not ignore_decoding_errors:
+                        raise
+                    item_value = None
+
+                result.append([item_key, item_value])
 
     return QueryMapResult(
-        records=result, page_size=page_size, module=module, storage_function=storage_function,
-        block_hash=block_hash, substrate=self, last_key=last_key, max_results=max_results
+        records=result, page_size=page_size, module=module, storage_function=storage_function, params=params,
+        block_hash=block_hash, substrate=self, last_key=last_key, max_results=max_results,
+        ignore_decoding_errors=ignore_decoding_errors
     )</code></pre>
 </details>
 </dd>
@@ -8750,14 +9039,18 @@ use this method to perform the request.</p>
     -------
     a dict with the parsed result of the request.
     &#34;&#34;&#34;
+
+    request_id = self.request_id
+    self.request_id += 1
+
     payload = {
         &#34;jsonrpc&#34;: &#34;2.0&#34;,
         &#34;method&#34;: method,
         &#34;params&#34;: params,
-        &#34;id&#34;: self.request_id
+        &#34;id&#34;: request_id
     }
 
-    self.debug_message(&#39;RPC request #{}: &#34;{}&#34;&#39;.format(self.request_id, method))
+    self.debug_message(&#39;RPC request #{}: &#34;{}&#34;&#39;.format(request_id, method))
 
     if self.websocket:
         try:
@@ -8774,7 +9067,7 @@ use this method to perform the request.</p>
                 for message in self.__rpc_message_queue:
 
                     # Check if result message is matching request ID
-                    if &#39;id&#39; in message and message[&#39;id&#39;] == self.request_id:
+                    if &#39;id&#39; in message and message[&#39;id&#39;] == request_id:
 
                         self.__rpc_message_queue.remove(message)
 
@@ -8800,7 +9093,7 @@ use this method to perform the request.</p>
                         self.debug_message(f&#34;Websocket result [{subscription_id} #{update_nr}]: {message}&#34;)
 
                         # Call result_handler with message for processing
-                        callback_result = result_handler(message, update_nr)
+                        callback_result = result_handler(message, update_nr, subscription_id)
                         if callback_result is not None:
                             json_body = callback_result
 
@@ -8834,7 +9127,6 @@ use this method to perform the request.</p>
         if &#39;error&#39; in json_body:
             raise SubstrateRequestException(json_body[&#39;error&#39;])
 
-    self.request_id += 1
     return json_body</code></pre>
 </details>
 </dd>
@@ -9081,10 +9373,8 @@ use this method to perform the request.</p>
         &#34;module_prefix&#34;: module.prefix,
         &#34;module_name&#34;: module.name,
         &#34;spec_version&#34;: spec_version_id,
-        &#34;type_key1&#34;: None,
-        &#34;type_key2&#34;: None,
-        &#34;type_hasher_key1&#34;: None,
-        &#34;type_hasher_key2&#34;: None,
+        &#34;type_keys&#34;: None,
+        &#34;type_hashers&#34;: None,
         &#34;type_value&#34;: None,
         &#34;type_is_linked&#34;: None
     }
@@ -9098,17 +9388,21 @@ use this method to perform the request.</p>
 
     elif type_class == &#39;MapType&#39;:
         storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-        storage_dict[&#34;type_key1&#34;] = type_info[&#34;key&#34;]
-        storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
+        storage_dict[&#34;type_keys&#34;] = [type_info[&#34;key&#34;]]
+        storage_dict[&#34;type_hashers&#34;] = [type_info[&#34;hasher&#34;]]
         storage_dict[&#34;type_is_linked&#34;] = type_info[&#34;isLinked&#34;]
 
     elif type_class == &#39;DoubleMapType&#39;:
 
         storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-        storage_dict[&#34;type_key1&#34;] = type_info[&#34;key1&#34;]
-        storage_dict[&#34;type_key2&#34;] = type_info[&#34;key2&#34;]
-        storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
-        storage_dict[&#34;type_hasher_key2&#34;] = type_info[&#34;key2Hasher&#34;]
+        storage_dict[&#34;type_keys&#34;] = [type_info[&#34;key1&#34;], type_info[&#34;key2&#34;]]
+        storage_dict[&#34;type_hashers&#34;] = [type_info[&#34;hasher&#34;], type_info[&#34;key2Hasher&#34;]]
+
+    elif type_class == &#39;NMapType&#39;:
+
+        storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
+        storage_dict[&#34;type_keys&#34;] = type_info[&#34;keys&#34;]
+        storage_dict[&#34;type_hashers&#34;] = type_info[&#34;hashers&#34;]
 
     if storage_item.fallback != &#39;0x00&#39;:
         # Decode fallback
@@ -9482,6 +9776,7 @@ result = substrate.subscribe_block_headers(subscription_handler, include_author=
 <h4><code><a title="substrateinterface.SubstrateInterface" href="#substrateinterface.SubstrateInterface">SubstrateInterface</a></code></h4>
 <ul class="">
 <li><code><a title="substrateinterface.SubstrateInterface.chain" href="#substrateinterface.SubstrateInterface.chain">chain</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.close" href="#substrateinterface.SubstrateInterface.close">close</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.compose_call" href="#substrateinterface.SubstrateInterface.compose_call">compose_call</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.connect_websocket" href="#substrateinterface.SubstrateInterface.connect_websocket">connect_websocket</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.convert_storage_parameter" href="#substrateinterface.SubstrateInterface.convert_storage_parameter">convert_storage_parameter</a></code></li>
@@ -9503,6 +9798,7 @@ result = substrate.subscribe_block_headers(subscription_handler, include_author=
 <li><code><a title="substrateinterface.SubstrateInterface.get_chain_block" href="#substrateinterface.SubstrateInterface.get_chain_block">get_chain_block</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_chain_finalised_head" href="#substrateinterface.SubstrateInterface.get_chain_finalised_head">get_chain_finalised_head</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_chain_head" href="#substrateinterface.SubstrateInterface.get_chain_head">get_chain_head</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_constant" href="#substrateinterface.SubstrateInterface.get_constant">get_constant</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_events" href="#substrateinterface.SubstrateInterface.get_events">get_events</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_metadata_call_function" href="#substrateinterface.SubstrateInterface.get_metadata_call_function">get_metadata_call_function</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_metadata_call_functions" href="#substrateinterface.SubstrateInterface.get_metadata_call_functions">get_metadata_call_functions</a></code></li>

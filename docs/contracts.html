@@ -274,7 +274,10 @@ class ContractMetadata:
     def get_return_type_string_for_message(self, name) -&gt; str:
         for message in self.metadata_dict[&#39;spec&#39;][&#39;messages&#39;]:
             if name in message[&#39;name&#39;]:
-                return self.get_type_string_for_metadata_type(message[&#39;returnType&#39;][&#39;type&#39;])
+                if message[&#39;returnType&#39;] is None:
+                    return &#39;Null&#39;
+                else:
+                    return self.get_type_string_for_metadata_type(message[&#39;returnType&#39;][&#39;type&#39;])
 
         raise ValueError(f&#39;Message &#34;{name}&#34; not found&#39;)
 
@@ -533,7 +536,7 @@ class ContractCode:
         return self.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
 
     def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None,
-               deployment_salt: str = None) -&gt; &#34;ContractInstance&#34;:
+               deployment_salt: str = None, upload_code: bool = False) -&gt; &#34;ContractInstance&#34;:
         &#34;&#34;&#34;
         Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
         constructor arguments
@@ -546,6 +549,7 @@ class ContractCode:
         constructor: name of the constructor to use, provided in the metadata
         args: arguments for the constructor
         deployment_salt: optional string or hex-string that acts as a salt for this deployment
+        upload_code: When True the WASM blob itself will be uploaded with the deploy, False if the WASM is already present on-chain
 
         Returns
         -------
@@ -555,17 +559,54 @@ class ContractCode:
         # Lookup constructor
         data = self.metadata.generate_constructor_data(name=constructor, args=args)
 
-        call = self.substrate.compose_call(
-            call_module=&#39;Contracts&#39;,
-            call_function=&#39;instantiate&#39;,
-            call_params={
-                &#39;endowment&#39;: endowment,
-                &#39;gas_limit&#39;: gas_limit,
-                &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
-                &#39;data&#39;: data.to_hex(),
-                &#39;salt&#39;: deployment_salt or &#39;&#39;
-            }
-        )
+        if upload_code is True:
+
+            # Check metadata for available call functions
+            if self.substrate.get_metadata_call_function(&#39;Contracts&#39;, &#39;instantiate_with_code&#39;) is not None:
+
+                if not self.wasm_bytes:
+                    raise ValueError(&#34;No WASM bytes to upload&#34;)
+
+                call = self.substrate.compose_call(
+                    call_module=&#39;Contracts&#39;,
+                    call_function=&#39;instantiate_with_code&#39;,
+                    call_params={
+                        &#39;endowment&#39;: endowment,
+                        &#39;gas_limit&#39;: gas_limit,
+                        &#39;code&#39;: &#39;0x{}&#39;.format(self.wasm_bytes.hex()),
+                        &#39;data&#39;: data.to_hex(),
+                        &#39;salt&#39;: deployment_salt or &#39;&#39;
+                    }
+                )
+            else:
+                # Legacy mode: put code in seperate call
+
+                self.upload_wasm(keypair)
+
+                call = self.substrate.compose_call(
+                    call_module=&#39;Contracts&#39;,
+                    call_function=&#39;instantiate&#39;,
+                    call_params={
+                        &#39;endowment&#39;: endowment,
+                        &#39;gas_limit&#39;: gas_limit,
+                        &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
+                        &#39;data&#39;: data.to_hex(),
+                        &#39;salt&#39;: deployment_salt or &#39;&#39;
+                    }
+                )
+        else:
+
+            call = self.substrate.compose_call(
+                call_module=&#39;Contracts&#39;,
+                call_function=&#39;instantiate&#39;,
+                call_params={
+                    &#39;endowment&#39;: endowment,
+                    &#39;gas_limit&#39;: gas_limit,
+                    &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
+                    &#39;data&#39;: data.to_hex(),
+                    &#39;salt&#39;: deployment_salt or &#39;&#39;
+                }
+            )
 
         extrinsic = self.substrate.create_signed_extrinsic(call=call, keypair=keypair)
 
@@ -577,7 +618,7 @@ class ContractCode:
         for event in result.triggered_events:
             if event.event.name == &#39;Instantiated&#39;:
                 return ContractInstance(
-                    contract_address=self.substrate.ss58_encode(event.params[1][&#39;value&#39;]),
+                    contract_address=event.params[1][&#39;value&#39;],
                     metadata=self.metadata,
                     substrate=self.substrate
                 )
@@ -866,7 +907,7 @@ the WASM bytes and metadata</p>
         return self.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
 
     def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None,
-               deployment_salt: str = None) -&gt; &#34;ContractInstance&#34;:
+               deployment_salt: str = None, upload_code: bool = False) -&gt; &#34;ContractInstance&#34;:
         &#34;&#34;&#34;
         Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
         constructor arguments
@@ -879,6 +920,7 @@ the WASM bytes and metadata</p>
         constructor: name of the constructor to use, provided in the metadata
         args: arguments for the constructor
         deployment_salt: optional string or hex-string that acts as a salt for this deployment
+        upload_code: When True the WASM blob itself will be uploaded with the deploy, False if the WASM is already present on-chain
 
         Returns
         -------
@@ -888,17 +930,54 @@ the WASM bytes and metadata</p>
         # Lookup constructor
         data = self.metadata.generate_constructor_data(name=constructor, args=args)
 
-        call = self.substrate.compose_call(
-            call_module=&#39;Contracts&#39;,
-            call_function=&#39;instantiate&#39;,
-            call_params={
-                &#39;endowment&#39;: endowment,
-                &#39;gas_limit&#39;: gas_limit,
-                &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
-                &#39;data&#39;: data.to_hex(),
-                &#39;salt&#39;: deployment_salt or &#39;&#39;
-            }
-        )
+        if upload_code is True:
+
+            # Check metadata for available call functions
+            if self.substrate.get_metadata_call_function(&#39;Contracts&#39;, &#39;instantiate_with_code&#39;) is not None:
+
+                if not self.wasm_bytes:
+                    raise ValueError(&#34;No WASM bytes to upload&#34;)
+
+                call = self.substrate.compose_call(
+                    call_module=&#39;Contracts&#39;,
+                    call_function=&#39;instantiate_with_code&#39;,
+                    call_params={
+                        &#39;endowment&#39;: endowment,
+                        &#39;gas_limit&#39;: gas_limit,
+                        &#39;code&#39;: &#39;0x{}&#39;.format(self.wasm_bytes.hex()),
+                        &#39;data&#39;: data.to_hex(),
+                        &#39;salt&#39;: deployment_salt or &#39;&#39;
+                    }
+                )
+            else:
+                # Legacy mode: put code in seperate call
+
+                self.upload_wasm(keypair)
+
+                call = self.substrate.compose_call(
+                    call_module=&#39;Contracts&#39;,
+                    call_function=&#39;instantiate&#39;,
+                    call_params={
+                        &#39;endowment&#39;: endowment,
+                        &#39;gas_limit&#39;: gas_limit,
+                        &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
+                        &#39;data&#39;: data.to_hex(),
+                        &#39;salt&#39;: deployment_salt or &#39;&#39;
+                    }
+                )
+        else:
+
+            call = self.substrate.compose_call(
+                call_module=&#39;Contracts&#39;,
+                call_function=&#39;instantiate&#39;,
+                call_params={
+                    &#39;endowment&#39;: endowment,
+                    &#39;gas_limit&#39;: gas_limit,
+                    &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
+                    &#39;data&#39;: data.to_hex(),
+                    &#39;salt&#39;: deployment_salt or &#39;&#39;
+                }
+            )
 
         extrinsic = self.substrate.create_signed_extrinsic(call=call, keypair=keypair)
 
@@ -910,7 +989,7 @@ the WASM bytes and metadata</p>
         for event in result.triggered_events:
             if event.event.name == &#39;Instantiated&#39;:
                 return ContractInstance(
-                    contract_address=self.substrate.ss58_encode(event.params[1][&#39;value&#39;]),
+                    contract_address=event.params[1][&#39;value&#39;],
                     metadata=self.metadata,
                     substrate=self.substrate
                 )
@@ -1019,7 +1098,7 @@ def create_from_contract_files(cls, wasm_file: str, metadata_file: str,
 <h3>Methods</h3>
 <dl>
 <dt id="substrateinterface.contracts.ContractCode.deploy"><code class="name flex">
-<span>def <span class="ident">deploy</span></span>(<span>self, keypair, endowment, gas_limit, constructor, args: dict = None, deployment_salt: str = None) ‑> <a title="substrateinterface.contracts.ContractInstance" href="#substrateinterface.contracts.ContractInstance">ContractInstance</a></span>
+<span>def <span class="ident">deploy</span></span>(<span>self, keypair, endowment, gas_limit, constructor, args: dict = None, deployment_salt: str = None, upload_code: bool = False) ‑> <a title="substrateinterface.contracts.ContractInstance" href="#substrateinterface.contracts.ContractInstance">ContractInstance</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
@@ -1037,6 +1116,8 @@ constructor arguments</p>
 <dd>&nbsp;</dd>
 <dt><strong><code>deployment_salt</code></strong> :&ensp;<code>optional string</code> or <code>hex-string that acts as a salt for this deployment</code></dt>
 <dd>&nbsp;</dd>
+<dt><strong><code>upload_code</code></strong> :&ensp;<code>When True the WASM blob itself will be uploaded with the deploy, False if the WASM is already present on-chain</code></dt>
+<dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -1048,7 +1129,7 @@ constructor arguments</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None,
-           deployment_salt: str = None) -&gt; &#34;ContractInstance&#34;:
+           deployment_salt: str = None, upload_code: bool = False) -&gt; &#34;ContractInstance&#34;:
     &#34;&#34;&#34;
     Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
     constructor arguments
@@ -1061,6 +1142,7 @@ constructor arguments</p>
     constructor: name of the constructor to use, provided in the metadata
     args: arguments for the constructor
     deployment_salt: optional string or hex-string that acts as a salt for this deployment
+    upload_code: When True the WASM blob itself will be uploaded with the deploy, False if the WASM is already present on-chain
 
     Returns
     -------
@@ -1070,17 +1152,54 @@ constructor arguments</p>
     # Lookup constructor
     data = self.metadata.generate_constructor_data(name=constructor, args=args)
 
-    call = self.substrate.compose_call(
-        call_module=&#39;Contracts&#39;,
-        call_function=&#39;instantiate&#39;,
-        call_params={
-            &#39;endowment&#39;: endowment,
-            &#39;gas_limit&#39;: gas_limit,
-            &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
-            &#39;data&#39;: data.to_hex(),
-            &#39;salt&#39;: deployment_salt or &#39;&#39;
-        }
-    )
+    if upload_code is True:
+
+        # Check metadata for available call functions
+        if self.substrate.get_metadata_call_function(&#39;Contracts&#39;, &#39;instantiate_with_code&#39;) is not None:
+
+            if not self.wasm_bytes:
+                raise ValueError(&#34;No WASM bytes to upload&#34;)
+
+            call = self.substrate.compose_call(
+                call_module=&#39;Contracts&#39;,
+                call_function=&#39;instantiate_with_code&#39;,
+                call_params={
+                    &#39;endowment&#39;: endowment,
+                    &#39;gas_limit&#39;: gas_limit,
+                    &#39;code&#39;: &#39;0x{}&#39;.format(self.wasm_bytes.hex()),
+                    &#39;data&#39;: data.to_hex(),
+                    &#39;salt&#39;: deployment_salt or &#39;&#39;
+                }
+            )
+        else:
+            # Legacy mode: put code in seperate call
+
+            self.upload_wasm(keypair)
+
+            call = self.substrate.compose_call(
+                call_module=&#39;Contracts&#39;,
+                call_function=&#39;instantiate&#39;,
+                call_params={
+                    &#39;endowment&#39;: endowment,
+                    &#39;gas_limit&#39;: gas_limit,
+                    &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
+                    &#39;data&#39;: data.to_hex(),
+                    &#39;salt&#39;: deployment_salt or &#39;&#39;
+                }
+            )
+    else:
+
+        call = self.substrate.compose_call(
+            call_module=&#39;Contracts&#39;,
+            call_function=&#39;instantiate&#39;,
+            call_params={
+                &#39;endowment&#39;: endowment,
+                &#39;gas_limit&#39;: gas_limit,
+                &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
+                &#39;data&#39;: data.to_hex(),
+                &#39;salt&#39;: deployment_salt or &#39;&#39;
+            }
+        )
 
     extrinsic = self.substrate.create_signed_extrinsic(call=call, keypair=keypair)
 
@@ -1092,7 +1211,7 @@ constructor arguments</p>
     for event in result.triggered_events:
         if event.event.name == &#39;Instantiated&#39;:
             return ContractInstance(
-                contract_address=self.substrate.ss58_encode(event.params[1][&#39;value&#39;]),
+                contract_address=event.params[1][&#39;value&#39;],
                 metadata=self.metadata,
                 substrate=self.substrate
             )
@@ -2099,7 +2218,10 @@ parsed and the used types are extracted, composed and added to the type registry
     def get_return_type_string_for_message(self, name) -&gt; str:
         for message in self.metadata_dict[&#39;spec&#39;][&#39;messages&#39;]:
             if name in message[&#39;name&#39;]:
-                return self.get_type_string_for_metadata_type(message[&#39;returnType&#39;][&#39;type&#39;])
+                if message[&#39;returnType&#39;] is None:
+                    return &#39;Null&#39;
+                else:
+                    return self.get_type_string_for_metadata_type(message[&#39;returnType&#39;][&#39;type&#39;])
 
         raise ValueError(f&#39;Message &#34;{name}&#34; not found&#39;)
 
@@ -2359,7 +2481,10 @@ of provided message name</p>
 <pre><code class="python">def get_return_type_string_for_message(self, name) -&gt; str:
     for message in self.metadata_dict[&#39;spec&#39;][&#39;messages&#39;]:
         if name in message[&#39;name&#39;]:
-            return self.get_type_string_for_metadata_type(message[&#39;returnType&#39;][&#39;type&#39;])
+            if message[&#39;returnType&#39;] is None:
+                return &#39;Null&#39;
+            else:
+                return self.get_type_string_for_metadata_type(message[&#39;returnType&#39;][&#39;type&#39;])
 
     raise ValueError(f&#39;Message &#34;{name}&#34; not found&#39;)</code></pre>
 </details>
