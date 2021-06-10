@@ -373,40 +373,42 @@ for event in receipt.triggered_events:
 
 #### Deploy a contract 
 
-_Tested on [Substrate 2.0.0-533bbbd](https://github.com/paritytech/substrate/tree/533bbbd2315d55906a6dac5726a722e094656d52) and [canvas-node](https://github.com/paritytech/canvas-node) with the [ERC20 contract from the tutorial](https://substrate.dev/substrate-contracts-workshop/#/2/introduction)_:
+Tested on [canvas-node](https://github.com/paritytech/canvas-node) with the [Flipper contract from the tutorial](https://substrate.dev/substrate-contracts-workshop/#/0/deploy-contract)_:
 
 ```python
 substrate = SubstrateInterface(
     url="ws://127.0.0.1:9944",
+    type_registry_preset='canvas'
 )
 
 keypair = Keypair.create_from_uri('//Alice')
 
-# Upload WASM code
+# Deploy contract
 code = ContractCode.create_from_contract_files(
-    metadata_file=os.path.join(os.path.dirname(__file__), 'erc20.json'),
-    wasm_file=os.path.join(os.path.dirname(__file__), 'erc20.wasm'),
+    metadata_file=os.path.join(os.path.dirname(__file__), 'assets', 'flipper.json'),
+    wasm_file=os.path.join(os.path.dirname(__file__), 'assets', 'flipper.wasm'),
     substrate=substrate
 )
 
-
-# Deploy contract
 contract = code.deploy(
-    keypair=keypair, endowment=10 ** 15, gas_limit=1000000000000,
+    keypair=keypair,
+    endowment=10 ** 15,
+    gas_limit=1000000000000,
     constructor="new",
-    args={'initial_supply': 1000 * 10 ** 15},
+    args={'init_value': True},
     upload_code=True
 )
 
-print(f'Deployed @ {contract.contract_address}')
+print(f'✅ Deployed @ {contract.contract_address}')
 ```
 
 #### Work with an existing instance:
 
 ```python
+# Create contract instance from deterministic address
 contract = ContractInstance.create_from_address(
-    contract_address="5FV9cnzFc2tDrWcDkmoup7VZWpH9HrTaw8STnWpAQqT7KvUK",
-    metadata_file=os.path.join(os.path.dirname(__file__), 'erc20.json'),
+    contract_address=contract_address,
+    metadata_file=os.path.join(os.path.dirname(__file__), 'assets', 'flipper.json'),
     substrate=substrate
 )
 ```
@@ -414,49 +416,29 @@ contract = ContractInstance.create_from_address(
 #### Read data from a contract:
 
 ```python
-result = contract.read(keypair, 'total_supply')
-print('Total supply:', result.contract_result_data)
-# Total supply: 1000000000000000000
-
-result = contract.read(keypair, 'balance_of', args={'owner': '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'})
-print('Balance:', result.value)
-# Balance: {'success': {'data': 994000000000000000, 'flags': 0, 'gas_consumed': 7251500000}}
+result = contract.read(keypair, 'get')
+print('Current value of "get":', result.contract_result_data)
 ```
 
 #### Execute a contract call
 
 ```python
-# Do a dry run of the transfer
-gas_predit_result = contract.read(keypair, 'transfer', args={
-    'to': '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty',
-    'value': 6 * 1000000000000000,
-})
+ # Do a gas estimation of the message
+gas_predit_result = contract.read(keypair, 'flip')
 
 print('Result of dry-run: ', gas_predit_result.contract_result_data)
-# Result of dry-run:  {'Ok': None}
-
 print('Gas estimate: ', gas_predit_result.gas_consumed)
-# Gas estimate:  24091000000
 
 # Do the actual transfer
-contract_receipt = contract.exec(keypair, 'transfer', args={
-    'to': '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty',
-    'value': 6 * 1000000000000000,
+print('Executing contract call...')
+contract_receipt = contract.exec(keypair, 'flip', args={
+
 }, gas_limit=gas_predit_result.gas_consumed)
 
-if contract_receipt.is_success:
-    print('Transfer success, triggered contract event:')
-
-    for contract_event in contract_receipt.contract_events:
-        print(f'* {contract_event.value}')
-        # {'name': 'Transfer', 'docs': [' Event emitted when a token transfer occurs.'], 'args': [ ... ] }
-
-    print('All triggered events:')
-    for event in contract_receipt.triggered_events:
-        print(f'* {event.value}')
-else:
-    print('ERROR: ', contract_receipt.error_message)
+print(f'Events triggered in contract: {contract_receipt.contract_events}')
 ```
+
+See complete [code example](https://github.com/polkascan/py-substrate-interface/blob/master/examples/create_and_exec_contract.py) for more details
 
 
 ### Create mortal extrinsics
