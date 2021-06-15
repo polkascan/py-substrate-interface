@@ -112,7 +112,7 @@ Compatible with https://github.com/substrate-developer-hub/substrate-node-templa
 
 ```python
 substrate = SubstrateInterface(
-    url="http://127.0.0.1:9933",
+    url="ws://127.0.0.1:9944",
     ss58_format=42,
     type_registry_preset='substrate-node-template'
 )
@@ -144,7 +144,7 @@ registry JSON file and including this during initialization:
 custom_type_registry = load_type_registry_file("my-custom-types.json")
 
 substrate = SubstrateInterface(
-    url="http://127.0.0.1:9933",
+    url="ws://127.0.0.1:9944",
     ss58_format=42,
     type_registry_preset='substrate-node-template',
     type_registry=custom_type_registry
@@ -508,7 +508,7 @@ network with the generated signature.
 - Generate signature payload on online machine:
 ```python
 substrate = SubstrateInterface(
-    url="http://127.0.0.1:9933",
+    url="ws://127.0.0.1:9944",
     ss58_format=42,
     type_registry_preset='substrate-node-template',
 )
