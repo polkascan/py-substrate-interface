@@ -16,6 +16,7 @@
 
 import json
 import os
+from packaging import version
 from hashlib import blake2b
 
 from substrateinterface.exceptions import ExtrinsicFailedException, DeployContractFailedException, \
@@ -41,6 +42,8 @@ class ContractMetadata:
         self.metadata_dict = metadata_dict
         self.substrate = substrate
         self.type_registry = {}
+
+        self.__type_offset = 0
 
         self.__parse_type_registry()
 
@@ -87,11 +90,19 @@ class ContractMetadata:
         if 'source' not in self.metadata_dict:
             raise ContractMetadataParseException("'source' directive not present in metadata file")
 
+        # check Metadata version
+        if version.parse(self.metadata_dict['metadataVersion']) < version.parse('0.7.0'):
+            # Type indexes are 1-based before 0.7.0
+            self.__type_offset = 1
+
         self.type_string_prefix = f"ink.{self.metadata_dict['source']['hash']}"
 
         for idx, metadata_type in enumerate(self.metadata_dict['types']):
-            if idx + 1 not in self.type_registry:
-                self.type_registry[idx+1] = self.get_type_string_for_metadata_type(idx+1)
+
+            idx += self.__type_offset
+
+            if idx not in self.type_registry:
+                self.type_registry[idx] = self.get_type_string_for_metadata_type(idx)
 
     def generate_constructor_data(self, name, args: dict = None) -> ScaleBytes:
         """

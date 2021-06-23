@@ -732,7 +732,7 @@ class SubstrateInterface:
             return result
 
     @lru_cache(maxsize=1000)
-    def get_block_hash(self, block_id):
+    def get_block_hash(self, block_id: int) -> str:
         """
         A pass-though to existing JSONRPC method `chain_getBlockHash`
 
@@ -752,7 +752,7 @@ class SubstrateInterface:
             return response.get('result')
 
     @block_dependent_lru_cache(maxsize=1000, block_arg_index=1)
-    def get_block_number(self, block_hash):
+    def get_block_number(self, block_hash: str) -> int:
         """
         A convenience method to get the block number for given block_hash
 
@@ -1622,7 +1622,7 @@ class SubstrateInterface:
         response = self.rpc_request("system_accountNextIndex", [account_address])
         return response.get('result', 0)
 
-    def generate_signature_payload(self, call, era=None, nonce=0, tip=0, include_call_length=False):
+    def generate_signature_payload(self, call, era=None, nonce=0, tip=0, include_call_length=False) -> ScaleBytes:
 
         # Retrieve genesis hash
         genesis_hash = self.get_block_hash(0)
