@@ -403,7 +403,7 @@ class ContractExecutionReceipt(ExtrinsicReceipt):
             self.__contract_events = []
 
             for event in self.triggered_events:
-                if event.event_module.name == 'Contracts' and event.event.name == 'ContractExecution':
+                if event.event_module.name == 'Contracts' and event.event.name == 'ContractEmitted':
 
                     # Create contract event
                     contract_event_obj = ContractEvent(
