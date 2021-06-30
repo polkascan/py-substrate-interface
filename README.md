@@ -37,12 +37,13 @@ management and versioning of types.
   * [Accessing runtime constants](#accessing-runtime-constants)
 * [Keeping type registry presets up to date](#keeping-type-registry-presets-up-to-date)
 * [Cleanup and context manager](#cleanup-and-context-manager)  
+* [Contact and Support](#contact-and-support)
 * [License](#license)
 
 ## Documentation
 https://polkascan.github.io/py-substrate-interface/
 
-## Installation
+## Installationhttps://matrix.to/#/#polkascan:matrix.org
 ```bash
 pip install substrate-interface
 ```
@@ -609,6 +610,10 @@ substrate = SubstrateInterface(
 
 To check for updates after instantiating the `substrate` object, using `substrate.reload_type_registry()` will download 
 the most recent type registry preset from Github and apply changes to current object.  
+
+## Contact and Support 
+
+For questions, please reach out to us on our [matrix](http://matrix.org) chat group: [Polkascan Technical](https://matrix.to/#/#polkascan:matrix.org).
 
 ## License
 https://github.com/polkascan/py-substrate-interface/blob/master/LICENSE
