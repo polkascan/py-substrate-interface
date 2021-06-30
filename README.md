@@ -43,7 +43,7 @@ management and versioning of types.
 ## Documentation
 https://polkascan.github.io/py-substrate-interface/
 
-## Installationhttps://matrix.to/#/#polkascan:matrix.org
+## Installation
 ```bash
 pip install substrate-interface
 ```
