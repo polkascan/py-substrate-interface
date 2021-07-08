@@ -19,7 +19,7 @@ from unittest.mock import MagicMock
 
 from substrateinterface.exceptions import SubstrateRequestException
 
-from scalecodec import ScaleBytes, Bytes
+from scalecodec import ScaleBytes, Bytes, ScaleDecoder
 from scalecodec.metadata import MetadataDecoder
 
 from substrateinterface import SubstrateInterface
@@ -33,7 +33,9 @@ class TestHelperFunctions(unittest.TestCase):
     def setUpClass(cls):
 
         cls.substrate = SubstrateInterface(url='dummy', ss58_format=42, type_registry_preset='kusama')
-        metadata_decoder = MetadataDecoder(ScaleBytes(metadata_v12_hex))
+        metadata_decoder = ScaleDecoder.get_decoder_class(
+            'MetadataVersioned', ScaleBytes(metadata_v12_hex), runtime_config=cls.substrate.runtime_config
+        )
         metadata_decoder.decode()
         cls.substrate.get_block_metadata = MagicMock(return_value=metadata_decoder)
 
@@ -125,7 +127,7 @@ class TestHelperFunctions(unittest.TestCase):
         constant = self.substrate.get_metadata_constant("System", "BlockHashCount")
         self.assertEqual("BlockHashCount", constant.name)
         self.assertEqual("BlockNumber", constant.type)
-        self.assertEqual("0x60090000", constant.constant_value)
+        self.assertEqual("0x60090000", f"0x{constant.constant_value.hex()}")
 
     def test_get_constant(self):
         constant = self.substrate.get_constant("System", "BlockHashCount")
@@ -141,8 +143,8 @@ class TestHelperFunctions(unittest.TestCase):
     def test_get_metadata_storage_function(self):
         storage = self.substrate.get_metadata_storage_function("System", "Account")
         self.assertEqual("Account", storage.name)
-        self.assertEqual("AccountId", storage.type['MapType']['key'])
-        self.assertEqual("Blake2_128Concat", storage.type['MapType']['hasher'])
+        self.assertEqual("AccountId", storage.get_params_type_string()[0])
+        self.assertEqual("Blake2_128Concat", storage.type['Map']['hasher'])
 
     def test_get_metadata_error(self):
         error = self.substrate.get_metadata_error("System", "InvalidSpecName")

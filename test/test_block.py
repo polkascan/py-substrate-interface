@@ -23,7 +23,7 @@ from substrateinterface import SubstrateInterface
 
 from test.fixtures import metadata_node_template_hex
 
-from scalecodec import MetadataDecoder, ScaleBytes, Vec, GenericAddress
+from scalecodec import MetadataDecoder, ScaleBytes, Vec, GenericAddress, ScaleDecoder
 
 
 class BlockTestCase(unittest.TestCase):
@@ -31,7 +31,9 @@ class BlockTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.substrate = SubstrateInterface(url='dummy', ss58_format=42, type_registry_preset='substrate-node-template')
-        metadata_decoder = MetadataDecoder(ScaleBytes(metadata_node_template_hex))
+        metadata_decoder = ScaleDecoder.get_decoder_class(
+            'MetadataVersioned', ScaleBytes(metadata_node_template_hex), runtime_config=cls.substrate.runtime_config
+        )
         metadata_decoder.decode()
         cls.substrate.get_block_metadata = MagicMock(return_value=metadata_decoder)
 

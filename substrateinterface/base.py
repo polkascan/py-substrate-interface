@@ -380,7 +380,8 @@ class Keypair:
 class SubstrateInterface:
 
     def __init__(self, url=None, websocket=None, ss58_format=None, type_registry=None, type_registry_preset=None,
-                 cache_region=None, address_type=None, runtime_config=None, use_remote_preset=False):
+                 cache_region=None, address_type=None, runtime_config=None, use_remote_preset=False,
+                 auto_discover=True):
         """
         A specialized class in interfacing with a Substrate node.
 
@@ -453,7 +454,7 @@ class SubstrateInterface:
 
         self.debug = False
 
-        self.reload_type_registry(use_remote_preset=use_remote_preset)
+        self.reload_type_registry(use_remote_preset=use_remote_preset, auto_discover=auto_discover)
 
     def connect_websocket(self):
         if self.url and (self.url[0:6] == 'wss://' or self.url[0:5] == 'ws://'):
@@ -777,12 +778,12 @@ class SubstrateInterface:
     @block_dependent_lru_cache(maxsize=10)
     def get_block_metadata(self, block_hash=None, decode=True):
         """
-        A pass-though to existing JSONRPC method `state_getMetadata`. For a decoded version see `get_runtime_metadata()`
+        A pass-though to existing JSONRPC method `state_getMetadata`.
 
         Parameters
         ----------
         block_hash
-        decode: DEPRECATED use `get_runtime_metadata()` for decoded version
+        decode: True for decoded version
 
         Returns
         -------
@@ -797,7 +798,10 @@ class SubstrateInterface:
             raise SubstrateRequestException(response['error']['message'])
 
         if response.get('result') and decode:
-            metadata_decoder = MetadataDecoder(ScaleBytes(response.get('result')), runtime_config=self.runtime_config)
+            metadata_decoder = ScaleDecoder.get_decoder_class(
+                'MetadataVersioned', data=ScaleBytes(response.get('result')), runtime_config=self.runtime_config
+            )
+            # metadata_decoder = MetadataDecoder(ScaleBytes(response.get('result')), runtime_config=self.runtime_config)
             metadata_decoder.decode()
 
             return metadata_decoder
@@ -1097,77 +1101,6 @@ class SubstrateInterface:
                 self.debug_message('Stored metadata for {} in Redis'.format(self.runtime_version))
                 self.cache_region.set('METADATA_{}'.format(self.runtime_version), self.metadata_decoder)
 
-    def iterate_map(self, module, storage_function, block_hash=None):
-        """
-        iterates over all key-pairs located at the given module and storage_function. The storage
-        item must be a map.
-
-        Parameters
-        ----------
-        module: The module name in the metadata, e.g. Balances or Account.
-        storage_function: The storage function name, e.g. FreeBalance or AccountNonce.
-        block_hash: Optional block hash, when left to None the chain tip will be used.
-
-        Returns
-        -------
-        A two dimensional list of key-value pairs, both decoded into the given type, e.g.
-        [[k1, v1], [k2, v2], ...]
-        """
-        warnings.warn("'iterate_map' will be replaced by 'query_map'", DeprecationWarning)
-
-        if block_hash is None:
-            # Retrieve chain tip
-            block_hash = self.get_chain_head()
-
-        self.init_runtime(block_hash=block_hash)
-
-        key_type = None
-        value_type = None
-        concat_hash_len = None
-
-        storage_item = self.get_metadata_storage_function(module, storage_function, block_hash=block_hash)
-        storage_module = self.get_metadata_module(module)
-
-        if not storage_item or not storage_module:
-            raise ValueError(f'Specified storage function "{module}.{storage_function}" not found in metadata')
-
-        if 'MapType' in storage_item.type:
-            key_type = storage_item.type['MapType']['key']
-            value_type = storage_item.type['MapType']['value']
-            if storage_item.type['MapType']['hasher'] == "Blake2_128Concat":
-                concat_hash_len = 32
-            elif storage_item.type['MapType']['hasher'] == "Twox64Concat":
-                concat_hash_len = 16
-            elif storage_item.type['MapType']['hasher'] == "Identity":
-                concat_hash_len = 0
-            else:
-                raise ValueError('Unsupported hash type')
-        else:
-            raise ValueError('Given storage is not a map')
-
-        prefix = self.generate_storage_hash(storage_module.prefix, storage_item.name)
-        prefix_len = len(prefix)
-        response = self.rpc_request(method="state_getPairs", params=[prefix, block_hash])
-
-        if 'error' in response:
-            raise SubstrateRequestException(response['error']['message'])
-
-        pairs = response.get('result')
-
-        # convert keys to the portion that needs to be decoded.
-        pairs = map(lambda kp: ["0x" + kp[0][prefix_len + concat_hash_len:], kp[1]], pairs)
-
-        # decode both of them
-        pairs = map(
-            lambda kp: [
-                self.decode_scale(key_type, kp[0], block_hash=block_hash),
-                self.decode_scale(value_type, kp[1], block_hash=block_hash)
-            ],
-            list(pairs)
-        )
-
-        return list(pairs)
-
     def query_map(self, module: str, storage_function: str, params: Optional[list] = None, block_hash: str = None,
                   max_results: int = None, start_key: str = None, page_size: int = 100,
                   ignore_decoding_errors: bool = True) -> 'QueryMapResult':
@@ -1204,6 +1137,9 @@ class SubstrateInterface:
             # Retrieve chain tip
             block_hash = self.get_chain_head()
 
+        if params is None:
+            params = []
+
         self.init_runtime(block_hash=block_hash)
 
         # Retrieve storage module and function from metadata
@@ -1213,33 +1149,22 @@ class SubstrateInterface:
         if not storage_module or not storage_item:
             raise StorageFunctionNotFound('Storage function "{}.{}" not found'.format(module, storage_function))
 
+        value_type = storage_item.get_value_type_string()
+        param_types = storage_item.get_params_type_string()
+        key_hashers = storage_item.get_param_hashers()
+
         # Check MapType condititions and determine prefix length
-        if 'MapType' in storage_item.type:
+        if 'Map' in storage_item.value['type']:
 
             if params:
                 raise ValueError('"params" is only used with a DoubleMap storage function')
 
-            params = []
-
-            param_types = [storage_item.type['MapType']['key']]
-            key_hashers = [storage_item.type['MapType']['hasher']]
-
-            value_type = storage_item.type['MapType']['value']
-
-        elif 'DoubleMapType' in storage_item.type:
+        elif 'DoubleMap' in storage_item.value['type']:
 
             if params is None or len(params) != 1:
                 raise ValueError('"params" with 1 element is mandatory with a DoubleMap storage function')
 
-            param_types = [storage_item.type['DoubleMapType']['key1'], storage_item.type['DoubleMapType']['key2']]
-            value_type = storage_item.type['DoubleMapType']['value']
-            key_hashers = [storage_item.type['DoubleMapType']['hasher'], storage_item.type['DoubleMapType']['key2Hasher']]
-
-        elif 'NMapType' in storage_item.type:
-
-            param_types = storage_item.type['NMapType']['keys']
-            value_type = storage_item.type['NMapType']['value']
-            key_hashers = storage_item.type['NMapType']['hashers']
+        elif 'NMap' in storage_item.value['type']:
 
             if params is None or len(params) != len(param_types) - 1:
                 raise ValueError(f'{len(param_types) - 1} length params is mandatory with this storage function')
@@ -1258,8 +1183,10 @@ class SubstrateInterface:
 
         # Generate storage key prefix
         prefix = self.generate_storage_hash(
-            storage_module=storage_module.prefix, storage_function=storage_item.name,
-            params=params, hashers=key_hashers
+            storage_module=storage_module.value['storage']['prefix'],
+            storage_function=storage_item.value['name'],
+            params=params,
+            hashers=key_hashers
         )
 
         if not start_key:
@@ -1392,40 +1319,25 @@ class SubstrateInterface:
             raise StorageFunctionNotFound('Storage function "{}.{}" not found'.format(module, storage_function))
 
         # Process specific type of storage function
-        if 'PlainType' in storage_item.type:
-            hashers = ['Twox64Concat']
-            param_types = []
-            return_scale_type = storage_item.type.get('PlainType')
 
+        value_scale_type = storage_item.get_value_type_string()
+        param_types = storage_item.get_params_type_string()
+        hashers = storage_item.get_param_hashers()
+
+        if 'Plain' in storage_item.value['type']:
             if len(params) != 0:
                 raise ValueError('Storage call of type "PlainType" doesn\'t accept params')
 
-        elif 'MapType' in storage_item.type:
-
-            map_type = storage_item.type.get('MapType')
-            hashers = [map_type.get('hasher')]
-            param_types = [map_type['key']]
-            return_scale_type = map_type.get('value')
-
+        elif 'Map' in storage_item.value['type']:
             if len(params) != 1:
                 raise ValueError('Storage call of type "MapType" requires 1 parameter')
 
-        elif 'DoubleMapType' in storage_item.type:
-
-            map_type = storage_item.type.get('DoubleMapType')
-            hashers = [map_type.get('hasher'), map_type.get('key2Hasher')]
-            param_types = [map_type['key1'], map_type['key2']]
-            return_scale_type = map_type.get('value')
-
+        elif 'DoubleMap' in storage_item.value['type']:
             if len(params) != 2:
                 raise ValueError('Storage call of type "DoubleMapType" requires 2 parameters')
 
-        elif 'NMapType' in storage_item.type:
-
-            map_type = storage_item.type.get('NMapType')
-            hashers = map_type.get('hashers')
-            param_types = map_type.get('keys')
-            return_scale_type = map_type.get('value')
+        elif 'NMap' in storage_item.value['type']:
+            pass
 
         else:
             raise NotImplementedError("Storage type not implemented")
@@ -1439,20 +1351,20 @@ class SubstrateInterface:
             params[idx] = param_obj.encode(param)
 
         storage_hash = self.generate_storage_hash(
-            storage_module=metadata_module.prefix,
+            storage_module=metadata_module.value['storage']['prefix'],
             storage_function=storage_function,
             params=params,
             hashers=hashers
         )
 
         def result_handler(message, update_nr, subscription_id):
-            if return_scale_type:
+            if value_scale_type:
 
                 for change_storage_key, change_data in message['params']['result']['changes']:
                     if change_storage_key == storage_hash:
 
                         updated_obj = ScaleDecoder.get_decoder_class(
-                            type_string=return_scale_type,
+                            type_string=value_scale_type,
                             data=ScaleBytes(change_data),
                             metadata=self.metadata_decoder,
                             runtime_config=self.runtime_config
@@ -1480,20 +1392,20 @@ class SubstrateInterface:
                 raise SubstrateRequestException(response['error']['message'])
 
             if 'result' in response:
-                if return_scale_type:
+                if value_scale_type:
 
                     if response.get('result') is not None:
                         query_value = response.get('result')
-                    elif storage_item.modifier == 'Default':
+                    elif storage_item.value['modifier'] == 'Default':
                         # Fallback to default value of storage function if no result
-                        query_value = storage_item.fallback
+                        query_value = storage_item.value_object['default'].value_object
                     else:
                         # No result is interpreted as an Option<...> result
-                        return_scale_type = f'Option<{return_scale_type}>'
-                        query_value = storage_item.fallback
+                        value_scale_type = f'Option<{value_scale_type}>'
+                        query_value = storage_item.value_object['default'].value_object
 
                     obj = ScaleDecoder.get_decoder_class(
-                        type_string=return_scale_type,
+                        type_string=value_scale_type,
                         data=ScaleBytes(query_value),
                         metadata=self.metadata_decoder,
                         runtime_config=self.runtime_config
@@ -1978,7 +1890,9 @@ class SubstrateInterface:
             if type_info["is_primitive_runtime"] is None:
                 type_info["is_primitive_runtime"] = True
 
-            if type_info["is_primitive_runtime"] and type_string.lower() in ScaleDecoder.PRIMITIVES:
+            if type_info["is_primitive_runtime"] and type_string.lower() in \
+                    ('bool', 'u8', 'u16', 'u32', 'u64', 'u128', 'u256', 'i8', 'i16', 'i32', 'i64', 'i128',
+                    'i256', 'h160', 'h256', 'h512', '[u8; 4]', '[u8; 4]', '[u8; 8]', '[u8; 16]', '[u8; 32]', '&[u8]'):
                 type_info["is_primitive_core"] = True
         else:
             type_info["is_primitive_runtime"] = None
@@ -2005,7 +1919,7 @@ class SubstrateInterface:
 
         if self.runtime_version not in self.type_registry_cache:
 
-            for module in self.metadata_decoder.metadata.modules:
+            for module in self.metadata_decoder.pallets:
 
                 # Storage backwards compt check
                 if module.storage and isinstance(module.storage, list):
@@ -2029,34 +1943,11 @@ class SubstrateInterface:
                 if len(storage_functions) > 0:
                     for idx, storage in enumerate(storage_functions):
 
-                        # Determine type
-
-                        if storage.type.get('PlainType'):
-                            type_keys = []
-                            type_value = storage.type.get('PlainType')
-
-                        elif storage.type.get('MapType'):
-                            type_keys = [storage.type['MapType'].get('key')]
-                            type_value = storage.type['MapType'].get('value')
-
-                        elif storage.type.get('DoubleMapType'):
-                            type_keys = [
-                                storage.type['DoubleMapType'].get('key1'), storage.type['DoubleMapType'].get('key2')
-                            ]
-                            type_value = storage.type['DoubleMapType'].get('value')
-
-                        elif storage.type.get('NMapType'):
-                            type_keys = storage.type['NMapType'].get('keys')
-                            type_value = storage.type['NMapType'].get('value')
-
-                        else:
-                            raise ValueError("Unsupported storage type")
-
                         # Add type value
-                        self.process_metadata_typestring(type_value)
+                        self.process_metadata_typestring(storage.get_value_type_string())
 
                         # Add type keys
-                        for type_key in type_keys:
+                        for type_key in storage.get_params_type_string():
                             self.process_metadata_typestring(type_key)
 
                 if len(module.constants or []) > 0:
@@ -2100,14 +1991,13 @@ class SubstrateInterface:
             'metadata_index': idx,
             'module_id': module.get_identifier(),
             'name': module.name,
-            'prefix': module.prefix,
             'spec_version': self.runtime_version,
             'count_call_functions': len(module.calls or []),
-            'count_storage_functions': len(module.calls or []),
+            'count_storage_functions': len(module.storage or []),
             'count_events': len(module.events or []),
             'count_constants': len(module.constants or []),
             'count_errors': len(module.errors or []),
-        } for idx, module in enumerate(self.metadata_decoder.metadata.modules)]
+        } for idx, module in enumerate(self.metadata_decoder.pallets)]
 
     def get_metadata_module(self, name, block_hash=None):
         """
@@ -2124,9 +2014,7 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        for module in self.metadata_decoder.metadata.modules:
-            if module.name == name:
-                return module
+        return self.metadata_decoder.get_metadata_pallet(name)
 
     def get_metadata_call_functions(self, block_hash=None):
         """
@@ -2268,12 +2156,12 @@ class SubstrateInterface:
 
         self.init_runtime(block_hash=block_hash)
 
-        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+        for module_idx, module in enumerate(self.metadata_decoder.pallets):
 
             if module_name == module.name and module.constants:
 
                 for constant in module.constants:
-                    if constant_name == constant.name:
+                    if constant_name == constant.value['name']:
                         return constant
 
     @lru_cache(maxsize=1000)
@@ -2344,11 +2232,10 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
-            if module.name == module_name and module.storage:
-                for storage in module.storage.items:
-                    if storage.name == storage_name:
-                        return storage
+        pallet = self.metadata_decoder.get_metadata_pallet(module_name)
+
+        if pallet:
+            return pallet.get_storage_function(storage_name)
 
     def get_metadata_errors(self, block_hash=None):
         """
@@ -2393,7 +2280,7 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+        for module_idx, module in enumerate(self.metadata_decoder.pallets):
             if module.name == module_name and module.errors:
                 for error in module.errors:
                     if error_name == error.name:
@@ -2785,10 +2672,8 @@ class SubstrateInterface:
             "module_prefix": module.prefix,
             "module_name": module.name,
             "spec_version": spec_version_id,
-            "type_key1": None,
-            "type_key2": None,
-            "type_hasher_key1": None,
-            "type_hasher_key2": None,
+            "type_keys": None,
+            "type_hashers": None,
             "type_value": None,
             "type_is_linked": None
         }
@@ -2802,17 +2687,21 @@ class SubstrateInterface:
 
         elif type_class == 'MapType':
             storage_dict["type_value"] = type_info["value"]
-            storage_dict["type_key1"] = type_info["key"]
-            storage_dict["type_hasher_key1"] = type_info["hasher"]
+            storage_dict["type_keys"] = [type_info["key"]]
+            storage_dict["type_hashers"] = [type_info["hasher"]]
             storage_dict["type_is_linked"] = type_info["isLinked"]
 
         elif type_class == 'DoubleMapType':
 
             storage_dict["type_value"] = type_info["value"]
-            storage_dict["type_key1"] = type_info["key1"]
-            storage_dict["type_key2"] = type_info["key2"]
-            storage_dict["type_hasher_key1"] = type_info["hasher"]
-            storage_dict["type_hasher_key2"] = type_info["key2Hasher"]
+            storage_dict["type_keys"] = [type_info["key1"], type_info["key2"]]
+            storage_dict["type_hashers"] = [type_info["hasher"], type_info["key2Hasher"]]
+
+        elif type_class == 'NMapType':
+
+            storage_dict["type_value"] = type_info["value"]
+            storage_dict["type_keys"] = type_info["keys"]
+            storage_dict["type_hashers"] = type_info["hashers"]
 
         if storage_item.fallback != '0x00':
             # Decode fallback
@@ -2854,7 +2743,7 @@ class SubstrateInterface:
             "constant_name": constant.name,
             "constant_type": constant.type,
             "constant_value": constant_decoded_value,
-            "constant_value_scale": constant.constant_value,
+            "constant_value_scale": f"0x{constant.constant_value.hex()}",
             "documentation": '\n'.join(constant.docs),
             "module_id": module.get_identifier(),
             "module_prefix": module.prefix,
@@ -2952,7 +2841,7 @@ class SubstrateInterface:
         except Exception:
             return False
 
-    def reload_type_registry(self, use_remote_preset: bool = True):
+    def reload_type_registry(self, use_remote_preset: bool = True, auto_discover: bool = True):
         """
         Reload type registry and preset used to instantiate the SubtrateInterface object. Useful to periodically apply
         changes in type definitions when a runtime upgrade occurred
@@ -2967,7 +2856,10 @@ class SubstrateInterface:
         """
         self.runtime_config.clear_type_registry()
 
-        if self.type_registry_preset:
+        # Load metadata types in runtime configuration
+        self.runtime_config.update_type_registry(load_type_registry_preset(name="metadata_types"))
+
+        if self.type_registry_preset is not None:
             # Load type registry according to preset
             type_registry_preset_dict = load_type_registry_preset(
                 name=self.type_registry_preset, use_remote_preset=use_remote_preset
@@ -2975,7 +2867,8 @@ class SubstrateInterface:
 
             if not type_registry_preset_dict:
                 raise ValueError(f"Type registry preset '{self.type_registry_preset}' not found")
-        else:
+
+        elif auto_discover:
             # Try to auto discover type registry preset by chain name
             type_registry_preset_dict = load_type_registry_preset(self.chain.lower())
 
@@ -2984,6 +2877,9 @@ class SubstrateInterface:
 
             self.debug_message(f"Auto set type_registry_preset to {self.chain.lower()} ...")
             self.type_registry_preset = self.chain.lower()
+
+        else:
+            type_registry_preset_dict = None
 
         if type_registry_preset_dict:
             # Load type registries in runtime configuration
