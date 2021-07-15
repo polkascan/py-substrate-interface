@@ -23,7 +23,7 @@ from substrateinterface import SubstrateInterface
 
 from test.fixtures import metadata_node_template_hex
 
-from scalecodec import MetadataDecoder, ScaleBytes, Vec, GenericAddress, ScaleDecoder
+from scalecodec import ScaleBytes, Vec, GenericAddress, ScaleDecoder
 
 
 class BlockTestCase(unittest.TestCase):

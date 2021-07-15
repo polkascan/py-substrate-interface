@@ -30,7 +30,7 @@ from websocket import create_connection, WebSocketConnectionClosedException
 
 from scalecodec import ScaleBytes, GenericCall, GenericAccountId
 from scalecodec.base import ScaleDecoder, RuntimeConfigurationObject, ScaleType
-from scalecodec.block import ExtrinsicsDecoder, EventsDecoder, LogDigest, Extrinsic
+from scalecodec.block import EventsDecoder, LogDigest, Extrinsic, GenericExtrinsic
 from scalecodec.metadata import MetadataDecoder
 from scalecodec.type_registry import load_type_registry_preset
 from scalecodec.updater import update_type_registries
@@ -381,7 +381,7 @@ class SubstrateInterface:
 
     def __init__(self, url=None, websocket=None, ss58_format=None, type_registry=None, type_registry_preset=None,
                  cache_region=None, address_type=None, runtime_config=None, use_remote_preset=False,
-                 auto_discover=True):
+                 auto_discover=False):
         """
         A specialized class in interfacing with a Substrate node.
 
@@ -649,6 +649,10 @@ class SubstrateInterface:
             raise TypeError('ss58_format must be an int')
         self.__ss58_format = value
 
+    def implements_scaleinfo(self) -> Optional[bool]:
+        if self.metadata_decoder:
+            return self.metadata_decoder.get_metadata().index >= 14
+
     def get_chain_head(self):
         """
         A pass-though to existing JSONRPC method `chain_getHead`
@@ -717,7 +721,7 @@ class SubstrateInterface:
                 result['block']['header']['number'] = int(result['block']['header']['number'], 16)
 
                 for idx, extrinsic_data in enumerate(result['block']['extrinsics']):
-                    extrinsic_decoder = ExtrinsicsDecoder(
+                    extrinsic_decoder = Extrinsic(
                         data=ScaleBytes(extrinsic_data),
                         metadata=metadata_decoder,
                         runtime_config=self.runtime_config
@@ -1100,6 +1104,10 @@ class SubstrateInterface:
             if self.cache_region:
                 self.debug_message('Stored metadata for {} in Redis'.format(self.runtime_version))
                 self.cache_region.set('METADATA_{}'.format(self.runtime_version), self.metadata_decoder)
+
+        # Check if PortableRegistry is present in metadata
+        if self.implements_scaleinfo():
+            self.runtime_config.add_portable_registry(self.metadata_decoder)
 
     def query_map(self, module: str, storage_function: str, params: Optional[list] = None, block_hash: str = None,
                   max_results: int = None, start_key: str = None, page_size: int = 100,
@@ -1490,7 +1498,7 @@ class SubstrateInterface:
 
         return response
 
-    def compose_call(self, call_module, call_function, call_params=(), block_hash=None):
+    def compose_call(self, call_module: str, call_function: str, call_params: dict = None, block_hash: str = None):
         """
         Composes a call payload which can be used as an unsigned extrinsic or a proposal.
 
@@ -1505,6 +1513,10 @@ class SubstrateInterface:
         -------
         GenericCall
         """
+
+        if call_params is None:
+            call_params = {}
+
         self.init_runtime(block_hash=block_hash)
 
         call = ScaleDecoder.get_decoder_class(
@@ -1586,7 +1598,8 @@ class SubstrateInterface:
 
         return signature_payload.data
 
-    def create_signed_extrinsic(self, call, keypair: Keypair, era=None, nonce=None, tip=0, signature=None):
+    def create_signed_extrinsic(self, call: GenericCall, keypair: Keypair, era: dict = None, nonce: int = None,
+                                tip: int = 0, signature: str = None) -> GenericExtrinsic:
         """
         Creates a extrinsic signed by given account details
 
@@ -1601,7 +1614,7 @@ class SubstrateInterface:
 
         Returns
         -------
-        ExtrinsicsDecoder The signed Extrinsic
+        GenericExtrinsic The signed Extrinsic
         """
 
         # Check requirements
@@ -1658,12 +1671,9 @@ class SubstrateInterface:
             'tip': tip
         })
 
-        # Set extrinsic hash
-        extrinsic.extrinsic_hash = extrinsic.generate_hash()
-
         return extrinsic
 
-    def create_unsigned_extrinsic(self, call):
+    def create_unsigned_extrinsic(self, call: GenericCall) -> GenericExtrinsic:
         """
         Create unsigned extrinsic for given `Call`
         Parameters
@@ -1672,7 +1682,7 @@ class SubstrateInterface:
 
         Returns
         -------
-        ExtrinsicsDecoder
+        GenericExtrinsic
         """
         # Create extrinsic
         extrinsic = ScaleDecoder.get_decoder_class(
@@ -1687,12 +1697,13 @@ class SubstrateInterface:
 
         return extrinsic
 
-    def submit_extrinsic(self, extrinsic, wait_for_inclusion=False, wait_for_finalization=False) -> "ExtrinsicReceipt":
+    def submit_extrinsic(self, extrinsic: GenericExtrinsic, wait_for_inclusion: bool = False,
+                         wait_for_finalization: bool = False) -> "ExtrinsicReceipt":
         """
 
         Parameters
         ----------
-        extrinsic: ExtrinsicsDecoder The extinsic to be send to the network
+        extrinsic: Extrinsic The extinsic to be send to the network
         wait_for_inclusion: wait until extrinsic is included in a block (only works for websocket connections)
         wait_for_finalization: wait until extrinsic is finalized (only works for websocket connections)
 
@@ -1703,8 +1714,8 @@ class SubstrateInterface:
         """
 
         # Check requirements
-        if extrinsic.__class__.__name__ != 'ExtrinsicsDecoder':
-            raise TypeError("'extrinsic' must be of type ExtrinsicsDecoder")
+        if not isinstance(extrinsic, GenericExtrinsic):
+            raise TypeError("'extrinsic' must be of type Extrinsics")
 
         def result_handler(message, update_nr, subscription_id):
             # Check if extrinsic is included and finalized
@@ -1713,14 +1724,14 @@ class SubstrateInterface:
                     self.rpc_request('author_unwatchExtrinsic', [subscription_id])
                     return {
                         'block_hash': message['params']['result']['finalized'],
-                        'extrinsic_hash': '0x{}'.format(extrinsic.extrinsic_hash),
+                        'extrinsic_hash': '0x{}'.format(extrinsic.extrinsic_hash.hex()),
                         'finalized': True
                     }
                 elif 'inBlock' in message['params']['result'] and wait_for_inclusion and not wait_for_finalization:
                     self.rpc_request('author_unwatchExtrinsic', [subscription_id])
                     return {
                         'block_hash': message['params']['result']['inBlock'],
-                        'extrinsic_hash': '0x{}'.format(extrinsic.extrinsic_hash),
+                        'extrinsic_hash': '0x{}'.format(extrinsic.extrinsic_hash.hex()),
                         'finalized': False
                     }
 
@@ -1752,7 +1763,7 @@ class SubstrateInterface:
 
         return result
 
-    def get_payment_info(self, call, keypair):
+    def get_payment_info(self, call: GenericCall, keypair: Keypair):
         """
         Retrieves fee estimation via RPC for given extrinsic
 
@@ -1795,7 +1806,7 @@ class SubstrateInterface:
         else:
             raise SubstrateRequestException(payment_info['error']['message'])
 
-    def process_metadata_typestring(self, type_string, parent_type_strings: list = None):
+    def process_metadata_typestring(self, type_string: str, parent_type_strings: list = None):
         """
         Process how given type_string is decoded with active runtime and type registry
 
@@ -1902,7 +1913,7 @@ class SubstrateInterface:
 
         return decoder_class
 
-    def get_type_registry(self, block_hash=None):
+    def get_type_registry(self, block_hash: str = None):
         """
         Generates an exhaustive list of which RUST types exist in the runtime specified at given block_hash (or
         chaintip if block_hash is omitted)
@@ -1957,7 +1968,7 @@ class SubstrateInterface:
 
         return self.type_registry_cache[self.runtime_version]
 
-    def get_type_definition(self, type_string, block_hash=None):
+    def get_type_definition(self, type_string: str, block_hash: str = None):
         """
         Retrieves decoding specifications of given type_string
 
@@ -2040,7 +2051,7 @@ class SubstrateInterface:
             )
         return call_list
 
-    def get_metadata_call_function(self, module_name, call_function_name, block_hash=None):
+    def get_metadata_call_function(self, module_name: str, call_function_name: str, block_hash: str = None):
         """
         Retrieves the details of a call function given module name, call function name and block_hash
         (or chaintip if block_hash is omitted)
@@ -2302,9 +2313,11 @@ class SubstrateInterface:
                 block_data['header']['hash'] = block_hash
                 block_data['header']['number'] = int(block_data['header']['number'], 16)
 
+                extrinsic_cls = self.runtime_config.get_decoder_class('Extrinsic')
+
                 if 'extrinsics' in block_data:
                     for idx, extrinsic_data in enumerate(block_data['extrinsics']):
-                        extrinsic_decoder = Extrinsic(
+                        extrinsic_decoder = extrinsic_cls(
                             data=ScaleBytes(extrinsic_data),
                             metadata=self.metadata_decoder,
                             runtime_config=self.runtime_config
@@ -2321,7 +2334,12 @@ class SubstrateInterface:
                 for idx, log_data in enumerate(block_data['header']["digest"]["logs"]):
 
                     try:
+                        # log_digest_cls = self.runtime_config.get_decoder_class('sp_runtime::generic::digest::DigestItem')
                         log_digest_cls = self.runtime_config.get_decoder_class('DigestItem')
+
+                        if log_digest_cls is None:
+                            raise NotImplementedError("No decoding class found for 'DigestItem'")
+
                         log_digest = log_digest_cls(data=ScaleBytes(log_data))
                         log_digest.decode()
 
@@ -2773,7 +2791,7 @@ class SubstrateInterface:
             "lookup": '0x{}'.format(call_index),
             "documentation": '\n'.join(call.docs),
             "module_id": module.get_identifier(),
-            "module_prefix": module.prefix,
+            "module_prefix": module.value['storage']['prefix'],
             "module_name": module.name,
             "spec_version": spec_version
         }
@@ -2897,7 +2915,8 @@ class SubstrateInterface:
 
 class ExtrinsicReceipt:
 
-    def __init__(self, substrate: SubstrateInterface, extrinsic_hash: str, block_hash: str = None, finalized=None):
+    def __init__(self, substrate: SubstrateInterface, extrinsic_hash: str = None, block_hash: str = None,
+                 block_number: int = None, extrinsic_idx: int = None, finalized=None):
         """
         Object containing information of submitted extrinsic. Block hash where extrinsic is included is required
         when retrieving triggered events or determine if extrinsic was succesfull
@@ -2912,9 +2931,10 @@ class ExtrinsicReceipt:
         self.substrate = substrate
         self.extrinsic_hash = extrinsic_hash
         self.block_hash = block_hash
+        self.block_number = block_number
         self.finalized = finalized
 
-        self.__extrinsic_idx = None
+        self.__extrinsic_idx = extrinsic_idx
         self.__extrinsic = None
 
         self.__triggered_events = None
@@ -2922,6 +2942,34 @@ class ExtrinsicReceipt:
         self.__error_message = None
         self.__weight = None
         self.__total_fee_amount = None
+
+    def get_extrinsic_identifier(self):
+        if self.block_number is None:
+            if self.block_hash is None:
+                raise ValueError('Cannot create extrinsic identifier: block_hash is not set')
+
+            self.block_number = self.substrate.get_block_number(self.block_hash)
+
+            if self.block_number is None:
+                raise ValueError('Cannot create extrinsic identifier: unknown block_hash')
+
+        return f'{self.block_number}-{self.extrinsic_idx}'
+
+    @classmethod
+    def create_from_extrinsic_identifier(cls, substrate: SubstrateInterface, extrinsic_identifier: str):
+        id_parts = extrinsic_identifier.split('-', maxsplit=1)
+        block_number: int = int(id_parts[0])
+        extrinsic_idx: int = int(id_parts[1])
+
+        # Retrieve block hash
+        block_hash = substrate.get_block_hash(block_number)
+
+        return cls(
+            substrate=substrate,
+            block_hash=block_hash,
+            block_number=block_number,
+            extrinsic_idx=extrinsic_idx
+        )
 
     def retrieve_extrinsic(self):
         if not self.block_hash:
@@ -2934,10 +2982,11 @@ class ExtrinsicReceipt:
         extrinsics = block['extrinsics']
 
         if len(extrinsics) > 0:
-            self.__extrinsic_idx = self.__get_extrinsic_index(
-                block_extrinsics=extrinsics,
-                extrinsic_hash=self.extrinsic_hash
-            )
+            if self.__extrinsic_idx is None:
+                self.__extrinsic_idx = self.__get_extrinsic_index(
+                    block_extrinsics=extrinsics,
+                    extrinsic_hash=self.extrinsic_hash
+                )
 
             self.__extrinsic = extrinsics[self.__extrinsic_idx]
 
@@ -3000,56 +3049,76 @@ class ExtrinsicReceipt:
 
             for event in self.triggered_events:
                 # Check events
-                if event.event_module.name == 'System' and event.event.name == 'ExtrinsicSuccess':
-                    self.__is_success = True
-                    self.__error_message = None
 
-                    for param in event.params:
-                        if param['type'] == 'DispatchInfo':
-                            self.__weight = param['value']['weight']
+                if self.substrate.implements_scaleinfo():
+                    if event.value['module_id'] == 'System' and event.value['event_id'] == 'ExtrinsicSuccess':
+                        self.__is_success = True
+                        self.__error_message = None
+                        self.__weight = event.value['attributes']['weight']
 
-                elif event.event_module.name == 'System' and event.event.name == 'ExtrinsicFailed':
-                    self.__is_success = False
+                    elif event.value['module_id'] == 'System' and event.value['event_id'] == 'ExtrinsicFailed':
+                        self.__is_success = False
+                        raise NotImplementedError()
 
-                    for param in event.params:
-                        if param['type'] == 'DispatchError':
-                            if 'Module' in param['value']:
-                                module_error = self.substrate.metadata_decoder.get_module_error(
-                                    module_index=param['value']['Module']['index'],
-                                    error_index=param['value']['Module']['error']
-                                )
-                                self.__error_message = {
-                                    'type': 'Module',
-                                    'name': module_error.name,
-                                    'docs': module_error.docs
-                                }
-                            elif 'BadOrigin' in param['value']:
-                                self.__error_message = {
-                                    'type': 'System',
-                                    'name': 'BadOrigin',
-                                    'docs': 'Bad origin'
-                                }
-                            elif 'CannotLookup' in param['value']:
-                                self.__error_message = {
-                                    'type': 'System',
-                                    'name': 'CannotLookup',
-                                    'docs': 'Cannot lookup'
-                                }
-                            elif 'Other' in param['value']:
-                                self.__error_message = {
-                                    'type': 'System',
-                                    'name': 'Other',
-                                    'docs': 'Unspecified error occurred'
-                                }
+                    elif event.value['module_id'] == 'Treasury' and event.value['event_id'] == 'Deposit':
+                        self.__total_fee_amount += event.params[0]['value']
+                        raise NotImplementedError()
 
-                        if param['type'] == 'DispatchInfo':
-                            self.__weight = param['value']['weight']
+                    elif event.value['module_id'] == 'Balances' and event.value['event_id'] == 'Deposit':
+                        self.__total_fee_amount += event.params[0]['value']
+                        raise NotImplementedError()
+                else:
 
-                elif event.event_module.name == 'Treasury' and event.event.name == 'Deposit':
-                    self.__total_fee_amount += event.params[0]['value']
+                    if event.event_module.name == 'System' and event.event.name == 'ExtrinsicSuccess':
+                        self.__is_success = True
+                        self.__error_message = None
 
-                elif event.event_module.name == 'Balances' and event.event.name == 'Deposit':
-                    self.__total_fee_amount += event.params[1]['value']
+                        for param in event.params:
+                            if param['type'] == 'DispatchInfo':
+                                self.__weight = param['value']['weight']
+
+                    elif event.event_module.name == 'System' and event.event.name == 'ExtrinsicFailed':
+                        self.__is_success = False
+
+                        for param in event.params:
+                            if param['type'] == 'DispatchError':
+                                if 'Module' in param['value']:
+                                    module_error = self.substrate.metadata_decoder.get_module_error(
+                                        module_index=param['value']['Module']['index'],
+                                        error_index=param['value']['Module']['error']
+                                    )
+                                    self.__error_message = {
+                                        'type': 'Module',
+                                        'name': module_error.name,
+                                        'docs': module_error.docs
+                                    }
+                                elif 'BadOrigin' in param['value']:
+                                    self.__error_message = {
+                                        'type': 'System',
+                                        'name': 'BadOrigin',
+                                        'docs': 'Bad origin'
+                                    }
+                                elif 'CannotLookup' in param['value']:
+                                    self.__error_message = {
+                                        'type': 'System',
+                                        'name': 'CannotLookup',
+                                        'docs': 'Cannot lookup'
+                                    }
+                                elif 'Other' in param['value']:
+                                    self.__error_message = {
+                                        'type': 'System',
+                                        'name': 'Other',
+                                        'docs': 'Unspecified error occurred'
+                                    }
+
+                            if param['type'] == 'DispatchInfo':
+                                self.__weight = param['value']['weight']
+
+                    elif event.event_module.name == 'Treasury' and event.event.name == 'Deposit':
+                        self.__total_fee_amount += event.params[0]['value']
+
+                    elif event.event_module.name == 'Balances' and event.event.name == 'Deposit':
+                        self.__total_fee_amount += event.params[1]['value']
 
     @property
     def is_success(self) -> bool:
@@ -3118,7 +3187,7 @@ class ExtrinsicReceipt:
         Returns the index of a provided extrinsic
         """
         for idx, extrinsic in enumerate(block_extrinsics):
-            if extrinsic.extrinsic_hash == extrinsic_hash.replace('0x', ''):
+            if extrinsic.extrinsic_hash and f'0x{extrinsic.extrinsic_hash.hex()}' == extrinsic_hash:
                 return idx
         raise ExtrinsicNotFound()
 
