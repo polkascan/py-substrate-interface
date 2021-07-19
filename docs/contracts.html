@@ -44,6 +44,7 @@
 
 import json
 import os
+from packaging import version
 from hashlib import blake2b
 
 from substrateinterface.exceptions import ExtrinsicFailedException, DeployContractFailedException, \
@@ -69,6 +70,8 @@ class ContractMetadata:
         self.metadata_dict = metadata_dict
         self.substrate = substrate
         self.type_registry = {}
+
+        self.__type_offset = 0
 
         self.__parse_type_registry()
 
@@ -115,11 +118,19 @@ class ContractMetadata:
         if &#39;source&#39; not in self.metadata_dict:
             raise ContractMetadataParseException(&#34;&#39;source&#39; directive not present in metadata file&#34;)
 
+        # check Metadata version
+        if version.parse(self.metadata_dict[&#39;metadataVersion&#39;]) &lt; version.parse(&#39;0.7.0&#39;):
+            # Type indexes are 1-based before 0.7.0
+            self.__type_offset = 1
+
         self.type_string_prefix = f&#34;ink.{self.metadata_dict[&#39;source&#39;][&#39;hash&#39;]}&#34;
 
         for idx, metadata_type in enumerate(self.metadata_dict[&#39;types&#39;]):
-            if idx + 1 not in self.type_registry:
-                self.type_registry[idx+1] = self.get_type_string_for_metadata_type(idx+1)
+
+            idx += self.__type_offset
+
+            if idx not in self.type_registry:
+                self.type_registry[idx] = self.get_type_string_for_metadata_type(idx)
 
     def generate_constructor_data(self, name, args: dict = None) -&gt; ScaleBytes:
         &#34;&#34;&#34;
@@ -420,7 +431,7 @@ class ContractExecutionReceipt(ExtrinsicReceipt):
             self.__contract_events = []
 
             for event in self.triggered_events:
-                if event.event_module.name == &#39;Contracts&#39; and event.event.name == &#39;ContractExecution&#39;:
+                if event.event_module.name == &#39;Contracts&#39; and event.event.name == &#39;ContractEmitted&#39;:
 
                     # Create contract event
                     contract_event_obj = ContractEvent(
@@ -1438,7 +1449,7 @@ the generic "Contracts.ContractExecution" event that is triggered after a succes
             self.__contract_events = []
 
             for event in self.triggered_events:
-                if event.event_module.name == &#39;Contracts&#39; and event.event.name == &#39;ContractExecution&#39;:
+                if event.event_module.name == &#39;Contracts&#39; and event.event.name == &#39;ContractEmitted&#39;:
 
                     # Create contract event
                     contract_event_obj = ContractEvent(
@@ -1549,7 +1560,7 @@ def contract_events(self):
         self.__contract_events = []
 
         for event in self.triggered_events:
-            if event.event_module.name == &#39;Contracts&#39; and event.event.name == &#39;ContractExecution&#39;:
+            if event.event_module.name == &#39;Contracts&#39; and event.event.name == &#39;ContractEmitted&#39;:
 
                 # Create contract event
                 contract_event_obj = ContractEvent(
@@ -2014,6 +2025,8 @@ parsed and the used types are extracted, composed and added to the type registry
         self.substrate = substrate
         self.type_registry = {}
 
+        self.__type_offset = 0
+
         self.__parse_type_registry()
 
     @classmethod
@@ -2059,11 +2072,19 @@ parsed and the used types are extracted, composed and added to the type registry
         if &#39;source&#39; not in self.metadata_dict:
             raise ContractMetadataParseException(&#34;&#39;source&#39; directive not present in metadata file&#34;)
 
+        # check Metadata version
+        if version.parse(self.metadata_dict[&#39;metadataVersion&#39;]) &lt; version.parse(&#39;0.7.0&#39;):
+            # Type indexes are 1-based before 0.7.0
+            self.__type_offset = 1
+
         self.type_string_prefix = f&#34;ink.{self.metadata_dict[&#39;source&#39;][&#39;hash&#39;]}&#34;
 
         for idx, metadata_type in enumerate(self.metadata_dict[&#39;types&#39;]):
-            if idx + 1 not in self.type_registry:
-                self.type_registry[idx+1] = self.get_type_string_for_metadata_type(idx+1)
+
+            idx += self.__type_offset
+
+            if idx not in self.type_registry:
+                self.type_registry[idx] = self.get_type_string_for_metadata_type(idx)
 
     def generate_constructor_data(self, name, args: dict = None) -&gt; ScaleBytes:
         &#34;&#34;&#34;

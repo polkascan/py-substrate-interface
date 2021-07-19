@@ -760,7 +760,7 @@ class SubstrateInterface:
             return result
 
     @lru_cache(maxsize=1000)
-    def get_block_hash(self, block_id):
+    def get_block_hash(self, block_id: int) -&gt; str:
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `chain_getBlockHash`
 
@@ -780,7 +780,7 @@ class SubstrateInterface:
             return response.get(&#39;result&#39;)
 
     @block_dependent_lru_cache(maxsize=1000, block_arg_index=1)
-    def get_block_number(self, block_hash):
+    def get_block_number(self, block_hash: str) -&gt; int:
         &#34;&#34;&#34;
         A convenience method to get the block number for given block_hash
 
@@ -1058,19 +1058,21 @@ class SubstrateInterface:
 
         &#34;&#34;&#34;
 
-        if block_id is not None and block_hash is not None:
+        if block_id and block_hash:
             raise ValueError(&#39;Cannot provide block_hash and block_id at the same time&#39;)
 
         # Check if runtime state already set to current block
-        if (block_hash is not None and block_hash == self.block_hash) or \
-                (block_id is not None and block_id == self.block_id):
+        if (block_hash and block_hash == self.block_hash) or (block_id and block_id == self.block_id):
             return
 
         if block_id is not None:
-            self.block_hash = self.get_block_hash(block_id)
+            block_hash = self.get_block_hash(block_id)
 
         if not block_hash:
-            self.block_hash = self.get_chain_head()
+            block_hash = self.get_chain_head()
+
+        self.block_hash = block_hash
+        self.block_id = block_id
 
         # In fact calls and storage functions are decoded against runtime of previous block, therefor retrieve
         # metadata and apply type registry of runtime of parent block
@@ -1078,8 +1080,6 @@ class SubstrateInterface:
 
         if block_header[&#39;result&#39;] is None:
             raise BlockNotFound(f&#39;Block not found for &#34;{self.block_hash}&#34;&#39;)
-
-        self.block_id = int(block_header[&#39;result&#39;][&#39;number&#39;], 16)
 
         parent_block_hash = block_header[&#39;result&#39;][&#39;parentHash&#39;]
 
@@ -2813,8 +2813,10 @@ class SubstrateInterface:
             &#34;module_prefix&#34;: module.prefix,
             &#34;module_name&#34;: module.name,
             &#34;spec_version&#34;: spec_version_id,
-            &#34;type_keys&#34;: None,
-            &#34;type_hashers&#34;: None,
+            &#34;type_key1&#34;: None,
+            &#34;type_key2&#34;: None,
+            &#34;type_hasher_key1&#34;: None,
+            &#34;type_hasher_key2&#34;: None,
             &#34;type_value&#34;: None,
             &#34;type_is_linked&#34;: None
         }
@@ -2828,21 +2830,17 @@ class SubstrateInterface:
 
         elif type_class == &#39;MapType&#39;:
             storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-            storage_dict[&#34;type_keys&#34;] = [type_info[&#34;key&#34;]]
-            storage_dict[&#34;type_hashers&#34;] = [type_info[&#34;hasher&#34;]]
+            storage_dict[&#34;type_key1&#34;] = type_info[&#34;key&#34;]
+            storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
             storage_dict[&#34;type_is_linked&#34;] = type_info[&#34;isLinked&#34;]
 
         elif type_class == &#39;DoubleMapType&#39;:
 
             storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-            storage_dict[&#34;type_keys&#34;] = [type_info[&#34;key1&#34;], type_info[&#34;key2&#34;]]
-            storage_dict[&#34;type_hashers&#34;] = [type_info[&#34;hasher&#34;], type_info[&#34;key2Hasher&#34;]]
-
-        elif type_class == &#39;NMapType&#39;:
-
-            storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-            storage_dict[&#34;type_keys&#34;] = type_info[&#34;keys&#34;]
-            storage_dict[&#34;type_hashers&#34;] = type_info[&#34;hashers&#34;]
+            storage_dict[&#34;type_key1&#34;] = type_info[&#34;key1&#34;]
+            storage_dict[&#34;type_key2&#34;] = type_info[&#34;key2&#34;]
+            storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
+            storage_dict[&#34;type_hasher_key2&#34;] = type_info[&#34;key2Hasher&#34;]
 
         if storage_item.fallback != &#39;0x00&#39;:
             # Decode fallback
@@ -5101,7 +5099,7 @@ def generate_mnemonic(cls, words=12):
             return result
 
     @lru_cache(maxsize=1000)
-    def get_block_hash(self, block_id):
+    def get_block_hash(self, block_id: int) -&gt; str:
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `chain_getBlockHash`
 
@@ -5121,7 +5119,7 @@ def generate_mnemonic(cls, words=12):
             return response.get(&#39;result&#39;)
 
     @block_dependent_lru_cache(maxsize=1000, block_arg_index=1)
-    def get_block_number(self, block_hash):
+    def get_block_number(self, block_hash: str) -&gt; int:
         &#34;&#34;&#34;
         A convenience method to get the block number for given block_hash
 
@@ -5399,19 +5397,21 @@ def generate_mnemonic(cls, words=12):
 
         &#34;&#34;&#34;
 
-        if block_id is not None and block_hash is not None:
+        if block_id and block_hash:
             raise ValueError(&#39;Cannot provide block_hash and block_id at the same time&#39;)
 
         # Check if runtime state already set to current block
-        if (block_hash is not None and block_hash == self.block_hash) or \
-                (block_id is not None and block_id == self.block_id):
+        if (block_hash and block_hash == self.block_hash) or (block_id and block_id == self.block_id):
             return
 
         if block_id is not None:
-            self.block_hash = self.get_block_hash(block_id)
+            block_hash = self.get_block_hash(block_id)
 
         if not block_hash:
-            self.block_hash = self.get_chain_head()
+            block_hash = self.get_chain_head()
+
+        self.block_hash = block_hash
+        self.block_id = block_id
 
         # In fact calls and storage functions are decoded against runtime of previous block, therefor retrieve
         # metadata and apply type registry of runtime of parent block
@@ -5419,8 +5419,6 @@ def generate_mnemonic(cls, words=12):
 
         if block_header[&#39;result&#39;] is None:
             raise BlockNotFound(f&#39;Block not found for &#34;{self.block_hash}&#34;&#39;)
-
-        self.block_id = int(block_header[&#39;result&#39;][&#39;number&#39;], 16)
 
         parent_block_hash = block_header[&#39;result&#39;][&#39;parentHash&#39;]
 
@@ -7154,8 +7152,10 @@ def generate_mnemonic(cls, words=12):
             &#34;module_prefix&#34;: module.prefix,
             &#34;module_name&#34;: module.name,
             &#34;spec_version&#34;: spec_version_id,
-            &#34;type_keys&#34;: None,
-            &#34;type_hashers&#34;: None,
+            &#34;type_key1&#34;: None,
+            &#34;type_key2&#34;: None,
+            &#34;type_hasher_key1&#34;: None,
+            &#34;type_hasher_key2&#34;: None,
             &#34;type_value&#34;: None,
             &#34;type_is_linked&#34;: None
         }
@@ -7169,21 +7169,17 @@ def generate_mnemonic(cls, words=12):
 
         elif type_class == &#39;MapType&#39;:
             storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-            storage_dict[&#34;type_keys&#34;] = [type_info[&#34;key&#34;]]
-            storage_dict[&#34;type_hashers&#34;] = [type_info[&#34;hasher&#34;]]
+            storage_dict[&#34;type_key1&#34;] = type_info[&#34;key&#34;]
+            storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
             storage_dict[&#34;type_is_linked&#34;] = type_info[&#34;isLinked&#34;]
 
         elif type_class == &#39;DoubleMapType&#39;:
 
             storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-            storage_dict[&#34;type_keys&#34;] = [type_info[&#34;key1&#34;], type_info[&#34;key2&#34;]]
-            storage_dict[&#34;type_hashers&#34;] = [type_info[&#34;hasher&#34;], type_info[&#34;key2Hasher&#34;]]
-
-        elif type_class == &#39;NMapType&#39;:
-
-            storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-            storage_dict[&#34;type_keys&#34;] = type_info[&#34;keys&#34;]
-            storage_dict[&#34;type_hashers&#34;] = type_info[&#34;hashers&#34;]
+            storage_dict[&#34;type_key1&#34;] = type_info[&#34;key1&#34;]
+            storage_dict[&#34;type_key2&#34;] = type_info[&#34;key2&#34;]
+            storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
+            storage_dict[&#34;type_hasher_key2&#34;] = type_info[&#34;key2Hasher&#34;]
 
         if storage_item.fallback != &#39;0x00&#39;:
             # Decode fallback
@@ -8175,7 +8171,7 @@ is omited the chain tip will be retrieve, or the finalized head if <code>finaliz
 </details>
 </dd>
 <dt id="substrateinterface.base.SubstrateInterface.get_block_hash"><code class="name flex">
-<span>def <span class="ident">get_block_hash</span></span>(<span>self, block_id)</span>
+<span>def <span class="ident">get_block_hash</span></span>(<span>self, block_id: int) ‑> str</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A pass-though to existing JSONRPC method <code>chain_getBlockHash</code></p>
@@ -8190,7 +8186,7 @@ is omited the chain tip will be retrieve, or the finalized head if <code>finaliz
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@lru_cache(maxsize=1000)
-def get_block_hash(self, block_id):
+def get_block_hash(self, block_id: int) -&gt; str:
     &#34;&#34;&#34;
     A pass-though to existing JSONRPC method `chain_getBlockHash`
 
@@ -9611,19 +9607,21 @@ In the future there could be support for caching backends like Redis to make thi
 
     &#34;&#34;&#34;
 
-    if block_id is not None and block_hash is not None:
+    if block_id and block_hash:
         raise ValueError(&#39;Cannot provide block_hash and block_id at the same time&#39;)
 
     # Check if runtime state already set to current block
-    if (block_hash is not None and block_hash == self.block_hash) or \
-            (block_id is not None and block_id == self.block_id):
+    if (block_hash and block_hash == self.block_hash) or (block_id and block_id == self.block_id):
         return
 
     if block_id is not None:
-        self.block_hash = self.get_block_hash(block_id)
+        block_hash = self.get_block_hash(block_id)
 
     if not block_hash:
-        self.block_hash = self.get_chain_head()
+        block_hash = self.get_chain_head()
+
+    self.block_hash = block_hash
+    self.block_id = block_id
 
     # In fact calls and storage functions are decoded against runtime of previous block, therefor retrieve
     # metadata and apply type registry of runtime of parent block
@@ -9631,8 +9629,6 @@ In the future there could be support for caching backends like Redis to make thi
 
     if block_header[&#39;result&#39;] is None:
         raise BlockNotFound(f&#39;Block not found for &#34;{self.block_hash}&#34;&#39;)
-
-    self.block_id = int(block_header[&#39;result&#39;][&#39;number&#39;], 16)
 
     parent_block_hash = block_header[&#39;result&#39;][&#39;parentHash&#39;]
 
@@ -10787,8 +10783,10 @@ use this method to perform the request.</p>
         &#34;module_prefix&#34;: module.prefix,
         &#34;module_name&#34;: module.name,
         &#34;spec_version&#34;: spec_version_id,
-        &#34;type_keys&#34;: None,
-        &#34;type_hashers&#34;: None,
+        &#34;type_key1&#34;: None,
+        &#34;type_key2&#34;: None,
+        &#34;type_hasher_key1&#34;: None,
+        &#34;type_hasher_key2&#34;: None,
         &#34;type_value&#34;: None,
         &#34;type_is_linked&#34;: None
     }
@@ -10802,21 +10800,17 @@ use this method to perform the request.</p>
 
     elif type_class == &#39;MapType&#39;:
         storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-        storage_dict[&#34;type_keys&#34;] = [type_info[&#34;key&#34;]]
-        storage_dict[&#34;type_hashers&#34;] = [type_info[&#34;hasher&#34;]]
+        storage_dict[&#34;type_key1&#34;] = type_info[&#34;key&#34;]
+        storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
         storage_dict[&#34;type_is_linked&#34;] = type_info[&#34;isLinked&#34;]
 
     elif type_class == &#39;DoubleMapType&#39;:
 
         storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-        storage_dict[&#34;type_keys&#34;] = [type_info[&#34;key1&#34;], type_info[&#34;key2&#34;]]
-        storage_dict[&#34;type_hashers&#34;] = [type_info[&#34;hasher&#34;], type_info[&#34;key2Hasher&#34;]]
-
-    elif type_class == &#39;NMapType&#39;:
-
-        storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-        storage_dict[&#34;type_keys&#34;] = type_info[&#34;keys&#34;]
-        storage_dict[&#34;type_hashers&#34;] = type_info[&#34;hashers&#34;]
+        storage_dict[&#34;type_key1&#34;] = type_info[&#34;key1&#34;]
+        storage_dict[&#34;type_key2&#34;] = type_info[&#34;key2&#34;]
+        storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
+        storage_dict[&#34;type_hasher_key2&#34;] = type_info[&#34;key2Hasher&#34;]
 
     if storage_item.fallback != &#39;0x00&#39;:
         # Decode fallback
