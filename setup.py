@@ -176,13 +176,13 @@ setup(
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
-        'websocket-client~=0.59',
-        'base58~=2.1',
-        'certifi>=2020.11.8',
-        'idna~=2.10',
-        'requests~=2.26',
-        'xxhash>=1.3.0',
-        'packaging~=21.0',
+        'websocket-client>=0.57.0,<1',
+        'base58>=1.0.3,<3',
+        'certifi>=2019.3.9',
+        'idna>=2.1.0,<4',
+        'requests>=2.21.0,<3',
+        'xxhash>=1.3.0,<3',
+        'packaging',
         'scalecodec~=0.11.16',
         'py-sr25519-bindings~=0.1.2',
         'py-ed25519-bindings~=0.1.2',
