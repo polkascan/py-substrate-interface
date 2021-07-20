@@ -182,7 +182,6 @@ setup(
         'idna>=2.1.0,<4',
         'requests>=2.21.0,<3',
         'xxhash>=1.3.0,<3',
-        'packaging',
         'scalecodec~=0.11.16',
         'py-sr25519-bindings~=0.1.2',
         'py-ed25519-bindings~=0.1.2',

@@ -13,5 +13,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import re
 
+
+def version_tuple(version_string: str) -> tuple:
+    """
+    Converts a basic version string to a tuple that can be compared
+
+    Parameters
+    ----------
+    version_string
+
+    Returns
+    -------
+    tuple
+    """
+    if re.search(r'[^\.0-9]', version_string):
+        raise ValueError('version_string can only contain numeric characters')
+
+    return tuple(int(v) for v in version_string.split('.'))
 

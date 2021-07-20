@@ -16,8 +16,9 @@
 
 import json
 import os
-from packaging import version
 from hashlib import blake2b
+
+from .utils import version_tuple
 
 from substrateinterface.exceptions import ExtrinsicFailedException, DeployContractFailedException, \
     ContractReadFailedException, ContractMetadataParseException
@@ -91,7 +92,7 @@ class ContractMetadata:
             raise ContractMetadataParseException("'source' directive not present in metadata file")
 
         # check Metadata version
-        if version.parse(self.metadata_dict['metadataVersion']) < version.parse('0.7.0'):
+        if version_tuple(self.metadata_dict['metadataVersion']) < (0, 7, 0):
             # Type indexes are 1-based before 0.7.0
             self.__type_offset = 1
 
