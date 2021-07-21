@@ -2334,8 +2334,7 @@ class SubstrateInterface:
                 for idx, log_data in enumerate(block_data['header']["digest"]["logs"]):
 
                     try:
-                        # log_digest_cls = self.runtime_config.get_decoder_class('sp_runtime::generic::digest::DigestItem')
-                        log_digest_cls = self.runtime_config.get_decoder_class('DigestItem')
+                        log_digest_cls = self.runtime_config.get_decoder_class('sp_runtime::generic::digest::DigestItem')
 
                         if log_digest_cls is None:
                             raise NotImplementedError("No decoding class found for 'DigestItem'")
