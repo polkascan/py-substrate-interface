@@ -166,9 +166,9 @@ class BlockTestCase(unittest.TestCase):
         )
         extrinsics = block['extrinsics']
 
-        self.assertEqual(extrinsics[0].call_module.name, 'Timestamp')
-        self.assertEqual(extrinsics[0].call.name, 'set')
-        self.assertEqual(extrinsics[0].params[0]['value'], '2021-01-27T10:44:42.004000')
+        self.assertEqual(extrinsics[0]['call']['call_module'].name, 'Timestamp')
+        self.assertEqual(extrinsics[0]['call']['call_function'].name, 'set')
+        self.assertEqual(extrinsics[0]['call']['call_args']['now'].serialize(), '2021-01-27T10:44:42.004000')
 
     def test_get_by_block_number(self):
 
@@ -177,9 +177,9 @@ class BlockTestCase(unittest.TestCase):
         )
         extrinsics = block['extrinsics']
 
-        self.assertEqual(extrinsics[0].call_module.name, 'Timestamp')
-        self.assertEqual(extrinsics[0].call.name, 'set')
-        self.assertEqual(extrinsics[0].params[0]['value'], '2021-01-27T10:44:42.004000')
+        self.assertEqual(extrinsics[0]['call']['call_module'].name, 'Timestamp')
+        self.assertEqual(extrinsics[0]['call']['call_function'].name, 'set')
+        self.assertEqual(extrinsics[0]['call']['call_args']['now'].serialize(), '2021-01-27T10:44:42.004000')
 
     def test_get_block_by_head(self):
 
@@ -226,7 +226,7 @@ class BlockTestCase(unittest.TestCase):
 
         self.assertEqual(extrinsics[0], None)
         self.assertEqual(extrinsics[1], None)
-        self.assertEqual(extrinsics[2].params[0]['value'], '2021-01-27T10:44:42.004000')
+        self.assertEqual(extrinsics[2].value['call']['call_args'][0]['value'], '2021-01-27T10:44:42.004000')
         self.assertEqual(extrinsics[3], None)
 
     def test_include_author(self):

@@ -169,7 +169,7 @@ class ContractInstanceTestCase(unittest.TestCase):
 
                 return super().rpc_request(method, params, result_handler)
 
-        cls.substrate = MockedSubstrateInterface(url=settings.KUSAMA_NODE_URL)
+        cls.substrate = MockedSubstrateInterface(url=settings.KUSAMA_NODE_URL, type_registry_preset='kusama')
 
         cls.keypair = Keypair.create_from_uri('//Alice')
 

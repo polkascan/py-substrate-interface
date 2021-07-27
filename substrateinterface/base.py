@@ -30,8 +30,7 @@ from websocket import create_connection, WebSocketConnectionClosedException
 
 from scalecodec import ScaleBytes, GenericCall, GenericAccountId
 from scalecodec.base import ScaleDecoder, RuntimeConfigurationObject, ScaleType
-from scalecodec.block import EventsDecoder, LogDigest, Extrinsic, GenericExtrinsic
-from scalecodec.metadata import MetadataDecoder
+from scalecodec.block import LogDigest, Extrinsic, GenericExtrinsic
 from scalecodec.type_registry import load_type_registry_preset
 from scalecodec.updater import update_type_registries
 
@@ -381,7 +380,7 @@ class SubstrateInterface:
 
     def __init__(self, url=None, websocket=None, ss58_format=None, type_registry=None, type_registry_preset=None,
                  cache_region=None, address_type=None, runtime_config=None, use_remote_preset=False,
-                 auto_discover=False):
+                 auto_discover=True):
         """
         A specialized class in interfacing with a Substrate node.
 
@@ -453,6 +452,11 @@ class SubstrateInterface:
         self.runtime_config = runtime_config
 
         self.debug = False
+
+        self.config = {
+            'use_remote_preset': use_remote_preset,
+            'auto_discover': auto_discover
+        }
 
         self.reload_type_registry(use_remote_preset=use_remote_preset, auto_discover=auto_discover)
 
@@ -651,7 +655,7 @@ class SubstrateInterface:
 
     def implements_scaleinfo(self) -> Optional[bool]:
         if self.metadata_decoder:
-            return self.metadata_decoder.get_metadata().index >= 14
+            return self.metadata_decoder.portable_registry is not None
 
     def get_chain_head(self):
         """
@@ -802,10 +806,9 @@ class SubstrateInterface:
             raise SubstrateRequestException(response['error']['message'])
 
         if response.get('result') and decode:
-            metadata_decoder = ScaleDecoder.get_decoder_class(
-                'MetadataVersioned', data=ScaleBytes(response.get('result')), runtime_config=self.runtime_config
+            metadata_decoder = self.runtime_config.create_scale_object(
+                'MetadataVersioned', data=ScaleBytes(response.get('result'))
             )
-            # metadata_decoder = MetadataDecoder(ScaleBytes(response.get('result')), runtime_config=self.runtime_config)
             metadata_decoder.decode()
 
             return metadata_decoder
@@ -883,50 +886,6 @@ class SubstrateInterface:
             raise SubstrateRequestException(response['error']['message'])
         else:
             raise SubstrateRequestException("Unknown error occurred during retrieval of events")
-
-    def get_block_events(self, block_hash, metadata_decoder=None):
-        """
-        A convenience method to fetch the undecoded events from storage
-
-        Parameters
-        ----------
-        block_hash
-        metadata_decoder
-
-        Returns
-        -------
-
-        """
-
-        warnings.warn("'get_block_events' will be replaced by 'get_events'", DeprecationWarning)
-
-        if metadata_decoder and metadata_decoder.version.index >= 9:
-            storage_hash = STORAGE_HASH_SYSTEM_EVENTS_V9
-        else:
-            storage_hash = STORAGE_HASH_SYSTEM_EVENTS
-
-        response = self.rpc_request("state_getStorageAt", [storage_hash, block_hash])
-
-        if 'error' in response:
-            raise SubstrateRequestException(response['error']['message'])
-
-        if response.get('result'):
-
-            if metadata_decoder:
-                # Process events
-                events_decoder = EventsDecoder(
-                    data=ScaleBytes(response.get('result')),
-                    metadata=metadata_decoder,
-                    runtime_config=self.runtime_config
-                )
-                events_decoder.decode()
-
-                return events_decoder
-
-            else:
-                return response
-        else:
-            raise SubstrateRequestException("Error occurred during retrieval of events")
 
     def get_block_runtime_version(self, block_hash):
         """
@@ -1080,9 +1039,6 @@ class SubstrateInterface:
         self.runtime_version = runtime_info.get("specVersion")
         self.transaction_version = runtime_info.get("transactionVersion")
 
-        # Set active runtime version
-        self.runtime_config.set_active_spec_version_id(self.runtime_version)
-
         if self.runtime_version not in self.metadata_cache and self.cache_region:
             # Try to retrieve metadata from Dogpile cache
             cached_metadata = self.cache_region.get('METADATA_{}'.format(self.runtime_version))
@@ -1105,9 +1061,20 @@ class SubstrateInterface:
                 self.debug_message('Stored metadata for {} in Redis'.format(self.runtime_version))
                 self.cache_region.set('METADATA_{}'.format(self.runtime_version), self.metadata_decoder)
 
-        # Check if PortableRegistry is present in metadata
+        # Update type registry; TODO check if cache is present
+        # Check if PortableRegistry is present in metadata (V14+), otherwise fall back on legacy type registry (<V14)
         if self.implements_scaleinfo():
+            self.debug_message('Add PortableRegistry from metadata to type registry')
             self.runtime_config.add_portable_registry(self.metadata_decoder)
+        else:
+            # TODO remember if node implements scaleinfo
+            self.debug_message('Add manual type registry')
+            self.reload_type_registry(
+                use_remote_preset=self.config.get('use_remote_preset'),
+                auto_discover=self.config.get('auto_discover')
+            )
+            # Set active runtime version
+            self.runtime_config.set_active_spec_version_id(self.runtime_version)
 
     def query_map(self, module: str, storage_function: str, params: Optional[list] = None, block_hash: str = None,
                   max_results: int = None, start_key: str = None, page_size: int = 100,
@@ -1493,7 +1460,8 @@ class SubstrateInterface:
             raise SubstrateRequestException(response['error']['message'])
 
         if 'result' in response:
-            metadata_decoder = MetadataDecoder(ScaleBytes(response.get('result')), runtime_config=self.runtime_config)
+            metadata_decoder = self.runtime_config.create_scale_object(
+                'VersionedMetadata', data=ScaleBytes(response.get('result')))
             response['result'] = metadata_decoder.decode()
 
         return response
@@ -1643,6 +1611,7 @@ class SubstrateInterface:
                 signature = '0x{}'.format(signature[2:])
             else:
                 signature_version = keypair.crypto_type
+                signature = '0x{}'.format(signature)
 
         else:
             # Create signature payload
@@ -2043,12 +2012,22 @@ class SubstrateInterface:
 
         call_list = []
 
-        for call_index, (module, call) in self.metadata_decoder.call_index.items():
-            call_list.append(
-                self.serialize_module_call(
-                    module, call, self.runtime_version, call_index
-                )
-            )
+        for pallet in self.metadata_decoder.pallets:
+            if pallet.calls:
+                for call in pallet.calls:
+
+                    call_list.append(
+                        self.serialize_module_call(
+                            pallet, call, self.runtime_version, ''
+                        )
+                    )
+
+        # for call_index, (module, call) in self.metadata_decoder.call_index.items():
+        #     call_list.append(
+        #         self.serialize_module_call(
+        #             module, call, self.runtime_version, call_index
+        #         )
+        #     )
         return call_list
 
     def get_metadata_call_function(self, module_name: str, call_function_name: str, block_hash: str = None):
@@ -2586,11 +2565,10 @@ class SubstrateInterface:
         if type(scale_bytes) == str:
             scale_bytes = ScaleBytes(scale_bytes)
 
-        obj = ScaleDecoder.get_decoder_class(
+        obj = self.runtime_config.create_scale_object(
             type_string=type_string,
             data=scale_bytes,
-            metadata=self.metadata_decoder,
-            runtime_config=self.runtime_config
+            metadata=self.metadata_decoder
         )
 
         obj.decode()
@@ -2616,8 +2594,8 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        obj = ScaleDecoder.get_decoder_class(
-            type_string=type_string, metadata=self.metadata_decoder, runtime_config=self.runtime_config
+        obj = self.runtime_config.create_scale_object(
+            type_string=type_string, metadata=self.metadata_decoder
         )
         return obj.encode(value)
 
@@ -2784,13 +2762,13 @@ class SubstrateInterface:
 
         """
         return {
-            "call_id": call.get_identifier(),
+            # "call_id": call.get_identifier(),
             "call_name": call.name,
             "call_args": [call_arg.value for call_arg in call.args],
-            "lookup": '0x{}'.format(call_index),
+            # "lookup": '0x{}'.format(call_index),
             "documentation": '\n'.join(call.docs),
-            "module_id": module.get_identifier(),
-            "module_prefix": module.value['storage']['prefix'],
+            # "module_id": module.get_identifier(),
+            "module_prefix": module.value['storage']['prefix'] if module.value['storage'] else None,
             "module_name": module.name,
             "spec_version": spec_version
         }
@@ -2866,6 +2844,7 @@ class SubstrateInterface:
         Parameters
         ----------
         use_remote_preset: When True preset is downloaded from Github master, otherwise use files from local installed scalecodec package
+        auto_discover
 
         Returns
         -------
@@ -2876,6 +2855,11 @@ class SubstrateInterface:
         # Load metadata types in runtime configuration
         self.runtime_config.update_type_registry(load_type_registry_preset(name="metadata_types"))
 
+        if self.metadata_decoder:
+            if not self.metadata_decoder.portable_registry:
+                self.apply_type_registry_presets(use_remote_preset=use_remote_preset, auto_discover=auto_discover)
+
+    def apply_type_registry_presets(self, use_remote_preset: bool = True, auto_discover: bool = True):
         if self.type_registry_preset is not None:
             # Load type registry according to preset
             type_registry_preset_dict = load_type_registry_preset(

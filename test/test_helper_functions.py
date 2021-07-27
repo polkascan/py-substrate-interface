@@ -19,11 +19,9 @@ from unittest.mock import MagicMock
 
 from substrateinterface.exceptions import SubstrateRequestException
 
-from scalecodec import ScaleBytes, Bytes, ScaleDecoder
-from scalecodec.metadata import MetadataDecoder
+from scalecodec import ScaleBytes, ScaleDecoder
 
 from substrateinterface import SubstrateInterface
-from test import settings
 from test.fixtures import metadata_v12_hex
 
 

@@ -670,9 +670,12 @@ class ContractInstance:
 
         if 'result' in response:
 
+            self.substrate.init_runtime()
+
             return_type_string = self.metadata.get_return_type_string_for_message(method)
 
             # Wrap the result in a ContractExecResult Enum because the exec will result in the same
+            # TODO Check workings with PortableRegistry
             ContractExecResult = self.substrate.runtime_config.get_decoder_class('ContractExecResult')
 
             contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)

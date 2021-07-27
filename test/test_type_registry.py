@@ -77,6 +77,25 @@ class RococoTypeRegistryTestCase(unittest.TestCase):
 
             self.assertIsNotNone(obj, '{} not supported'.format(scale_type))
 
+#
+# class DevelopmentTypeRegistryTestCase(unittest.TestCase):
+#
+#     @classmethod
+#     def setUpClass(cls):
+#         cls.substrate = SubstrateInterface(
+#             url="ws://127.0.0.1:9944",
+#             ss58_format=42,
+#             type_registry_preset='development'
+#         )
+#
+#     def test_type_registry_compatibility(self):
+#
+#         for scale_type in self.substrate.get_type_registry():
+#
+#             obj = self.substrate.runtime_config.get_decoder_class(scale_type)
+#
+#             self.assertIsNotNone(obj, '{} not supported'.format(scale_type))
+
 
 class MultipleTypeRegistryTestCase(unittest.TestCase):
 
@@ -119,8 +138,8 @@ class ReloadTypeRegistryTestCase(unittest.TestCase):
         )
 
     def test_initial_correct_type_local(self):
-        decoding_class = self.substrate.runtime_config.type_registry['types']['blocknumber']
-        self.assertEqual(self.substrate.runtime_config.get_decoder_class('u64'), decoding_class)
+        decoding_class = self.substrate.runtime_config.type_registry['types']['index']
+        self.assertEqual(self.substrate.runtime_config.get_decoder_class('u32'), decoding_class)
 
     def test_reloading_use_remote_preset(self):
 
@@ -128,14 +147,14 @@ class ReloadTypeRegistryTestCase(unittest.TestCase):
         u32_cls = self.substrate.runtime_config.get_decoder_class('u32')
         u64_cls = self.substrate.runtime_config.get_decoder_class('u64')
 
-        self.substrate.runtime_config.type_registry['types']['blocknumber'] = u32_cls
+        self.substrate.runtime_config.type_registry['types']['index'] = u64_cls
 
-        self.assertEqual(u32_cls, self.substrate.runtime_config.get_decoder_class('BlockNumber'))
+        self.assertEqual(u64_cls, self.substrate.runtime_config.get_decoder_class('Index'))
 
         # Reload type registry
         self.substrate.reload_type_registry()
 
-        self.assertEqual(u64_cls, self.substrate.runtime_config.get_decoder_class('BlockNumber'))
+        self.assertEqual(u32_cls, self.substrate.runtime_config.get_decoder_class('Index'))
 
     def test_reloading_use_local_preset(self):
 
@@ -143,14 +162,14 @@ class ReloadTypeRegistryTestCase(unittest.TestCase):
         u32_cls = self.substrate.runtime_config.get_decoder_class('u32')
         u64_cls = self.substrate.runtime_config.get_decoder_class('u64')
 
-        self.substrate.runtime_config.type_registry['types']['blocknumber'] = u32_cls
+        self.substrate.runtime_config.type_registry['types']['index'] = u64_cls
 
-        self.assertEqual(u32_cls, self.substrate.runtime_config.get_decoder_class('BlockNumber'))
+        self.assertEqual(u64_cls, self.substrate.runtime_config.get_decoder_class('Index'))
 
         # Reload type registry
         self.substrate.reload_type_registry(use_remote_preset=False)
 
-        self.assertEqual(u64_cls, self.substrate.runtime_config.get_decoder_class('BlockNumber'))
+        self.assertEqual(u32_cls, self.substrate.runtime_config.get_decoder_class('Index'))
 
 
 if __name__ == '__main__':
