@@ -19,7 +19,7 @@ from unittest.mock import MagicMock
 
 from substrateinterface.exceptions import SubstrateRequestException
 
-from scalecodec import ScaleBytes, ScaleDecoder
+from scalecodec.base import ScaleBytes
 
 from substrateinterface import SubstrateInterface
 from test.fixtures import metadata_v12_hex
@@ -31,10 +31,10 @@ class TestHelperFunctions(unittest.TestCase):
     def setUpClass(cls):
 
         cls.substrate = SubstrateInterface(url='dummy', ss58_format=42, type_registry_preset='kusama')
-        metadata_decoder = ScaleDecoder.get_decoder_class(
-            'MetadataVersioned', ScaleBytes(metadata_v12_hex), runtime_config=cls.substrate.runtime_config
-        )
-        metadata_decoder.decode()
+
+        metadata_decoder = cls.substrate.runtime_config.create_scale_object('MetadataVersioned')
+        metadata_decoder.decode(ScaleBytes(metadata_v12_hex))
+
         cls.substrate.get_block_metadata = MagicMock(return_value=metadata_decoder)
 
         def mocked_request(method, params):

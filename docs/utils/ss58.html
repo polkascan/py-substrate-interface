@@ -60,7 +60,7 @@ from typing import Optional
 import base58
 from hashlib import blake2b
 
-from scalecodec.base import ScaleBytes, ScaleDecoder
+from scalecodec.base import ScaleBytes, ScaleDecoder, RuntimeConfiguration
 
 
 def ss58_decode(address: str, valid_ss58_format: Optional[int] = None, valid_address_type=None) -&gt; str:
@@ -202,13 +202,13 @@ def ss58_encode_account_index(account_index: int, ss58_format: int = 42, address
         ss58_format = address_type
 
     if 0 &lt;= account_index &lt;= 2 ** 8 - 1:
-        account_idx_encoder = ScaleDecoder.get_decoder_class(&#39;u8&#39;)
+        account_idx_encoder = RuntimeConfiguration().create_scale_object(&#39;u8&#39;)
     elif 2 ** 8 &lt;= account_index &lt;= 2 ** 16 - 1:
-        account_idx_encoder = ScaleDecoder.get_decoder_class(&#39;u16&#39;)
+        account_idx_encoder = RuntimeConfiguration().create_scale_object(&#39;u16&#39;)
     elif 2 ** 16 &lt;= account_index &lt;= 2 ** 32 - 1:
-        account_idx_encoder = ScaleDecoder.get_decoder_class(&#39;u32&#39;)
+        account_idx_encoder = RuntimeConfiguration().create_scale_object(&#39;u32&#39;)
     elif 2 ** 32 &lt;= account_index &lt;= 2 ** 64 - 1:
-        account_idx_encoder = ScaleDecoder.get_decoder_class(&#39;u64&#39;)
+        account_idx_encoder = RuntimeConfiguration().create_scale_object(&#39;u64&#39;)
     else:
         raise ValueError(&#34;Value too large for an account index&#34;)
 
@@ -237,13 +237,21 @@ def ss58_decode_account_index(address: str, valid_ss58_format: Optional[int] = N
     account_index_bytes = ss58_decode(address, valid_ss58_format)
 
     if len(account_index_bytes) == 2:
-        return ScaleDecoder.get_decoder_class(&#39;u8&#39;, data=ScaleBytes(&#39;0x{}&#39;.format(account_index_bytes))).decode()
+        return RuntimeConfiguration().create_scale_object(
+            &#39;u8&#39;, data=ScaleBytes(&#39;0x{}&#39;.format(account_index_bytes))
+        ).decode()
     if len(account_index_bytes) == 4:
-        return ScaleDecoder.get_decoder_class(&#39;u16&#39;, data=ScaleBytes(&#39;0x{}&#39;.format(account_index_bytes))).decode()
+        return RuntimeConfiguration().create_scale_object(
+            &#39;u16&#39;, data=ScaleBytes(&#39;0x{}&#39;.format(account_index_bytes))
+        ).decode()
     if len(account_index_bytes) == 8:
-        return ScaleDecoder.get_decoder_class(&#39;u32&#39;, data=ScaleBytes(&#39;0x{}&#39;.format(account_index_bytes))).decode()
+        return RuntimeConfiguration().create_scale_object(
+            &#39;u32&#39;, data=ScaleBytes(&#39;0x{}&#39;.format(account_index_bytes))
+        ).decode()
     if len(account_index_bytes) == 16:
-        return ScaleDecoder.get_decoder_class(&#39;u64&#39;, data=ScaleBytes(&#39;0x{}&#39;.format(account_index_bytes))).decode()
+        return RuntimeConfiguration().create_scale_object(
+            &#39;u64&#39;, data=ScaleBytes(&#39;0x{}&#39;.format(account_index_bytes))
+        ).decode()
     else:
         raise ValueError(&#34;Invalid account index length&#34;)
 
@@ -468,13 +476,21 @@ Parameters</p>
     account_index_bytes = ss58_decode(address, valid_ss58_format)
 
     if len(account_index_bytes) == 2:
-        return ScaleDecoder.get_decoder_class(&#39;u8&#39;, data=ScaleBytes(&#39;0x{}&#39;.format(account_index_bytes))).decode()
+        return RuntimeConfiguration().create_scale_object(
+            &#39;u8&#39;, data=ScaleBytes(&#39;0x{}&#39;.format(account_index_bytes))
+        ).decode()
     if len(account_index_bytes) == 4:
-        return ScaleDecoder.get_decoder_class(&#39;u16&#39;, data=ScaleBytes(&#39;0x{}&#39;.format(account_index_bytes))).decode()
+        return RuntimeConfiguration().create_scale_object(
+            &#39;u16&#39;, data=ScaleBytes(&#39;0x{}&#39;.format(account_index_bytes))
+        ).decode()
     if len(account_index_bytes) == 8:
-        return ScaleDecoder.get_decoder_class(&#39;u32&#39;, data=ScaleBytes(&#39;0x{}&#39;.format(account_index_bytes))).decode()
+        return RuntimeConfiguration().create_scale_object(
+            &#39;u32&#39;, data=ScaleBytes(&#39;0x{}&#39;.format(account_index_bytes))
+        ).decode()
     if len(account_index_bytes) == 16:
-        return ScaleDecoder.get_decoder_class(&#39;u64&#39;, data=ScaleBytes(&#39;0x{}&#39;.format(account_index_bytes))).decode()
+        return RuntimeConfiguration().create_scale_object(
+            &#39;u64&#39;, data=ScaleBytes(&#39;0x{}&#39;.format(account_index_bytes))
+        ).decode()
     else:
         raise ValueError(&#34;Invalid account index length&#34;)</code></pre>
 </details>
@@ -588,13 +604,13 @@ Parameters</p>
         ss58_format = address_type
 
     if 0 &lt;= account_index &lt;= 2 ** 8 - 1:
-        account_idx_encoder = ScaleDecoder.get_decoder_class(&#39;u8&#39;)
+        account_idx_encoder = RuntimeConfiguration().create_scale_object(&#39;u8&#39;)
     elif 2 ** 8 &lt;= account_index &lt;= 2 ** 16 - 1:
-        account_idx_encoder = ScaleDecoder.get_decoder_class(&#39;u16&#39;)
+        account_idx_encoder = RuntimeConfiguration().create_scale_object(&#39;u16&#39;)
     elif 2 ** 16 &lt;= account_index &lt;= 2 ** 32 - 1:
-        account_idx_encoder = ScaleDecoder.get_decoder_class(&#39;u32&#39;)
+        account_idx_encoder = RuntimeConfiguration().create_scale_object(&#39;u32&#39;)
     elif 2 ** 32 &lt;= account_index &lt;= 2 ** 64 - 1:
-        account_idx_encoder = ScaleDecoder.get_decoder_class(&#39;u64&#39;)
+        account_idx_encoder = RuntimeConfiguration().create_scale_object(&#39;u64&#39;)
     else:
         raise ValueError(&#34;Value too large for an account index&#34;)
 

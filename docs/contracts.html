@@ -44,11 +44,13 @@
 
 import json
 import os
+from packaging import version
 from hashlib import blake2b
 
 from substrateinterface.exceptions import ExtrinsicFailedException, DeployContractFailedException, \
     ContractReadFailedException, ContractMetadataParseException
-from scalecodec import ScaleBytes, ScaleType, GenericContractExecResult
+from scalecodec.base import ScaleBytes, ScaleType
+from scalecodec.types import GenericContractExecResult
 from substrateinterface.base import SubstrateInterface, Keypair, ExtrinsicReceipt
 
 __all__ = [&#39;ContractExecutionReceipt&#39;, &#39;ContractMetadata&#39;, &#39;ContractCode&#39;, &#39;ContractInstance&#39;, &#39;ContractEvent&#39;]
@@ -69,6 +71,8 @@ class ContractMetadata:
         self.metadata_dict = metadata_dict
         self.substrate = substrate
         self.type_registry = {}
+
+        self.__type_offset = 0
 
         self.__parse_type_registry()
 
@@ -115,11 +119,19 @@ class ContractMetadata:
         if &#39;source&#39; not in self.metadata_dict:
             raise ContractMetadataParseException(&#34;&#39;source&#39; directive not present in metadata file&#34;)
 
+        # check Metadata version
+        if version.parse(self.metadata_dict[&#39;metadataVersion&#39;]) &lt; version.parse(&#39;0.7.0&#39;):
+            # Type indexes are 1-based before 0.7.0
+            self.__type_offset = 1
+
         self.type_string_prefix = f&#34;ink.{self.metadata_dict[&#39;source&#39;][&#39;hash&#39;]}&#34;
 
         for idx, metadata_type in enumerate(self.metadata_dict[&#39;types&#39;]):
-            if idx + 1 not in self.type_registry:
-                self.type_registry[idx+1] = self.get_type_string_for_metadata_type(idx+1)
+
+            idx += self.__type_offset
+
+            if idx not in self.type_registry:
+                self.type_registry[idx] = self.get_type_string_for_metadata_type(idx)
 
     def generate_constructor_data(self, name, args: dict = None) -&gt; ScaleBytes:
         &#34;&#34;&#34;
@@ -420,7 +432,7 @@ class ContractExecutionReceipt(ExtrinsicReceipt):
             self.__contract_events = []
 
             for event in self.triggered_events:
-                if event.event_module.name == &#39;Contracts&#39; and event.event.name == &#39;ContractExecution&#39;:
+                if event.event_module.name == &#39;Contracts&#39; and event.event.name == &#39;ContractEmitted&#39;:
 
                     # Create contract event
                     contract_event_obj = ContractEvent(
@@ -687,9 +699,12 @@ class ContractInstance:
 
         if &#39;result&#39; in response:
 
+            self.substrate.init_runtime()
+
             return_type_string = self.metadata.get_return_type_string_for_message(method)
 
             # Wrap the result in a ContractExecResult Enum because the exec will result in the same
+            # TODO Check workings with PortableRegistry
             ContractExecResult = self.substrate.runtime_config.get_decoder_class(&#39;ContractExecResult&#39;)
 
             contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
@@ -1325,6 +1340,13 @@ the generic "Contracts.ContractExecution" event that is triggered after a succes
 <li>scalecodec.base.ScaleDecoder</li>
 <li>abc.ABC</li>
 </ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="substrateinterface.contracts.ContractEvent.scale_info_type"><code class="name">var <span class="ident">scale_info_type</span> : GenericRegistryType</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
 <h3>Methods</h3>
 <dl>
 <dt id="substrateinterface.contracts.ContractEvent.process"><code class="name flex">
@@ -1438,7 +1460,7 @@ the generic "Contracts.ContractExecution" event that is triggered after a succes
             self.__contract_events = []
 
             for event in self.triggered_events:
-                if event.event_module.name == &#39;Contracts&#39; and event.event.name == &#39;ContractExecution&#39;:
+                if event.event_module.name == &#39;Contracts&#39; and event.event.name == &#39;ContractEmitted&#39;:
 
                     # Create contract event
                     contract_event_obj = ContractEvent(
@@ -1549,7 +1571,7 @@ def contract_events(self):
         self.__contract_events = []
 
         for event in self.triggered_events:
-            if event.event_module.name == &#39;Contracts&#39; and event.event.name == &#39;ContractExecution&#39;:
+            if event.event_module.name == &#39;Contracts&#39; and event.event.name == &#39;ContractEmitted&#39;:
 
                 # Create contract event
                 contract_event_obj = ContractEvent(
@@ -1650,9 +1672,12 @@ def contract_events(self):
 
         if &#39;result&#39; in response:
 
+            self.substrate.init_runtime()
+
             return_type_string = self.metadata.get_return_type_string_for_message(method)
 
             # Wrap the result in a ContractExecResult Enum because the exec will result in the same
+            # TODO Check workings with PortableRegistry
             ContractExecResult = self.substrate.runtime_config.get_decoder_class(&#39;ContractExecResult&#39;)
 
             contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
@@ -1922,9 +1947,12 @@ This method does not submit an extrinsic.</p>
 
     if &#39;result&#39; in response:
 
+        self.substrate.init_runtime()
+
         return_type_string = self.metadata.get_return_type_string_for_message(method)
 
         # Wrap the result in a ContractExecResult Enum because the exec will result in the same
+        # TODO Check workings with PortableRegistry
         ContractExecResult = self.substrate.runtime_config.get_decoder_class(&#39;ContractExecResult&#39;)
 
         contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
@@ -2014,6 +2042,8 @@ parsed and the used types are extracted, composed and added to the type registry
         self.substrate = substrate
         self.type_registry = {}
 
+        self.__type_offset = 0
+
         self.__parse_type_registry()
 
     @classmethod
@@ -2059,11 +2089,19 @@ parsed and the used types are extracted, composed and added to the type registry
         if &#39;source&#39; not in self.metadata_dict:
             raise ContractMetadataParseException(&#34;&#39;source&#39; directive not present in metadata file&#34;)
 
+        # check Metadata version
+        if version.parse(self.metadata_dict[&#39;metadataVersion&#39;]) &lt; version.parse(&#39;0.7.0&#39;):
+            # Type indexes are 1-based before 0.7.0
+            self.__type_offset = 1
+
         self.type_string_prefix = f&#34;ink.{self.metadata_dict[&#39;source&#39;][&#39;hash&#39;]}&#34;
 
         for idx, metadata_type in enumerate(self.metadata_dict[&#39;types&#39;]):
-            if idx + 1 not in self.type_registry:
-                self.type_registry[idx+1] = self.get_type_string_for_metadata_type(idx+1)
+
+            idx += self.__type_offset
+
+            if idx not in self.type_registry:
+                self.type_registry[idx] = self.get_type_string_for_metadata_type(idx)
 
     def generate_constructor_data(self, name, args: dict = None) -&gt; ScaleBytes:
         &#34;&#34;&#34;
@@ -2656,6 +2694,7 @@ produces a type string that can be used in the scope of the <code>RuntimeConfigu
 <ul class="">
 <li><code><a title="substrateinterface.contracts.ContractEvent.process" href="#substrateinterface.contracts.ContractEvent.process">process</a></code></li>
 <li><code><a title="substrateinterface.contracts.ContractEvent.process_encode" href="#substrateinterface.contracts.ContractEvent.process_encode">process_encode</a></code></li>
+<li><code><a title="substrateinterface.contracts.ContractEvent.scale_info_type" href="#substrateinterface.contracts.ContractEvent.scale_info_type">scale_info_type</a></code></li>
 </ul>
 </li>
 <li>

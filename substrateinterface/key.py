@@ -15,7 +15,7 @@
 import re
 from hashlib import blake2b
 
-from scalecodec import ScaleDecoder
+from scalecodec.types import Bytes
 
 RE_JUNCTION = r'(\/\/?)([^/]+)'
 JUNCTION_ID_LEN = 32
@@ -29,7 +29,7 @@ class DeriveJunction:
     @classmethod
     def from_derive_path(cls, path: str, is_hard=False):
 
-        path_scale = ScaleDecoder.get_decoder_class('Bytes')
+        path_scale = Bytes()
         path_scale.encode(path)
 
         if len(path) > JUNCTION_ID_LEN:

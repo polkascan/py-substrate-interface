@@ -21,7 +21,8 @@ from hashlib import blake2b
 
 from substrateinterface.exceptions import ExtrinsicFailedException, DeployContractFailedException, \
     ContractReadFailedException, ContractMetadataParseException
-from scalecodec import ScaleBytes, ScaleType, GenericContractExecResult
+from scalecodec.base import ScaleBytes, ScaleType
+from scalecodec.types import GenericContractExecResult
 from substrateinterface.base import SubstrateInterface, Keypair, ExtrinsicReceipt
 
 __all__ = ['ContractExecutionReceipt', 'ContractMetadata', 'ContractCode', 'ContractInstance', 'ContractEvent']

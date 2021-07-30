@@ -28,9 +28,8 @@ from typing import Optional
 
 from websocket import create_connection, WebSocketConnectionClosedException
 
-from scalecodec import ScaleBytes, GenericCall, GenericAccountId
-from scalecodec.base import ScaleDecoder, RuntimeConfigurationObject, ScaleType
-from scalecodec.block import LogDigest, Extrinsic, GenericExtrinsic
+from scalecodec.base import ScaleDecoder, ScaleBytes, RuntimeConfigurationObject, ScaleType
+from scalecodec.types import GenericCall, GenericExtrinsic, Extrinsic, LogDigest
 from scalecodec.type_registry import load_type_registry_preset
 from scalecodec.updater import update_type_registries
 
@@ -815,56 +814,6 @@ class SubstrateInterface:
 
         return response
 
-    def get_storage(self, block_hash, module, function, params=None, return_scale_type=None, hasher=None,
-                    spec_version_id='default', metadata=None, metadata_version=None):
-        """
-        Retrieves the storage entry for given module, function and optional parameters at given block.
-
-        DEPRECATED: use `query()`
-
-        Parameters
-        ----------
-        block_hash
-        module
-        function
-        params
-        return_scale_type: Scale type string to interprete result
-        hasher: Hashing method used to determine storage key, defaults to 'Twox64Concat' if not provided
-        spec_version_id: DEPRECATED
-        metadata
-        metadata_version: Version index of Metadata, e.g. 9 for MetadataV9
-
-        Returns
-        -------
-
-        """
-        storage_hash = self.generate_storage_hash(
-            storage_module=module,
-            storage_function=function,
-            params=params,
-            hasher=hasher,
-            metadata_version=metadata_version
-        )
-        response = self.rpc_request("state_getStorageAt", [storage_hash, block_hash])
-
-        if 'error' in response:
-            raise SubstrateRequestException(response['error']['message'])
-
-        elif 'result' in response:
-
-            if return_scale_type and response.get('result'):
-                obj = ScaleDecoder.get_decoder_class(
-                    type_string=return_scale_type,
-                    data=ScaleBytes(response.get('result')),
-                    metadata=metadata,
-                    runtime_config=self.runtime_config
-                )
-                return obj.decode()
-            else:
-                return response.get('result')
-        else:
-            raise SubstrateRequestException("Error occurred during retrieval of events")
-
     def get_storage_by_key(self, block_hash, storage_key):
         """
         A pass-though to existing JSONRPC method `state_getStorageAt`
@@ -1151,9 +1100,7 @@ class SubstrateInterface:
         for idx, param in enumerate(params):
             if type(param) is not ScaleBytes:
                 param = self.convert_storage_parameter(param_types[idx], param)
-                param_obj = ScaleDecoder.get_decoder_class(
-                    type_string=param_types[idx], runtime_config=self.runtime_config
-                )
+                param_obj = self.runtime_config.create_scale_object(type_string=param_types[idx])
                 params[idx] = param_obj.encode(param)
 
         # Generate storage key prefix
@@ -1320,9 +1267,7 @@ class SubstrateInterface:
         # Encode parameters
         for idx, param in enumerate(params):
             param = self.convert_storage_parameter(param_types[idx], param)
-            param_obj = ScaleDecoder.get_decoder_class(
-                type_string=param_types[idx], runtime_config=self.runtime_config
-            )
+            param_obj = self.runtime_config.create_scale_object(type_string=param_types[idx])
             params[idx] = param_obj.encode(param)
 
         storage_hash = self.generate_storage_hash(
@@ -1338,11 +1283,10 @@ class SubstrateInterface:
                 for change_storage_key, change_data in message['params']['result']['changes']:
                     if change_storage_key == storage_hash:
 
-                        updated_obj = ScaleDecoder.get_decoder_class(
+                        updated_obj = self.runtime_config.create_scale_object(
                             type_string=value_scale_type,
                             data=ScaleBytes(change_data),
-                            metadata=self.metadata_decoder,
-                            runtime_config=self.runtime_config
+                            metadata=self.metadata_decoder
                         )
                         updated_obj.decode()
                         subscription_result = subscription_handler(updated_obj, update_nr, subscription_id)
@@ -1379,11 +1323,10 @@ class SubstrateInterface:
                         value_scale_type = f'Option<{value_scale_type}>'
                         query_value = storage_item.value_object['default'].value_object
 
-                    obj = ScaleDecoder.get_decoder_class(
+                    obj = self.runtime_config.create_scale_object(
                         type_string=value_scale_type,
                         data=ScaleBytes(query_value),
-                        metadata=self.metadata_decoder,
-                        runtime_config=self.runtime_config
+                        metadata=self.metadata_decoder
                     )
                     obj.decode()
                     return obj
@@ -1487,8 +1430,8 @@ class SubstrateInterface:
 
         self.init_runtime(block_hash=block_hash)
 
-        call = ScaleDecoder.get_decoder_class(
-            type_string='Call', metadata=self.metadata_decoder, runtime_config=self.runtime_config
+        call = self.runtime_config.create_scale_object(
+            type_string='Call', metadata=self.metadata_decoder
         )
 
         call.encode({
@@ -1527,7 +1470,7 @@ class SubstrateInterface:
             block_hash = genesis_hash
         else:
             # Determine mortality of extrinsic
-            era_obj = ScaleDecoder.get_decoder_class('Era', runtime_config=self.runtime_config)
+            era_obj = self.runtime_config.create_scale_object('Era')
 
             if isinstance(era, dict) and 'current' not in era and 'phase' not in era:
                 raise ValueError('The era dict must contain either "current" or "phase" element to encode a valid era')
@@ -1536,7 +1479,7 @@ class SubstrateInterface:
             block_hash = self.get_block_hash(block_id=era_obj.birth(era.get('current')))
 
         # Create signature payload
-        signature_payload = ScaleDecoder.get_decoder_class('ExtrinsicPayloadValue', runtime_config=self.runtime_config)
+        signature_payload = self.runtime_config.create_scale_object('ExtrinsicPayloadValue')
 
         if include_call_length:
 
@@ -1624,9 +1567,7 @@ class SubstrateInterface:
             signature = keypair.sign(signature_payload)
 
         # Create extrinsic
-        extrinsic = ScaleDecoder.get_decoder_class(
-            type_string='Extrinsic', metadata=self.metadata_decoder, runtime_config=self.runtime_config
-        )
+        extrinsic = self.runtime_config.create_scale_object(type_string='Extrinsic', metadata=self.metadata_decoder)
 
         extrinsic.encode({
             'account_id': keypair.public_key,
@@ -1654,9 +1595,7 @@ class SubstrateInterface:
         GenericExtrinsic
         """
         # Create extrinsic
-        extrinsic = ScaleDecoder.get_decoder_class(
-            type_string='Extrinsic', metadata=self.metadata_decoder, runtime_config=self.runtime_config
-        )
+        extrinsic = self.runtime_config.create_scale_object(type_string='Extrinsic', metadata=self.metadata_decoder)
 
         extrinsic.encode({
             'call_function': call.value['call_function'],
@@ -1829,9 +1768,7 @@ class SubstrateInterface:
 
             # Not in type registry, try get hard coded decoder classes
             try:
-                decoder_class_obj = ScaleDecoder.get_decoder_class(
-                    type_string=type_string, runtime_config=self.runtime_config
-                )
+                decoder_class_obj = self.runtime_config.create_scale_object(type_string=type_string)
                 decoder_class = decoder_class_obj.__class__
             except NotImplementedError as e:
                 decoder_class = None
@@ -2701,10 +2638,9 @@ class SubstrateInterface:
         if storage_item.fallback != '0x00':
             # Decode fallback
             try:
-                fallback_obj = ScaleDecoder.get_decoder_class(
+                fallback_obj = self.runtime_config.create_scale_object(
                     type_string=storage_dict["type_value"],
-                    data=ScaleBytes(storage_item.fallback),
-                    runtime_config=self.runtime_config
+                    data=ScaleBytes(storage_item.fallback)
                 )
                 storage_dict["storage_fallback"] = fallback_obj.decode()
             except Exception:
@@ -2727,8 +2663,8 @@ class SubstrateInterface:
 
         """
         try:
-            value_obj = ScaleDecoder.get_decoder_class(
-                type_string=constant.type, data=ScaleBytes(constant.constant_value), runtime_config=self.runtime_config
+            value_obj = self.runtime_config.create_scale_object(
+                type_string=constant.type, data=ScaleBytes(constant.constant_value)
             )
             constant_decoded_value = value_obj.decode()
         except Exception:

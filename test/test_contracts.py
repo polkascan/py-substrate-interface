@@ -17,7 +17,7 @@
 import os
 import unittest
 
-from scalecodec import ScaleBytes
+from scalecodec.base import ScaleBytes
 from substrateinterface import SubstrateInterface, ContractMetadata, ContractInstance, Keypair
 from substrateinterface.contracts import ContractEvent
 from substrateinterface.exceptions import ContractMetadataParseException
