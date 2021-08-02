@@ -1494,13 +1494,13 @@ class SubstrateInterface:
             'era': era,
             'nonce': nonce,
             'tip': tip,
-            'specVersion': self.runtime_version,
-            'genesisHash': genesis_hash,
-            'blockHash': block_hash
+            'spec_version': self.runtime_version,
+            'genesis_hash': genesis_hash,
+            'block_hash': block_hash
         }
 
         if self.transaction_version is not None:
-            payload_dict['transactionVersion'] = self.transaction_version
+            payload_dict['transaction_version'] = self.transaction_version
 
         signature_payload.encode(payload_dict)
 
@@ -2264,7 +2264,7 @@ class SubstrateInterface:
 
                             if log_digest.value['PreRuntime']['engine'] == 'BABE':
                                 validator_set = self.query("Session", "Validators", block_hash=block_hash)
-                                rank_validator = log_digest.value['PreRuntime']['data']['authorityIndex']
+                                rank_validator = log_digest.value['PreRuntime']['data']['authority_index']
 
                                 block_author = validator_set.elements[rank_validator]
                                 block_data['author'] = block_author.value
@@ -2621,13 +2621,13 @@ class SubstrateInterface:
             storage_dict["type_value"] = type_info["value"]
             storage_dict["type_keys"] = [type_info["key"]]
             storage_dict["type_hashers"] = [type_info["hasher"]]
-            storage_dict["type_is_linked"] = type_info["isLinked"]
+            storage_dict["type_is_linked"] = type_info["is_linked"]
 
         elif type_class == 'DoubleMapType':
 
             storage_dict["type_value"] = type_info["value"]
             storage_dict["type_keys"] = [type_info["key1"], type_info["key2"]]
-            storage_dict["type_hashers"] = [type_info["hasher"], type_info["key2Hasher"]]
+            storage_dict["type_hashers"] = [type_info["hasher"], type_info["key2_hasher"]]
 
         elif type_class == 'NMapType':
 
@@ -2977,15 +2977,12 @@ class ExtrinsicReceipt:
 
                     elif event.value['module_id'] == 'System' and event.value['event_id'] == 'ExtrinsicFailed':
                         self.__is_success = False
-                        raise NotImplementedError()
 
                     elif event.value['module_id'] == 'Treasury' and event.value['event_id'] == 'Deposit':
-                        self.__total_fee_amount += event.params[0]['value']
-                        raise NotImplementedError()
+                        self.__total_fee_amount += event.value['attributes']
 
                     elif event.value['module_id'] == 'Balances' and event.value['event_id'] == 'Deposit':
-                        self.__total_fee_amount += event.params[0]['value']
-                        raise NotImplementedError()
+                        self.__total_fee_amount += event.value['attributes']
                 else:
 
                     if event.event_module.name == 'System' and event.event.name == 'ExtrinsicSuccess':

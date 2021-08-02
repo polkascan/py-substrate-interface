@@ -60,7 +60,7 @@ class QueryTestCase(unittest.TestCase):
             {
                 'nonce': 0, 'consumers': 0, 'providers': 0, 'sufficients': 0,
                 'data': {
-                    'free': 0, 'reserved': 0, 'miscFrozen': 0, 'feeFrozen': 0
+                    'free': 0, 'reserved': 0, 'misc_frozen': 0, 'fee_frozen': 0
                 }
             }, result.value)
 
