@@ -831,8 +831,7 @@ class SubstrateInterface:
             storage_module=module,
             storage_function=function,
             params=params,
-            hasher=hasher,
-            metadata_version=metadata_version
+            hashers=[hasher]
         )
         response = self.rpc_request("state_getStorageAt", [storage_hash, block_hash])
 
