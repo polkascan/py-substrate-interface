@@ -13,10 +13,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import os
 import unittest
 from unittest.mock import MagicMock
 
+from scalecodec.type_registry import load_type_registry_file
 from substrateinterface.exceptions import SubstrateRequestException
 
 from scalecodec.base import ScaleBytes
@@ -27,13 +28,19 @@ from test.fixtures import metadata_v12_hex
 
 class TestHelperFunctions(unittest.TestCase):
 
+    test_metadata_version = 'V13'
+
     @classmethod
     def setUpClass(cls):
 
         cls.substrate = SubstrateInterface(url='dummy', ss58_format=42, type_registry_preset='kusama')
 
+        cls.metadata_fixture_dict = load_type_registry_file(
+            os.path.join(os.path.dirname(__file__), 'fixtures', 'metadata_hex.json')
+        )
+
         metadata_decoder = cls.substrate.runtime_config.create_scale_object('MetadataVersioned')
-        metadata_decoder.decode(ScaleBytes(metadata_v12_hex))
+        metadata_decoder.decode(ScaleBytes(cls.metadata_fixture_dict[cls.test_metadata_version]))
 
         cls.substrate.get_block_metadata = MagicMock(return_value=metadata_decoder)
 
@@ -117,9 +124,9 @@ class TestHelperFunctions(unittest.TestCase):
     def test_get_metadata_event(self):
         event = self.substrate.get_metadata_event("Balances", "Transfer")
         self.assertEqual("Transfer", event.name)
-        self.assertEqual('AccountId', event.args[0])
-        self.assertEqual('AccountId', event.args[1])
-        self.assertEqual('Balance', event.args[2])
+        self.assertEqual('AccountId', event.args[0].type)
+        self.assertEqual('AccountId', event.args[1].type)
+        self.assertEqual('Balance', event.args[2].type)
 
     def test_get_metadata_constant(self):
         constant = self.substrate.get_metadata_constant("System", "BlockHashCount")
@@ -147,10 +154,7 @@ class TestHelperFunctions(unittest.TestCase):
     def test_get_metadata_error(self):
         error = self.substrate.get_metadata_error("System", "InvalidSpecName")
         self.assertEqual("InvalidSpecName", error.name)
-        self.assertEqual(
-            [' The name of specification does not match between the current runtime', ' and the new runtime.'],
-            error.docs
-        )
+        self.assertIsNotNone(error.docs)
 
     def test_helper_functions_should_return_null_not_exists(self):
         self.assertIsNone(self.empty_substrate.get_block_number(
@@ -170,6 +174,22 @@ class TestHelperFunctions(unittest.TestCase):
         self.assertRaises(SubstrateRequestException, self.error_substrate.get_block_runtime_version, '0x')
         self.assertRaises(ValueError, self.error_substrate.query, 'System', 'Account', ['0x'])
         self.assertRaises(SubstrateRequestException, self.error_substrate.get_runtime_metadata, '0x')
+
+
+class TestHelperFunctionsV14(TestHelperFunctions):
+    test_metadata_version = 'V14'
+
+    def test_get_metadata_constant(self):
+        constant = self.substrate.get_metadata_constant("System", "BlockHashCount")
+        self.assertEqual("BlockHashCount", constant.name)
+        self.assertEqual("scale_info::4", constant.type)
+        self.assertEqual("0x60090000", f"0x{constant.constant_value.hex()}")
+
+    def test_get_metadata_storage_function(self):
+        storage = self.substrate.get_metadata_storage_function("System", "Account")
+        self.assertEqual("Account", storage.name)
+        self.assertEqual("scale_info::0", storage.get_params_type_string()[0])
+        self.assertEqual("Blake2_128Concat", storage.type['Map']['hasher'])
 
 
 if __name__ == '__main__':

@@ -1855,7 +1855,7 @@ class SubstrateInterface:
                     for event_index, event in enumerate(module.events):
 
                         for arg_index, arg in enumerate(event.args):
-                            self.process_metadata_typestring(arg)
+                            self.process_metadata_typestring(arg.type)
 
                 if len(storage_functions) > 0:
                     for idx, storage in enumerate(storage_functions):
@@ -1959,12 +1959,6 @@ class SubstrateInterface:
                         )
                     )
 
-        # for call_index, (module, call) in self.metadata_decoder.call_index.items():
-        #     call_list.append(
-        #         self.serialize_module_call(
-        #             module, call, self.runtime_version, call_index
-        #         )
-        #     )
         return call_list
 
     def get_metadata_call_function(self, module_name: str, call_function_name: str, block_hash: str = None):
@@ -1984,10 +1978,11 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        for call_index, (module, call) in self.metadata_decoder.call_index.items():
-            if module.name == module_name and \
-                    call.get_identifier() == call_function_name:
-                return call
+        for pallet in self.metadata_decoder.pallets:
+            if pallet.name == module_name and pallet.calls:
+                for call in pallet.calls:
+                    if call.name == call_function_name:
+                        return call
 
     def get_metadata_events(self, block_hash=None):
         """
@@ -2033,10 +2028,11 @@ class SubstrateInterface:
 
         self.init_runtime(block_hash=block_hash)
 
-        for event_index, (module, event) in self.metadata_decoder.event_index.items():
-            if module.name == module_name and \
-                    event.name == event_name:
-                return event
+        for pallet in self.metadata_decoder.pallets:
+            if pallet.name == module_name and pallet.events:
+                for event in pallet.events:
+                    if event.name == event_name:
+                        return event
 
     def get_metadata_constants(self, block_hash=None):
         """
