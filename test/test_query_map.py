@@ -221,7 +221,7 @@ class QueryMapTestCase(unittest.TestCase):
                 module='Staking',
                 storage_function='ErasStakers'
             )
-        self.assertEqual('"params" with 1 element is mandatory with a DoubleMap storage function', str(cm.exception))
+        self.assertEqual('Storage function map requires 1 parameters, 0 given', str(cm.exception))
 
     def test_double_map_too_many_params(self):
         with self.assertRaises(ValueError) as cm:
@@ -230,7 +230,7 @@ class QueryMapTestCase(unittest.TestCase):
                 storage_function='ErasStakers',
                 params=[21000000, 2]
             )
-        self.assertEqual('"params" with 1 element is mandatory with a DoubleMap storage function', str(cm.exception))
+        self.assertEqual('Storage function map requires 1 parameters, 2 given', str(cm.exception))
 
     def test_map_with_param(self):
         with self.assertRaises(ValueError) as cm:
@@ -239,7 +239,7 @@ class QueryMapTestCase(unittest.TestCase):
                 storage_function='Account',
                 params=[2]
             )
-        self.assertEqual('"params" is only used with a DoubleMap storage function', str(cm.exception))
+        self.assertEqual('Storage function map requires 0 parameters, 1 given', str(cm.exception))
 
 
 if __name__ == '__main__':

@@ -189,7 +189,7 @@ class TestHelperFunctionsV14(TestHelperFunctions):
         storage = self.substrate.get_metadata_storage_function("System", "Account")
         self.assertEqual("Account", storage.name)
         self.assertEqual("scale_info::0", storage.get_params_type_string()[0])
-        self.assertEqual("Blake2_128Concat", storage.type['Map']['hasher'])
+        self.assertEqual("Blake2_128Concat", storage.type['Map']['hashers'][0])
 
 
 if __name__ == '__main__':

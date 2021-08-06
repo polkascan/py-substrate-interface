@@ -1077,24 +1077,12 @@ class SubstrateInterface:
         param_types = storage_item.get_params_type_string()
         key_hashers = storage_item.get_param_hashers()
 
-        # Check MapType condititions and determine prefix length
-        if 'Map' in storage_item.value['type']:
-
-            if params:
-                raise ValueError('"params" is only used with a DoubleMap storage function')
-
-        elif 'DoubleMap' in storage_item.value['type']:
-
-            if params is None or len(params) != 1:
-                raise ValueError('"params" with 1 element is mandatory with a DoubleMap storage function')
-
-        elif 'NMap' in storage_item.value['type']:
-
-            if params is None or len(params) != len(param_types) - 1:
-                raise ValueError(f'{len(param_types) - 1} length params is mandatory with this storage function')
-
-        else:
+        # Check MapType condititions
+        if len(param_types) == 0:
             raise ValueError('Given storage function is not a map')
+
+        if len(params) != len(param_types) - 1:
+            raise ValueError(f'Storage function map requires {len(param_types) -1} parameters, {len(params)} given')
 
         # Encode parameters
         for idx, param in enumerate(params):
@@ -1246,23 +1234,8 @@ class SubstrateInterface:
         param_types = storage_item.get_params_type_string()
         hashers = storage_item.get_param_hashers()
 
-        if 'Plain' in storage_item.value['type']:
-            if len(params) != 0:
-                raise ValueError('Storage call of type "PlainType" doesn\'t accept params')
-
-        elif 'Map' in storage_item.value['type']:
-            if len(params) != 1:
-                raise ValueError('Storage call of type "MapType" requires 1 parameter')
-
-        elif 'DoubleMap' in storage_item.value['type']:
-            if len(params) != 2:
-                raise ValueError('Storage call of type "DoubleMapType" requires 2 parameters')
-
-        elif 'NMap' in storage_item.value['type']:
-            pass
-
-        else:
-            raise NotImplementedError("Storage type not implemented")
+        if len(params) != len(param_types):
+            raise ValueError(f'Storage function requires {len(param_types)} parameters, {len(params)} given')
 
         # Encode parameters
         for idx, param in enumerate(params):
