@@ -29,7 +29,8 @@ class KusamaTypeRegistryTestCase(unittest.TestCase):
         cls.substrate = SubstrateInterface(
             url=settings.KUSAMA_NODE_URL,
             ss58_format=2,
-            type_registry_preset='kusama'
+            type_registry_preset='kusama',
+            use_remote_preset=True
         )
 
     def test_type_registry_compatibility(self):
@@ -47,7 +48,8 @@ class PolkadotTypeRegistryTestCase(unittest.TestCase):
         cls.substrate = SubstrateInterface(
             url=settings.POLKADOT_NODE_URL,
             ss58_format=0,
-            type_registry_preset='polkadot'
+            type_registry_preset='polkadot',
+            use_remote_preset=True
         )
 
     def test_type_registry_compatibility(self):
@@ -66,7 +68,8 @@ class RococoTypeRegistryTestCase(unittest.TestCase):
         cls.substrate = SubstrateInterface(
             url=settings.ROCOCO_NODE_URL,
             ss58_format=42,
-            type_registry_preset='rococo'
+            type_registry_preset='rococo',
+            use_remote_preset=True
         )
 
     def test_type_registry_compatibility(self):
