@@ -1972,12 +1972,12 @@ class SubstrateInterface:
                 type_info["is_primitive_runtime"] = False
 
             for data_type in decoder_class.type_mapping:
+                if data_type:
+                    if type(data_type) in [list, tuple]:
+                        data_type = data_type[1]
 
-                if type(data_type) in [list, tuple]:
-                    data_type = data_type[1]
-
-                if type(data_type) is not dict and data_type not in parent_type_strings:
-                    self.process_metadata_typestring(data_type, parent_type_strings=parent_type_strings)
+                    if type(data_type) is not dict and data_type not in parent_type_strings:
+                        self.process_metadata_typestring(data_type, parent_type_strings=parent_type_strings)
 
         # Try to get superclass as actual decoding class if not root level 'ScaleType'
         if decoder_class and len(decoder_class.__mro__) > 1 and decoder_class.__mro__[1].__name__ != 'ScaleType':
