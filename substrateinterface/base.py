@@ -380,7 +380,7 @@ class Keypair:
 class SubstrateInterface:
 
     def __init__(self, url=None, websocket=None, ss58_format=None, type_registry=None, type_registry_preset=None,
-                 cache_region=None, address_type=None, runtime_config=None, use_remote_preset=False):
+                 cache_region=None, address_type=None, runtime_config=None, use_remote_preset=False, ws_options=None):
         """
         A specialized class in interfacing with a Substrate node.
 
@@ -392,6 +392,7 @@ class SubstrateInterface:
         type_registry_preset: The name of the predefined type registry shipped with the SCALE-codec, e.g. kusama
         cache_region: a Dogpile cache region as a central store for the metadata cache
         use_remote_preset: When True preset is downloaded from Github master, otherwise use files from local installed scalecodec package
+        ws_options: dict of options to pass to the websocket-client create_connection function
         """
 
         if (not url and not websocket) or (url and websocket):
@@ -420,6 +421,18 @@ class SubstrateInterface:
         self.request_id = 1
         self.url = url
         self.websocket = None
+
+        # Websocket connection options
+        self.ws_options = ws_options or {}
+
+        if 'max_size' not in self.ws_options:
+            self.ws_options['max_size'] = 2 ** 32
+
+        if 'read_limit' not in self.ws_options:
+            self.ws_options['read_limit'] = 2 ** 32
+
+        if 'write_limit' not in self.ws_options:
+            self.ws_options['write_limit'] = 2 ** 32
 
         self.__rpc_message_queue = []
 
@@ -456,13 +469,12 @@ class SubstrateInterface:
         self.reload_type_registry(use_remote_preset=use_remote_preset)
 
     def connect_websocket(self):
+
         if self.url and (self.url[0:6] == 'wss://' or self.url[0:5] == 'ws://'):
             self.debug_message("Connecting to {} ...".format(self.url))
             self.websocket = create_connection(
                 self.url,
-                max_size=2 ** 32,
-                read_limit=2 ** 32,
-                write_limit=2 ** 32,
+                **self.ws_options
             )
 
     def close(self):
@@ -1964,7 +1976,7 @@ class SubstrateInterface:
                 if type(data_type) in [list, tuple]:
                     data_type = data_type[1]
 
-                if data_type not in parent_type_strings:
+                if type(data_type) is not dict and data_type not in parent_type_strings:
                     self.process_metadata_typestring(data_type, parent_type_strings=parent_type_strings)
 
         # Try to get superclass as actual decoding class if not root level 'ScaleType'
