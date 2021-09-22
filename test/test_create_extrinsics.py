@@ -29,17 +29,19 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
         cls.kusama_substrate = SubstrateInterface(
             url=settings.KUSAMA_NODE_URL,
             ss58_format=2,
-            type_registry_preset='kusama'
+            type_registry_preset='kusama',
+            use_remote_preset=True
         )
 
         cls.polkadot_substrate = SubstrateInterface(
             url=settings.POLKADOT_NODE_URL,
             ss58_format=0,
-            type_registry_preset='polkadot'
+            type_registry_preset='polkadot',
+            use_remote_preset=True
         )
 
     def test_compatibility_polkadot_runtime(self):
-        type_reg = load_type_registry_preset("polkadot")
+        type_reg = load_type_registry_preset("polkadot", use_remote_preset=True)
 
         runtime_data = self.polkadot_substrate.rpc_request('state_getRuntimeVersion', [])
         self.assertLessEqual(
@@ -47,7 +49,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
         )
 
     def test_compatibility_kusama_runtime(self):
-        type_reg = load_type_registry_preset("kusama")
+        type_reg = load_type_registry_preset("kusama", use_remote_preset=True)
 
         runtime_data = self.kusama_substrate.rpc_request('state_getRuntimeVersion', [])
         self.assertLessEqual(

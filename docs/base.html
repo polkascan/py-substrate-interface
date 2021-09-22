@@ -2632,8 +2632,10 @@ class SubstrateInterface:
             &#34;module_prefix&#34;: module.prefix,
             &#34;module_name&#34;: module.name,
             &#34;spec_version&#34;: spec_version_id,
-            &#34;type_keys&#34;: None,
-            &#34;type_hashers&#34;: None,
+            &#34;type_key1&#34;: None,
+            &#34;type_key2&#34;: None,
+            &#34;type_hasher_key1&#34;: None,
+            &#34;type_hasher_key2&#34;: None,
             &#34;type_value&#34;: None,
             &#34;type_is_linked&#34;: None
         }
@@ -2647,21 +2649,17 @@ class SubstrateInterface:
 
         elif type_class == &#39;MapType&#39;:
             storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-            storage_dict[&#34;type_keys&#34;] = [type_info[&#34;key&#34;]]
-            storage_dict[&#34;type_hashers&#34;] = [type_info[&#34;hasher&#34;]]
+            storage_dict[&#34;type_key1&#34;] = type_info[&#34;key&#34;]
+            storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
             storage_dict[&#34;type_is_linked&#34;] = type_info[&#34;isLinked&#34;]
 
         elif type_class == &#39;DoubleMapType&#39;:
 
             storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-            storage_dict[&#34;type_keys&#34;] = [type_info[&#34;key1&#34;], type_info[&#34;key2&#34;]]
-            storage_dict[&#34;type_hashers&#34;] = [type_info[&#34;hasher&#34;], type_info[&#34;key2Hasher&#34;]]
-
-        elif type_class == &#39;NMapType&#39;:
-
-            storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-            storage_dict[&#34;type_keys&#34;] = type_info[&#34;keys&#34;]
-            storage_dict[&#34;type_hashers&#34;] = type_info[&#34;hashers&#34;]
+            storage_dict[&#34;type_key1&#34;] = type_info[&#34;key1&#34;]
+            storage_dict[&#34;type_key2&#34;] = type_info[&#34;key2&#34;]
+            storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
+            storage_dict[&#34;type_hasher_key2&#34;] = type_info[&#34;key2Hasher&#34;]
 
         if storage_item.fallback != &#39;0x00&#39;:
             # Decode fallback
@@ -6980,8 +6978,10 @@ def generate_mnemonic(cls, words=12):
             &#34;module_prefix&#34;: module.prefix,
             &#34;module_name&#34;: module.name,
             &#34;spec_version&#34;: spec_version_id,
-            &#34;type_keys&#34;: None,
-            &#34;type_hashers&#34;: None,
+            &#34;type_key1&#34;: None,
+            &#34;type_key2&#34;: None,
+            &#34;type_hasher_key1&#34;: None,
+            &#34;type_hasher_key2&#34;: None,
             &#34;type_value&#34;: None,
             &#34;type_is_linked&#34;: None
         }
@@ -6995,21 +6995,17 @@ def generate_mnemonic(cls, words=12):
 
         elif type_class == &#39;MapType&#39;:
             storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-            storage_dict[&#34;type_keys&#34;] = [type_info[&#34;key&#34;]]
-            storage_dict[&#34;type_hashers&#34;] = [type_info[&#34;hasher&#34;]]
+            storage_dict[&#34;type_key1&#34;] = type_info[&#34;key&#34;]
+            storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
             storage_dict[&#34;type_is_linked&#34;] = type_info[&#34;isLinked&#34;]
 
         elif type_class == &#39;DoubleMapType&#39;:
 
             storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-            storage_dict[&#34;type_keys&#34;] = [type_info[&#34;key1&#34;], type_info[&#34;key2&#34;]]
-            storage_dict[&#34;type_hashers&#34;] = [type_info[&#34;hasher&#34;], type_info[&#34;key2Hasher&#34;]]
-
-        elif type_class == &#39;NMapType&#39;:
-
-            storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-            storage_dict[&#34;type_keys&#34;] = type_info[&#34;keys&#34;]
-            storage_dict[&#34;type_hashers&#34;] = type_info[&#34;hashers&#34;]
+            storage_dict[&#34;type_key1&#34;] = type_info[&#34;key1&#34;]
+            storage_dict[&#34;type_key2&#34;] = type_info[&#34;key2&#34;]
+            storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
+            storage_dict[&#34;type_hasher_key2&#34;] = type_info[&#34;key2Hasher&#34;]
 
         if storage_item.fallback != &#39;0x00&#39;:
             # Decode fallback
@@ -10397,8 +10393,10 @@ use this method to perform the request.</p>
         &#34;module_prefix&#34;: module.prefix,
         &#34;module_name&#34;: module.name,
         &#34;spec_version&#34;: spec_version_id,
-        &#34;type_keys&#34;: None,
-        &#34;type_hashers&#34;: None,
+        &#34;type_key1&#34;: None,
+        &#34;type_key2&#34;: None,
+        &#34;type_hasher_key1&#34;: None,
+        &#34;type_hasher_key2&#34;: None,
         &#34;type_value&#34;: None,
         &#34;type_is_linked&#34;: None
     }
@@ -10412,21 +10410,17 @@ use this method to perform the request.</p>
 
     elif type_class == &#39;MapType&#39;:
         storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-        storage_dict[&#34;type_keys&#34;] = [type_info[&#34;key&#34;]]
-        storage_dict[&#34;type_hashers&#34;] = [type_info[&#34;hasher&#34;]]
+        storage_dict[&#34;type_key1&#34;] = type_info[&#34;key&#34;]
+        storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
         storage_dict[&#34;type_is_linked&#34;] = type_info[&#34;isLinked&#34;]
 
     elif type_class == &#39;DoubleMapType&#39;:
 
         storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-        storage_dict[&#34;type_keys&#34;] = [type_info[&#34;key1&#34;], type_info[&#34;key2&#34;]]
-        storage_dict[&#34;type_hashers&#34;] = [type_info[&#34;hasher&#34;], type_info[&#34;key2Hasher&#34;]]
-
-    elif type_class == &#39;NMapType&#39;:
-
-        storage_dict[&#34;type_value&#34;] = type_info[&#34;value&#34;]
-        storage_dict[&#34;type_keys&#34;] = type_info[&#34;keys&#34;]
-        storage_dict[&#34;type_hashers&#34;] = type_info[&#34;hashers&#34;]
+        storage_dict[&#34;type_key1&#34;] = type_info[&#34;key1&#34;]
+        storage_dict[&#34;type_key2&#34;] = type_info[&#34;key2&#34;]
+        storage_dict[&#34;type_hasher_key1&#34;] = type_info[&#34;hasher&#34;]
+        storage_dict[&#34;type_hasher_key2&#34;] = type_info[&#34;key2Hasher&#34;]
 
     if storage_item.fallback != &#39;0x00&#39;:
         # Decode fallback
