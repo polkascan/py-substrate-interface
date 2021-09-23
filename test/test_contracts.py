@@ -17,7 +17,7 @@
 import os
 import unittest
 
-from scalecodec import ScaleBytes
+from scalecodec.base import ScaleBytes
 from substrateinterface import SubstrateInterface, ContractMetadata, ContractInstance, Keypair
 from substrateinterface.contracts import ContractEvent
 from substrateinterface.exceptions import ContractMetadataParseException
@@ -169,7 +169,7 @@ class ContractInstanceTestCase(unittest.TestCase):
 
                 return super().rpc_request(method, params, result_handler)
 
-        cls.substrate = MockedSubstrateInterface(url=settings.KUSAMA_NODE_URL)
+        cls.substrate = MockedSubstrateInterface(url=settings.KUSAMA_NODE_URL, type_registry_preset='kusama')
 
         cls.keypair = Keypair.create_from_uri('//Alice')
 

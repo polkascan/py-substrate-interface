@@ -29,15 +29,13 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
         cls.kusama_substrate = SubstrateInterface(
             url=settings.KUSAMA_NODE_URL,
             ss58_format=2,
-            type_registry_preset='kusama',
-            use_remote_preset=True
+            type_registry_preset='kusama'
         )
 
         cls.polkadot_substrate = SubstrateInterface(
             url=settings.POLKADOT_NODE_URL,
             ss58_format=0,
-            type_registry_preset='polkadot',
-            use_remote_preset=True
+            type_registry_preset='polkadot'
         )
 
     def test_compatibility_polkadot_runtime(self):
@@ -75,12 +73,12 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
 
             extrinsic = substrate.create_signed_extrinsic(call=call, keypair=keypair)
 
-            self.assertEqual(extrinsic.address.value, keypair.public_key)
-            self.assertEqual(extrinsic.call_module.name, 'Balances')
-            self.assertEqual(extrinsic.call.name, 'transfer')
+            self.assertEqual(extrinsic['address'].value, keypair.public_key)
+            self.assertEqual(extrinsic['call']['call_module'].name, 'Balances')
+            self.assertEqual(extrinsic['call']['call_function'].name, 'transfer')
 
             # Randomly created account should always have 0 nonce, otherwise account already exists
-            self.assertEqual(extrinsic.nonce.value, 0)
+            self.assertEqual(extrinsic['nonce'].value, 0)
 
             try:
                 substrate.submit_extrinsic(extrinsic)

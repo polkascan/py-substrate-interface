@@ -72,7 +72,8 @@ class TestInit(unittest.TestCase):
 
     def test_init_with_unknown_preset(self):
         with self.assertRaises(ValueError) as cm:
-            SubstrateInterface(url=settings.KUSAMA_NODE_URL, type_registry_preset='unknown')
+            substrate = SubstrateInterface(url=settings.KUSAMA_NODE_URL, type_registry_preset='unknown')
+            substrate.init_runtime()
 
         self.assertEqual('Unsupported type registry preset "unknown"', str(cm.exception))
 

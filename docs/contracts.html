@@ -49,7 +49,8 @@ from hashlib import blake2b
 
 from substrateinterface.exceptions import ExtrinsicFailedException, DeployContractFailedException, \
     ContractReadFailedException, ContractMetadataParseException
-from scalecodec import ScaleBytes, ScaleType, GenericContractExecResult
+from scalecodec.base import ScaleBytes, ScaleType
+from scalecodec.types import GenericContractExecResult
 from substrateinterface.base import SubstrateInterface, Keypair, ExtrinsicReceipt
 
 __all__ = [&#39;ContractExecutionReceipt&#39;, &#39;ContractMetadata&#39;, &#39;ContractCode&#39;, &#39;ContractInstance&#39;, &#39;ContractEvent&#39;]
@@ -698,9 +699,12 @@ class ContractInstance:
 
         if &#39;result&#39; in response:
 
+            self.substrate.init_runtime()
+
             return_type_string = self.metadata.get_return_type_string_for_message(method)
 
             # Wrap the result in a ContractExecResult Enum because the exec will result in the same
+            # TODO Check workings with PortableRegistry
             ContractExecResult = self.substrate.runtime_config.get_decoder_class(&#39;ContractExecResult&#39;)
 
             contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
@@ -1336,6 +1340,13 @@ the generic "Contracts.ContractExecution" event that is triggered after a succes
 <li>scalecodec.base.ScaleDecoder</li>
 <li>abc.ABC</li>
 </ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="substrateinterface.contracts.ContractEvent.scale_info_type"><code class="name">var <span class="ident">scale_info_type</span> : GenericRegistryType</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
 <h3>Methods</h3>
 <dl>
 <dt id="substrateinterface.contracts.ContractEvent.process"><code class="name flex">
@@ -1661,9 +1672,12 @@ def contract_events(self):
 
         if &#39;result&#39; in response:
 
+            self.substrate.init_runtime()
+
             return_type_string = self.metadata.get_return_type_string_for_message(method)
 
             # Wrap the result in a ContractExecResult Enum because the exec will result in the same
+            # TODO Check workings with PortableRegistry
             ContractExecResult = self.substrate.runtime_config.get_decoder_class(&#39;ContractExecResult&#39;)
 
             contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
@@ -1933,9 +1947,12 @@ This method does not submit an extrinsic.</p>
 
     if &#39;result&#39; in response:
 
+        self.substrate.init_runtime()
+
         return_type_string = self.metadata.get_return_type_string_for_message(method)
 
         # Wrap the result in a ContractExecResult Enum because the exec will result in the same
+        # TODO Check workings with PortableRegistry
         ContractExecResult = self.substrate.runtime_config.get_decoder_class(&#39;ContractExecResult&#39;)
 
         contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
@@ -2677,6 +2694,7 @@ produces a type string that can be used in the scope of the <code>RuntimeConfigu
 <ul class="">
 <li><code><a title="substrateinterface.contracts.ContractEvent.process" href="#substrateinterface.contracts.ContractEvent.process">process</a></code></li>
 <li><code><a title="substrateinterface.contracts.ContractEvent.process_encode" href="#substrateinterface.contracts.ContractEvent.process_encode">process_encode</a></code></li>
+<li><code><a title="substrateinterface.contracts.ContractEvent.scale_info_type" href="#substrateinterface.contracts.ContractEvent.scale_info_type">scale_info_type</a></code></li>
 </ul>
 </li>
 <li>
