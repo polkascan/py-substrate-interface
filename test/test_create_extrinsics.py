@@ -29,15 +29,13 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
         cls.kusama_substrate = SubstrateInterface(
             url=settings.KUSAMA_NODE_URL,
             ss58_format=2,
-            type_registry_preset='kusama',
-            use_remote_preset=True
+            type_registry_preset='kusama'
         )
 
         cls.polkadot_substrate = SubstrateInterface(
             url=settings.POLKADOT_NODE_URL,
             ss58_format=0,
-            type_registry_preset='polkadot',
-            use_remote_preset=True
+            type_registry_preset='polkadot'
         )
 
     def test_compatibility_polkadot_runtime(self):

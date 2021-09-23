@@ -191,6 +191,13 @@ class TestHelperFunctionsV14(TestHelperFunctions):
         self.assertEqual("scale_info::0", storage.get_params_type_string()[0])
         self.assertEqual("Blake2_128Concat", storage.type['Map']['hashers'][0])
 
+    def test_get_metadata_event(self):
+        event = self.substrate.get_metadata_event("Balances", "Transfer")
+        self.assertEqual("Transfer", event.name)
+        self.assertEqual('scale_info::0', event.args[0].type)
+        self.assertEqual('scale_info::0', event.args[1].type)
+        self.assertEqual('scale_info::6', event.args[2].type)
+
 
 if __name__ == '__main__':
     unittest.main()
