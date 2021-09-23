@@ -155,7 +155,7 @@ substrate = SubstrateInterface(
 
 ## Features
 
-### Retrieve extrinsics for a certain block
+### Retrieve extrinsics for a certain block (Method 1: access serialized value)
 
 ```python
 # Set block_hash to None for chaintip
@@ -166,21 +166,52 @@ result = substrate.get_block(block_hash=block_hash)
 
 for extrinsic in result['extrinsics']:
 
-    if extrinsic.address:
-        signed_by_address = extrinsic.address.value
+    if 'address' in extrinsic.value:
+        signed_by_address = extrinsic.value['address']
     else:
         signed_by_address = None
 
     print('\nPallet: {}\nCall: {}\nSigned by: {}'.format(
-        extrinsic.call_module.name,
-        extrinsic.call.name,
+        extrinsic.value["call"]["call_module"],
+        extrinsic.value["call"]["call_function"],
         signed_by_address
     ))
 
     # Loop through call params
-    for param in extrinsic.params:
+    for param in extrinsic.value["call"]['call_args']:
 
-        if param['type'] == 'Compact<Balance>':
+        if param['type'] == 'Balance':
+            param['value'] = '{} {}'.format(param['value'] / 10 ** substrate.token_decimals, substrate.token_symbol)
+
+        print("Param '{}': {}".format(param['name'], param['value']))
+```
+
+### Retrieve extrinsics for a certain block (Method 2: access nested objects)
+
+```python
+# Set block_hash to None for chaintip
+block_hash = "0x51d15792ff3c5ee9c6b24ddccd95b377d5cccc759b8e76e5de9250cf58225087"
+
+# Retrieve extrinsics in block
+result = substrate.get_block(block_hash=block_hash)
+
+for extrinsic in result['extrinsics']:
+
+    if 'address' in extrinsic:
+        signed_by_address = extrinsic['address'].value
+    else:
+        signed_by_address = None
+
+    print('\nPallet: {}\nCall: {}\nSigned by: {}'.format(
+        extrinsic["call"]["call_module"].name,
+        extrinsic["call"]["call_function"].name,
+        signed_by_address
+    ))
+
+    # Loop through call params
+    for param in extrinsic["call"]['call_args']:
+
+        if param['type'] == 'Balance':
             param['value'] = '{} {}'.format(param['value'] / 10 ** substrate.token_decimals, substrate.token_symbol)
 
         print("Param '{}': {}".format(param['name'], param['value']))
