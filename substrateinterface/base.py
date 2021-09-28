@@ -1389,7 +1389,7 @@ class SubstrateInterface:
 
         if 'result' in response:
             metadata_decoder = self.runtime_config.create_scale_object(
-                'VersionedMetadata', data=ScaleBytes(response.get('result')))
+                'MetadataVersioned', data=ScaleBytes(response.get('result')))
             response['result'] = metadata_decoder.decode()
 
         return response
