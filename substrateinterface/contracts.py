@@ -405,18 +405,33 @@ class ContractExecutionReceipt(ExtrinsicReceipt):
             self.__contract_events = []
 
             for event in self.triggered_events:
-                if event.event_module.name == 'Contracts' and event.event.name == 'ContractEmitted':
 
-                    # Create contract event
-                    contract_event_obj = ContractEvent(
-                        data=ScaleBytes(event.params[1]['value']),
-                        runtime_config=self.substrate.runtime_config,
-                        contract_metadata=self.contract_metadata
-                    )
+                if self.substrate.implements_scaleinfo():
+                    if event.value['module_id'] == 'Contracts' and event.value['event_id'] == 'ContractEmitted':
+                        # Create contract event
+                        contract_event_obj = ContractEvent(
+                            data=ScaleBytes(event.value['attributes'][1]),
+                            runtime_config=self.substrate.runtime_config,
+                            contract_metadata=self.contract_metadata
+                        )
 
-                    contract_event_obj.decode()
+                        contract_event_obj.decode()
 
-                    self.__contract_events.append(contract_event_obj)
+                        self.__contract_events.append(contract_event_obj)
+                else:
+
+                    if event.event_module.name == 'Contracts' and event.event.name == 'ContractEmitted':
+
+                        # Create contract event
+                        contract_event_obj = ContractEvent(
+                            data=ScaleBytes(event.params[1]['value']),
+                            runtime_config=self.substrate.runtime_config,
+                            contract_metadata=self.contract_metadata
+                        )
+
+                        contract_event_obj.decode()
+
+                        self.__contract_events.append(contract_event_obj)
 
     @property
     def contract_events(self):
@@ -601,12 +616,23 @@ class ContractCode:
             raise ExtrinsicFailedException(result.error_message)
 
         for event in result.triggered_events:
-            if event.event.name == 'Instantiated':
-                return ContractInstance(
-                    contract_address=event.params[1]['value'],
-                    metadata=self.metadata,
-                    substrate=self.substrate
-                )
+
+            if self.substrate.implements_scaleinfo():
+
+                if event.value['event']['event_id'] == 'Instantiated':
+                    return ContractInstance(
+                        contract_address=event.value['event']['attributes'][1],
+                        metadata=self.metadata,
+                        substrate=self.substrate
+                    )
+            else:
+
+                if event.event.name == 'Instantiated':
+                    return ContractInstance(
+                        contract_address=event.params[1]['value'],
+                        metadata=self.metadata,
+                        substrate=self.substrate
+                    )
 
         raise DeployContractFailedException()
 
