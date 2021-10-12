@@ -38,22 +38,6 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
             type_registry_preset='polkadot'
         )
 
-    def test_compatibility_polkadot_runtime(self):
-        type_reg = load_type_registry_preset("polkadot", use_remote_preset=True)
-
-        runtime_data = self.polkadot_substrate.rpc_request('state_getRuntimeVersion', [])
-        self.assertLessEqual(
-            runtime_data['result']['specVersion'], type_reg.get('runtime_id'), 'Current runtime is incompatible'
-        )
-
-    def test_compatibility_kusama_runtime(self):
-        type_reg = load_type_registry_preset("kusama", use_remote_preset=True)
-
-        runtime_data = self.kusama_substrate.rpc_request('state_getRuntimeVersion', [])
-        self.assertLessEqual(
-            runtime_data['result']['specVersion'], type_reg.get('runtime_id'), 'Current runtime is incompatible'
-        )
-
     def test_create_balance_transfer(self):
         # Create new keypair
         mnemonic = Keypair.generate_mnemonic()
