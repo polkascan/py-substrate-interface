@@ -2963,7 +2963,7 @@ class ExtrinsicReceipt:
                         self.__total_fee_amount += event.value['attributes']
 
                     elif event.value['module_id'] == 'Balances' and event.value['event_id'] == 'Deposit':
-                        self.__total_fee_amount += event.value['attributes']
+                        self.__total_fee_amount += event.value['attributes'][1]
                 else:
 
                     if event.event_module.name == 'System' and event.event.name == 'ExtrinsicSuccess':
