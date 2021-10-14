@@ -97,37 +97,6 @@ class RococoTypeRegistryTestCase(unittest.TestCase):
 #             self.assertIsNotNone(obj, '{} not supported'.format(scale_type))
 
 
-class MultipleTypeRegistryTestCase(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        cls.polkadot_substrate = SubstrateInterface(
-            url=settings.POLKADOT_NODE_URL,
-            ss58_format=0,
-            type_registry_preset='polkadot',
-            type_registry={
-                'types': {
-                    'TestType': 'u8'
-                }
-            }
-        )
-
-        cls.kusama_substrate = SubstrateInterface(
-            url=settings.KUSAMA_NODE_URL,
-            ss58_format=2,
-            type_registry_preset='kusama',
-            type_registry={
-                'types': {
-                    'TestType': 'u16'
-                }
-            }
-        )
-
-    def test_correct_type_registry_persists(self):
-        self.assertEqual(self.kusama_substrate.encode_scale('TestType', 16), ScaleBytes('0x1000'))
-        self.assertEqual(self.polkadot_substrate.encode_scale('TestType', 16), ScaleBytes('0x10'))
-
-
 class ReloadTypeRegistryTestCase(unittest.TestCase):
 
     def setUp(self) -> None:

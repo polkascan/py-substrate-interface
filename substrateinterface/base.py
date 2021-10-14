@@ -1025,6 +1025,7 @@ class SubstrateInterface:
         # Update type registry; TODO check if cache is present
         # Check if PortableRegistry is present in metadata (V14+), otherwise fall back on legacy type registry (<V14)
         if self.implements_scaleinfo():
+            self.reload_type_registry()
             self.debug_message('Add PortableRegistry from metadata to type registry')
             self.runtime_config.add_portable_registry(self.metadata_decoder)
         else:
@@ -1034,8 +1035,9 @@ class SubstrateInterface:
                 use_remote_preset=self.config.get('use_remote_preset'),
                 auto_discover=self.config.get('auto_discover')
             )
-            # Set active runtime version
-            self.runtime_config.set_active_spec_version_id(self.runtime_version)
+
+        # Set active runtime version
+        self.runtime_config.set_active_spec_version_id(self.runtime_version)
 
     def query_map(self, module: str, storage_function: str, params: Optional[list] = None, block_hash: str = None,
                   max_results: int = None, start_key: str = None, page_size: int = 100,

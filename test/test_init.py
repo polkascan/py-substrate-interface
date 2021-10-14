@@ -70,13 +70,6 @@ class TestInit(unittest.TestCase):
         with self.assertRaises(TypeError):
             substrate.token_decimals = 'test'
 
-    def test_init_with_unknown_preset(self):
-        with self.assertRaises(ValueError) as cm:
-            substrate = SubstrateInterface(url=settings.KUSAMA_NODE_URL, type_registry_preset='unknown')
-            substrate.init_runtime()
-
-        self.assertEqual('Unsupported type registry preset "unknown"', str(cm.exception))
-
     def test_is_valid_ss58_address(self):
         self.assertTrue(self.kusama_substrate.is_valid_ss58_address('GLdQ4D4wkeEJUX8DBT9HkpycFVYQZ3fmJyQ5ZgBRxZ4LD3S'))
         self.assertFalse(

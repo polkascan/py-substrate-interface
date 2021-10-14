@@ -139,7 +139,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
             call_module='System',
             call_function='remark',
             call_params={
-                '_remark': '0x' + ('01' * 177)
+                'remark': '0x' + ('01' * 177)
             }
         )
 
@@ -153,7 +153,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
             call_module='System',
             call_function='remark',
             call_params={
-                '_remark': '0x' + ('01' * 178)
+                'remark': '0x' + ('01' * 178)
             }
         )
 
@@ -206,6 +206,15 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
 
         self.assertEqual(2583332366, result.total_fee_amount)
 
+    def test_check_extrinsic_total_fee_amount_portable_registry(self):
+        result = ExtrinsicReceipt(
+            substrate=self.kusama_substrate,
+            extrinsic_hash="0x5937b3fc03ffc62c84d536c3f1949e030b61ca5c680bfd237726e55a75840d1d",
+            block_hash="0x9d693c4fa4d54893bd6b0916843fcb5b7380f43cbea5c462be9213f536fd9a49"
+        )
+        self.assertTrue(result.is_success)
+        self.assertEqual(161331753, result.total_fee_amount)
+
     def test_check_extrinsic_total_fee_amount2(self):
         result = ExtrinsicReceipt(
             substrate=self.kusama_substrate,
@@ -241,6 +250,15 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
         )
 
         self.assertEqual(252000000, result.weight)
+
+    def test_check_success_extrinsic_weight_portable_registry(self):
+        result = ExtrinsicReceipt(
+            substrate=self.kusama_substrate,
+            extrinsic_hash="0x5937b3fc03ffc62c84d536c3f1949e030b61ca5c680bfd237726e55a75840d1d",
+            block_hash="0x9d693c4fa4d54893bd6b0916843fcb5b7380f43cbea5c462be9213f536fd9a49"
+        )
+        self.assertTrue(result.is_success)
+        self.assertEqual(1234000, result.weight)
 
     def test_extrinsic_result_set_readonly_attr(self):
         result = ExtrinsicReceipt(

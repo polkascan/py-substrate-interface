@@ -71,8 +71,6 @@ class QueryMapTestCase(unittest.TestCase):
         records = [item for item in result]
 
         self.assertEqual(3, len(records))
-        self.assertEqual('H160', records[0][0].__class__.__name__)
-        self.assertEqual('U128', records[0][1].__class__.__name__)
         self.assertEqual(45880000000000, records[0][1].value)
         self.assertEqual('0x00000a9c44f24e314127af63ae55b864a28d7aee', records[0][0].value)
         self.assertEqual('0x00002f21194993a750972574e2d82ce8c95078a6', records[1][0].value)
