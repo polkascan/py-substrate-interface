@@ -248,11 +248,11 @@ class BlockTestCase(unittest.TestCase):
     def test_subscribe_block_headers(self):
 
         def subscription_handler(obj, update_nr, subscription_id):
-            return f"callback: '{obj['header']['hash']}"
+            return f"callback: {obj['header']['number']}"
 
         result = self.substrate.subscribe_block_headers(subscription_handler)
 
-        self.assertEqual(f"callback: '0xec828914eca09331dad704404479e2899a971a9b5948345dc40abca4ac818f93", result)
+        self.assertEqual(f"callback: 103", result)
 
     def test_check_requirements(self):
         self.assertRaises(ValueError, self.substrate.get_block,

@@ -2206,10 +2206,12 @@ class SubstrateInterface:
         except BlockNotFound:
             return None
 
-        def decode_block(block_data):
+        def decode_block(block_data, block_data_hash=None):
 
             if block_data:
-                block_data['header']['hash'] = block_hash
+                if block_data_hash:
+                    block_data['header']['hash'] = block_data_hash
+
                 block_data['header']['number'] = int(block_data['header']['number'], 16)
 
                 extrinsic_cls = self.runtime_config.get_decoder_class('Extrinsic')
@@ -2245,16 +2247,37 @@ class SubstrateInterface:
 
                         if include_author and 'PreRuntime' in log_digest.value:
 
-                            if log_digest.value['PreRuntime']['engine'] == 'BABE':
-                                validator_set = self.query("Session", "Validators", block_hash=block_hash)
-                                rank_validator = log_digest.value['PreRuntime']['data']['authority_index']
+                            if self.implements_scaleinfo():
+                                if log_digest.value['PreRuntime'][0] == f"0x{b'BABE'.hex()}":
+                                    babe_predigest = self.runtime_config.create_scale_object(
+                                        type_string='RawBabePreDigest',
+                                        data=ScaleBytes(log_digest.value['PreRuntime'][1])
+                                    )
 
-                                block_author = validator_set.elements[rank_validator]
-                                block_data['author'] = block_author.value
+                                    babe_predigest.decode()
+
+                                    validator_set = self.query("Session", "Validators", block_hash=block_hash)
+                                    rank_validator = babe_predigest[1].value['authority_index']
+
+                                    block_author = validator_set[rank_validator]
+                                    block_data['author'] = block_author.value
+
+                                else:
+                                    raise NotImplementedError(
+                                        f"Cannot extract author for engine {log_digest.value['PreRuntime'][0]}"
+                                    )
                             else:
-                                raise NotImplementedError(
-                                    f"Cannot extract author for engine {log_digest.value['PreRuntime']['engine']}"
-                                )
+
+                                if log_digest.value['PreRuntime']['engine'] == 'BABE':
+                                    validator_set = self.query("Session", "Validators", block_hash=block_hash)
+                                    rank_validator = log_digest.value['PreRuntime']['data']['authority_index']
+
+                                    block_author = validator_set.elements[rank_validator]
+                                    block_data['author'] = block_author.value
+                                else:
+                                    raise NotImplementedError(
+                                        f"Cannot extract author for engine {log_digest.value['PreRuntime']['engine']}"
+                                    )
 
                     except Exception:
                         if not ignore_decoding_errors:
@@ -2287,11 +2310,11 @@ class SubstrateInterface:
 
             if header_only:
                 response = self.rpc_request('chain_getHeader', [block_hash])
-                return decode_block({'header': response['result']})
+                return decode_block({'header': response['result']}, block_data_hash=block_hash)
 
             else:
                 response = self.rpc_request('chain_getBlock', [block_hash])
-                return decode_block(response['result']['block'])
+                return decode_block(response['result']['block'], block_data_hash=block_hash)
 
     def get_block(self, block_hash: str = None, block_number: int = None, ignore_decoding_errors: bool = False,
                   include_author: bool = False, finalized_only: bool = False):
