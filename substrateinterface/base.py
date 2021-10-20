@@ -2794,6 +2794,8 @@ class SubstrateInterface:
         """
         self.runtime_config.clear_type_registry()
 
+        self.runtime_config.implements_scale_info = self.implements_scaleinfo()
+
         # Load metadata types in runtime configuration
         self.runtime_config.update_type_registry(load_type_registry_preset(name="metadata_types"))
 

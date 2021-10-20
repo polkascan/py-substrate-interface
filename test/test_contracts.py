@@ -63,7 +63,8 @@ class ContractMetadataTestCase(unittest.TestCase):
 
         for type_id in range(1, 16):
             type_string = self.contract_metadata.get_type_string_for_metadata_type(type_id)
-            self.assertIsNotNone(self.substrate.runtime_config.get_decoder_class(type_string))
+            if type_string != '()':
+                self.assertIsNotNone(self.substrate.runtime_config.get_decoder_class(type_string))
 
     def test_return_type_for_message(self):
         self.assertEqual('u128', self.contract_metadata.get_return_type_string_for_message('total_supply'))
