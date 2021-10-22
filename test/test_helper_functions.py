@@ -121,6 +121,10 @@ class TestHelperFunctions(unittest.TestCase):
         self.assertEqual('dest', call_function.args[0].name)
         self.assertEqual('value', call_function.args[1].name)
 
+    def test_get_metadata_call_functions(self):
+        call_functions = self.substrate.get_metadata_call_functions()
+        self.assertGreater(len(call_functions), 0)
+
     def test_get_metadata_event(self):
         event = self.substrate.get_metadata_event("Balances", "Transfer")
         self.assertEqual("Transfer", event.name)
@@ -133,6 +137,10 @@ class TestHelperFunctions(unittest.TestCase):
         self.assertEqual("BlockHashCount", constant.name)
         self.assertEqual("BlockNumber", constant.type)
         self.assertEqual("0x60090000", f"0x{constant.constant_value.hex()}")
+
+    def test_get_metadata_constants(self):
+        constants = self.substrate.get_metadata_constants()
+        self.assertGreater(len(constants), 0)
 
     def test_get_constant(self):
         constant = self.substrate.get_constant("System", "BlockHashCount")
@@ -151,10 +159,18 @@ class TestHelperFunctions(unittest.TestCase):
         self.assertEqual("AccountId", storage.get_params_type_string()[0])
         self.assertEqual("Blake2_128Concat", storage.type['Map']['hasher'])
 
+    def test_get_metadata_storage_functions(self):
+        storages = self.substrate.get_metadata_storage_functions()
+        self.assertGreater(len(storages), 0)
+
     def test_get_metadata_error(self):
         error = self.substrate.get_metadata_error("System", "InvalidSpecName")
         self.assertEqual("InvalidSpecName", error.name)
         self.assertIsNotNone(error.docs)
+
+    def test_get_metadata_errors(self):
+        errors = self.substrate.get_metadata_errors()
+        self.assertGreater(len(errors), 0)
 
     def test_helper_functions_should_return_null_not_exists(self):
         self.assertIsNone(self.empty_substrate.get_block_number(

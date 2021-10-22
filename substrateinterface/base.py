@@ -2038,7 +2038,7 @@ class SubstrateInterface:
 
         constant_list = []
 
-        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+        for module_idx, module in enumerate(self.metadata_decoder.pallets):
             for constant in module.constants or []:
                 constant_list.append(
                     self.serialize_constant(
@@ -2113,9 +2113,9 @@ class SubstrateInterface:
 
         storage_list = []
 
-        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+        for module_idx, module in enumerate(self.metadata_decoder.pallets):
             if module.storage:
-                for storage in module.storage.items:
+                for storage in module.storage:
                     storage_list.append(
                         self.serialize_storage_item(
                             storage_item=storage,
@@ -2163,7 +2163,7 @@ class SubstrateInterface:
 
         error_list = []
 
-        for module_idx, module in enumerate(self.metadata_decoder.metadata.modules):
+        for module_idx, module in enumerate(self.metadata_decoder.pallets):
             if module.errors:
                 for error in module.errors:
                     error_list.append(
@@ -2603,54 +2603,42 @@ class SubstrateInterface:
         storage_dict = {
             "storage_name": storage_item.name,
             "storage_modifier": storage_item.modifier,
-            "storage_fallback_scale": storage_item.fallback,
-            "storage_fallback": None,
+            "storage_default_scale": storage_item['default'].get_used_bytes(),
+            "storage_default": None,
             "documentation": '\n'.join(storage_item.docs),
             "module_id": module.get_identifier(),
-            "module_prefix": module.prefix,
+            "module_prefix": module.value['storage']['prefix'],
             "module_name": module.name,
             "spec_version": spec_version_id,
-            "type_keys": None,
-            "type_hashers": None,
-            "type_value": None,
-            "type_is_linked": None
+            "type_keys": storage_item.get_params_type_string(),
+            "type_hashers": storage_item.get_param_hashers(),
+            "type_value": storage_item.get_value_type_string()
         }
 
         type_class, type_info = next(iter(storage_item.type.items()))
 
         storage_dict["type_class"] = type_class
 
-        if type_class == 'PlainType':
-            storage_dict["type_value"] = type_info
+        value_scale_type = storage_item.get_value_type_string()
 
-        elif type_class == 'MapType':
-            storage_dict["type_value"] = type_info["value"]
-            storage_dict["type_keys"] = [type_info["key"]]
-            storage_dict["type_hashers"] = [type_info["hasher"]]
-            storage_dict["type_is_linked"] = type_info["is_linked"]
+        if storage_item.value['modifier'] == 'Default':
+            # Fallback to default value of storage function if no result
+            query_value = storage_item.value_object['default'].value_object
+        else:
+            # No result is interpreted as an Option<...> result
+            value_scale_type = f'Option<{value_scale_type}>'
+            query_value = storage_item.value_object['default'].value_object
 
-        elif type_class == 'DoubleMapType':
-
-            storage_dict["type_value"] = type_info["value"]
-            storage_dict["type_keys"] = [type_info["key1"], type_info["key2"]]
-            storage_dict["type_hashers"] = [type_info["hasher"], type_info["key2_hasher"]]
-
-        elif type_class == 'NMapType':
-
-            storage_dict["type_value"] = type_info["value"]
-            storage_dict["type_keys"] = type_info["keys"]
-            storage_dict["type_hashers"] = type_info["hashers"]
-
-        if storage_item.fallback != '0x00':
-            # Decode fallback
-            try:
-                fallback_obj = self.runtime_config.create_scale_object(
-                    type_string=storage_dict["type_value"],
-                    data=ScaleBytes(storage_item.fallback)
-                )
-                storage_dict["storage_fallback"] = fallback_obj.decode()
-            except Exception:
-                storage_dict["storage_fallback"] = '[decoding error]'
+        try:
+            obj = self.runtime_config.create_scale_object(
+                type_string=value_scale_type,
+                data=ScaleBytes(query_value),
+                metadata=self.metadata_decoder
+            )
+            obj.decode()
+            storage_dict["storage_default"] = obj.decode()
+        except Exception:
+            storage_dict["storage_default"] = '[decoding error]'
 
         return storage_dict
 
@@ -2683,7 +2671,7 @@ class SubstrateInterface:
             "constant_value_scale": f"0x{constant.constant_value.hex()}",
             "documentation": '\n'.join(constant.docs),
             "module_id": module.get_identifier(),
-            "module_prefix": module.prefix,
+            "module_prefix": module.value['storage']['prefix'] if module.value['storage'] else None,
             "module_name": module.name,
             "spec_version": spec_version_id
         }
@@ -2765,7 +2753,7 @@ class SubstrateInterface:
             "error_name": error.name,
             "documentation": '\n'.join(error.docs),
             "module_id": module.get_identifier(),
-            "module_prefix": module.prefix,
+            "module_prefix": module.value['storage']['prefix'] if module.value['storage'] else None,
             "module_name": module.name,
             "spec_version": spec_version
         }
