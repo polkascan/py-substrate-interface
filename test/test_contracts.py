@@ -70,7 +70,7 @@ class ContractMetadataTestCase(unittest.TestCase):
         self.assertEqual('u128', self.contract_metadata.get_return_type_string_for_message('total_supply'))
         self.assertEqual('u128', self.contract_metadata.get_return_type_string_for_message('balance_of'))
         self.assertEqual(
-            'ink.0x6e689bb2d2a19d1821177a607480a4527195b76dffec908f94ad7af0ed80c21f.12',
+            'ink::0x6e689bb2d2a19d1821177a607480a4527195b76dffec908f94ad7af0ed80c21f::12',
             self.contract_metadata.get_return_type_string_for_message('approve')
         )
 
