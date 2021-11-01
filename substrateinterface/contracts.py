@@ -76,6 +76,23 @@ class ContractMetadata:
 
     def __parse_type_registry(self):
 
+        if 'metadataVersion' in self.metadata_dict:
+            # Convert legacy format as V0
+            self.metadata_dict['V0'] = {
+                'spec': self.metadata_dict.get('spec'),
+                'storage': self.metadata_dict.get('storage'),
+                'types': self.metadata_dict.get('types'),
+            }
+
+        # Check metadata version
+        elif 'V1' in self.metadata_dict:
+            self.metadata_dict['spec'] = self.metadata_dict['V1']['spec']
+            self.metadata_dict['storage'] = self.metadata_dict['V1']['storage']
+            self.metadata_dict['types'] = self.metadata_dict['V1']['types']
+
+        else:
+            raise ContractMetadataParseException("Unknown contract metadata version")
+
         # Check requirements
         if 'types' not in self.metadata_dict:
             raise ContractMetadataParseException("No 'types' directive present in metadata file")
@@ -93,18 +110,29 @@ class ContractMetadata:
             raise ContractMetadataParseException("'source' directive not present in metadata file")
 
         # check Metadata version
-        if version_tuple(self.metadata_dict['metadataVersion']) < (0, 7, 0):
+        if 'V0' in self.metadata_dict and version_tuple(self.metadata_dict['metadataVersion']) < (0, 7, 0):
             # Type indexes are 1-based before 0.7.0
             self.__type_offset = 1
 
-        self.type_string_prefix = f"ink.{self.metadata_dict['source']['hash']}"
+        self.type_string_prefix = f"ink::{self.metadata_dict['source']['hash']}"
 
-        for idx, metadata_type in enumerate(self.metadata_dict['types']):
+        if 'V0' in self.metadata_dict:
 
-            idx += self.__type_offset
+            for idx, metadata_type in enumerate(self.metadata_dict['types']):
 
-            if idx not in self.type_registry:
-                self.type_registry[idx] = self.get_type_string_for_metadata_type(idx)
+                idx += self.__type_offset
+
+                if idx not in self.type_registry:
+                    self.type_registry[idx] = self.get_type_string_for_metadata_type(idx)
+
+        elif 'V1' in self.metadata_dict:
+            self.substrate.init_runtime()
+            portable_registry = self.substrate.runtime_config.create_scale_object('PortableRegistry')
+            portable_registry.encode({"types": self.metadata_dict["V1"]["types"]})
+
+            self.substrate.runtime_config.update_from_scale_info_types(
+                portable_registry['types'], prefix=self.type_string_prefix
+            )
 
     def generate_constructor_data(self, name, args: dict = None) -> ScaleBytes:
         """
@@ -153,108 +181,118 @@ class ContractMetadata:
         str
         """
 
-        # Check if already processed
-        if type_id in self.type_registry:
-            return self.type_registry[type_id]
+        if 'V1' in self.metadata_dict:
 
-        if type_id > len(self.metadata_dict['types']):
-            raise ValueError(f'type_id {type_id} not found in metadata')
+            if type_id > len(self.metadata_dict['types']):
+                raise ValueError(f'type_id {type_id} not found in metadata')
 
-        arg_type = self.metadata_dict['types'][type_id - 1]
+            return f'{self.type_string_prefix}::{type_id}'
 
-        if 'path' in arg_type:
+        if 'V0' in self.metadata_dict:
+            # Legacy type parsing
 
-            # Option field
-            if arg_type['path'] == ['Option']:
+            # Check if already processed
+            if type_id in self.type_registry:
+                return self.type_registry[type_id]
 
-                # Examine the fields in the 'Some' variant
-                options_fields = arg_type['def']['variant']['variants'][1]['fields']
+            if type_id > len(self.metadata_dict['types']):
+                raise ValueError(f'type_id {type_id} not found in metadata')
 
-                if len(options_fields) == 1:
-                    sub_type = self.get_type_string_for_metadata_type(options_fields[0]['type'])
-                else:
-                    raise NotImplementedError('Tuples in Option field not yet supported')
+            arg_type = self.metadata_dict['types'][type_id - 1]
 
-                return f"Option<{sub_type}>"
+            if 'path' in arg_type:
 
-            # Predefined types defined in crate ink_env
-            if arg_type['path'][0:2] == ['ink_env', 'types']:
+                # Option field
+                if arg_type['path'] == ['Option']:
 
-                if arg_type['path'][2] == 'Timestamp':
-                    return 'Moment'
+                    # Examine the fields in the 'Some' variant
+                    options_fields = arg_type['def']['variant']['variants'][1]['fields']
 
-                elif arg_type['path'][2] in ['AccountId', 'Hash', 'Balance', 'BlockNumber']:
-                    return arg_type['path'][2]
+                    if len(options_fields) == 1:
+                        sub_type = self.get_type_string_for_metadata_type(options_fields[0]['type'])
+                    else:
+                        raise NotImplementedError('Tuples in Option field not yet supported')
 
-                else:
-                    raise NotImplementedError(f"Unsupported ink_env type '{arg_type['path'][2]}'")
+                    return f"Option<{sub_type}>"
 
-        # RUST primitives
-        if 'primitive' in arg_type['def']:
-            return arg_type['def']['primitive']
+                # Predefined types defined in crate ink_env
+                if arg_type['path'][0:2] == ['ink_env', 'types']:
 
-        elif 'array' in arg_type['def']:
-            array_type = self.get_type_string_for_metadata_type(arg_type['def']['array']['type'])
-            # Generate unique type string
-            return f"[{array_type}; {arg_type['def']['array']['len']}]"
+                    if arg_type['path'][2] == 'Timestamp':
+                        return 'Moment'
 
-        elif 'variant' in arg_type['def']:
-            # Create Enum
-            type_definition = {
-              "type": "enum",
-              "type_mapping": []
-            }
-            for variant in arg_type['def']['variant']['variants']:
+                    elif arg_type['path'][2] in ['AccountId', 'Hash', 'Balance', 'BlockNumber']:
+                        return arg_type['path'][2]
 
-                if 'fields' in variant:
-                    if len(variant['fields']) > 1:
-                        raise NotImplementedError('Tuples as field of enums not supported')
+                    else:
+                        raise NotImplementedError(f"Unsupported ink_env type '{arg_type['path'][2]}'")
 
-                    enum_value = self.get_type_string_for_metadata_type(variant['fields'][0]['type'])
+            # RUST primitives
+            if 'primitive' in arg_type['def']:
+                return arg_type['def']['primitive']
 
-                else:
-                    enum_value = 'Null'
+            elif 'array' in arg_type['def']:
+                array_type = self.get_type_string_for_metadata_type(arg_type['def']['array']['type'])
+                # Generate unique type string
+                return f"[{array_type}; {arg_type['def']['array']['len']}]"
 
-                type_definition['type_mapping'].append(
-                    [variant['name'], enum_value]
+            elif 'variant' in arg_type['def']:
+                # Create Enum
+                type_definition = {
+                  "type": "enum",
+                  "type_mapping": []
+                }
+                for variant in arg_type['def']['variant']['variants']:
+
+                    if 'fields' in variant:
+                        if len(variant['fields']) > 1:
+                            raise NotImplementedError('Tuples as field of enums not supported')
+
+                        enum_value = self.get_type_string_for_metadata_type(variant['fields'][0]['type'])
+
+                    else:
+                        enum_value = 'Null'
+
+                    type_definition['type_mapping'].append(
+                        [variant['name'], enum_value]
+                    )
+
+                # Add to type registry
+                self.substrate.runtime_config.update_type_registry_types(
+                    {f'{self.type_string_prefix}::{type_id}': type_definition}
+                )
+                # Generate unique type string
+                self.type_registry[type_id] = f'{self.type_string_prefix}::{type_id}'
+
+                return f'{self.type_string_prefix}::{type_id}'
+
+            elif 'composite' in arg_type['def']:
+                # Create Struct
+                type_definition = {
+                    "type": "struct",
+                    "type_mapping": []
+                }
+
+                for field in arg_type['def']['composite']['fields']:
+                    type_definition['type_mapping'].append(
+                        [field['name'], self.get_type_string_for_metadata_type(field['type'])]
+                    )
+
+                # Add to type registry
+                self.substrate.runtime_config.update_type_registry_types(
+                    {f'{self.type_string_prefix}::{type_id}': type_definition}
                 )
 
-            # Add to type registry
-            self.substrate.runtime_config.update_type_registry_types(
-                {f'{self.type_string_prefix}.{type_id}': type_definition}
-            )
-            # Generate unique type string
-            self.type_registry[type_id] = f'{self.type_string_prefix}.{type_id}'
+                # Generate unique type string
+                self.type_registry[type_id] = f'{self.type_string_prefix}::{type_id}'
 
-            return f'{self.type_string_prefix}.{type_id}'
+                return f'{self.type_string_prefix}::{type_id}'
+            elif 'tuple' in arg_type['def']:
+                # Create tuple
+                elements = [self.get_type_string_for_metadata_type(element) for element in arg_type['def']['tuple']]
+                return f"({','.join(elements)})"
 
-        elif 'composite' in arg_type['def']:
-            # Create Struct
-            type_definition = {
-                "type": "struct",
-                "type_mapping": []
-            }
-
-            for field in arg_type['def']['composite']['fields']:
-                type_definition['type_mapping'].append(
-                    [field['name'], self.get_type_string_for_metadata_type(field['type'])]
-                )
-
-            # Add to type registry
-            self.substrate.runtime_config.update_type_registry_types(
-                {f'{self.type_string_prefix}.{type_id}': type_definition}
-            )
-
-            # Generate unique type string
-            self.type_registry[type_id] = f'{self.type_string_prefix}.{type_id}'
-
-            return f'{self.type_string_prefix}.{type_id}'
-        elif 'tuple' in arg_type['def']:
-            # Create tuple
-            elements = [self.get_type_string_for_metadata_type(element) for element in arg_type['def']['tuple']]
-            return f"({','.join(elements)})"
-
-        raise NotImplementedError(f"Type '{arg_type}' not supported")
+            raise NotImplementedError(f"Type '{arg_type}' not supported")
 
     def get_return_type_string_for_message(self, name) -> str:
         for message in self.metadata_dict['spec']['messages']:
@@ -726,6 +764,7 @@ class ContractInstance:
 
                         response['result']['result']['Ok']['data'] = result_scale_obj.value
                         contract_exec_result.contract_result_data = result_scale_obj
+                        contract_exec_result.value_object = result_scale_obj
 
                     except NotImplementedError:
                         pass
