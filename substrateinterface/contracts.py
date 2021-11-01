@@ -182,6 +182,10 @@ class ContractMetadata:
         """
 
         if 'V1' in self.metadata_dict:
+
+            if type_id > len(self.metadata_dict['types']):
+                raise ValueError(f'type_id {type_id} not found in metadata')
+
             return f'{self.type_string_prefix}::{type_id}'
 
         if 'V0' in self.metadata_dict:
