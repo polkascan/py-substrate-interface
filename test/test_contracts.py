@@ -33,7 +33,7 @@ class ContractMetadataTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
         self.contract_metadata = ContractMetadata.create_from_file(
-            metadata_file=os.path.join(os.path.dirname(__file__), 'fixtures', 'erc20.json'),
+            metadata_file=os.path.join(os.path.dirname(__file__), 'fixtures', 'erc20-v0.json'),
             substrate=self.substrate
         )
 
@@ -149,6 +149,14 @@ class ContractMetadataTestCase(unittest.TestCase):
             )
 
 
+class ContractMetadataV1TestCase(ContractMetadataTestCase):
+    def setUp(self) -> None:
+        self.contract_metadata = ContractMetadata.create_from_file(
+            metadata_file=os.path.join(os.path.dirname(__file__), 'fixtures', 'erc20-v1.json'),
+            substrate=self.substrate
+        )
+
+
 class ContractInstanceTestCase(unittest.TestCase):
 
     @classmethod
@@ -177,7 +185,7 @@ class ContractInstanceTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.contract = ContractInstance.create_from_address(
             contract_address="5FV9cnzFc2tDrWcDkmoup7VZWpH9HrTaw8STnWpAQqT7KvUK",
-            metadata_file=os.path.join(os.path.dirname(__file__), 'fixtures', 'erc20.json'),
+            metadata_file=os.path.join(os.path.dirname(__file__), 'fixtures', 'erc20-v0.json'),
             substrate=self.substrate
         )
 
@@ -193,7 +201,15 @@ class ContractInstanceTestCase(unittest.TestCase):
                                     args={'owner': '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'})
 
         self.assertEqual(1000000000000000000, result.contract_result_data.value)
-        self.assertEqual('u128', result.contract_result_scale_type)
+
+
+class ContractInstanceV1TestCase(ContractInstanceTestCase):
+    def setUp(self) -> None:
+        self.contract = ContractInstance.create_from_address(
+            contract_address="5FV9cnzFc2tDrWcDkmoup7VZWpH9HrTaw8STnWpAQqT7KvUK",
+            metadata_file=os.path.join(os.path.dirname(__file__), 'fixtures', 'erc20-v1.json'),
+            substrate=self.substrate
+        )
 
 
 if __name__ == '__main__':
