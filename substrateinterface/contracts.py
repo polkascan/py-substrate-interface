@@ -17,6 +17,7 @@
 import json
 import os
 from hashlib import blake2b
+from typing import Optional
 
 from .utils import version_tuple
 
@@ -741,7 +742,6 @@ class ContractInstance:
             return_type_string = self.metadata.get_return_type_string_for_message(method)
 
             # Wrap the result in a ContractExecResult Enum because the exec will result in the same
-            # TODO Check workings with PortableRegistry
             ContractExecResult = self.substrate.runtime_config.get_decoder_class('ContractExecResult')
 
             contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
@@ -796,7 +796,7 @@ class ContractInstance:
         raise ContractReadFailedException(response)
 
     def exec(self, keypair: Keypair, method: str, args: dict = None,
-             value: int = 0, gas_limit: int = 200000) -> ContractExecutionReceipt:
+             value: int = 0, gas_limit: Optional[int] = None) -> ContractExecutionReceipt:
         """
         Executes provided message by creating and submitting an extrinsic. To get a gas prediction or perform a
         'dry-run' of executing this message, see `ContractInstance.read`.
@@ -807,12 +807,16 @@ class ContractInstance:
         method: name of message to execute
         args: arguments of message in {'name': value} format
         value: value to send when executing the message
-        gas_limit
+        gas_limit: When left to None the gas limit will be calculated with a read()
 
         Returns
         -------
         ContractExecutionReceipt
         """
+
+        if gas_limit is None:
+            gas_predit_result = self.read(keypair, method, args, value)
+            gas_limit = gas_predit_result.gas_consumed
 
         input_data = self.metadata.generate_message_data(name=method, args=args)
 
