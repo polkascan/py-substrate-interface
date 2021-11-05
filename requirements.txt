@@ -9,7 +9,7 @@ ecdsa~=0.17.0
 eth-keys~=0.3.3
 eth_utils~=1.10.0
 
-scalecodec~=0.11.18
+scalecodec>=1.0.17,<2
 py-sr25519-bindings~=0.1.2
 py-ed25519-bindings~=0.1.2
 py-bip39-bindings~=0.1.6
