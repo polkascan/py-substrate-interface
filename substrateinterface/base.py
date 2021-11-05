@@ -1552,10 +1552,10 @@ class SubstrateInterface:
             # Check if signature is a MultiSignature and contains signature version
             if len(signature) == 130:
                 signature_version = int(signature[0:2], 16)
-                signature = '0x{}'.format(signature[2:])
+                signature = bytes.fromhex(signature[2:])
             else:
                 signature_version = keypair.crypto_type
-                signature = '0x{}'.format(signature)
+                signature = bytes.fromhex(signature)
 
         else:
             # Create signature payload
