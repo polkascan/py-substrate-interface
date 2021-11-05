@@ -22,7 +22,7 @@
 
 """
 import warnings
-from typing import Optional
+from typing import Optional, Union
 
 import base58
 from hashlib import blake2b
@@ -98,7 +98,7 @@ def ss58_decode(address: str, valid_ss58_format: Optional[int] = None, valid_add
     return address_decoded[ss58_format_length:len(address_decoded)-checksum_length].hex()
 
 
-def ss58_encode(address: str, ss58_format: int = 42, address_type=None) -> str:
+def ss58_encode(address: Union[str, bytes], ss58_format: int = 42, address_type=None) -> str:
     """
     Encodes an account ID to an Substrate address according to provided address_type
 

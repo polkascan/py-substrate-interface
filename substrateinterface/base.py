@@ -23,8 +23,9 @@ import json
 import logging
 import re
 
+import eth_keys
 import requests
-from typing import Optional
+from typing import Optional, Union
 
 from websocket import create_connection, WebSocketConnectionClosedException
 
@@ -35,6 +36,7 @@ from scalecodec.updater import update_type_registries
 
 from .key import extract_derive_path
 from .utils.caching import block_dependent_lru_cache
+from .utils.ecdsa_helpers import mnemonic_to_ecdsa_private_key, ecdsa_verify
 from .utils.hasher import blake2_256, two_x64_concat, xxh128, blake2_128, blake2_128_concat, identity
 from .exceptions import SubstrateRequestException, ConfigurationError, StorageFunctionNotFound, BlockNotFound, \
     ExtrinsicNotFound
@@ -53,13 +55,13 @@ logger = logging.getLogger(__name__)
 class KeypairType:
     ED25519 = 0
     SR25519 = 1
+    ECDSA = 2
 
 
 class Keypair:
 
-    def __init__(self, ss58_address=None, public_key=None, private_key=None, ss58_format=None,
-                 address_type=None, seed_hex=None,
-                 crypto_type=KeypairType.SR25519):
+    def __init__(self, ss58_address: str = None, public_key: bytes = None, private_key: Union[bytes, str] = None,
+                 ss58_format: int = None, seed_hex: str = None, crypto_type: int = KeypairType.SR25519):
         """
         Allows generation of Keypairs from a variety of input combination, such as a public/private key combination, a
         mnemonic or a uri containing soft and hard derivation paths. With these Keypairs data can be signed and verified
@@ -70,7 +72,6 @@ class Keypair:
         public_key: hex string or bytes of public_key key
         private_key: hex string or bytes of private key
         ss58_format: Substrate address format, default = 42
-        address_type: (deprecated) replaced by ss58_format
         seed_hex: hex string of seed
         crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
         """
@@ -79,49 +80,50 @@ class Keypair:
         self.seed_hex = seed_hex
         self.derive_path = None
 
-        if ss58_address and not public_key:
+        if crypto_type != KeypairType.ECDSA and ss58_address and not public_key:
             public_key = ss58_decode(ss58_address, valid_ss58_format=ss58_format)
+
+        if private_key:
+
+            if type(private_key) is str:
+                private_key = bytes.fromhex(private_key.replace('0x', ''))
+
+            if self.crypto_type == KeypairType.SR25519 and len(private_key) != 64:
+                raise ValueError('Secret key should be 64 bytes long')
+
+            if self.crypto_type == KeypairType.ECDSA:
+                private_key_obj = eth_keys.keys.PrivateKey(private_key)
+                public_key = private_key_obj.public_key.to_address()
+                ss58_address = private_key_obj.public_key.to_checksum_address()
 
         if not public_key:
             raise ValueError('No SS58 formatted address or public key provided')
 
-        if type(public_key) is bytes:
-            public_key = public_key.hex()
+        if type(public_key) is str:
+            public_key = bytes.fromhex(public_key.replace('0x', ''))
 
-        public_key = '0x{}'.format(public_key.replace('0x', ''))
+        if crypto_type == KeypairType.ECDSA:
+            if len(public_key) != 20:
+                raise ValueError('Public key should be 20 bytes long')
+        else:
+            if len(public_key) != 32:
+                raise ValueError('Public key should be 32 bytes long')
 
-        if len(public_key) != 66:
-            raise ValueError('Public key should be 32 bytes long')
+            if not ss58_address:
+                ss58_address = ss58_encode(public_key, ss58_format=ss58_format)
 
-        if address_type is not None:
-            warnings.warn("Keyword 'address_type' will be replaced by 'ss58_format'", DeprecationWarning)
-            ss58_format = address_type
+        self.ss58_format: int = ss58_format
 
-        self.ss58_format = ss58_format
+        self.public_key: bytes = public_key
 
-        if not ss58_address:
-            ss58_address = ss58_encode(public_key, ss58_format=ss58_format)
+        self.ss58_address: str = ss58_address
 
-        self.public_key = public_key
-
-        self.ss58_address = ss58_address
-
-        if private_key:
-
-            if type(private_key) is bytes:
-                private_key = private_key.hex()
-
-            private_key = '0x{}'.format(private_key.replace('0x', ''))
-
-            if self.crypto_type == KeypairType.SR25519 and len(private_key) != 130:
-                raise ValueError('Secret key should be 64 bytes long')
-
-        self.private_key = private_key
+        self.private_key: bytes = private_key
 
         self.mnemonic = None
 
     @classmethod
-    def generate_mnemonic(cls, words=12):
+    def generate_mnemonic(cls, words: int = 12) -> str:
         """
         Generates a new seed phrase with given amount of words (default 12)
 
@@ -136,7 +138,7 @@ class Keypair:
         return bip39_generate(words)
 
     @classmethod
-    def create_from_mnemonic(cls, mnemonic, ss58_format=42, address_type=None, crypto_type=KeypairType.SR25519):
+    def create_from_mnemonic(cls, mnemonic: str, ss58_format=42, crypto_type=KeypairType.SR25519) -> 'Keypair':
         """
         Create a Keypair for given memonic
 
@@ -144,31 +146,34 @@ class Keypair:
         ----------
         mnemonic: Seed phrase
         ss58_format: Substrate address format
-        address_type: (deprecated)
         crypto_type: Use `KeypairType.SR25519` or `KeypairType.ED25519` cryptography for generating the Keypair
 
         Returns
         -------
         Keypair
         """
-        seed_array = bip39_to_mini_secret(mnemonic, "")
 
-        if address_type is not None:
-            warnings.warn("Keyword 'address_type' will be replaced by 'ss58_format'", DeprecationWarning)
-            ss58_format = address_type
+        if crypto_type == KeypairType.ECDSA:
 
-        keypair = cls.create_from_seed(
-            seed_hex=binascii.hexlify(bytearray(seed_array)).decode("ascii"),
-            ss58_format=ss58_format,
-            crypto_type=crypto_type
-        )
+            private_key = mnemonic_to_ecdsa_private_key(mnemonic)
+            keypair = cls.create_from_private_key(private_key, ss58_format=ss58_format, crypto_type=crypto_type)
+
+        else:
+            seed_array = bip39_to_mini_secret(mnemonic, "")
+
+            keypair = cls.create_from_seed(
+                seed_hex=binascii.hexlify(bytearray(seed_array)).decode("ascii"),
+                ss58_format=ss58_format,
+                crypto_type=crypto_type
+            )
+
         keypair.mnemonic = mnemonic
 
         return keypair
 
     @classmethod
     def create_from_seed(
-            cls, seed_hex: str, ss58_format: Optional[int] = 42, address_type=None, crypto_type=KeypairType.SR25519
+            cls, seed_hex: str, ss58_format: Optional[int] = 42, crypto_type=KeypairType.SR25519
     ) -> 'Keypair':
         """
         Create a Keypair for given seed
@@ -177,17 +182,12 @@ class Keypair:
         ----------
         seed_hex: hex string of seed
         ss58_format: Substrate address format
-        address_type: (deprecated)
         crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
 
         Returns
         -------
         Keypair
         """
-
-        if address_type is not None:
-            warnings.warn("Keyword 'address_type' will be replaced by 'ss58_format'", DeprecationWarning)
-            ss58_format = address_type
 
         if crypto_type == KeypairType.SR25519:
             public_key, private_key = sr25519.pair_from_seed(bytes.fromhex(seed_hex.replace('0x', '')))
@@ -208,7 +208,7 @@ class Keypair:
 
     @classmethod
     def create_from_uri(
-            cls, suri: str, ss58_format: Optional[int] = 42, address_type=None, crypto_type=KeypairType.SR25519
+            cls, suri: str, ss58_format: Optional[int] = 42, crypto_type=KeypairType.SR25519
     ) -> 'Keypair':
         """
         Creates Keypair for specified suri in following format: `<mnemonic>/<soft-path>//<hard-path>`
@@ -217,17 +217,12 @@ class Keypair:
         ----------
         suri:
         ss58_format: Substrate address format
-        address_type: (deprecated)
         crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
 
         Returns
         -------
         Keypair
         """
-
-        if address_type is not None:
-            warnings.warn("Keyword 'address_type' will be replaced by 'ss58_format'", DeprecationWarning)
-            ss58_format = address_type
 
         if suri and suri.startswith('/'):
             suri = DEV_PHRASE + suri
@@ -236,50 +231,59 @@ class Keypair:
 
         suri_parts = suri_regex.groupdict()
 
-        if suri_parts['password']:
-            raise NotImplementedError("Passwords in suri not supported")
+        if crypto_type == KeypairType.ECDSA:
+            private_key = mnemonic_to_ecdsa_private_key(
+                mnemonic=suri_parts['phrase'],
+                str_derivation_path=suri_parts['path'][1:],
+                passphrase=suri_parts['password'] or ''
+            )
+            derived_keypair = cls.create_from_private_key(private_key, ss58_format=ss58_format, crypto_type=crypto_type)
+        else:
 
-        derived_keypair = cls.create_from_mnemonic(
-            suri_parts['phrase'], ss58_format=ss58_format, crypto_type=crypto_type
-        )
+            if suri_parts['password']:
+                raise NotImplementedError(f"Passwords in suri not supported for crypto_type '{crypto_type}'")
 
-        if suri_parts['path'] != '':
+            derived_keypair = cls.create_from_mnemonic(
+                suri_parts['phrase'], ss58_format=ss58_format, crypto_type=crypto_type
+            )
 
-            derived_keypair.derive_path = suri_parts['path']
+            if suri_parts['path'] != '':
 
-            if crypto_type not in [KeypairType.SR25519]:
-                raise NotImplementedError('Derivation paths for this crypto type not supported')
+                derived_keypair.derive_path = suri_parts['path']
 
-            derive_junctions = extract_derive_path(suri_parts['path'])
+                if crypto_type not in [KeypairType.SR25519]:
+                    raise NotImplementedError('Derivation paths for this crypto type not supported')
 
-            child_pubkey = bytes.fromhex(derived_keypair.public_key[2:])
-            child_privkey = bytes.fromhex(derived_keypair.private_key[2:])
+                derive_junctions = extract_derive_path(suri_parts['path'])
 
-            for junction in derive_junctions:
+                child_pubkey = derived_keypair.public_key
+                child_privkey = derived_keypair.private_key
 
-                if junction.is_hard:
+                for junction in derive_junctions:
 
-                    _, child_pubkey, child_privkey = sr25519.hard_derive_keypair(
-                        (junction.chain_code, child_pubkey, child_privkey),
-                        b''
-                    )
+                    if junction.is_hard:
 
-                else:
+                        _, child_pubkey, child_privkey = sr25519.hard_derive_keypair(
+                            (junction.chain_code, child_pubkey, child_privkey),
+                            b''
+                        )
 
-                    _, child_pubkey, child_privkey = sr25519.derive_keypair(
-                        (junction.chain_code, child_pubkey, child_privkey),
-                        b''
-                    )
+                    else:
 
-            derived_keypair = Keypair(public_key=child_pubkey, private_key=child_privkey, ss58_format=ss58_format)
+                        _, child_pubkey, child_privkey = sr25519.derive_keypair(
+                            (junction.chain_code, child_pubkey, child_privkey),
+                            b''
+                        )
+
+                derived_keypair = Keypair(public_key=child_pubkey, private_key=child_privkey, ss58_format=ss58_format)
 
         return derived_keypair
 
     @classmethod
     def create_from_private_key(
-            cls, private_key, public_key=None, ss58_address=None, ss58_format=None, crypto_type=KeypairType.SR25519,
-            address_type=None
-    ):
+            cls, private_key: Union[bytes, str], public_key: bytes = None, ss58_address: str = None,
+            ss58_format: int = None, crypto_type=KeypairType.SR25519
+    ) -> 'Keypair':
         """
         Creates Keypair for specified public/private keys
         Parameters
@@ -288,23 +292,19 @@ class Keypair:
         public_key: hex string or bytes of public key
         ss58_address: Substrate address
         ss58_format: Substrate address format, default = 42
-        address_type: (deprecated)
         crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
 
         Returns
         -------
         Keypair
         """
-        if address_type is not None:
-            warnings.warn("Keyword 'address_type' will be replaced by 'ss58_format'", DeprecationWarning)
-            ss58_format = address_type
 
         return cls(
             ss58_address=ss58_address, public_key=public_key, private_key=private_key,
             ss58_format=ss58_format, crypto_type=crypto_type
         )
 
-    def sign(self, data):
+    def sign(self, data: Union[ScaleBytes, bytes, str]) -> bytes:
         """
         Creates a signature for given data
 
@@ -328,16 +328,21 @@ class Keypair:
             raise ConfigurationError('No private key set to create signatures')
 
         if self.crypto_type == KeypairType.SR25519:
+            signature = sr25519.sign((self.public_key, self.private_key), data)
 
-            signature = sr25519.sign((bytes.fromhex(self.public_key[2:]), bytes.fromhex(self.private_key[2:])), data)
         elif self.crypto_type == KeypairType.ED25519:
-            signature = ed25519.ed_sign(bytes.fromhex(self.public_key[2:]), bytes.fromhex(self.private_key[2:]), data)
+            signature = ed25519.ed_sign(self.public_key, self.private_key, data)
+
+        elif self.crypto_type == KeypairType.ECDSA:
+            signer = eth_keys.keys.PrivateKey(self.private_key)
+            signature = signer.sign_msg(data).to_bytes()
+
         else:
             raise ConfigurationError("Crypto type not supported")
 
-        return "0x{}".format(signature.hex())
+        return signature
 
-    def verify(self, data, signature):
+    def verify(self, data: Union[ScaleBytes, bytes, str], signature: Union[bytes, str]) -> bool:
         """
         Verifies data with specified signature
 
@@ -365,20 +370,25 @@ class Keypair:
             raise TypeError("Signature should be of type bytes or a hex-string")
 
         if self.crypto_type == KeypairType.SR25519:
-            return sr25519.verify(signature, data, bytes.fromhex(self.public_key[2:]))
+            return sr25519.verify(signature, data, self.public_key)
         elif self.crypto_type == KeypairType.ED25519:
-            return ed25519.ed_verify(signature, data, bytes.fromhex(self.public_key[2:]))
+            return ed25519.ed_verify(signature, data, self.public_key)
+        elif self.crypto_type == KeypairType.ECDSA:
+            return ecdsa_verify(signature, data, self.public_key)
         else:
             raise ConfigurationError("Crypto type not supported")
 
     def __repr__(self):
-        return '<Keypair (ss58_address={})>'.format(self.ss58_address)
+        if self.ss58_address:
+            return '<Keypair (address={})>'.format(self.ss58_address)
+        else:
+            return '<Keypair (public_key=0x{})>'.format(self.public_key.hex())
 
 
 class SubstrateInterface:
 
     def __init__(self, url=None, websocket=None, ss58_format=None, type_registry=None, type_registry_preset=None,
-                 cache_region=None, address_type=None, runtime_config=None, use_remote_preset=False, ws_options=None,
+                 cache_region=None, runtime_config=None, use_remote_preset=False, ws_options=None,
                  auto_discover=True):
         """
         A specialized class in interfacing with a Substrate node.
@@ -396,10 +406,6 @@ class SubstrateInterface:
 
         if (not url and not websocket) or (url and websocket):
             raise ValueError("Either 'url' or 'websocket' must be provided")
-
-        if address_type is not None:
-            warnings.warn("Keyword 'address_type' will be replaced by 'ss58_format'", DeprecationWarning)
-            ss58_format = address_type
 
         # Initialize lazy loading variables
         self.__version = None
@@ -653,7 +659,11 @@ class SubstrateInterface:
     def ss58_format(self):
         if self.__ss58_format is None:
             if self.properties:
-                self.__ss58_format = self.properties.get('ss58Format')
+
+                if self.properties.get('ss58Format') is not None:
+                    self.__ss58_format = self.properties.get('ss58Format')
+                elif self.properties.get('SS58Prefix') is not None:
+                    self.__ss58_format = self.properties.get('SS58Prefix')
             else:
                 self.__ss58_format = 42
         return self.__ss58_format
@@ -931,6 +941,10 @@ class SubstrateInterface:
         return '0x{}'.format(storage_hash)
 
     def convert_storage_parameter(self, scale_type, value):
+
+        if type(value) is bytes:
+            value = f'0x{value.hex()}'
+
         if scale_type == 'AccountId':
             if value[0:2] != '0x':
                 return '0x{}'.format(ss58_decode(value, self.ss58_format))
@@ -1556,17 +1570,23 @@ class SubstrateInterface:
         # Create extrinsic
         extrinsic = self.runtime_config.create_scale_object(type_string='Extrinsic', metadata=self.metadata_decoder)
 
-        extrinsic.encode({
-            'account_id': keypair.public_key,
-            'signature_version': signature_version,
-            'signature': signature,
+        value = {
+            'account_id': f'0x{keypair.public_key.hex()}',
+            'signature': f'0x{signature.hex()}',
             'call_function': call.value['call_function'],
             'call_module': call.value['call_module'],
             'call_args': call.value['call_args'],
             'nonce': nonce,
             'era': era,
             'tip': tip
-        })
+        }
+
+        # Check if ExtrinsicSignature is MultiSignature, otherwise omit signature_version
+        signature_cls = self.runtime_config.get_decoder_class("ExtrinsicSignature")
+        if type(signature_cls.type_mapping) is list:
+            value['signature_version'] = signature_version
+
+        extrinsic.encode(value)
 
         return extrinsic
 
@@ -2227,7 +2247,7 @@ class SubstrateInterface:
                             extrinsic_decoder.decode()
                             block_data['extrinsics'][idx] = extrinsic_decoder
 
-                        except Exception:
+                        except Exception as e:
                             if not ignore_decoding_errors:
                                 raise
                             block_data['extrinsics'][idx] = None
