@@ -8,6 +8,7 @@ pytest>=4.4.0
 ecdsa~=0.17.0
 eth-keys~=0.3.3
 eth_utils~=1.10.0
+pycryptodome>=3.11.0,<4
 
 scalecodec>=1.0.17,<2
 py-sr25519-bindings~=0.1.2

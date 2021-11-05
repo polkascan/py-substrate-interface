@@ -185,6 +185,7 @@ setup(
         'ecdsa>=0.17.0,<1',
         'eth-keys>=0.3.3,<1',
         'eth_utils>=1.10.0,<2',
+        'pycryptodome>=3.11.0,<4',
         'scalecodec>=1.0.17,<2',
         'py-sr25519-bindings~=0.1.2',
         'py-ed25519-bindings~=0.1.2',
