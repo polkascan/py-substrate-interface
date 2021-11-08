@@ -187,6 +187,12 @@ class SS58TestCase(unittest.TestCase):
 
         self.assertEqual('Invalid address length', str(cm.exception))
 
+    def test_decode_empty_string(self):
+        with self.assertRaises(ValueError) as cm:
+            ss58_decode('')
+
+        self.assertEqual('Empty address provided', str(cm.exception))
+
     def test_is_valid_ss58_address(self):
         self.assertTrue(is_valid_ss58_address('5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'))
         self.assertTrue(is_valid_ss58_address('5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', valid_ss58_format=42))

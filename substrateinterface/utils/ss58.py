@@ -21,23 +21,21 @@
     https://github.com/paritytech/substrate/wiki/External-Address-Format-(SS58)
 
 """
-import warnings
-from typing import Optional
+from typing import Optional, Union
 
 import base58
 from hashlib import blake2b
 
-from scalecodec.base import ScaleBytes, ScaleDecoder, RuntimeConfiguration
+from scalecodec.base import ScaleBytes, RuntimeConfiguration
 
 
-def ss58_decode(address: str, valid_ss58_format: Optional[int] = None, valid_address_type=None) -> str:
+def ss58_decode(address: str, valid_ss58_format: Optional[int] = None) -> str:
     """
     Decodes given SS58 encoded address to an account ID
     Parameters
     ----------
     address: e.g. EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk
     valid_ss58_format
-    valid_address_type
 
     Returns
     -------
@@ -48,9 +46,8 @@ def ss58_decode(address: str, valid_ss58_format: Optional[int] = None, valid_add
     if address.startswith('0x'):
         return address
 
-    if valid_address_type is not None:
-        warnings.warn("Keyword 'valid_address_type' will be replaced by 'valid_ss58_format'", DeprecationWarning)
-        valid_ss58_format = valid_address_type
+    if address == '':
+        raise ValueError("Empty address provided")
 
     checksum_prefix = b'SS58PRE'
 
@@ -98,7 +95,7 @@ def ss58_decode(address: str, valid_ss58_format: Optional[int] = None, valid_add
     return address_decoded[ss58_format_length:len(address_decoded)-checksum_length].hex()
 
 
-def ss58_encode(address: str, ss58_format: int = 42, address_type=None) -> str:
+def ss58_encode(address: Union[str, bytes], ss58_format: int = 42) -> str:
     """
     Encodes an account ID to an Substrate address according to provided address_type
 
@@ -106,17 +103,12 @@ def ss58_encode(address: str, ss58_format: int = 42, address_type=None) -> str:
     ----------
     address
     ss58_format
-    address_type: (deprecated)
 
     Returns
     -------
 
     """
     checksum_prefix = b'SS58PRE'
-
-    if address_type is not None:
-        warnings.warn("Keyword 'address_type' will be replaced by 'ss58_format'", DeprecationWarning)
-        ss58_format = address_type
 
     if ss58_format < 0 or ss58_format > 16383 or ss58_format in [46, 47]:
         raise ValueError("Invalid value for ss58_format")
@@ -149,7 +141,7 @@ def ss58_encode(address: str, ss58_format: int = 42, address_type=None) -> str:
     return base58.b58encode(input_bytes + checksum[:checksum_length]).decode()
 
 
-def ss58_encode_account_index(account_index: int, ss58_format: int = 42, address_type=None) -> str:
+def ss58_encode_account_index(account_index: int, ss58_format: int = 42) -> str:
     """
     Encodes an AccountIndex to an Substrate address according to provided address_type
 
@@ -157,16 +149,11 @@ def ss58_encode_account_index(account_index: int, ss58_format: int = 42, address
     ----------
     account_index
     ss58_format
-    address_type: (deprecated)
 
     Returns
     -------
 
     """
-
-    if address_type is not None:
-        warnings.warn("Keyword 'address_type' will be replaced by 'ss58_format'", DeprecationWarning)
-        ss58_format = address_type
 
     if 0 <= account_index <= 2 ** 8 - 1:
         account_idx_encoder = RuntimeConfiguration().create_scale_object('u8')
@@ -182,7 +169,7 @@ def ss58_encode_account_index(account_index: int, ss58_format: int = 42, address
     return ss58_encode(account_idx_encoder.encode(account_index).data, ss58_format)
 
 
-def ss58_decode_account_index(address: str, valid_ss58_format: Optional[int] = None, valid_address_type=None) -> int:
+def ss58_decode_account_index(address: str, valid_ss58_format: Optional[int] = None) -> int:
     """
     Decodes given SS58 encoded address to an AccountIndex
 
@@ -190,16 +177,11 @@ def ss58_decode_account_index(address: str, valid_ss58_format: Optional[int] = N
     ----------
     address
     valid_ss58_format
-    valid_address_type
 
     Returns
     -------
     Decoded int AccountIndex
     """
-
-    if valid_address_type is not None:
-        warnings.warn("Keyword 'valid_address_type' will be replaced by 'valid_ss58_format'", DeprecationWarning)
-        valid_ss58_format = valid_address_type
 
     account_index_bytes = ss58_decode(address, valid_ss58_format)
 
