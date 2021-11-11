@@ -13,10 +13,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import os
 import unittest
 
-from scalecodec.base import ScaleBytes
+from scalecodec.base import ScaleBytes, RuntimeConfigurationObject
+from scalecodec.type_registry import load_type_registry_file, load_type_registry_preset
 
 from substrateinterface import SubstrateInterface
 from test import settings
@@ -139,6 +140,52 @@ class ReloadTypeRegistryTestCase(unittest.TestCase):
         self.substrate.reload_type_registry(use_remote_preset=False)
 
         self.assertEqual(u32_cls, self.substrate.runtime_config.get_decoder_class('Index'))
+
+
+class AutodiscoverV14RuntimeTestCase(unittest.TestCase):
+    runtime_config = None
+    metadata_obj = None
+    metadata_fixture_dict = None
+
+    @classmethod
+    def setUpClass(cls):
+        module_path = os.path.dirname(__file__)
+        cls.metadata_fixture_dict = load_type_registry_file(
+            os.path.join(module_path, 'fixtures', 'metadata_hex.json')
+        )
+        cls.metadata_fixture_dict = load_type_registry_file(
+            os.path.join(module_path, 'fixtures', 'metadata_hex.json')
+        )
+        cls.runtime_config = RuntimeConfigurationObject(implements_scale_info=True)
+        cls.runtime_config.update_type_registry(load_type_registry_preset("metadata_types"))
+
+        cls.metadata_obj = cls.runtime_config.create_scale_object(
+            'MetadataVersioned', data=ScaleBytes(cls.metadata_fixture_dict['V14'])
+        )
+        cls.metadata_obj.decode()
+
+    def setUp(self) -> None:
+
+        class MockedSubstrateInterface(SubstrateInterface):
+
+            def rpc_request(self, method, params, result_handler=None):
+
+                if method == 'system_chain':
+                    return {
+                        'jsonrpc': '2.0',
+                        'result': 'test',
+                        'id': self.request_id
+                    }
+
+                return super().rpc_request(method, params, result_handler)
+
+        self.substrate = MockedSubstrateInterface(
+            url=settings.KUSAMA_NODE_URL
+        )
+
+    def test_type_reg_preset_applied(self):
+        self.substrate.init_runtime()
+        self.assertIsNotNone(self.substrate.runtime_config.get_decoder_class('SpecificTestType'))
 
 
 if __name__ == '__main__':

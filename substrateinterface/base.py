@@ -1036,19 +1036,16 @@ class SubstrateInterface:
                 self.debug_message('Stored metadata for {} in Redis'.format(self.runtime_version))
                 self.cache_region.set('METADATA_{}'.format(self.runtime_version), self.metadata_decoder)
 
-        # Update type registry; TODO check if cache is present
+        # Update type registry
+        self.reload_type_registry(
+            use_remote_preset=self.config.get('use_remote_preset'),
+            auto_discover=self.config.get('auto_discover')
+        )
+
         # Check if PortableRegistry is present in metadata (V14+), otherwise fall back on legacy type registry (<V14)
         if self.implements_scaleinfo():
-            self.reload_type_registry()
             self.debug_message('Add PortableRegistry from metadata to type registry')
             self.runtime_config.add_portable_registry(self.metadata_decoder)
-        else:
-            # TODO remember if node implements scaleinfo
-            self.debug_message('Add manual type registry')
-            self.reload_type_registry(
-                use_remote_preset=self.config.get('use_remote_preset'),
-                auto_discover=self.config.get('auto_discover')
-            )
 
         # Set active runtime version
         self.runtime_config.set_active_spec_version_id(self.runtime_version)
@@ -2806,10 +2803,7 @@ class SubstrateInterface:
 
         # Load metadata types in runtime configuration
         self.runtime_config.update_type_registry(load_type_registry_preset(name="metadata_types"))
-
-        if self.metadata_decoder:
-            if not self.metadata_decoder.portable_registry:
-                self.apply_type_registry_presets(use_remote_preset=use_remote_preset, auto_discover=auto_discover)
+        self.apply_type_registry_presets(use_remote_preset=use_remote_preset, auto_discover=auto_discover)
 
     def apply_type_registry_presets(self, use_remote_preset: bool = True, auto_discover: bool = True):
         if self.type_registry_preset is not None:
@@ -2823,22 +2817,24 @@ class SubstrateInterface:
 
         elif auto_discover:
             # Try to auto discover type registry preset by chain name
-            type_registry_preset_dict = load_type_registry_preset(self.chain.lower())
-
-            if not type_registry_preset_dict:
-                raise ValueError(f"Could not auto-detect type registry preset for chain '{self.chain}'")
-
-            self.debug_message(f"Auto set type_registry_preset to {self.chain.lower()} ...")
-            self.type_registry_preset = self.chain.lower()
+            type_registry_name = self.chain.lower().replace(' ', '-')
+            try:
+                type_registry_preset_dict = load_type_registry_preset(type_registry_name)
+                self.debug_message(f"Auto set type_registry_preset to {type_registry_name} ...")
+                self.type_registry_preset = type_registry_name
+            except ValueError:
+                type_registry_preset_dict = None
 
         else:
             type_registry_preset_dict = None
 
         if type_registry_preset_dict:
             # Load type registries in runtime configuration
-            self.runtime_config.update_type_registry(
-                load_type_registry_preset("default", use_remote_preset=use_remote_preset)
-            )
+            if self.implements_scaleinfo() is False:
+                # Only runtime with no embedded types in metadata need the default set of explicit defined types
+                self.runtime_config.update_type_registry(
+                    load_type_registry_preset("default", use_remote_preset=use_remote_preset)
+                )
 
             if self.type_registry_preset != "default":
                 self.runtime_config.update_type_registry(type_registry_preset_dict)
