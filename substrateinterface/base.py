@@ -30,7 +30,7 @@ from typing import Optional, Union
 from websocket import create_connection, WebSocketConnectionClosedException
 
 from scalecodec.base import ScaleDecoder, ScaleBytes, RuntimeConfigurationObject, ScaleType
-from scalecodec.types import GenericCall, GenericExtrinsic, Extrinsic, LogDigest
+from scalecodec.types import GenericCall, GenericExtrinsic, Extrinsic
 from scalecodec.type_registry import load_type_registry_preset
 from scalecodec.updater import update_type_registries
 
@@ -755,7 +755,9 @@ class SubstrateInterface:
                     result['block']['extrinsics'][idx] = extrinsic_decoder.value
 
                 for idx, log_data in enumerate(result['block']['header']["digest"]["logs"]):
-                    log_digest = LogDigest(ScaleBytes(log_data), runtime_config=self.runtime_config)
+                    log_digest = self.runtime_config.create_scale_object(
+                        'sp_runtime::generic::digest::DigestItem', ScaleBytes(log_data)
+                    )
                     log_digest.decode()
                     result['block']['header']["digest"]["logs"][idx] = log_digest.value
 
