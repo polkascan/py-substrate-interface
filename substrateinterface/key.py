@@ -14,6 +14,7 @@
 # limitations under the License.
 import re
 from hashlib import blake2b
+from math import ceil
 
 from scalecodec.types import Bytes
 
@@ -29,13 +30,18 @@ class DeriveJunction:
     @classmethod
     def from_derive_path(cls, path: str, is_hard=False):
 
-        path_scale = Bytes()
-        path_scale.encode(path)
+        if path.isnumeric():
+            byte_length = ceil(int(path).bit_length() / 8)
+            chain_code = int(path).to_bytes(byte_length, 'little').ljust(32, b'\x00')
 
-        if len(path) > JUNCTION_ID_LEN:
-            chain_code = blake2b(path_scale.data.data, digest_size=32).digest()
         else:
-            chain_code = bytes(path_scale.data.data.ljust(32, b'\x00'))
+            path_scale = Bytes()
+            path_scale.encode(path)
+
+            if len(path) > JUNCTION_ID_LEN:
+                chain_code = blake2b(path_scale.data.data, digest_size=32).digest()
+            else:
+                chain_code = bytes(path_scale.data.data.ljust(32, b'\x00'))
 
         return cls(chain_code=chain_code, is_hard=is_hard)
 

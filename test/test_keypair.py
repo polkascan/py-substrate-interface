@@ -251,6 +251,22 @@ class KeyPairTestCase(unittest.TestCase):
 
         self.assertEqual(derivation_address, derived_keypair.ss58_address)
 
+    def test_hdkd_nested_numeric_hard_path(self):
+        derivation_address = '5Fc3qszVcAXHAmjjm61KcxqvV1kh91jpydE476NjjnJneNdP'
+        derivation_path = '//polkadot//0'
+
+        derived_keypair = Keypair.create_from_uri(derivation_path)
+
+        self.assertEqual(derivation_address, derived_keypair.ss58_address)
+
+    def test_hdkd_nested_numeric2_hard_path(self):
+        derivation_address = '5Dr9GrefZzxfeHovyiKUXKYGKRRiTbPhfLo14iYcHKNccN9q'
+        derivation_path = '//1//5000'
+
+        derived_keypair = Keypair.create_from_uri(derivation_path)
+
+        self.assertEqual(derivation_address, derived_keypair.ss58_address)
+
     def test_hdkd_path_gt_32_bytes(self):
         derivation_address = '5GR5pfZeNs1uQiSWVxZaQiZou3wdZiX894eqgvfNfHbEh7W2'
         derivation_path = '//PathNameLongerThan32BytesWhichShouldBeHashed'
