@@ -19,11 +19,8 @@ from unittest.mock import MagicMock
 
 from scalecodec.type_registry import load_type_registry_file
 from substrateinterface.exceptions import SubstrateRequestException
-
 from scalecodec.base import ScaleBytes
-
 from substrateinterface import SubstrateInterface
-from test.fixtures import metadata_v12_hex
 
 
 class TestHelperFunctions(unittest.TestCase):
@@ -99,6 +96,12 @@ class TestHelperFunctions(unittest.TestCase):
 
     def test_encode_scale(self):
         self.assertEqual(self.substrate.encode_scale('Compact<u32>', 3), ScaleBytes('0x0c'))
+
+    def test_create_scale_object(self):
+        scale_obj = self.substrate.create_scale_object("Bytes")
+
+        self.assertEqual(scale_obj.encode("Test"), ScaleBytes("0x1054657374"))
+        self.assertEqual(scale_obj.decode(ScaleBytes("0x1054657374")), "Test")
 
     def test_get_type_definition(self):
         self.assertDictEqual(self.substrate.get_type_definition('Bytes'), {
