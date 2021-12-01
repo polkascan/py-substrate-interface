@@ -15,7 +15,6 @@
 # limitations under the License.
 
 import warnings
-from functools import lru_cache
 from hashlib import blake2b
 
 import binascii
@@ -35,7 +34,6 @@ from scalecodec.type_registry import load_type_registry_preset
 from scalecodec.updater import update_type_registries
 
 from .key import extract_derive_path
-from .utils.caching import block_dependent_lru_cache
 from .utils.ecdsa_helpers import mnemonic_to_ecdsa_private_key, ecdsa_verify
 from .utils.hasher import blake2_256, two_x64_concat, xxh128, blake2_128, blake2_128_concat, identity
 from .exceptions import SubstrateRequestException, ConfigurationError, StorageFunctionNotFound, BlockNotFound, \
@@ -763,7 +761,6 @@ class SubstrateInterface:
 
             return result
 
-    @lru_cache(maxsize=1000)
     def get_block_hash(self, block_id: int) -> str:
         """
         A pass-though to existing JSONRPC method `chain_getBlockHash`
@@ -783,7 +780,6 @@ class SubstrateInterface:
         else:
             return response.get('result')
 
-    @block_dependent_lru_cache(maxsize=1000, block_arg_index=1)
     def get_block_number(self, block_hash: str) -> int:
         """
         A convenience method to get the block number for given block_hash
@@ -806,7 +802,6 @@ class SubstrateInterface:
             if response['result']:
                 return int(response['result']['number'], 16)
 
-    @block_dependent_lru_cache(maxsize=10)
     def get_block_metadata(self, block_hash=None, decode=True):
         """
         A pass-though to existing JSONRPC method `state_getMetadata`.
@@ -2111,7 +2106,6 @@ class SubstrateInterface:
                     if constant_name == constant.value['name']:
                         return constant
 
-    @lru_cache(maxsize=1000)
     def get_constant(self, module_name, constant_name, block_hash=None) -> Optional[ScaleType]:
         """
         Returns the decoded `ScaleType` object of the constant for given module name, call function name and block_hash
@@ -2233,7 +2227,6 @@ class SubstrateInterface:
                     if error_name == error.name:
                         return error
 
-    @block_dependent_lru_cache(maxsize=1000)
     def __get_block_handler(self, block_hash: str, ignore_decoding_errors: bool = False, include_author: bool = False,
                             header_only: bool = False, finalized_only: bool = False,
                             subscription_handler: callable = None):
