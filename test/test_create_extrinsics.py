@@ -13,10 +13,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import os
 import unittest
 
-from scalecodec.type_registry import load_type_registry_preset
+from scalecodec import ScaleBytes
+from scalecodec.type_registry import load_type_registry_file
 from substrateinterface import SubstrateInterface, Keypair, ExtrinsicReceipt
 from substrateinterface.exceptions import SubstrateRequestException
 from test import settings
@@ -38,10 +39,73 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
             type_registry_preset='polkadot'
         )
 
-    def test_create_balance_transfer(self):
+        cls.substrate_v13 = SubstrateInterface(
+            url=settings.POLKADOT_NODE_URL,
+            ss58_format=0,
+            type_registry_preset='polkadot'
+        )
+
+        module_path = os.path.dirname(__file__)
+        cls.metadata_fixture_dict = load_type_registry_file(
+            os.path.join(module_path, 'fixtures', 'metadata_hex.json')
+        )
+
+        cls.metadata_v13_obj = cls.substrate_v13.runtime_config.create_scale_object(
+            'MetadataVersioned', data=ScaleBytes(cls.metadata_fixture_dict['V13'])
+        )
+        cls.metadata_v13_obj.decode()
+        cls.substrate_v13.init_runtime()
+        cls.substrate_v13.metadata_decoder = cls.metadata_v13_obj
+
         # Create new keypair
         mnemonic = Keypair.generate_mnemonic()
-        keypair = Keypair.create_from_mnemonic(mnemonic, ss58_format=2)
+        cls.keypair = Keypair.create_from_mnemonic(mnemonic)
+
+    def test_create_extrinsic_metadata_v13(self):
+
+        # Create balance transfer call
+        call = self.substrate_v13.compose_call(
+            call_module='Balances',
+            call_function='transfer',
+            call_params={
+                'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
+                'value': 3 * 10 ** 3
+            }
+        )
+
+        extrinsic = self.substrate_v13.create_signed_extrinsic(call=call, keypair=self.keypair, tip=1)
+
+        decoded_extrinsic = self.substrate_v13.create_scale_object("Extrinsic")
+        decoded_extrinsic.decode(extrinsic.data)
+
+        self.assertEqual(decoded_extrinsic['call']['call_module'].name, 'Balances')
+        self.assertEqual(decoded_extrinsic['call']['call_function'].name, 'transfer')
+        self.assertEqual(extrinsic['nonce'], 0)
+        self.assertEqual(extrinsic['tip'], 1)
+
+    def test_create_extrinsic_metadata_v14(self):
+
+        # Create balance transfer call
+        call = self.kusama_substrate.compose_call(
+            call_module='Balances',
+            call_function='transfer',
+            call_params={
+                'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
+                'value': 3 * 10 ** 3
+            }
+        )
+
+        extrinsic = self.kusama_substrate.create_signed_extrinsic(call=call, keypair=self.keypair, tip=1)
+
+        decoded_extrinsic = self.kusama_substrate.create_scale_object("Extrinsic")
+        decoded_extrinsic.decode(extrinsic.data)
+
+        self.assertEqual(decoded_extrinsic['call']['call_module'].name, 'Balances')
+        self.assertEqual(decoded_extrinsic['call']['call_function'].name, 'transfer')
+        self.assertEqual(extrinsic['nonce'], 0)
+        self.assertEqual(extrinsic['tip'], 1)
+
+    def test_create_balance_transfer(self):
 
         for substrate in [self.kusama_substrate, self.polkadot_substrate]:
 
@@ -55,9 +119,9 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
                 }
             )
 
-            extrinsic = substrate.create_signed_extrinsic(call=call, keypair=keypair)
+            extrinsic = substrate.create_signed_extrinsic(call=call, keypair=self.keypair)
 
-            self.assertEqual(extrinsic['address'].value, f'0x{keypair.public_key.hex()}')
+            self.assertEqual(extrinsic['address'].value, f'0x{self.keypair.public_key.hex()}')
             self.assertEqual(extrinsic['call']['call_module'].name, 'Balances')
             self.assertEqual(extrinsic['call']['call_function'].name, 'transfer')
 
@@ -74,9 +138,6 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
                 pass
 
     def test_create_mortal_extrinsic(self):
-        # Create new keypair
-        mnemonic = Keypair.generate_mnemonic()
-        keypair = Keypair.create_from_mnemonic(mnemonic, ss58_format=2)
 
         for substrate in [self.kusama_substrate, self.polkadot_substrate]:
 
@@ -90,7 +151,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
                 }
             )
 
-            extrinsic = substrate.create_signed_extrinsic(call=call, keypair=keypair, era={'period': 64})
+            extrinsic = substrate.create_signed_extrinsic(call=call, keypair=self.keypair, era={'period': 64})
 
             try:
                 substrate.submit_extrinsic(extrinsic)
@@ -166,6 +227,14 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
             substrate=self.kusama_substrate,
             extrinsic_hash="0x5bcb59fdfc2ba852dabf31447b84764df85c8f64073757ea800f25b48e63ebd2",
             block_hash="0x8dae706d0f4882a7db484e708e27d9363a3adfa53baaac8b58c30f7c519a2520"
+        )
+
+        self.assertTrue(result.is_success)
+
+        result = ExtrinsicReceipt(
+            substrate=self.kusama_substrate,
+            extrinsic_hash="0x43ef739a8e4782e306908e710f333e65843fb35a57ec2a19df21cdc12258fbd8",
+            block_hash="0x8ab60dacd8535d948a755f72a9e09274d17f00693bbbdb55fa898db60a9ce580"
         )
 
         self.assertTrue(result.is_success)

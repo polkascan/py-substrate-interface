@@ -1422,6 +1422,22 @@ class SubstrateInterface:
 
         return self.runtime_config.create_scale_object(type_string, data=data, **kwargs)
 
+    def create_scale_object(self, type_string: str, data=None, block_hash=None, **kwargs) -> 'ScaleType':
+        """
+        Create a SCALE object of type `type_string`
+        :param type_string:
+        :param data:
+        :param block_hash: Optional block hash for moment of decoding, when omitted the chain tip will be used
+        :param kwargs:
+        :return: ScaleType
+        """
+        self.init_runtime(block_hash=block_hash)
+
+        if 'metadata' not in kwargs:
+            kwargs['metadata'] = self.metadata_decoder
+
+        return self.runtime_config.create_scale_object(type_string, data=data, **kwargs)
+
     def compose_call(self, call_module: str, call_function: str, call_params: dict = None, block_hash: str = None):
         """
         Composes a call payload which can be used as an unsigned extrinsic or a proposal.
@@ -1494,6 +1510,60 @@ class SubstrateInterface:
         # Create signature payload
         signature_payload = self.runtime_config.create_scale_object('ExtrinsicPayloadValue')
 
+        # Process signed extensions in metadata
+        if 'signed_extensions' in self.metadata_decoder[1][1]['extrinsic']:
+
+            # Base signature payload
+            signature_payload.type_mapping = [['call', 'CallBytes']]
+
+            # Add signed extensions to payload
+            signed_extensions = self.metadata_decoder.get_signed_extensions()
+
+            if 'CheckMortality' in signed_extensions:
+                signature_payload.type_mapping.append(
+                    ['era', signed_extensions['CheckMortality']['extrinsic']]
+                )
+
+            if 'CheckEra' in signed_extensions:
+                signature_payload.type_mapping.append(
+                    ['era', signed_extensions['CheckEra']['extrinsic']]
+                )
+
+            if 'CheckNonce' in signed_extensions:
+                signature_payload.type_mapping.append(
+                    ['nonce', signed_extensions['CheckNonce']['extrinsic']]
+                )
+
+            if 'ChargeTransactionPayment' in signed_extensions:
+                signature_payload.type_mapping.append(
+                    ['tip', signed_extensions['ChargeTransactionPayment']['extrinsic']]
+                )
+
+            if 'CheckSpecVersion' in signed_extensions:
+                signature_payload.type_mapping.append(
+                    ['spec_version', signed_extensions['CheckSpecVersion']['additional_signed']]
+                )
+
+            if 'CheckTxVersion' in signed_extensions:
+                signature_payload.type_mapping.append(
+                    ['transaction_version', signed_extensions['CheckTxVersion']['additional_signed']]
+                )
+
+            if 'CheckGenesis' in signed_extensions:
+                signature_payload.type_mapping.append(
+                    ['genesis_hash', signed_extensions['CheckGenesis']['additional_signed']]
+                )
+
+            if 'CheckMortality' in signed_extensions:
+                signature_payload.type_mapping.append(
+                    ['block_hash', signed_extensions['CheckMortality']['additional_signed']]
+                )
+
+            if 'CheckEra' in signed_extensions:
+                signature_payload.type_mapping.append(
+                    ['block_hash', signed_extensions['CheckEra']['additional_signed']]
+                )
+
         if include_call_length:
 
             length_obj = self.runtime_config.get_decoder_class('Bytes')
@@ -1509,11 +1579,9 @@ class SubstrateInterface:
             'tip': tip,
             'spec_version': self.runtime_version,
             'genesis_hash': genesis_hash,
-            'block_hash': block_hash
+            'block_hash': block_hash,
+            'transaction_version': self.transaction_version
         }
-
-        if self.transaction_version is not None:
-            payload_dict['transaction_version'] = self.transaction_version
 
         signature_payload.encode(payload_dict)
 
@@ -1541,9 +1609,17 @@ class SubstrateInterface:
         GenericExtrinsic The signed Extrinsic
         """
 
+        self.init_runtime()
+
         # Check requirements
         if not isinstance(call, GenericCall):
             raise TypeError("'call' must be of type Call")
+
+        # Check if extrinsic version is supported
+        if self.metadata_decoder[1][1]['extrinsic']['version'] != 4:
+            raise NotImplementedError(
+                f"Extrinsic version {self.metadata_decoder[1][1]['extrinsic']['version']} not supported"
+            )
 
         # Retrieve nonce
         if nonce is None:
@@ -1613,6 +1689,9 @@ class SubstrateInterface:
         -------
         GenericExtrinsic
         """
+
+        self.init_runtime()
+
         # Create extrinsic
         extrinsic = self.runtime_config.create_scale_object(type_string='Extrinsic', metadata=self.metadata_decoder)
 

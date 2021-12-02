@@ -289,7 +289,7 @@ To access these nested structures you can access those formally using:
 
 As a convenient shorthand you can also use:
 
-`account_info['data']['free']`
+`account_info['data']['free']
 
 `ScaleType` objects can also be automatically converted to an iterable, so if the object
 is for example the `others` in the result Struct of `Staking.eraStakers` can be iterated via:
@@ -321,7 +321,13 @@ So the whole result of `account_info.serialize()` will be a `dict` containing th
 
 #### Comparing values with `ScaleType` objects
 
-[TODO]
+It is possible to compare ScaleType objects directly to Python primitives, internally the serialized `value` attribute
+is compared:
+
+```python
+metadata_obj[1][1]['extrinsic']['version'] # '<U8(value=4)>'
+metadata_obj[1][1]['extrinsic']['version'] == 4 # True
+```
 
 ### Storage subscriptions
 
