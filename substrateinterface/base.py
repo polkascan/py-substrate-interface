@@ -415,9 +415,16 @@ class SubstrateInterface:
         self.__token_symbol = None
         self.__ss58_format = None
 
+        if not runtime_config:
+            runtime_config = RuntimeConfigurationObject()
+
+        self.runtime_config = runtime_config
+
         self.cache_region = cache_region
 
-        self.ss58_format = ss58_format
+        if ss58_format is not None:
+            self.ss58_format = ss58_format
+
         self.type_registry_preset = type_registry_preset
         self.type_registry = type_registry
 
@@ -461,11 +468,6 @@ class SubstrateInterface:
 
         self.metadata_cache = {}
         self.type_registry_cache = {}
-
-        if not runtime_config:
-            runtime_config = RuntimeConfigurationObject(ss58_format=self.ss58_format)
-
-        self.runtime_config = runtime_config
 
         self.debug = False
 
@@ -671,6 +673,9 @@ class SubstrateInterface:
         if type(value) is not int and value is not None:
             raise TypeError('ss58_format must be an int')
         self.__ss58_format = value
+
+        if self.runtime_config:
+            self.runtime_config.ss58_format = value
 
     def implements_scaleinfo(self) -> Optional[bool]:
         if self.metadata_decoder:
@@ -1046,6 +1051,12 @@ class SubstrateInterface:
 
         # Set active runtime version
         self.runtime_config.set_active_spec_version_id(self.runtime_version)
+
+        # Check and apply runtime constants
+        ss58_prefix_constant = self.get_constant("System", "SS58Prefix", block_hash=block_hash)
+
+        if ss58_prefix_constant:
+            self.ss58_format = ss58_prefix_constant.value
 
     def query_map(self, module: str, storage_function: str, params: Optional[list] = None, block_hash: str = None,
                   max_results: int = None, start_key: str = None, page_size: int = 100,
@@ -2204,7 +2215,9 @@ class SubstrateInterface:
         constant = self.get_metadata_constant(module_name, constant_name, block_hash=block_hash)
         if constant:
             # Decode to ScaleType
-            return self.decode_scale(constant.type, ScaleBytes(constant.constant_value), return_scale_obj=True)
+            return self.decode_scale(
+                constant.type, ScaleBytes(constant.constant_value), block_hash=block_hash, return_scale_obj=True
+            )
 
     def get_metadata_storage_functions(self, block_hash=None):
         """
