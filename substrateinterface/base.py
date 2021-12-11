@@ -1497,7 +1497,8 @@ class SubstrateInterface:
         response = self.rpc_request("system_accountNextIndex", [account_address])
         return response.get('result', 0)
 
-    def generate_signature_payload(self, call, era=None, nonce=0, tip=0, include_call_length=False) -> ScaleBytes:
+    def generate_signature_payload(self, call: GenericCall, era=None, nonce: int = 0, tip: int = 0,
+                                   tip_asset_id: int = None, include_call_length: bool = False) -> ScaleBytes:
 
         # Retrieve genesis hash
         genesis_hash = self.get_block_hash(0)
@@ -1550,6 +1551,11 @@ class SubstrateInterface:
                     ['tip', signed_extensions['ChargeTransactionPayment']['extrinsic']]
                 )
 
+            if 'ChargeAssetTxPayment' in signed_extensions:
+                signature_payload.type_mapping.append(
+                    ['asset_id', signed_extensions['ChargeAssetTxPayment']['extrinsic']]
+                )
+
             if 'CheckSpecVersion' in signed_extensions:
                 signature_payload.type_mapping.append(
                     ['spec_version', signed_extensions['CheckSpecVersion']['additional_signed']]
@@ -1591,7 +1597,8 @@ class SubstrateInterface:
             'spec_version': self.runtime_version,
             'genesis_hash': genesis_hash,
             'block_hash': block_hash,
-            'transaction_version': self.transaction_version
+            'transaction_version': self.transaction_version,
+            'asset_id': {'tip': tip, 'asset_id': tip_asset_id}
         }
 
         signature_payload.encode(payload_dict)
@@ -1602,7 +1609,7 @@ class SubstrateInterface:
         return signature_payload.data
 
     def create_signed_extrinsic(self, call: GenericCall, keypair: Keypair, era: dict = None, nonce: int = None,
-                                tip: int = 0, signature: str = None) -> GenericExtrinsic:
+                                tip: int = 0, tip_asset_id: int = None, signature: str = None) -> GenericExtrinsic:
         """
         Creates a extrinsic signed by given account details
 
@@ -1612,7 +1619,8 @@ class SubstrateInterface:
         keypair: Keypair used to sign the extrinsic
         era: Specify mortality in blocks in follow format: {'period': <amount_blocks>} If omitted the extrinsic is immortal
         nonce: nonce to include in extrinsics, if omitted the current nonce is retrieved on-chain
-        tip: specify tip to gain priority during network congestion
+        tip: The tip for the block author to gain priority during network congestion
+        tip_asset_id: Optional asset ID with which to pay the tip
         signature: Optionally provide signature if externally signed
 
         Returns
@@ -1658,7 +1666,9 @@ class SubstrateInterface:
 
         else:
             # Create signature payload
-            signature_payload = self.generate_signature_payload(call=call, era=era, nonce=nonce, tip=tip)
+            signature_payload = self.generate_signature_payload(
+                call=call, era=era, nonce=nonce, tip=tip, tip_asset_id=tip_asset_id
+            )
 
             # Set Signature version to crypto type of keypair
             signature_version = keypair.crypto_type
@@ -1677,7 +1687,8 @@ class SubstrateInterface:
             'call_args': call.value['call_args'],
             'nonce': nonce,
             'era': era,
-            'tip': tip
+            'tip': tip,
+            'asset_id': {'tip': tip, 'asset_id': tip_asset_id}
         }
 
         # Check if ExtrinsicSignature is MultiSignature, otherwise omit signature_version
