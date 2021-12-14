@@ -140,6 +140,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
     ],
 
     # This field adds keywords for your project which will appear on the
@@ -187,9 +188,9 @@ setup(
         'eth_utils>=1.10.0,<2',
         'pycryptodome>=3.11.0,<4',
         'scalecodec>=1.0.25,<2',
-        'py-sr25519-bindings~=0.1.2',
-        'py-ed25519-bindings~=0.1.2',
-        'py-bip39-bindings~=0.1.6'
+        'py-sr25519-bindings>=0.1.2,<1',
+        'py-ed25519-bindings>=1.0,<2',
+        'py-bip39-bindings>=0.1.8,<1'
     ],
 
     # List additional groups of dependencies here (e.g. development

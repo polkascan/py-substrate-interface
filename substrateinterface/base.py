@@ -43,7 +43,7 @@ from .utils.ss58 import ss58_decode, ss58_encode, is_valid_ss58_address
 
 from bip39 import bip39_to_mini_secret, bip39_generate
 import sr25519
-import ed25519
+import ed25519_dalek
 
 __all__ = ['Keypair', 'KeypairType', 'SubstrateInterface', 'ExtrinsicReceipt', 'logger']
 
@@ -190,7 +190,7 @@ class Keypair:
         if crypto_type == KeypairType.SR25519:
             public_key, private_key = sr25519.pair_from_seed(bytes.fromhex(seed_hex.replace('0x', '')))
         elif crypto_type == KeypairType.ED25519:
-            private_key, public_key = ed25519.ed_from_seed(bytes.fromhex(seed_hex.replace('0x', '')))
+            private_key, public_key = ed25519_dalek.ed_from_seed(bytes.fromhex(seed_hex.replace('0x', '')))
         else:
             raise ValueError('crypto_type "{}" not supported'.format(crypto_type))
 
@@ -329,7 +329,7 @@ class Keypair:
             signature = sr25519.sign((self.public_key, self.private_key), data)
 
         elif self.crypto_type == KeypairType.ED25519:
-            signature = ed25519.ed_sign(self.public_key, self.private_key, data)
+            signature = ed25519_dalek.ed_sign(self.public_key, self.private_key, data)
 
         elif self.crypto_type == KeypairType.ECDSA:
             signer = eth_keys.keys.PrivateKey(self.private_key)
@@ -370,7 +370,7 @@ class Keypair:
         if self.crypto_type == KeypairType.SR25519:
             return sr25519.verify(signature, data, self.public_key)
         elif self.crypto_type == KeypairType.ED25519:
-            return ed25519.ed_verify(signature, data, self.public_key)
+            return ed25519_dalek.ed_verify(signature, data, self.public_key)
         elif self.crypto_type == KeypairType.ECDSA:
             return ecdsa_verify(signature, data, self.public_key)
         else:
