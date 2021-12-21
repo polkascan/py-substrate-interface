@@ -1292,8 +1292,19 @@ class SubstrateInterface:
                 for change_storage_key, change_data in message['params']['result']['changes']:
                     if change_storage_key == storage_hash:
 
+                        if change_data is not None:
+                            change_scale_type = value_scale_type
+                        elif storage_item.value['modifier'] == 'Default':
+                            # Fallback to default value of storage function if no result
+                            change_scale_type = value_scale_type
+                            change_data = storage_item.value_object['default'].value_object
+                        else:
+                            # No result is interpreted as an Option<...> result
+                            change_scale_type = f'Option<{value_scale_type}>'
+                            change_data = storage_item.value_object['default'].value_object
+
                         updated_obj = self.runtime_config.create_scale_object(
-                            type_string=value_scale_type,
+                            type_string=change_scale_type,
                             data=ScaleBytes(change_data),
                             metadata=self.metadata_decoder
                         )
