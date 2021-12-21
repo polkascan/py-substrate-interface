@@ -1,4 +1,4 @@
-websocket-client>=0.57.0,<1
+websocket-client>=0.57.0,<2
 base58>=1.0.3,<3
 certifi>=2019.3.9
 idna>=2.1.0,<4
