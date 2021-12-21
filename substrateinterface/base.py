@@ -541,6 +541,7 @@ class SubstrateInterface:
 
                     self.__rpc_message_queue.append(json.loads(self.websocket.recv()))
 
+                    # Search for subscriptions
                     for message in self.__rpc_message_queue:
 
                         # Check if result message is matching request ID
@@ -562,8 +563,10 @@ class SubstrateInterface:
                             else:
                                 json_body = message
 
+                    # Process subscription updates
+                    for message in self.__rpc_message_queue:
                         # Check if message is meant for this subscription
-                        elif 'params' in message and message['params']['subscription'] == subscription_id:
+                        if 'params' in message and message['params']['subscription'] == subscription_id:
 
                             self.__rpc_message_queue.remove(message)
 
