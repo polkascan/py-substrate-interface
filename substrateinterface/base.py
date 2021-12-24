@@ -1447,22 +1447,6 @@ class SubstrateInterface:
 
         return self.runtime_config.create_scale_object(type_string, data=data, **kwargs)
 
-    def create_scale_object(self, type_string: str, data=None, block_hash=None, **kwargs) -> 'ScaleType':
-        """
-        Create a SCALE object of type `type_string`
-        :param type_string:
-        :param data:
-        :param block_hash: Optional block hash for moment of decoding, when omitted the chain tip will be used
-        :param kwargs:
-        :return: ScaleType
-        """
-        self.init_runtime(block_hash=block_hash)
-
-        if 'metadata' not in kwargs:
-            kwargs['metadata'] = self.metadata_decoder
-
-        return self.runtime_config.create_scale_object(type_string, data=data, **kwargs)
-
     def compose_call(self, call_module: str, call_function: str, call_params: dict = None, block_hash: str = None):
         """
         Composes a call payload which can be used as an unsigned extrinsic or a proposal.
