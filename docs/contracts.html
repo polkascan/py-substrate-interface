@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.1" />
+<meta name="generator" content="pdoc 0.10.0" />
 <title>substrateinterface.contracts API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
@@ -44,8 +44,10 @@
 
 import json
 import os
-from packaging import version
 from hashlib import blake2b
+from typing import Optional
+
+from .utils import version_tuple
 
 from substrateinterface.exceptions import ExtrinsicFailedException, DeployContractFailedException, \
     ContractReadFailedException, ContractMetadataParseException
@@ -103,6 +105,23 @@ class ContractMetadata:
 
     def __parse_type_registry(self):
 
+        if &#39;metadataVersion&#39; in self.metadata_dict:
+            # Convert legacy format as V0
+            self.metadata_dict[&#39;V0&#39;] = {
+                &#39;spec&#39;: self.metadata_dict.get(&#39;spec&#39;),
+                &#39;storage&#39;: self.metadata_dict.get(&#39;storage&#39;),
+                &#39;types&#39;: self.metadata_dict.get(&#39;types&#39;),
+            }
+
+        # Check metadata version
+        elif &#39;V1&#39; in self.metadata_dict:
+            self.metadata_dict[&#39;spec&#39;] = self.metadata_dict[&#39;V1&#39;][&#39;spec&#39;]
+            self.metadata_dict[&#39;storage&#39;] = self.metadata_dict[&#39;V1&#39;][&#39;storage&#39;]
+            self.metadata_dict[&#39;types&#39;] = self.metadata_dict[&#39;V1&#39;][&#39;types&#39;]
+
+        else:
+            raise ContractMetadataParseException(&#34;Unknown contract metadata version&#34;)
+
         # Check requirements
         if &#39;types&#39; not in self.metadata_dict:
             raise ContractMetadataParseException(&#34;No &#39;types&#39; directive present in metadata file&#34;)
@@ -120,18 +139,29 @@ class ContractMetadata:
             raise ContractMetadataParseException(&#34;&#39;source&#39; directive not present in metadata file&#34;)
 
         # check Metadata version
-        if version.parse(self.metadata_dict[&#39;metadataVersion&#39;]) &lt; version.parse(&#39;0.7.0&#39;):
+        if &#39;V0&#39; in self.metadata_dict and version_tuple(self.metadata_dict[&#39;metadataVersion&#39;]) &lt; (0, 7, 0):
             # Type indexes are 1-based before 0.7.0
             self.__type_offset = 1
 
-        self.type_string_prefix = f&#34;ink.{self.metadata_dict[&#39;source&#39;][&#39;hash&#39;]}&#34;
+        self.type_string_prefix = f&#34;ink::{self.metadata_dict[&#39;source&#39;][&#39;hash&#39;]}&#34;
 
-        for idx, metadata_type in enumerate(self.metadata_dict[&#39;types&#39;]):
+        if &#39;V0&#39; in self.metadata_dict:
 
-            idx += self.__type_offset
+            for idx, metadata_type in enumerate(self.metadata_dict[&#39;types&#39;]):
 
-            if idx not in self.type_registry:
-                self.type_registry[idx] = self.get_type_string_for_metadata_type(idx)
+                idx += self.__type_offset
+
+                if idx not in self.type_registry:
+                    self.type_registry[idx] = self.get_type_string_for_metadata_type(idx)
+
+        elif &#39;V1&#39; in self.metadata_dict:
+            self.substrate.init_runtime()
+            portable_registry = self.substrate.runtime_config.create_scale_object(&#39;PortableRegistry&#39;)
+            portable_registry.encode({&#34;types&#34;: self.metadata_dict[&#34;V1&#34;][&#34;types&#34;]})
+
+            self.substrate.runtime_config.update_from_scale_info_types(
+                portable_registry[&#39;types&#39;], prefix=self.type_string_prefix
+            )
 
     def generate_constructor_data(self, name, args: dict = None) -&gt; ScaleBytes:
         &#34;&#34;&#34;
@@ -180,108 +210,118 @@ class ContractMetadata:
         str
         &#34;&#34;&#34;
 
-        # Check if already processed
-        if type_id in self.type_registry:
-            return self.type_registry[type_id]
+        if &#39;V1&#39; in self.metadata_dict:
 
-        if type_id &gt; len(self.metadata_dict[&#39;types&#39;]):
-            raise ValueError(f&#39;type_id {type_id} not found in metadata&#39;)
+            if type_id &gt; len(self.metadata_dict[&#39;types&#39;]):
+                raise ValueError(f&#39;type_id {type_id} not found in metadata&#39;)
 
-        arg_type = self.metadata_dict[&#39;types&#39;][type_id - 1]
+            return f&#39;{self.type_string_prefix}::{type_id}&#39;
 
-        if &#39;path&#39; in arg_type:
+        if &#39;V0&#39; in self.metadata_dict:
+            # Legacy type parsing
 
-            # Option field
-            if arg_type[&#39;path&#39;] == [&#39;Option&#39;]:
+            # Check if already processed
+            if type_id in self.type_registry:
+                return self.type_registry[type_id]
 
-                # Examine the fields in the &#39;Some&#39; variant
-                options_fields = arg_type[&#39;def&#39;][&#39;variant&#39;][&#39;variants&#39;][1][&#39;fields&#39;]
+            if type_id &gt; len(self.metadata_dict[&#39;types&#39;]):
+                raise ValueError(f&#39;type_id {type_id} not found in metadata&#39;)
 
-                if len(options_fields) == 1:
-                    sub_type = self.get_type_string_for_metadata_type(options_fields[0][&#39;type&#39;])
-                else:
-                    raise NotImplementedError(&#39;Tuples in Option field not yet supported&#39;)
+            arg_type = self.metadata_dict[&#39;types&#39;][type_id - 1]
 
-                return f&#34;Option&lt;{sub_type}&gt;&#34;
+            if &#39;path&#39; in arg_type:
 
-            # Predefined types defined in crate ink_env
-            if arg_type[&#39;path&#39;][0:2] == [&#39;ink_env&#39;, &#39;types&#39;]:
+                # Option field
+                if arg_type[&#39;path&#39;] == [&#39;Option&#39;]:
 
-                if arg_type[&#39;path&#39;][2] == &#39;Timestamp&#39;:
-                    return &#39;Moment&#39;
+                    # Examine the fields in the &#39;Some&#39; variant
+                    options_fields = arg_type[&#39;def&#39;][&#39;variant&#39;][&#39;variants&#39;][1][&#39;fields&#39;]
 
-                elif arg_type[&#39;path&#39;][2] in [&#39;AccountId&#39;, &#39;Hash&#39;, &#39;Balance&#39;, &#39;BlockNumber&#39;]:
-                    return arg_type[&#39;path&#39;][2]
+                    if len(options_fields) == 1:
+                        sub_type = self.get_type_string_for_metadata_type(options_fields[0][&#39;type&#39;])
+                    else:
+                        raise NotImplementedError(&#39;Tuples in Option field not yet supported&#39;)
 
-                else:
-                    raise NotImplementedError(f&#34;Unsupported ink_env type &#39;{arg_type[&#39;path&#39;][2]}&#39;&#34;)
+                    return f&#34;Option&lt;{sub_type}&gt;&#34;
 
-        # RUST primitives
-        if &#39;primitive&#39; in arg_type[&#39;def&#39;]:
-            return arg_type[&#39;def&#39;][&#39;primitive&#39;]
+                # Predefined types defined in crate ink_env
+                if arg_type[&#39;path&#39;][0:2] == [&#39;ink_env&#39;, &#39;types&#39;]:
 
-        elif &#39;array&#39; in arg_type[&#39;def&#39;]:
-            array_type = self.get_type_string_for_metadata_type(arg_type[&#39;def&#39;][&#39;array&#39;][&#39;type&#39;])
-            # Generate unique type string
-            return f&#34;[{array_type}; {arg_type[&#39;def&#39;][&#39;array&#39;][&#39;len&#39;]}]&#34;
+                    if arg_type[&#39;path&#39;][2] == &#39;Timestamp&#39;:
+                        return &#39;Moment&#39;
 
-        elif &#39;variant&#39; in arg_type[&#39;def&#39;]:
-            # Create Enum
-            type_definition = {
-              &#34;type&#34;: &#34;enum&#34;,
-              &#34;type_mapping&#34;: []
-            }
-            for variant in arg_type[&#39;def&#39;][&#39;variant&#39;][&#39;variants&#39;]:
+                    elif arg_type[&#39;path&#39;][2] in [&#39;AccountId&#39;, &#39;Hash&#39;, &#39;Balance&#39;, &#39;BlockNumber&#39;]:
+                        return arg_type[&#39;path&#39;][2]
 
-                if &#39;fields&#39; in variant:
-                    if len(variant[&#39;fields&#39;]) &gt; 1:
-                        raise NotImplementedError(&#39;Tuples as field of enums not supported&#39;)
+                    else:
+                        raise NotImplementedError(f&#34;Unsupported ink_env type &#39;{arg_type[&#39;path&#39;][2]}&#39;&#34;)
 
-                    enum_value = self.get_type_string_for_metadata_type(variant[&#39;fields&#39;][0][&#39;type&#39;])
+            # RUST primitives
+            if &#39;primitive&#39; in arg_type[&#39;def&#39;]:
+                return arg_type[&#39;def&#39;][&#39;primitive&#39;]
 
-                else:
-                    enum_value = &#39;Null&#39;
+            elif &#39;array&#39; in arg_type[&#39;def&#39;]:
+                array_type = self.get_type_string_for_metadata_type(arg_type[&#39;def&#39;][&#39;array&#39;][&#39;type&#39;])
+                # Generate unique type string
+                return f&#34;[{array_type}; {arg_type[&#39;def&#39;][&#39;array&#39;][&#39;len&#39;]}]&#34;
 
-                type_definition[&#39;type_mapping&#39;].append(
-                    [variant[&#39;name&#39;], enum_value]
+            elif &#39;variant&#39; in arg_type[&#39;def&#39;]:
+                # Create Enum
+                type_definition = {
+                  &#34;type&#34;: &#34;enum&#34;,
+                  &#34;type_mapping&#34;: []
+                }
+                for variant in arg_type[&#39;def&#39;][&#39;variant&#39;][&#39;variants&#39;]:
+
+                    if &#39;fields&#39; in variant:
+                        if len(variant[&#39;fields&#39;]) &gt; 1:
+                            raise NotImplementedError(&#39;Tuples as field of enums not supported&#39;)
+
+                        enum_value = self.get_type_string_for_metadata_type(variant[&#39;fields&#39;][0][&#39;type&#39;])
+
+                    else:
+                        enum_value = &#39;Null&#39;
+
+                    type_definition[&#39;type_mapping&#39;].append(
+                        [variant[&#39;name&#39;], enum_value]
+                    )
+
+                # Add to type registry
+                self.substrate.runtime_config.update_type_registry_types(
+                    {f&#39;{self.type_string_prefix}::{type_id}&#39;: type_definition}
+                )
+                # Generate unique type string
+                self.type_registry[type_id] = f&#39;{self.type_string_prefix}::{type_id}&#39;
+
+                return f&#39;{self.type_string_prefix}::{type_id}&#39;
+
+            elif &#39;composite&#39; in arg_type[&#39;def&#39;]:
+                # Create Struct
+                type_definition = {
+                    &#34;type&#34;: &#34;struct&#34;,
+                    &#34;type_mapping&#34;: []
+                }
+
+                for field in arg_type[&#39;def&#39;][&#39;composite&#39;][&#39;fields&#39;]:
+                    type_definition[&#39;type_mapping&#39;].append(
+                        [field[&#39;name&#39;], self.get_type_string_for_metadata_type(field[&#39;type&#39;])]
+                    )
+
+                # Add to type registry
+                self.substrate.runtime_config.update_type_registry_types(
+                    {f&#39;{self.type_string_prefix}::{type_id}&#39;: type_definition}
                 )
 
-            # Add to type registry
-            self.substrate.runtime_config.update_type_registry_types(
-                {f&#39;{self.type_string_prefix}.{type_id}&#39;: type_definition}
-            )
-            # Generate unique type string
-            self.type_registry[type_id] = f&#39;{self.type_string_prefix}.{type_id}&#39;
+                # Generate unique type string
+                self.type_registry[type_id] = f&#39;{self.type_string_prefix}::{type_id}&#39;
 
-            return f&#39;{self.type_string_prefix}.{type_id}&#39;
+                return f&#39;{self.type_string_prefix}::{type_id}&#39;
+            elif &#39;tuple&#39; in arg_type[&#39;def&#39;]:
+                # Create tuple
+                elements = [self.get_type_string_for_metadata_type(element) for element in arg_type[&#39;def&#39;][&#39;tuple&#39;]]
+                return f&#34;({&#39;,&#39;.join(elements)})&#34;
 
-        elif &#39;composite&#39; in arg_type[&#39;def&#39;]:
-            # Create Struct
-            type_definition = {
-                &#34;type&#34;: &#34;struct&#34;,
-                &#34;type_mapping&#34;: []
-            }
-
-            for field in arg_type[&#39;def&#39;][&#39;composite&#39;][&#39;fields&#39;]:
-                type_definition[&#39;type_mapping&#39;].append(
-                    [field[&#39;name&#39;], self.get_type_string_for_metadata_type(field[&#39;type&#39;])]
-                )
-
-            # Add to type registry
-            self.substrate.runtime_config.update_type_registry_types(
-                {f&#39;{self.type_string_prefix}.{type_id}&#39;: type_definition}
-            )
-
-            # Generate unique type string
-            self.type_registry[type_id] = f&#39;{self.type_string_prefix}.{type_id}&#39;
-
-            return f&#39;{self.type_string_prefix}.{type_id}&#39;
-        elif &#39;tuple&#39; in arg_type[&#39;def&#39;]:
-            # Create tuple
-            elements = [self.get_type_string_for_metadata_type(element) for element in arg_type[&#39;def&#39;][&#39;tuple&#39;]]
-            return f&#34;({&#39;,&#39;.join(elements)})&#34;
-
-        raise NotImplementedError(f&#34;Type &#39;{arg_type}&#39; not supported&#34;)
+            raise NotImplementedError(f&#34;Type &#39;{arg_type}&#39; not supported&#34;)
 
     def get_return_type_string_for_message(self, name) -&gt; str:
         for message in self.metadata_dict[&#39;spec&#39;][&#39;messages&#39;]:
@@ -432,18 +472,33 @@ class ContractExecutionReceipt(ExtrinsicReceipt):
             self.__contract_events = []
 
             for event in self.triggered_events:
-                if event.event_module.name == &#39;Contracts&#39; and event.event.name == &#39;ContractEmitted&#39;:
 
-                    # Create contract event
-                    contract_event_obj = ContractEvent(
-                        data=ScaleBytes(event.params[1][&#39;value&#39;]),
-                        runtime_config=self.substrate.runtime_config,
-                        contract_metadata=self.contract_metadata
-                    )
+                if self.substrate.implements_scaleinfo():
+                    if event.value[&#39;module_id&#39;] == &#39;Contracts&#39; and event.value[&#39;event_id&#39;] == &#39;ContractEmitted&#39;:
+                        # Create contract event
+                        contract_event_obj = ContractEvent(
+                            data=ScaleBytes(event.value[&#39;attributes&#39;][1]),
+                            runtime_config=self.substrate.runtime_config,
+                            contract_metadata=self.contract_metadata
+                        )
 
-                    contract_event_obj.decode()
+                        contract_event_obj.decode()
 
-                    self.__contract_events.append(contract_event_obj)
+                        self.__contract_events.append(contract_event_obj)
+                else:
+
+                    if event.event_module.name == &#39;Contracts&#39; and event.event.name == &#39;ContractEmitted&#39;:
+
+                        # Create contract event
+                        contract_event_obj = ContractEvent(
+                            data=ScaleBytes(event.params[1][&#39;value&#39;]),
+                            runtime_config=self.substrate.runtime_config,
+                            contract_metadata=self.contract_metadata
+                        )
+
+                        contract_event_obj.decode()
+
+                        self.__contract_events.append(contract_event_obj)
 
     @property
     def contract_events(self):
@@ -628,12 +683,23 @@ class ContractCode:
             raise ExtrinsicFailedException(result.error_message)
 
         for event in result.triggered_events:
-            if event.event.name == &#39;Instantiated&#39;:
-                return ContractInstance(
-                    contract_address=event.params[1][&#39;value&#39;],
-                    metadata=self.metadata,
-                    substrate=self.substrate
-                )
+
+            if self.substrate.implements_scaleinfo():
+
+                if event.value[&#39;event&#39;][&#39;event_id&#39;] == &#39;Instantiated&#39;:
+                    return ContractInstance(
+                        contract_address=event.value[&#39;event&#39;][&#39;attributes&#39;][1],
+                        metadata=self.metadata,
+                        substrate=self.substrate
+                    )
+            else:
+
+                if event.event.name == &#39;Instantiated&#39;:
+                    return ContractInstance(
+                        contract_address=event.params[1][&#39;value&#39;],
+                        metadata=self.metadata,
+                        substrate=self.substrate
+                    )
 
         raise DeployContractFailedException()
 
@@ -704,7 +770,6 @@ class ContractInstance:
             return_type_string = self.metadata.get_return_type_string_for_message(method)
 
             # Wrap the result in a ContractExecResult Enum because the exec will result in the same
-            # TODO Check workings with PortableRegistry
             ContractExecResult = self.substrate.runtime_config.get_decoder_class(&#39;ContractExecResult&#39;)
 
             contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
@@ -727,6 +792,7 @@ class ContractInstance:
 
                         response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;] = result_scale_obj.value
                         contract_exec_result.contract_result_data = result_scale_obj
+                        contract_exec_result.value_object = result_scale_obj
 
                     except NotImplementedError:
                         pass
@@ -758,7 +824,7 @@ class ContractInstance:
         raise ContractReadFailedException(response)
 
     def exec(self, keypair: Keypair, method: str, args: dict = None,
-             value: int = 0, gas_limit: int = 200000) -&gt; ContractExecutionReceipt:
+             value: int = 0, gas_limit: Optional[int] = None) -&gt; ContractExecutionReceipt:
         &#34;&#34;&#34;
         Executes provided message by creating and submitting an extrinsic. To get a gas prediction or perform a
         &#39;dry-run&#39; of executing this message, see `ContractInstance.read`.
@@ -769,12 +835,16 @@ class ContractInstance:
         method: name of message to execute
         args: arguments of message in {&#39;name&#39;: value} format
         value: value to send when executing the message
-        gas_limit
+        gas_limit: When left to None the gas limit will be calculated with a read()
 
         Returns
         -------
         ContractExecutionReceipt
         &#34;&#34;&#34;
+
+        if gas_limit is None:
+            gas_predit_result = self.read(keypair, method, args, value)
+            gas_limit = gas_predit_result.gas_consumed
 
         input_data = self.metadata.generate_message_data(name=method, args=args)
 
@@ -1002,12 +1072,23 @@ the WASM bytes and metadata</p>
             raise ExtrinsicFailedException(result.error_message)
 
         for event in result.triggered_events:
-            if event.event.name == &#39;Instantiated&#39;:
-                return ContractInstance(
-                    contract_address=event.params[1][&#39;value&#39;],
-                    metadata=self.metadata,
-                    substrate=self.substrate
-                )
+
+            if self.substrate.implements_scaleinfo():
+
+                if event.value[&#39;event&#39;][&#39;event_id&#39;] == &#39;Instantiated&#39;:
+                    return ContractInstance(
+                        contract_address=event.value[&#39;event&#39;][&#39;attributes&#39;][1],
+                        metadata=self.metadata,
+                        substrate=self.substrate
+                    )
+            else:
+
+                if event.event.name == &#39;Instantiated&#39;:
+                    return ContractInstance(
+                        contract_address=event.params[1][&#39;value&#39;],
+                        metadata=self.metadata,
+                        substrate=self.substrate
+                    )
 
         raise DeployContractFailedException()</code></pre>
 </details>
@@ -1224,12 +1305,23 @@ constructor arguments</p>
         raise ExtrinsicFailedException(result.error_message)
 
     for event in result.triggered_events:
-        if event.event.name == &#39;Instantiated&#39;:
-            return ContractInstance(
-                contract_address=event.params[1][&#39;value&#39;],
-                metadata=self.metadata,
-                substrate=self.substrate
-            )
+
+        if self.substrate.implements_scaleinfo():
+
+            if event.value[&#39;event&#39;][&#39;event_id&#39;] == &#39;Instantiated&#39;:
+                return ContractInstance(
+                    contract_address=event.value[&#39;event&#39;][&#39;attributes&#39;][1],
+                    metadata=self.metadata,
+                    substrate=self.substrate
+                )
+        else:
+
+            if event.event.name == &#39;Instantiated&#39;:
+                return ContractInstance(
+                    contract_address=event.params[1][&#39;value&#39;],
+                    metadata=self.metadata,
+                    substrate=self.substrate
+                )
 
     raise DeployContractFailedException()</code></pre>
 </details>
@@ -1460,18 +1552,33 @@ the generic "Contracts.ContractExecution" event that is triggered after a succes
             self.__contract_events = []
 
             for event in self.triggered_events:
-                if event.event_module.name == &#39;Contracts&#39; and event.event.name == &#39;ContractEmitted&#39;:
 
-                    # Create contract event
-                    contract_event_obj = ContractEvent(
-                        data=ScaleBytes(event.params[1][&#39;value&#39;]),
-                        runtime_config=self.substrate.runtime_config,
-                        contract_metadata=self.contract_metadata
-                    )
+                if self.substrate.implements_scaleinfo():
+                    if event.value[&#39;module_id&#39;] == &#39;Contracts&#39; and event.value[&#39;event_id&#39;] == &#39;ContractEmitted&#39;:
+                        # Create contract event
+                        contract_event_obj = ContractEvent(
+                            data=ScaleBytes(event.value[&#39;attributes&#39;][1]),
+                            runtime_config=self.substrate.runtime_config,
+                            contract_metadata=self.contract_metadata
+                        )
 
-                    contract_event_obj.decode()
+                        contract_event_obj.decode()
 
-                    self.__contract_events.append(contract_event_obj)
+                        self.__contract_events.append(contract_event_obj)
+                else:
+
+                    if event.event_module.name == &#39;Contracts&#39; and event.event.name == &#39;ContractEmitted&#39;:
+
+                        # Create contract event
+                        contract_event_obj = ContractEvent(
+                            data=ScaleBytes(event.params[1][&#39;value&#39;]),
+                            runtime_config=self.substrate.runtime_config,
+                            contract_metadata=self.contract_metadata
+                        )
+
+                        contract_event_obj.decode()
+
+                        self.__contract_events.append(contract_event_obj)
 
     @property
     def contract_events(self):
@@ -1571,18 +1678,33 @@ def contract_events(self):
         self.__contract_events = []
 
         for event in self.triggered_events:
-            if event.event_module.name == &#39;Contracts&#39; and event.event.name == &#39;ContractEmitted&#39;:
 
-                # Create contract event
-                contract_event_obj = ContractEvent(
-                    data=ScaleBytes(event.params[1][&#39;value&#39;]),
-                    runtime_config=self.substrate.runtime_config,
-                    contract_metadata=self.contract_metadata
-                )
+            if self.substrate.implements_scaleinfo():
+                if event.value[&#39;module_id&#39;] == &#39;Contracts&#39; and event.value[&#39;event_id&#39;] == &#39;ContractEmitted&#39;:
+                    # Create contract event
+                    contract_event_obj = ContractEvent(
+                        data=ScaleBytes(event.value[&#39;attributes&#39;][1]),
+                        runtime_config=self.substrate.runtime_config,
+                        contract_metadata=self.contract_metadata
+                    )
 
-                contract_event_obj.decode()
+                    contract_event_obj.decode()
 
-                self.__contract_events.append(contract_event_obj)</code></pre>
+                    self.__contract_events.append(contract_event_obj)
+            else:
+
+                if event.event_module.name == &#39;Contracts&#39; and event.event.name == &#39;ContractEmitted&#39;:
+
+                    # Create contract event
+                    contract_event_obj = ContractEvent(
+                        data=ScaleBytes(event.params[1][&#39;value&#39;]),
+                        runtime_config=self.substrate.runtime_config,
+                        contract_metadata=self.contract_metadata
+                    )
+
+                    contract_event_obj.decode()
+
+                    self.__contract_events.append(contract_event_obj)</code></pre>
 </details>
 </dd>
 </dl>
@@ -1677,7 +1799,6 @@ def contract_events(self):
             return_type_string = self.metadata.get_return_type_string_for_message(method)
 
             # Wrap the result in a ContractExecResult Enum because the exec will result in the same
-            # TODO Check workings with PortableRegistry
             ContractExecResult = self.substrate.runtime_config.get_decoder_class(&#39;ContractExecResult&#39;)
 
             contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
@@ -1700,6 +1821,7 @@ def contract_events(self):
 
                         response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;] = result_scale_obj.value
                         contract_exec_result.contract_result_data = result_scale_obj
+                        contract_exec_result.value_object = result_scale_obj
 
                     except NotImplementedError:
                         pass
@@ -1731,7 +1853,7 @@ def contract_events(self):
         raise ContractReadFailedException(response)
 
     def exec(self, keypair: Keypair, method: str, args: dict = None,
-             value: int = 0, gas_limit: int = 200000) -&gt; ContractExecutionReceipt:
+             value: int = 0, gas_limit: Optional[int] = None) -&gt; ContractExecutionReceipt:
         &#34;&#34;&#34;
         Executes provided message by creating and submitting an extrinsic. To get a gas prediction or perform a
         &#39;dry-run&#39; of executing this message, see `ContractInstance.read`.
@@ -1742,12 +1864,16 @@ def contract_events(self):
         method: name of message to execute
         args: arguments of message in {&#39;name&#39;: value} format
         value: value to send when executing the message
-        gas_limit
+        gas_limit: When left to None the gas limit will be calculated with a read()
 
         Returns
         -------
         ContractExecutionReceipt
         &#34;&#34;&#34;
+
+        if gas_limit is None:
+            gas_predit_result = self.read(keypair, method, args, value)
+            gas_limit = gas_predit_result.gas_consumed
 
         input_data = self.metadata.generate_message_data(name=method, args=args)
 
@@ -1821,7 +1947,7 @@ def create_from_address(cls, contract_address: str, metadata_file: str,
 <h3>Methods</h3>
 <dl>
 <dt id="substrateinterface.contracts.ContractInstance.exec"><code class="name flex">
-<span>def <span class="ident">exec</span></span>(<span>self, keypair: <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a>, method: str, args: dict = None, value: int = 0, gas_limit: int = 200000) ‑> <a title="substrateinterface.contracts.ContractExecutionReceipt" href="#substrateinterface.contracts.ContractExecutionReceipt">ContractExecutionReceipt</a></span>
+<span>def <span class="ident">exec</span></span>(<span>self, keypair: <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a>, method: str, args: dict = None, value: int = 0, gas_limit: Optional[int] = None) ‑> <a title="substrateinterface.contracts.ContractExecutionReceipt" href="#substrateinterface.contracts.ContractExecutionReceipt">ContractExecutionReceipt</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Executes provided message by creating and submitting an extrinsic. To get a gas prediction or perform a
@@ -1836,7 +1962,7 @@ def create_from_address(cls, contract_address: str, metadata_file: str,
 <dd>&nbsp;</dd>
 <dt><strong><code>value</code></strong> :&ensp;<code>value to send when executing the message</code></dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>gas_limit</code></strong></dt>
+<dt><strong><code>gas_limit</code></strong> :&ensp;<code>When left to None the gas limit will be calculated with a read()</code></dt>
 <dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -1849,7 +1975,7 @@ def create_from_address(cls, contract_address: str, metadata_file: str,
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def exec(self, keypair: Keypair, method: str, args: dict = None,
-         value: int = 0, gas_limit: int = 200000) -&gt; ContractExecutionReceipt:
+         value: int = 0, gas_limit: Optional[int] = None) -&gt; ContractExecutionReceipt:
     &#34;&#34;&#34;
     Executes provided message by creating and submitting an extrinsic. To get a gas prediction or perform a
     &#39;dry-run&#39; of executing this message, see `ContractInstance.read`.
@@ -1860,12 +1986,16 @@ def create_from_address(cls, contract_address: str, metadata_file: str,
     method: name of message to execute
     args: arguments of message in {&#39;name&#39;: value} format
     value: value to send when executing the message
-    gas_limit
+    gas_limit: When left to None the gas limit will be calculated with a read()
 
     Returns
     -------
     ContractExecutionReceipt
     &#34;&#34;&#34;
+
+    if gas_limit is None:
+        gas_predit_result = self.read(keypair, method, args, value)
+        gas_limit = gas_predit_result.gas_consumed
 
     input_data = self.metadata.generate_message_data(name=method, args=args)
 
@@ -1952,7 +2082,6 @@ This method does not submit an extrinsic.</p>
         return_type_string = self.metadata.get_return_type_string_for_message(method)
 
         # Wrap the result in a ContractExecResult Enum because the exec will result in the same
-        # TODO Check workings with PortableRegistry
         ContractExecResult = self.substrate.runtime_config.get_decoder_class(&#39;ContractExecResult&#39;)
 
         contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
@@ -1975,6 +2104,7 @@ This method does not submit an extrinsic.</p>
 
                     response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;] = result_scale_obj.value
                     contract_exec_result.contract_result_data = result_scale_obj
+                    contract_exec_result.value_object = result_scale_obj
 
                 except NotImplementedError:
                     pass
@@ -2073,6 +2203,23 @@ parsed and the used types are extracted, composed and added to the type registry
 
     def __parse_type_registry(self):
 
+        if &#39;metadataVersion&#39; in self.metadata_dict:
+            # Convert legacy format as V0
+            self.metadata_dict[&#39;V0&#39;] = {
+                &#39;spec&#39;: self.metadata_dict.get(&#39;spec&#39;),
+                &#39;storage&#39;: self.metadata_dict.get(&#39;storage&#39;),
+                &#39;types&#39;: self.metadata_dict.get(&#39;types&#39;),
+            }
+
+        # Check metadata version
+        elif &#39;V1&#39; in self.metadata_dict:
+            self.metadata_dict[&#39;spec&#39;] = self.metadata_dict[&#39;V1&#39;][&#39;spec&#39;]
+            self.metadata_dict[&#39;storage&#39;] = self.metadata_dict[&#39;V1&#39;][&#39;storage&#39;]
+            self.metadata_dict[&#39;types&#39;] = self.metadata_dict[&#39;V1&#39;][&#39;types&#39;]
+
+        else:
+            raise ContractMetadataParseException(&#34;Unknown contract metadata version&#34;)
+
         # Check requirements
         if &#39;types&#39; not in self.metadata_dict:
             raise ContractMetadataParseException(&#34;No &#39;types&#39; directive present in metadata file&#34;)
@@ -2090,18 +2237,29 @@ parsed and the used types are extracted, composed and added to the type registry
             raise ContractMetadataParseException(&#34;&#39;source&#39; directive not present in metadata file&#34;)
 
         # check Metadata version
-        if version.parse(self.metadata_dict[&#39;metadataVersion&#39;]) &lt; version.parse(&#39;0.7.0&#39;):
+        if &#39;V0&#39; in self.metadata_dict and version_tuple(self.metadata_dict[&#39;metadataVersion&#39;]) &lt; (0, 7, 0):
             # Type indexes are 1-based before 0.7.0
             self.__type_offset = 1
 
-        self.type_string_prefix = f&#34;ink.{self.metadata_dict[&#39;source&#39;][&#39;hash&#39;]}&#34;
+        self.type_string_prefix = f&#34;ink::{self.metadata_dict[&#39;source&#39;][&#39;hash&#39;]}&#34;
 
-        for idx, metadata_type in enumerate(self.metadata_dict[&#39;types&#39;]):
+        if &#39;V0&#39; in self.metadata_dict:
 
-            idx += self.__type_offset
+            for idx, metadata_type in enumerate(self.metadata_dict[&#39;types&#39;]):
 
-            if idx not in self.type_registry:
-                self.type_registry[idx] = self.get_type_string_for_metadata_type(idx)
+                idx += self.__type_offset
+
+                if idx not in self.type_registry:
+                    self.type_registry[idx] = self.get_type_string_for_metadata_type(idx)
+
+        elif &#39;V1&#39; in self.metadata_dict:
+            self.substrate.init_runtime()
+            portable_registry = self.substrate.runtime_config.create_scale_object(&#39;PortableRegistry&#39;)
+            portable_registry.encode({&#34;types&#34;: self.metadata_dict[&#34;V1&#34;][&#34;types&#34;]})
+
+            self.substrate.runtime_config.update_from_scale_info_types(
+                portable_registry[&#39;types&#39;], prefix=self.type_string_prefix
+            )
 
     def generate_constructor_data(self, name, args: dict = None) -&gt; ScaleBytes:
         &#34;&#34;&#34;
@@ -2150,108 +2308,118 @@ parsed and the used types are extracted, composed and added to the type registry
         str
         &#34;&#34;&#34;
 
-        # Check if already processed
-        if type_id in self.type_registry:
-            return self.type_registry[type_id]
+        if &#39;V1&#39; in self.metadata_dict:
 
-        if type_id &gt; len(self.metadata_dict[&#39;types&#39;]):
-            raise ValueError(f&#39;type_id {type_id} not found in metadata&#39;)
+            if type_id &gt; len(self.metadata_dict[&#39;types&#39;]):
+                raise ValueError(f&#39;type_id {type_id} not found in metadata&#39;)
 
-        arg_type = self.metadata_dict[&#39;types&#39;][type_id - 1]
+            return f&#39;{self.type_string_prefix}::{type_id}&#39;
 
-        if &#39;path&#39; in arg_type:
+        if &#39;V0&#39; in self.metadata_dict:
+            # Legacy type parsing
 
-            # Option field
-            if arg_type[&#39;path&#39;] == [&#39;Option&#39;]:
+            # Check if already processed
+            if type_id in self.type_registry:
+                return self.type_registry[type_id]
 
-                # Examine the fields in the &#39;Some&#39; variant
-                options_fields = arg_type[&#39;def&#39;][&#39;variant&#39;][&#39;variants&#39;][1][&#39;fields&#39;]
+            if type_id &gt; len(self.metadata_dict[&#39;types&#39;]):
+                raise ValueError(f&#39;type_id {type_id} not found in metadata&#39;)
 
-                if len(options_fields) == 1:
-                    sub_type = self.get_type_string_for_metadata_type(options_fields[0][&#39;type&#39;])
-                else:
-                    raise NotImplementedError(&#39;Tuples in Option field not yet supported&#39;)
+            arg_type = self.metadata_dict[&#39;types&#39;][type_id - 1]
 
-                return f&#34;Option&lt;{sub_type}&gt;&#34;
+            if &#39;path&#39; in arg_type:
 
-            # Predefined types defined in crate ink_env
-            if arg_type[&#39;path&#39;][0:2] == [&#39;ink_env&#39;, &#39;types&#39;]:
+                # Option field
+                if arg_type[&#39;path&#39;] == [&#39;Option&#39;]:
 
-                if arg_type[&#39;path&#39;][2] == &#39;Timestamp&#39;:
-                    return &#39;Moment&#39;
+                    # Examine the fields in the &#39;Some&#39; variant
+                    options_fields = arg_type[&#39;def&#39;][&#39;variant&#39;][&#39;variants&#39;][1][&#39;fields&#39;]
 
-                elif arg_type[&#39;path&#39;][2] in [&#39;AccountId&#39;, &#39;Hash&#39;, &#39;Balance&#39;, &#39;BlockNumber&#39;]:
-                    return arg_type[&#39;path&#39;][2]
+                    if len(options_fields) == 1:
+                        sub_type = self.get_type_string_for_metadata_type(options_fields[0][&#39;type&#39;])
+                    else:
+                        raise NotImplementedError(&#39;Tuples in Option field not yet supported&#39;)
 
-                else:
-                    raise NotImplementedError(f&#34;Unsupported ink_env type &#39;{arg_type[&#39;path&#39;][2]}&#39;&#34;)
+                    return f&#34;Option&lt;{sub_type}&gt;&#34;
 
-        # RUST primitives
-        if &#39;primitive&#39; in arg_type[&#39;def&#39;]:
-            return arg_type[&#39;def&#39;][&#39;primitive&#39;]
+                # Predefined types defined in crate ink_env
+                if arg_type[&#39;path&#39;][0:2] == [&#39;ink_env&#39;, &#39;types&#39;]:
 
-        elif &#39;array&#39; in arg_type[&#39;def&#39;]:
-            array_type = self.get_type_string_for_metadata_type(arg_type[&#39;def&#39;][&#39;array&#39;][&#39;type&#39;])
-            # Generate unique type string
-            return f&#34;[{array_type}; {arg_type[&#39;def&#39;][&#39;array&#39;][&#39;len&#39;]}]&#34;
+                    if arg_type[&#39;path&#39;][2] == &#39;Timestamp&#39;:
+                        return &#39;Moment&#39;
 
-        elif &#39;variant&#39; in arg_type[&#39;def&#39;]:
-            # Create Enum
-            type_definition = {
-              &#34;type&#34;: &#34;enum&#34;,
-              &#34;type_mapping&#34;: []
-            }
-            for variant in arg_type[&#39;def&#39;][&#39;variant&#39;][&#39;variants&#39;]:
+                    elif arg_type[&#39;path&#39;][2] in [&#39;AccountId&#39;, &#39;Hash&#39;, &#39;Balance&#39;, &#39;BlockNumber&#39;]:
+                        return arg_type[&#39;path&#39;][2]
 
-                if &#39;fields&#39; in variant:
-                    if len(variant[&#39;fields&#39;]) &gt; 1:
-                        raise NotImplementedError(&#39;Tuples as field of enums not supported&#39;)
+                    else:
+                        raise NotImplementedError(f&#34;Unsupported ink_env type &#39;{arg_type[&#39;path&#39;][2]}&#39;&#34;)
 
-                    enum_value = self.get_type_string_for_metadata_type(variant[&#39;fields&#39;][0][&#39;type&#39;])
+            # RUST primitives
+            if &#39;primitive&#39; in arg_type[&#39;def&#39;]:
+                return arg_type[&#39;def&#39;][&#39;primitive&#39;]
 
-                else:
-                    enum_value = &#39;Null&#39;
+            elif &#39;array&#39; in arg_type[&#39;def&#39;]:
+                array_type = self.get_type_string_for_metadata_type(arg_type[&#39;def&#39;][&#39;array&#39;][&#39;type&#39;])
+                # Generate unique type string
+                return f&#34;[{array_type}; {arg_type[&#39;def&#39;][&#39;array&#39;][&#39;len&#39;]}]&#34;
 
-                type_definition[&#39;type_mapping&#39;].append(
-                    [variant[&#39;name&#39;], enum_value]
+            elif &#39;variant&#39; in arg_type[&#39;def&#39;]:
+                # Create Enum
+                type_definition = {
+                  &#34;type&#34;: &#34;enum&#34;,
+                  &#34;type_mapping&#34;: []
+                }
+                for variant in arg_type[&#39;def&#39;][&#39;variant&#39;][&#39;variants&#39;]:
+
+                    if &#39;fields&#39; in variant:
+                        if len(variant[&#39;fields&#39;]) &gt; 1:
+                            raise NotImplementedError(&#39;Tuples as field of enums not supported&#39;)
+
+                        enum_value = self.get_type_string_for_metadata_type(variant[&#39;fields&#39;][0][&#39;type&#39;])
+
+                    else:
+                        enum_value = &#39;Null&#39;
+
+                    type_definition[&#39;type_mapping&#39;].append(
+                        [variant[&#39;name&#39;], enum_value]
+                    )
+
+                # Add to type registry
+                self.substrate.runtime_config.update_type_registry_types(
+                    {f&#39;{self.type_string_prefix}::{type_id}&#39;: type_definition}
+                )
+                # Generate unique type string
+                self.type_registry[type_id] = f&#39;{self.type_string_prefix}::{type_id}&#39;
+
+                return f&#39;{self.type_string_prefix}::{type_id}&#39;
+
+            elif &#39;composite&#39; in arg_type[&#39;def&#39;]:
+                # Create Struct
+                type_definition = {
+                    &#34;type&#34;: &#34;struct&#34;,
+                    &#34;type_mapping&#34;: []
+                }
+
+                for field in arg_type[&#39;def&#39;][&#39;composite&#39;][&#39;fields&#39;]:
+                    type_definition[&#39;type_mapping&#39;].append(
+                        [field[&#39;name&#39;], self.get_type_string_for_metadata_type(field[&#39;type&#39;])]
+                    )
+
+                # Add to type registry
+                self.substrate.runtime_config.update_type_registry_types(
+                    {f&#39;{self.type_string_prefix}::{type_id}&#39;: type_definition}
                 )
 
-            # Add to type registry
-            self.substrate.runtime_config.update_type_registry_types(
-                {f&#39;{self.type_string_prefix}.{type_id}&#39;: type_definition}
-            )
-            # Generate unique type string
-            self.type_registry[type_id] = f&#39;{self.type_string_prefix}.{type_id}&#39;
+                # Generate unique type string
+                self.type_registry[type_id] = f&#39;{self.type_string_prefix}::{type_id}&#39;
 
-            return f&#39;{self.type_string_prefix}.{type_id}&#39;
+                return f&#39;{self.type_string_prefix}::{type_id}&#39;
+            elif &#39;tuple&#39; in arg_type[&#39;def&#39;]:
+                # Create tuple
+                elements = [self.get_type_string_for_metadata_type(element) for element in arg_type[&#39;def&#39;][&#39;tuple&#39;]]
+                return f&#34;({&#39;,&#39;.join(elements)})&#34;
 
-        elif &#39;composite&#39; in arg_type[&#39;def&#39;]:
-            # Create Struct
-            type_definition = {
-                &#34;type&#34;: &#34;struct&#34;,
-                &#34;type_mapping&#34;: []
-            }
-
-            for field in arg_type[&#39;def&#39;][&#39;composite&#39;][&#39;fields&#39;]:
-                type_definition[&#39;type_mapping&#39;].append(
-                    [field[&#39;name&#39;], self.get_type_string_for_metadata_type(field[&#39;type&#39;])]
-                )
-
-            # Add to type registry
-            self.substrate.runtime_config.update_type_registry_types(
-                {f&#39;{self.type_string_prefix}.{type_id}&#39;: type_definition}
-            )
-
-            # Generate unique type string
-            self.type_registry[type_id] = f&#39;{self.type_string_prefix}.{type_id}&#39;
-
-            return f&#39;{self.type_string_prefix}.{type_id}&#39;
-        elif &#39;tuple&#39; in arg_type[&#39;def&#39;]:
-            # Create tuple
-            elements = [self.get_type_string_for_metadata_type(element) for element in arg_type[&#39;def&#39;][&#39;tuple&#39;]]
-            return f&#34;({&#39;,&#39;.join(elements)})&#34;
-
-        raise NotImplementedError(f&#34;Type &#39;{arg_type}&#39; not supported&#34;)
+            raise NotImplementedError(f&#34;Type &#39;{arg_type}&#39; not supported&#34;)
 
     def get_return_type_string_for_message(self, name) -&gt; str:
         for message in self.metadata_dict[&#39;spec&#39;][&#39;messages&#39;]:
@@ -2558,108 +2726,118 @@ produces a type string that can be used in the scope of the <code>RuntimeConfigu
     str
     &#34;&#34;&#34;
 
-    # Check if already processed
-    if type_id in self.type_registry:
-        return self.type_registry[type_id]
+    if &#39;V1&#39; in self.metadata_dict:
 
-    if type_id &gt; len(self.metadata_dict[&#39;types&#39;]):
-        raise ValueError(f&#39;type_id {type_id} not found in metadata&#39;)
+        if type_id &gt; len(self.metadata_dict[&#39;types&#39;]):
+            raise ValueError(f&#39;type_id {type_id} not found in metadata&#39;)
 
-    arg_type = self.metadata_dict[&#39;types&#39;][type_id - 1]
+        return f&#39;{self.type_string_prefix}::{type_id}&#39;
 
-    if &#39;path&#39; in arg_type:
+    if &#39;V0&#39; in self.metadata_dict:
+        # Legacy type parsing
 
-        # Option field
-        if arg_type[&#39;path&#39;] == [&#39;Option&#39;]:
+        # Check if already processed
+        if type_id in self.type_registry:
+            return self.type_registry[type_id]
 
-            # Examine the fields in the &#39;Some&#39; variant
-            options_fields = arg_type[&#39;def&#39;][&#39;variant&#39;][&#39;variants&#39;][1][&#39;fields&#39;]
+        if type_id &gt; len(self.metadata_dict[&#39;types&#39;]):
+            raise ValueError(f&#39;type_id {type_id} not found in metadata&#39;)
 
-            if len(options_fields) == 1:
-                sub_type = self.get_type_string_for_metadata_type(options_fields[0][&#39;type&#39;])
-            else:
-                raise NotImplementedError(&#39;Tuples in Option field not yet supported&#39;)
+        arg_type = self.metadata_dict[&#39;types&#39;][type_id - 1]
 
-            return f&#34;Option&lt;{sub_type}&gt;&#34;
+        if &#39;path&#39; in arg_type:
 
-        # Predefined types defined in crate ink_env
-        if arg_type[&#39;path&#39;][0:2] == [&#39;ink_env&#39;, &#39;types&#39;]:
+            # Option field
+            if arg_type[&#39;path&#39;] == [&#39;Option&#39;]:
 
-            if arg_type[&#39;path&#39;][2] == &#39;Timestamp&#39;:
-                return &#39;Moment&#39;
+                # Examine the fields in the &#39;Some&#39; variant
+                options_fields = arg_type[&#39;def&#39;][&#39;variant&#39;][&#39;variants&#39;][1][&#39;fields&#39;]
 
-            elif arg_type[&#39;path&#39;][2] in [&#39;AccountId&#39;, &#39;Hash&#39;, &#39;Balance&#39;, &#39;BlockNumber&#39;]:
-                return arg_type[&#39;path&#39;][2]
+                if len(options_fields) == 1:
+                    sub_type = self.get_type_string_for_metadata_type(options_fields[0][&#39;type&#39;])
+                else:
+                    raise NotImplementedError(&#39;Tuples in Option field not yet supported&#39;)
 
-            else:
-                raise NotImplementedError(f&#34;Unsupported ink_env type &#39;{arg_type[&#39;path&#39;][2]}&#39;&#34;)
+                return f&#34;Option&lt;{sub_type}&gt;&#34;
 
-    # RUST primitives
-    if &#39;primitive&#39; in arg_type[&#39;def&#39;]:
-        return arg_type[&#39;def&#39;][&#39;primitive&#39;]
+            # Predefined types defined in crate ink_env
+            if arg_type[&#39;path&#39;][0:2] == [&#39;ink_env&#39;, &#39;types&#39;]:
 
-    elif &#39;array&#39; in arg_type[&#39;def&#39;]:
-        array_type = self.get_type_string_for_metadata_type(arg_type[&#39;def&#39;][&#39;array&#39;][&#39;type&#39;])
-        # Generate unique type string
-        return f&#34;[{array_type}; {arg_type[&#39;def&#39;][&#39;array&#39;][&#39;len&#39;]}]&#34;
+                if arg_type[&#39;path&#39;][2] == &#39;Timestamp&#39;:
+                    return &#39;Moment&#39;
 
-    elif &#39;variant&#39; in arg_type[&#39;def&#39;]:
-        # Create Enum
-        type_definition = {
-          &#34;type&#34;: &#34;enum&#34;,
-          &#34;type_mapping&#34;: []
-        }
-        for variant in arg_type[&#39;def&#39;][&#39;variant&#39;][&#39;variants&#39;]:
+                elif arg_type[&#39;path&#39;][2] in [&#39;AccountId&#39;, &#39;Hash&#39;, &#39;Balance&#39;, &#39;BlockNumber&#39;]:
+                    return arg_type[&#39;path&#39;][2]
 
-            if &#39;fields&#39; in variant:
-                if len(variant[&#39;fields&#39;]) &gt; 1:
-                    raise NotImplementedError(&#39;Tuples as field of enums not supported&#39;)
+                else:
+                    raise NotImplementedError(f&#34;Unsupported ink_env type &#39;{arg_type[&#39;path&#39;][2]}&#39;&#34;)
 
-                enum_value = self.get_type_string_for_metadata_type(variant[&#39;fields&#39;][0][&#39;type&#39;])
+        # RUST primitives
+        if &#39;primitive&#39; in arg_type[&#39;def&#39;]:
+            return arg_type[&#39;def&#39;][&#39;primitive&#39;]
 
-            else:
-                enum_value = &#39;Null&#39;
+        elif &#39;array&#39; in arg_type[&#39;def&#39;]:
+            array_type = self.get_type_string_for_metadata_type(arg_type[&#39;def&#39;][&#39;array&#39;][&#39;type&#39;])
+            # Generate unique type string
+            return f&#34;[{array_type}; {arg_type[&#39;def&#39;][&#39;array&#39;][&#39;len&#39;]}]&#34;
 
-            type_definition[&#39;type_mapping&#39;].append(
-                [variant[&#39;name&#39;], enum_value]
+        elif &#39;variant&#39; in arg_type[&#39;def&#39;]:
+            # Create Enum
+            type_definition = {
+              &#34;type&#34;: &#34;enum&#34;,
+              &#34;type_mapping&#34;: []
+            }
+            for variant in arg_type[&#39;def&#39;][&#39;variant&#39;][&#39;variants&#39;]:
+
+                if &#39;fields&#39; in variant:
+                    if len(variant[&#39;fields&#39;]) &gt; 1:
+                        raise NotImplementedError(&#39;Tuples as field of enums not supported&#39;)
+
+                    enum_value = self.get_type_string_for_metadata_type(variant[&#39;fields&#39;][0][&#39;type&#39;])
+
+                else:
+                    enum_value = &#39;Null&#39;
+
+                type_definition[&#39;type_mapping&#39;].append(
+                    [variant[&#39;name&#39;], enum_value]
+                )
+
+            # Add to type registry
+            self.substrate.runtime_config.update_type_registry_types(
+                {f&#39;{self.type_string_prefix}::{type_id}&#39;: type_definition}
+            )
+            # Generate unique type string
+            self.type_registry[type_id] = f&#39;{self.type_string_prefix}::{type_id}&#39;
+
+            return f&#39;{self.type_string_prefix}::{type_id}&#39;
+
+        elif &#39;composite&#39; in arg_type[&#39;def&#39;]:
+            # Create Struct
+            type_definition = {
+                &#34;type&#34;: &#34;struct&#34;,
+                &#34;type_mapping&#34;: []
+            }
+
+            for field in arg_type[&#39;def&#39;][&#39;composite&#39;][&#39;fields&#39;]:
+                type_definition[&#39;type_mapping&#39;].append(
+                    [field[&#39;name&#39;], self.get_type_string_for_metadata_type(field[&#39;type&#39;])]
+                )
+
+            # Add to type registry
+            self.substrate.runtime_config.update_type_registry_types(
+                {f&#39;{self.type_string_prefix}::{type_id}&#39;: type_definition}
             )
 
-        # Add to type registry
-        self.substrate.runtime_config.update_type_registry_types(
-            {f&#39;{self.type_string_prefix}.{type_id}&#39;: type_definition}
-        )
-        # Generate unique type string
-        self.type_registry[type_id] = f&#39;{self.type_string_prefix}.{type_id}&#39;
+            # Generate unique type string
+            self.type_registry[type_id] = f&#39;{self.type_string_prefix}::{type_id}&#39;
 
-        return f&#39;{self.type_string_prefix}.{type_id}&#39;
+            return f&#39;{self.type_string_prefix}::{type_id}&#39;
+        elif &#39;tuple&#39; in arg_type[&#39;def&#39;]:
+            # Create tuple
+            elements = [self.get_type_string_for_metadata_type(element) for element in arg_type[&#39;def&#39;][&#39;tuple&#39;]]
+            return f&#34;({&#39;,&#39;.join(elements)})&#34;
 
-    elif &#39;composite&#39; in arg_type[&#39;def&#39;]:
-        # Create Struct
-        type_definition = {
-            &#34;type&#34;: &#34;struct&#34;,
-            &#34;type_mapping&#34;: []
-        }
-
-        for field in arg_type[&#39;def&#39;][&#39;composite&#39;][&#39;fields&#39;]:
-            type_definition[&#39;type_mapping&#39;].append(
-                [field[&#39;name&#39;], self.get_type_string_for_metadata_type(field[&#39;type&#39;])]
-            )
-
-        # Add to type registry
-        self.substrate.runtime_config.update_type_registry_types(
-            {f&#39;{self.type_string_prefix}.{type_id}&#39;: type_definition}
-        )
-
-        # Generate unique type string
-        self.type_registry[type_id] = f&#39;{self.type_string_prefix}.{type_id}&#39;
-
-        return f&#39;{self.type_string_prefix}.{type_id}&#39;
-    elif &#39;tuple&#39; in arg_type[&#39;def&#39;]:
-        # Create tuple
-        elements = [self.get_type_string_for_metadata_type(element) for element in arg_type[&#39;def&#39;][&#39;tuple&#39;]]
-        return f&#34;({&#39;,&#39;.join(elements)})&#34;
-
-    raise NotImplementedError(f&#34;Type &#39;{arg_type}&#39; not supported&#34;)</code></pre>
+        raise NotImplementedError(f&#34;Type &#39;{arg_type}&#39; not supported&#34;)</code></pre>
 </details>
 </dd>
 </dl>
@@ -2730,7 +2908,7 @@ produces a type string that can be used in the scope of the <code>RuntimeConfigu
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
 </footer>
 </body>
 </html>

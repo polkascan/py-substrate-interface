@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.9.1" />
+<meta name="generator" content="pdoc 0.10.0" />
 <title>substrateinterface.utils.ss58 API documentation</title>
 <meta name="description" content="SS58 is a simple address format designed for Substrate based chains.
 Encoding/decoding according to specification on
@@ -54,23 +54,21 @@ Encoding/decoding according to specification on
     https://github.com/paritytech/substrate/wiki/External-Address-Format-(SS58)
 
 &#34;&#34;&#34;
-import warnings
-from typing import Optional
+from typing import Optional, Union
 
 import base58
 from hashlib import blake2b
 
-from scalecodec.base import ScaleBytes, ScaleDecoder, RuntimeConfiguration
+from scalecodec.base import ScaleBytes, RuntimeConfiguration
 
 
-def ss58_decode(address: str, valid_ss58_format: Optional[int] = None, valid_address_type=None) -&gt; str:
+def ss58_decode(address: str, valid_ss58_format: Optional[int] = None) -&gt; str:
     &#34;&#34;&#34;
     Decodes given SS58 encoded address to an account ID
     Parameters
     ----------
     address: e.g. EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk
     valid_ss58_format
-    valid_address_type
 
     Returns
     -------
@@ -81,9 +79,8 @@ def ss58_decode(address: str, valid_ss58_format: Optional[int] = None, valid_add
     if address.startswith(&#39;0x&#39;):
         return address
 
-    if valid_address_type is not None:
-        warnings.warn(&#34;Keyword &#39;valid_address_type&#39; will be replaced by &#39;valid_ss58_format&#39;&#34;, DeprecationWarning)
-        valid_ss58_format = valid_address_type
+    if address == &#39;&#39;:
+        raise ValueError(&#34;Empty address provided&#34;)
 
     checksum_prefix = b&#39;SS58PRE&#39;
 
@@ -131,7 +128,7 @@ def ss58_decode(address: str, valid_ss58_format: Optional[int] = None, valid_add
     return address_decoded[ss58_format_length:len(address_decoded)-checksum_length].hex()
 
 
-def ss58_encode(address: str, ss58_format: int = 42, address_type=None) -&gt; str:
+def ss58_encode(address: Union[str, bytes], ss58_format: int = 42) -&gt; str:
     &#34;&#34;&#34;
     Encodes an account ID to an Substrate address according to provided address_type
 
@@ -139,17 +136,12 @@ def ss58_encode(address: str, ss58_format: int = 42, address_type=None) -&gt; st
     ----------
     address
     ss58_format
-    address_type: (deprecated)
 
     Returns
     -------
 
     &#34;&#34;&#34;
     checksum_prefix = b&#39;SS58PRE&#39;
-
-    if address_type is not None:
-        warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
-        ss58_format = address_type
 
     if ss58_format &lt; 0 or ss58_format &gt; 16383 or ss58_format in [46, 47]:
         raise ValueError(&#34;Invalid value for ss58_format&#34;)
@@ -182,7 +174,7 @@ def ss58_encode(address: str, ss58_format: int = 42, address_type=None) -&gt; st
     return base58.b58encode(input_bytes + checksum[:checksum_length]).decode()
 
 
-def ss58_encode_account_index(account_index: int, ss58_format: int = 42, address_type=None) -&gt; str:
+def ss58_encode_account_index(account_index: int, ss58_format: int = 42) -&gt; str:
     &#34;&#34;&#34;
     Encodes an AccountIndex to an Substrate address according to provided address_type
 
@@ -190,16 +182,11 @@ def ss58_encode_account_index(account_index: int, ss58_format: int = 42, address
     ----------
     account_index
     ss58_format
-    address_type: (deprecated)
 
     Returns
     -------
 
     &#34;&#34;&#34;
-
-    if address_type is not None:
-        warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
-        ss58_format = address_type
 
     if 0 &lt;= account_index &lt;= 2 ** 8 - 1:
         account_idx_encoder = RuntimeConfiguration().create_scale_object(&#39;u8&#39;)
@@ -215,7 +202,7 @@ def ss58_encode_account_index(account_index: int, ss58_format: int = 42, address
     return ss58_encode(account_idx_encoder.encode(account_index).data, ss58_format)
 
 
-def ss58_decode_account_index(address: str, valid_ss58_format: Optional[int] = None, valid_address_type=None) -&gt; int:
+def ss58_decode_account_index(address: str, valid_ss58_format: Optional[int] = None) -&gt; int:
     &#34;&#34;&#34;
     Decodes given SS58 encoded address to an AccountIndex
 
@@ -223,16 +210,11 @@ def ss58_decode_account_index(address: str, valid_ss58_format: Optional[int] = N
     ----------
     address
     valid_ss58_format
-    valid_address_type
 
     Returns
     -------
     Decoded int AccountIndex
     &#34;&#34;&#34;
-
-    if valid_address_type is not None:
-        warnings.warn(&#34;Keyword &#39;valid_address_type&#39; will be replaced by &#39;valid_ss58_format&#39;&#34;, DeprecationWarning)
-        valid_ss58_format = valid_address_type
 
     account_index_bytes = ss58_decode(address, valid_ss58_format)
 
@@ -291,7 +273,7 @@ def is_valid_ss58_address(value: str, valid_ss58_format: Optional[int] = None) -
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
 <dt id="substrateinterface.utils.ss58.is_valid_ss58_address"><code class="name flex">
-<span>def <span class="ident">is_valid_ss58_address</span></span>(<span>value: str, valid_ss58_format: Union[int, NoneType] = None) ‑> bool</span>
+<span>def <span class="ident">is_valid_ss58_address</span></span>(<span>value: str, valid_ss58_format: Optional[int] = None) ‑> bool</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Checks if given value is a valid SS58 formatted address, optionally check if address is valid for specified
@@ -340,7 +322,7 @@ ss58_format</p>
 </details>
 </dd>
 <dt id="substrateinterface.utils.ss58.ss58_decode"><code class="name flex">
-<span>def <span class="ident">ss58_decode</span></span>(<span>address: str, valid_ss58_format: Union[int, NoneType] = None, valid_address_type=None) ‑> str</span>
+<span>def <span class="ident">ss58_decode</span></span>(<span>address: str, valid_ss58_format: Optional[int] = None) ‑> str</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Decodes given SS58 encoded address to an account ID
@@ -350,8 +332,6 @@ Parameters</p>
 <dt><strong><code>address</code></strong> :&ensp;<code>e.g. EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk</code></dt>
 <dd>&nbsp;</dd>
 <dt><strong><code>valid_ss58_format</code></strong></dt>
-<dd>&nbsp;</dd>
-<dt><strong><code>valid_address_type</code></strong></dt>
 <dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -363,14 +343,13 @@ Parameters</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def ss58_decode(address: str, valid_ss58_format: Optional[int] = None, valid_address_type=None) -&gt; str:
+<pre><code class="python">def ss58_decode(address: str, valid_ss58_format: Optional[int] = None) -&gt; str:
     &#34;&#34;&#34;
     Decodes given SS58 encoded address to an account ID
     Parameters
     ----------
     address: e.g. EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk
     valid_ss58_format
-    valid_address_type
 
     Returns
     -------
@@ -381,9 +360,8 @@ Parameters</p>
     if address.startswith(&#39;0x&#39;):
         return address
 
-    if valid_address_type is not None:
-        warnings.warn(&#34;Keyword &#39;valid_address_type&#39; will be replaced by &#39;valid_ss58_format&#39;&#34;, DeprecationWarning)
-        valid_ss58_format = valid_address_type
+    if address == &#39;&#39;:
+        raise ValueError(&#34;Empty address provided&#34;)
 
     checksum_prefix = b&#39;SS58PRE&#39;
 
@@ -432,7 +410,7 @@ Parameters</p>
 </details>
 </dd>
 <dt id="substrateinterface.utils.ss58.ss58_decode_account_index"><code class="name flex">
-<span>def <span class="ident">ss58_decode_account_index</span></span>(<span>address: str, valid_ss58_format: Union[int, NoneType] = None, valid_address_type=None) ‑> int</span>
+<span>def <span class="ident">ss58_decode_account_index</span></span>(<span>address: str, valid_ss58_format: Optional[int] = None) ‑> int</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Decodes given SS58 encoded address to an AccountIndex</p>
@@ -441,8 +419,6 @@ Parameters</p>
 <dt><strong><code>address</code></strong></dt>
 <dd>&nbsp;</dd>
 <dt><strong><code>valid_ss58_format</code></strong></dt>
-<dd>&nbsp;</dd>
-<dt><strong><code>valid_address_type</code></strong></dt>
 <dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -454,7 +430,7 @@ Parameters</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def ss58_decode_account_index(address: str, valid_ss58_format: Optional[int] = None, valid_address_type=None) -&gt; int:
+<pre><code class="python">def ss58_decode_account_index(address: str, valid_ss58_format: Optional[int] = None) -&gt; int:
     &#34;&#34;&#34;
     Decodes given SS58 encoded address to an AccountIndex
 
@@ -462,16 +438,11 @@ Parameters</p>
     ----------
     address
     valid_ss58_format
-    valid_address_type
 
     Returns
     -------
     Decoded int AccountIndex
     &#34;&#34;&#34;
-
-    if valid_address_type is not None:
-        warnings.warn(&#34;Keyword &#39;valid_address_type&#39; will be replaced by &#39;valid_ss58_format&#39;&#34;, DeprecationWarning)
-        valid_ss58_format = valid_address_type
 
     account_index_bytes = ss58_decode(address, valid_ss58_format)
 
@@ -496,7 +467,7 @@ Parameters</p>
 </details>
 </dd>
 <dt id="substrateinterface.utils.ss58.ss58_encode"><code class="name flex">
-<span>def <span class="ident">ss58_encode</span></span>(<span>address: str, ss58_format: int = 42, address_type=None) ‑> str</span>
+<span>def <span class="ident">ss58_encode</span></span>(<span>address: Union[bytes, str], ss58_format: int = 42) ‑> str</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Encodes an account ID to an Substrate address according to provided address_type</p>
@@ -506,15 +477,13 @@ Parameters</p>
 <dd>&nbsp;</dd>
 <dt><strong><code>ss58_format</code></strong></dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>address_type</code></strong> :&ensp;<code>(deprecated)</code></dt>
-<dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def ss58_encode(address: str, ss58_format: int = 42, address_type=None) -&gt; str:
+<pre><code class="python">def ss58_encode(address: Union[str, bytes], ss58_format: int = 42) -&gt; str:
     &#34;&#34;&#34;
     Encodes an account ID to an Substrate address according to provided address_type
 
@@ -522,17 +491,12 @@ Parameters</p>
     ----------
     address
     ss58_format
-    address_type: (deprecated)
 
     Returns
     -------
 
     &#34;&#34;&#34;
     checksum_prefix = b&#39;SS58PRE&#39;
-
-    if address_type is not None:
-        warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
-        ss58_format = address_type
 
     if ss58_format &lt; 0 or ss58_format &gt; 16383 or ss58_format in [46, 47]:
         raise ValueError(&#34;Invalid value for ss58_format&#34;)
@@ -566,7 +530,7 @@ Parameters</p>
 </details>
 </dd>
 <dt id="substrateinterface.utils.ss58.ss58_encode_account_index"><code class="name flex">
-<span>def <span class="ident">ss58_encode_account_index</span></span>(<span>account_index: int, ss58_format: int = 42, address_type=None) ‑> str</span>
+<span>def <span class="ident">ss58_encode_account_index</span></span>(<span>account_index: int, ss58_format: int = 42) ‑> str</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Encodes an AccountIndex to an Substrate address according to provided address_type</p>
@@ -576,15 +540,13 @@ Parameters</p>
 <dd>&nbsp;</dd>
 <dt><strong><code>ss58_format</code></strong></dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>address_type</code></strong> :&ensp;<code>(deprecated)</code></dt>
-<dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def ss58_encode_account_index(account_index: int, ss58_format: int = 42, address_type=None) -&gt; str:
+<pre><code class="python">def ss58_encode_account_index(account_index: int, ss58_format: int = 42) -&gt; str:
     &#34;&#34;&#34;
     Encodes an AccountIndex to an Substrate address according to provided address_type
 
@@ -592,16 +554,11 @@ Parameters</p>
     ----------
     account_index
     ss58_format
-    address_type: (deprecated)
 
     Returns
     -------
 
     &#34;&#34;&#34;
-
-    if address_type is not None:
-        warnings.warn(&#34;Keyword &#39;address_type&#39; will be replaced by &#39;ss58_format&#39;&#34;, DeprecationWarning)
-        ss58_format = address_type
 
     if 0 &lt;= account_index &lt;= 2 ** 8 - 1:
         account_idx_encoder = RuntimeConfiguration().create_scale_object(&#39;u8&#39;)
@@ -646,7 +603,7 @@ Parameters</p>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.1</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
 </footer>
 </body>
 </html>
