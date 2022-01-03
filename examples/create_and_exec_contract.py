@@ -91,5 +91,6 @@ try:
     print('Current value of "get":', result.contract_result_data)
 
 except ConnectionRefusedError:
-    print("⚠️ Could not connect to (local) Canvas node, please read the instructions at https://github.com/paritytech/canvas-node")
+    print("⚠️ Could not connect to (local) Canvas node, please read the instructions at "
+          "https://github.com/paritytech/canvas-node")
     exit()

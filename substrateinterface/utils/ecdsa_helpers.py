@@ -54,7 +54,6 @@ def mnemonic_to_bip39seed(mnemonic, passphrase):
 
 
 def bip39seed_to_bip32masternode(seed):
-    k = seed
     h = hmac.new(BIP32_SEED_MODIFIER, seed, hashlib.sha512).digest()
     key, chain_code = h[:32], h[32:]
     return key, chain_code

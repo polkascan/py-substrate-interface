@@ -53,4 +53,3 @@ class BlockNotFound(Exception):
 
 class ExtrinsicNotFound(Exception):
     pass
-

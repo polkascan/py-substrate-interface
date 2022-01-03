@@ -32,4 +32,3 @@ def version_tuple(version_string: str) -> tuple:
         raise ValueError('version_string can only contain numeric characters')
 
     return tuple(int(v) for v in version_string.split('.'))
-
