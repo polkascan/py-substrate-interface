@@ -275,6 +275,14 @@ class KeyPairTestCase(unittest.TestCase):
 
         self.assertEqual(derivation_address, derived_keypair.ss58_address)
 
+    def test_hdkd_path_eq_32_bytes(self):
+        derivation_address = '5Ea3JZpvsBN34jiQwVrLiMh5ypaHtPSyM2DWQvLmSRioEmyk'
+        derivation_path = '//rococo-validator-profiled-node-0'
+
+        derived_keypair = Keypair.create_from_uri(derivation_path)
+
+        self.assertEqual(derivation_address, derived_keypair.ss58_address)
+
     def test_hdkd_unsupported_password(self):
         self.assertRaises(NotImplementedError, Keypair.create_from_uri, DEV_PHRASE + '///test')
 

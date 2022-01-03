@@ -38,7 +38,7 @@ class DeriveJunction:
             path_scale = Bytes()
             path_scale.encode(path)
 
-            if len(path) > JUNCTION_ID_LEN:
+            if len(path_scale.data) > JUNCTION_ID_LEN:
                 chain_code = blake2b(path_scale.data.data, digest_size=32).digest()
             else:
                 chain_code = bytes(path_scale.data.data.ljust(32, b'\x00'))
