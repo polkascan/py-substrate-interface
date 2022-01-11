@@ -48,6 +48,7 @@ class QueryTestCase(unittest.TestCase):
 
         self.assertEqual(7673, result.value['nonce'])
         self.assertEqual(637747267365404068, result.value['data']['free'])
+        self.assertEqual(result.meta_info['result_found'], True)
 
     def test_system_account_non_existing(self):
         result = self.kusama_substrate.query(
@@ -78,6 +79,7 @@ class QueryTestCase(unittest.TestCase):
         )
 
         self.assertEqual(84, result.value)
+        self.assertEqual(result.meta_info['result_found'], False)
 
     def test_modifier_option_result(self):
 
@@ -89,6 +91,7 @@ class QueryTestCase(unittest.TestCase):
         )
 
         self.assertIsNone(result.value)
+        self.assertEqual(result.meta_info['result_found'], False)
 
     def test_identity_hasher(self):
         result = self.kusama_substrate.query("Claims", "Claims", ["0x00000a9c44f24e314127af63ae55b864a28d7aee"])

@@ -1265,7 +1265,6 @@ class SubstrateInterface:
             raise StorageFunctionNotFound('Storage function "{}.{}" not found'.format(module, storage_function))
 
         # Process specific type of storage function
-
         value_scale_type = storage_item.get_value_type_string()
         param_types = storage_item.get_params_type_string()
         hashers = storage_item.get_param_hashers()
@@ -1291,9 +1290,11 @@ class SubstrateInterface:
 
                 for change_storage_key, change_data in message['params']['result']['changes']:
                     if change_storage_key == storage_hash:
+                        result_found = False
 
                         if change_data is not None:
                             change_scale_type = value_scale_type
+                            result_found = True
                         elif storage_item.value['modifier'] == 'Default':
                             # Fallback to default value of storage function if no result
                             change_scale_type = value_scale_type
@@ -1309,6 +1310,8 @@ class SubstrateInterface:
                             metadata=self.metadata_decoder
                         )
                         updated_obj.decode()
+                        updated_obj.meta_info = {'result_found': result_found}
+
                         subscription_result = subscription_handler(updated_obj, update_nr, subscription_id)
 
                         if subscription_result is not None:
@@ -1319,9 +1322,7 @@ class SubstrateInterface:
 
         if callable(subscription_handler):
 
-            result = self.rpc_request("state_subscribeStorage", [[storage_hash]], result_handler=result_handler)
-
-            return result
+            return self.rpc_request("state_subscribeStorage", [[storage_hash]], result_handler=result_handler)
 
         else:
 
@@ -1349,6 +1350,8 @@ class SubstrateInterface:
                         metadata=self.metadata_decoder
                     )
                     obj.decode()
+                    obj.meta_info = {'result_found': response.get('result') is not None}
+
                     return obj
 
         return None
