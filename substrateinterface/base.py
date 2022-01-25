@@ -476,6 +476,8 @@ class SubstrateInterface:
             'auto_discover': auto_discover
         }
 
+        self.session = requests.Session()
+
         self.reload_type_registry(use_remote_preset=use_remote_preset, auto_discover=auto_discover)
 
     def connect_websocket(self):
@@ -595,7 +597,7 @@ class SubstrateInterface:
             if result_handler:
                 raise ConfigurationError("Result handlers only available for websockets (ws://) connections")
 
-            response = requests.request("POST", self.url, data=json.dumps(payload), headers=self.default_headers)
+            response = self.session.request("POST", self.url, data=json.dumps(payload), headers=self.default_headers)
 
             if response.status_code != 200:
                 raise SubstrateRequestException(
