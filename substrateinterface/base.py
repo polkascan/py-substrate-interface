@@ -387,7 +387,7 @@ class SubstrateInterface:
 
     def __init__(self, url=None, websocket=None, ss58_format=None, type_registry=None, type_registry_preset=None,
                  cache_region=None, runtime_config=None, use_remote_preset=False, ws_options=None,
-                 auto_discover=True):
+                 auto_discover=True, auto_reconnect=True):
         """
         A specialized class in interfacing with a Substrate node.
 
@@ -473,7 +473,8 @@ class SubstrateInterface:
 
         self.config = {
             'use_remote_preset': use_remote_preset,
-            'auto_discover': auto_discover
+            'auto_discover': auto_discover,
+            'auto_reconnect': auto_reconnect
         }
 
         self.reload_type_registry(use_remote_preset=use_remote_preset, auto_discover=auto_discover)
@@ -580,7 +581,7 @@ class SubstrateInterface:
                             update_nr += 1
 
             except WebSocketConnectionClosedException:
-                if self.url:
+                if self.config.get('auto_reconnect') and self.url:
                     # Try to reconnect websocket and retry rpc_request
                     self.debug_message("Connection Closed; Trying to reconnecting...")
                     self.connect_websocket()
