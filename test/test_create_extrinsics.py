@@ -162,6 +162,33 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
                 # Extrinsic should be successful if account had balance, eitherwise 'Bad proof' error should be raised
                 pass
 
+    def test_create_batch_extrinsic(self):
+
+        balance_call = self.polkadot_substrate.compose_call(
+            call_module='Balances',
+            call_function='transfer',
+            call_params={
+                'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
+                'value': 3 * 10 ** 3
+            }
+        )
+
+        call = self.polkadot_substrate.compose_call(
+            call_module='Utility',
+            call_function='batch',
+            call_params={
+                'calls': [balance_call, balance_call]
+            }
+        )
+
+        extrinsic = self.polkadot_substrate.create_signed_extrinsic(call=call, keypair=self.keypair, era={'period': 64})
+
+        # Decode extrinsic again as test
+        extrinsic.decode(extrinsic.data)
+
+        self.assertEqual('Utility', extrinsic.value['call']['call_module'])
+        self.assertEqual('batch', extrinsic.value['call']['call_function'])
+
     def test_create_unsigned_extrinsic(self):
 
         call = self.kusama_substrate.compose_call(
