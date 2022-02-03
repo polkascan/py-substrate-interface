@@ -2589,6 +2589,22 @@ class SubstrateInterface:
             include_author=include_author, finalized_only=finalized_only
         )
 
+    def retrieve_extrinsic_by_identifier(self, extrinsic_identifier: str) -> "ExtrinsicReceipt":
+        """
+        Retrieve an extrinsic by its identifier in format "<block_number>-<extrinsic_index>" e.g. 333456-4
+
+        Parameters
+        ----------
+        extrinsic_identifier
+
+        Returns
+        -------
+        ExtrinsicReceipt
+        """
+        return ExtrinsicReceipt.create_from_extrinsic_identifier(
+            substrate=self, extrinsic_identifier=extrinsic_identifier
+        )
+
     def get_runtime_block(self, block_hash: str = None, block_id: int = None, ignore_decoding_errors: bool = False,
                           include_author: bool = False):
         """
