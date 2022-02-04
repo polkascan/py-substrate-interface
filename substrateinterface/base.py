@@ -1209,7 +1209,7 @@ class SubstrateInterface:
         )
 
     def query(self, module: str, storage_function: str, params: list = None, block_hash: str = None,
-              subscription_handler: callable = None) -> Optional[ScaleType]:
+              subscription_handler: callable = None, raw_storage_key: bytes = None) -> Optional[ScaleType]:
         """
         Retrieves the storage entry for given module, function and optional parameters at given block hash.
 
@@ -1239,6 +1239,7 @@ class SubstrateInterface:
         params: list of params, in the decoded format of the applicable ScaleTypes
         block_hash: Optional block hash, when omitted the chain tip will be used
         subscription_handler: Callback function that processes the updates of the storage query subscription
+        raw_storage_key: Optional raw storage key to query decode instead of generating one
 
         Returns
         -------
@@ -1270,21 +1271,24 @@ class SubstrateInterface:
         param_types = storage_item.get_params_type_string()
         hashers = storage_item.get_param_hashers()
 
-        if len(params) != len(param_types):
-            raise ValueError(f'Storage function requires {len(param_types)} parameters, {len(params)} given')
+        if raw_storage_key:
+            storage_hash = f'0x{raw_storage_key.hex()}'
+        else:
+            if len(params) != len(param_types):
+                raise ValueError(f'Storage function requires {len(param_types)} parameters, {len(params)} given')
 
-        # Encode parameters
-        for idx, param in enumerate(params):
-            param = self.convert_storage_parameter(param_types[idx], param)
-            param_obj = self.runtime_config.create_scale_object(type_string=param_types[idx])
-            params[idx] = param_obj.encode(param)
+            # Encode parameters
+            for idx, param in enumerate(params):
+                param = self.convert_storage_parameter(param_types[idx], param)
+                param_obj = self.runtime_config.create_scale_object(type_string=param_types[idx])
+                params[idx] = param_obj.encode(param)
 
-        storage_hash = self.generate_storage_hash(
-            storage_module=metadata_module.value['storage']['prefix'],
-            storage_function=storage_function,
-            params=params,
-            hashers=hashers
-        )
+            storage_hash = self.generate_storage_hash(
+                storage_module=metadata_module.value['storage']['prefix'],
+                storage_function=storage_function,
+                params=params,
+                hashers=hashers
+            )
 
         def result_handler(message, update_nr, subscription_id):
             if value_scale_type:
