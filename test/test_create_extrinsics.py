@@ -293,6 +293,13 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
 
         self.assertEqual(result.error_message['name'], 'MustBeVoter')
 
+    def test_check_extrinsic_failed_error_message_portable_registry(self):
+        receipt = self.kusama_substrate.retrieve_extrinsic_by_identifier("11333518-4")
+
+        self.assertFalse(receipt.is_success)
+        self.assertEqual(881719000, receipt.weight)
+        self.assertEqual(receipt.error_message['name'], 'InsufficientBalance')
+
     def test_check_extrinsic_total_fee_amount(self):
         result = ExtrinsicReceipt(
             substrate=self.kusama_substrate,

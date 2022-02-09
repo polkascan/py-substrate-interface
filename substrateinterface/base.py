@@ -3136,12 +3136,54 @@ class ExtrinsicReceipt:
 
                     elif event.value['module_id'] == 'System' and event.value['event_id'] == 'ExtrinsicFailed':
                         self.__is_success = False
+                        self.__weight = event.value['attributes'][1]['weight']
+
+                        for param in event.params:
+                            if 'Module' in param:
+
+                                if type(param['Module']) is tuple:
+                                    module_index = param['Module'][0]
+                                    error_index = param['Module'][1]
+                                else:
+                                    module_index = param['Module']['index']
+                                    error_index = param['Module']['error']
+
+                                module_error = self.substrate.metadata_decoder.get_module_error(
+                                    module_index=module_index,
+                                    error_index=error_index
+                                )
+                                self.__error_message = {
+                                    'type': 'Module',
+                                    'name': module_error.name,
+                                    'docs': module_error.docs
+                                }
+                            elif 'BadOrigin' in param:
+                                self.__error_message = {
+                                    'type': 'System',
+                                    'name': 'BadOrigin',
+                                    'docs': 'Bad origin'
+                                }
+                            elif 'CannotLookup' in param:
+                                self.__error_message = {
+                                    'type': 'System',
+                                    'name': 'CannotLookup',
+                                    'docs': 'Cannot lookup'
+                                }
+                            elif 'Other' in param:
+                                self.__error_message = {
+                                    'type': 'System',
+                                    'name': 'Other',
+                                    'docs': 'Unspecified error occurred'
+                                }
 
                     elif event.value['module_id'] == 'Treasury' and event.value['event_id'] == 'Deposit':
                         self.__total_fee_amount += event.value['attributes']
 
                     elif event.value['module_id'] == 'Balances' and event.value['event_id'] == 'Deposit':
-                        self.__total_fee_amount += event.value['attributes'][1]
+                        if type(event.value['attributes']) is tuple:
+                            self.__total_fee_amount += event.value['attributes'][1]
+                        else:
+                            self.__total_fee_amount += event.value['attributes']['amount']
                 else:
 
                     if event.event_module.name == 'System' and event.event.name == 'ExtrinsicSuccess':
