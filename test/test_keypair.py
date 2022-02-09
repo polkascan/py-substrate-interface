@@ -85,6 +85,13 @@ class KeyPairTestCase(unittest.TestCase):
         signature = keypair.sign(data)
         self.assertTrue(keypair.verify(data, signature))
 
+    def test_sign_and_verify_wrapping(self):
+        mnemonic = Keypair.generate_mnemonic()
+        keypair = Keypair.create_from_mnemonic(mnemonic)
+
+        signature = keypair.sign('<Bytes>test</Bytes>')
+        self.assertTrue(keypair.verify('test', signature))
+
     def test_sign_missing_private_key(self):
         keypair = Keypair(ss58_address="5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")
         self.assertRaises(ConfigurationError, keypair.sign, "0x1234")

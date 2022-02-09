@@ -368,13 +368,22 @@ class Keypair:
             raise TypeError("Signature should be of type bytes or a hex-string")
 
         if self.crypto_type == KeypairType.SR25519:
-            return sr25519.verify(signature, data, self.public_key)
+            crypto_verify_fn = sr25519.verify
         elif self.crypto_type == KeypairType.ED25519:
-            return ed25519_dalek.ed_verify(signature, data, self.public_key)
+            crypto_verify_fn = ed25519_dalek.ed_verify
         elif self.crypto_type == KeypairType.ECDSA:
-            return ecdsa_verify(signature, data, self.public_key)
+            crypto_verify_fn = ecdsa_verify
         else:
             raise ConfigurationError("Crypto type not supported")
+
+        verified = crypto_verify_fn(signature, data, self.public_key)
+
+        if not verified:
+            # Another attempt with the data wrapped, as discussed in https://github.com/polkadot-js/extension/pull/743
+            # Note: As Python apps are trusted sources on its own, no need to wrap data when signing from this lib
+            verified = crypto_verify_fn(signature, b'<Bytes>' + data + b'</Bytes>', self.public_key)
+
+        return verified
 
     def __repr__(self):
         if self.ss58_address:
