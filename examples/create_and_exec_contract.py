@@ -31,7 +31,7 @@ try:
     )
 
     keypair = Keypair.create_from_uri('//Alice')
-    contract_address = "5FSSvEfVKbJnLWyYNbjCKSKoqizbhbY9Zagsczcekqs2KzBi"
+    contract_address = "5FbuqfZwkNjadtaCfhAwMb5ZQ4Bi2iF5m4AnibhAR987Jra5"
 
     # Check if contract is on chain
     contract_info = substrate.query("Contracts", "ContractInfoOf", [contract_address])
@@ -76,15 +76,19 @@ try:
     gas_predit_result = contract.read(keypair, 'flip')
 
     print('Result of dry-run: ', gas_predit_result.contract_result_data)
-    print('Gas estimate: ', gas_predit_result.gas_consumed)
+    print('Gas estimate: ', gas_predit_result.gas_required)
 
     # Do the actual transfer
     print('Executing contract call...')
     contract_receipt = contract.exec(keypair, 'flip', args={
 
-    }, gas_limit=gas_predit_result.gas_consumed)
+    }, gas_limit=gas_predit_result.gas_required)
 
-    print(f'Events triggered in contract: {contract_receipt.contract_events}')
+    if contract_receipt.is_success:
+        print(f'Events triggered in contract: {contract_receipt.contract_events}')
+    else:
+        print(f'Error message: {contract_receipt.error_message}')
+
 
     result = contract.read(keypair, 'get')
 
