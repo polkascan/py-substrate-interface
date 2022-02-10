@@ -333,5 +333,22 @@ class ContractInstanceV1TestCase(ContractInstanceTestCase):
         )
 
 
+class ContractMetadataV3TestCase(ContractMetadataV1TestCase):
+    def setUp(self) -> None:
+        self.contract_metadata = ContractMetadata.create_from_file(
+            metadata_file=os.path.join(os.path.dirname(__file__), 'fixtures', 'erc20-v3.json'),
+            substrate=self.substrate
+        )
+
+
+class ContractInstanceV3TestCase(ContractInstanceTestCase):
+    def setUp(self) -> None:
+        self.contract = ContractInstance.create_from_address(
+            contract_address="5FV9cnzFc2tDrWcDkmoup7VZWpH9HrTaw8STnWpAQqT7KvUK",
+            metadata_file=os.path.join(os.path.dirname(__file__), 'fixtures', 'erc20-v3.json'),
+            substrate=self.substrate
+        )
+
+
 if __name__ == '__main__':
     unittest.main()
