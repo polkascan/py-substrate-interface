@@ -451,10 +451,8 @@ print(receipt.error_message['name']) # 'LiquidityRestrictions'
 
 ```python
 
-receipt = ExtrinsicReceipt(
-    substrate=substrate,
-    extrinsic_hash="0x56fea3010910bd8c0c97253ffe308dc13d1613b7e952e7e2028257d2b83c027a",
-    block_hash="0x04fb003f8bc999eeb284aa8e74f2c6f63cf5bd5c00d0d0da4cd4d253a643e4c9"
+receipt = ExtrinsicReceipt.create_from_extrinsic_identifier(
+    substrate=substrate, extrinsic_identifier="5233297-1"
 )
 
 print(receipt.is_success) # False
@@ -526,15 +524,18 @@ print('Current value of "get":', result.contract_result_data)
 gas_predit_result = contract.read(keypair, 'flip')
 
 print('Result of dry-run: ', gas_predit_result.contract_result_data)
-print('Gas estimate: ', gas_predit_result.gas_consumed)
+print('Gas estimate: ', gas_predit_result.gas_required)
 
-# Do the actual transfer
+# Do the actual call
 print('Executing contract call...')
 contract_receipt = contract.exec(keypair, 'flip', args={
 
-}, gas_limit=gas_predit_result.gas_consumed)
+}, gas_limit=gas_predit_result.gas_required)
 
-print(f'Events triggered in contract: {contract_receipt.contract_events}')
+if contract_receipt.is_success:
+    print(f'Events triggered in contract: {contract_receipt.contract_events}')
+else:
+    print(f'Call failed: {contract_receipt.error_message}')
 ```
 
 See complete [code example](https://github.com/polkascan/py-substrate-interface/blob/master/examples/create_and_exec_contract.py) for more details
@@ -689,7 +690,7 @@ with SubstrateInterface(url="wss://rpc.polkadot.io") as substrate:
 
 ## Keeping type registry presets up to date
 
-_Note: Only applicable for chains with metadata < V14_
+> :information_source: Only applicable for chains with metadata < V14
 
 When on-chain runtime upgrades occur, types used in call- or storage functions can be added or modified. Therefore it is
 important to keep the type registry presets up to date, otherwise this can lead to decoding errors like 

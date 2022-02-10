@@ -84,8 +84,11 @@ try:
 
     }, gas_limit=gas_predit_result.gas_required)
 
-    print(f'Error message: {contract_receipt.error_message}')
-    print(f'Events triggered in contract: {contract_receipt.contract_events}')
+    if contract_receipt.is_success:
+        print(f'Events triggered in contract: {contract_receipt.contract_events}')
+    else:
+        print(f'Error message: {contract_receipt.error_message}')
+
 
     result = contract.read(keypair, 'get')
 
