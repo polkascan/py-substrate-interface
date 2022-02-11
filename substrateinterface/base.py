@@ -728,7 +728,7 @@ class SubstrateInterface:
 
     def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
         """
-        A pass-though to existing JSONRPC method `chain_getBlock`. For a decoded version see `get_runtime_block()`
+        A pass-though to existing JSONRPC method `chain_getBlock`. For a decoded version see `get_block()`
 
         Parameters
         ----------
@@ -1371,6 +1371,9 @@ class SubstrateInterface:
         return None
 
     def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
+        """
+        Warning: 'get_runtime_state' will be replaced by 'query'
+        """
         warnings.warn("'get_runtime_state' will be replaced by 'query'", DeprecationWarning)
 
         obj = self.query(module, storage_function, params=params, block_hash=block_hash)
@@ -1400,10 +1403,8 @@ class SubstrateInterface:
 
     def get_runtime_events(self, block_hash=None):
 
-        warnings.warn("'get_runtime_events' will be replaced by 'get_events'", DeprecationWarning)
-
         """
-        Convenience method to get events for a certain block (storage call for module 'System' and function 'Events')
+        Warning: 'get_runtime_events' will be replaced by 'get_events'
 
         Parameters
         ----------
@@ -1413,6 +1414,8 @@ class SubstrateInterface:
         -------
         Collection of events
         """
+        warnings.warn("'get_runtime_events' will be replaced by 'get_events'", DeprecationWarning)
+
         return self.get_runtime_state(
             module="System",
             storage_function="Events",
@@ -1743,16 +1746,19 @@ class SubstrateInterface:
     def submit_extrinsic(self, extrinsic: GenericExtrinsic, wait_for_inclusion: bool = False,
                          wait_for_finalization: bool = False) -> "ExtrinsicReceipt":
         """
+        Submit an extrinsic to the connected node, with the possibility to wait until the extrinsic is included
+         in a block and/or the block is finalized. The receipt returned provided information about the block and
+         triggered events
 
         Parameters
         ----------
-        extrinsic: Extrinsic The extinsic to be send to the network
+        extrinsic: Extrinsic The extrinsic to be sent to the network
         wait_for_inclusion: wait until extrinsic is included in a block (only works for websocket connections)
         wait_for_finalization: wait until extrinsic is finalized (only works for websocket connections)
 
         Returns
         -------
-        The hash of the extrinsic submitted to the network
+        ExtrinsicReceipt
 
         """
 
@@ -1812,8 +1818,8 @@ class SubstrateInterface:
 
         Parameters
         ----------
-        call Call object to estimate fees for
-        keypair Keypair of the sender, does not have to include private key because no valid signature is required
+        call: Call object to estimate fees for
+        keypair: Keypair of the sender, does not have to include private key because no valid signature is required
 
         Returns
         -------
@@ -1954,7 +1960,7 @@ class SubstrateInterface:
 
         return decoder_class
 
-    def get_type_registry(self, block_hash: str = None):
+    def get_type_registry(self, block_hash: str = None) -> dict:
         """
         Generates an exhaustive list of which RUST types exist in the runtime specified at given block_hash (or
         chaintip if block_hash is omitted)
@@ -1965,7 +1971,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        dict
         """
         self.init_runtime(block_hash=block_hash)
 
@@ -2068,7 +2074,7 @@ class SubstrateInterface:
 
         return self.metadata_decoder.get_metadata_pallet(name)
 
-    def get_metadata_call_functions(self, block_hash=None):
+    def get_metadata_call_functions(self, block_hash=None) -> list:
         """
         Retrieves a list of all call functions in metadata active for given block_hash (or chaintip if block_hash is omitted)
 
@@ -2078,7 +2084,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        list
         """
         self.init_runtime(block_hash=block_hash)
 
@@ -2119,7 +2125,7 @@ class SubstrateInterface:
                     if call.name == call_function_name:
                         return call
 
-    def get_metadata_events(self, block_hash=None):
+    def get_metadata_events(self, block_hash=None) -> list:
         """
         Retrieves a list of all events in metadata active for given block_hash (or chaintip if block_hash is omitted)
 
@@ -2129,7 +2135,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        list
         """
 
         self.init_runtime(block_hash=block_hash)
@@ -2169,7 +2175,7 @@ class SubstrateInterface:
                     if event.name == event_name:
                         return event
 
-    def get_metadata_constants(self, block_hash=None):
+    def get_metadata_constants(self, block_hash=None) -> list:
         """
         Retrieves a list of all constants in metadata active at given block_hash (or chaintip if block_hash is omitted)
 
@@ -2179,7 +2185,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        list
         """
 
         self.init_runtime(block_hash=block_hash)
@@ -2245,7 +2251,7 @@ class SubstrateInterface:
                 constant.type, ScaleBytes(constant.constant_value), block_hash=block_hash, return_scale_obj=True
             )
 
-    def get_metadata_storage_functions(self, block_hash=None):
+    def get_metadata_storage_functions(self, block_hash=None) -> list:
         """
         Retrieves a list of all storage functions in metadata active at given block_hash (or chaintip if block_hash is
         omitted)
@@ -2256,7 +2262,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        list
         """
         self.init_runtime(block_hash=block_hash)
 
@@ -2296,7 +2302,7 @@ class SubstrateInterface:
         if pallet:
             return pallet.get_storage_function(storage_name)
 
-    def get_metadata_errors(self, block_hash=None):
+    def get_metadata_errors(self, block_hash=None) -> list:
         """
         Retrieves a list of all errors in metadata active at given block_hash (or chaintip if block_hash is omitted)
 
@@ -2306,7 +2312,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        list
         """
         self.init_runtime(block_hash=block_hash)
 
@@ -2465,7 +2471,7 @@ class SubstrateInterface:
                 return decode_block(response['result']['block'], block_data_hash=block_hash)
 
     def get_block(self, block_hash: str = None, block_number: int = None, ignore_decoding_errors: bool = False,
-                  include_author: bool = False, finalized_only: bool = False):
+                  include_author: bool = False, finalized_only: bool = False) -> Optional[dict]:
         """
         Retrieves a block and decodes its containing extrinsics and log digest items. If `block_hash` and `block_number`
         is omited the chain tip will be retrieve, or the finalized head if `finalized_only` is set to true.
@@ -2621,7 +2627,7 @@ class SubstrateInterface:
     def get_runtime_block(self, block_hash: str = None, block_id: int = None, ignore_decoding_errors: bool = False,
                           include_author: bool = False):
         """
-        Retrieves a block with method `chain_getBlock` and in addition decodes extrinsics and log items
+        Warning: 'get_runtime_block' will be replaced by 'get_block'
 
         Parameters
         ----------
@@ -2685,7 +2691,7 @@ class SubstrateInterface:
         else:
             return obj.value
 
-    def encode_scale(self, type_string, value, block_hash=None):
+    def encode_scale(self, type_string, value, block_hash=None) -> ScaleBytes:
         """
         Helper function to encode arbitrary data into SCALE-bytes for given RUST type_string
 
@@ -2697,7 +2703,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        ScaleBytes
         """
         self.init_runtime(block_hash=block_hash)
 
@@ -2706,7 +2712,7 @@ class SubstrateInterface:
         )
         return obj.encode(value)
 
-    def ss58_encode(self, public_key: str) -> str:
+    def ss58_encode(self, public_key: Union[str, bytes]) -> str:
         """
         Helper function to encode a public key to SS58 address
 
@@ -2716,7 +2722,7 @@ class SubstrateInterface:
 
         Returns
         -------
-        SS58 address
+        str containing the SS58 address
         """
         return ss58_encode(public_key, ss58_format=self.ss58_format)
 
@@ -2730,7 +2736,7 @@ class SubstrateInterface:
 
         Returns
         -------
-        Public key
+        str containing the hex representation of the public key
         """
         return ss58_decode(ss58_address, valid_ss58_format=self.ss58_format)
 
@@ -2750,7 +2756,7 @@ class SubstrateInterface:
 
     # Serializing helper function
 
-    def serialize_storage_item(self, storage_item, module, spec_version_id):
+    def serialize_storage_item(self, storage_item, module, spec_version_id) -> dict:
         """
         Helper function to serialize a storage item
 
@@ -2762,7 +2768,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        dict
         """
         storage_dict = {
             "storage_name": storage_item.name,
@@ -2806,7 +2812,7 @@ class SubstrateInterface:
 
         return storage_dict
 
-    def serialize_constant(self, constant, module, spec_version_id):
+    def serialize_constant(self, constant, module, spec_version_id) -> dict:
         """
         Helper function to serialize a constant
 
@@ -2818,7 +2824,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        dict
         """
         try:
             value_obj = self.runtime_config.create_scale_object(
@@ -2840,7 +2846,7 @@ class SubstrateInterface:
             "spec_version": spec_version_id
         }
 
-    def serialize_module_call(self, module, call, spec_version, call_index):
+    def serialize_module_call(self, module, call, spec_version, call_index=None) -> dict:
         """
         Helper function to serialize a call function
 
@@ -2853,7 +2859,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        dict
         """
         return {
             # "call_id": call.get_identifier(),
@@ -2867,7 +2873,7 @@ class SubstrateInterface:
             "spec_version": spec_version
         }
 
-    def serialize_module_event(self, module, event, spec_version, event_index):
+    def serialize_module_event(self, module, event, spec_version, event_index) -> dict:
         """
         Helper function to serialize an event
 
@@ -2880,7 +2886,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        dict
         """
         return {
             "event_id": event.name,
@@ -2899,7 +2905,7 @@ class SubstrateInterface:
             "spec_version": spec_version
         }
 
-    def serialize_module_error(self, module, error, spec_version):
+    def serialize_module_error(self, module, error, spec_version) -> dict:
         """
         Helper function to serialize an error
 
@@ -2911,7 +2917,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        dict
         """
         return {
             "error_name": error.name,
@@ -2922,7 +2928,7 @@ class SubstrateInterface:
             "spec_version": spec_version
         }
 
-    def update_type_registry_presets(self):
+    def update_type_registry_presets(self) -> bool:
         try:
             update_type_registries()
             self.reload_type_registry(use_remote_preset=False)
@@ -3021,7 +3027,13 @@ class ExtrinsicReceipt:
         self.__weight = None
         self.__total_fee_amount = None
 
-    def get_extrinsic_identifier(self):
+    def get_extrinsic_identifier(self) -> str:
+        """
+        Returns the on-chain identifier for this extrinsic in format "<block_number>-<extrinsic_idx>" e.g. 134324-2
+        Returns
+        -------
+        str
+        """
         if self.block_number is None:
             if self.block_hash is None:
                 raise ValueError('Cannot create extrinsic identifier: block_hash is not set')
@@ -3034,7 +3046,9 @@ class ExtrinsicReceipt:
         return f'{self.block_number}-{self.extrinsic_idx}'
 
     @classmethod
-    def create_from_extrinsic_identifier(cls, substrate: SubstrateInterface, extrinsic_identifier: str):
+    def create_from_extrinsic_identifier(
+            cls, substrate: SubstrateInterface, extrinsic_identifier: str
+    ) -> "ExtrinsicReceipt":
         id_parts = extrinsic_identifier.split('-', maxsplit=1)
         block_number: int = int(id_parts[0])
         extrinsic_idx: int = int(id_parts[1])
@@ -3082,7 +3096,7 @@ class ExtrinsicReceipt:
         return self.__extrinsic_idx
 
     @property
-    def extrinsic(self) -> Extrinsic:
+    def extrinsic(self) -> GenericExtrinsic:
         """
         Retrieves the `Extrinsic` subject of this receipt
 

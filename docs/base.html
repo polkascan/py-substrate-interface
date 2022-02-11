@@ -756,7 +756,7 @@ class SubstrateInterface:
 
     def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
         &#34;&#34;&#34;
-        A pass-though to existing JSONRPC method `chain_getBlock`. For a decoded version see `get_runtime_block()`
+        A pass-though to existing JSONRPC method `chain_getBlock`. For a decoded version see `get_block()`
 
         Parameters
         ----------
@@ -1399,6 +1399,9 @@ class SubstrateInterface:
         return None
 
     def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
+        &#34;&#34;&#34;
+        Warning: &#39;get_runtime_state&#39; will be replaced by &#39;query&#39;
+        &#34;&#34;&#34;
         warnings.warn(&#34;&#39;get_runtime_state&#39; will be replaced by &#39;query&#39;&#34;, DeprecationWarning)
 
         obj = self.query(module, storage_function, params=params, block_hash=block_hash)
@@ -1428,10 +1431,8 @@ class SubstrateInterface:
 
     def get_runtime_events(self, block_hash=None):
 
-        warnings.warn(&#34;&#39;get_runtime_events&#39; will be replaced by &#39;get_events&#39;&#34;, DeprecationWarning)
-
         &#34;&#34;&#34;
-        Convenience method to get events for a certain block (storage call for module &#39;System&#39; and function &#39;Events&#39;)
+        Warning: &#39;get_runtime_events&#39; will be replaced by &#39;get_events&#39;
 
         Parameters
         ----------
@@ -1441,6 +1442,8 @@ class SubstrateInterface:
         -------
         Collection of events
         &#34;&#34;&#34;
+        warnings.warn(&#34;&#39;get_runtime_events&#39; will be replaced by &#39;get_events&#39;&#34;, DeprecationWarning)
+
         return self.get_runtime_state(
             module=&#34;System&#34;,
             storage_function=&#34;Events&#34;,
@@ -1771,16 +1774,19 @@ class SubstrateInterface:
     def submit_extrinsic(self, extrinsic: GenericExtrinsic, wait_for_inclusion: bool = False,
                          wait_for_finalization: bool = False) -&gt; &#34;ExtrinsicReceipt&#34;:
         &#34;&#34;&#34;
+        Submit an extrinsic to the connected node, with the possibility to wait until the extrinsic is included
+         in a block and/or the block is finalized. The receipt returned provided information about the block and
+         triggered events
 
         Parameters
         ----------
-        extrinsic: Extrinsic The extinsic to be send to the network
+        extrinsic: Extrinsic The extrinsic to be sent to the network
         wait_for_inclusion: wait until extrinsic is included in a block (only works for websocket connections)
         wait_for_finalization: wait until extrinsic is finalized (only works for websocket connections)
 
         Returns
         -------
-        The hash of the extrinsic submitted to the network
+        ExtrinsicReceipt
 
         &#34;&#34;&#34;
 
@@ -1840,8 +1846,8 @@ class SubstrateInterface:
 
         Parameters
         ----------
-        call Call object to estimate fees for
-        keypair Keypair of the sender, does not have to include private key because no valid signature is required
+        call: Call object to estimate fees for
+        keypair: Keypair of the sender, does not have to include private key because no valid signature is required
 
         Returns
         -------
@@ -1982,7 +1988,7 @@ class SubstrateInterface:
 
         return decoder_class
 
-    def get_type_registry(self, block_hash: str = None):
+    def get_type_registry(self, block_hash: str = None) -&gt; dict:
         &#34;&#34;&#34;
         Generates an exhaustive list of which RUST types exist in the runtime specified at given block_hash (or
         chaintip if block_hash is omitted)
@@ -1993,7 +1999,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        dict
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -2096,7 +2102,7 @@ class SubstrateInterface:
 
         return self.metadata_decoder.get_metadata_pallet(name)
 
-    def get_metadata_call_functions(self, block_hash=None):
+    def get_metadata_call_functions(self, block_hash=None) -&gt; list:
         &#34;&#34;&#34;
         Retrieves a list of all call functions in metadata active for given block_hash (or chaintip if block_hash is omitted)
 
@@ -2106,7 +2112,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        list
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -2147,7 +2153,7 @@ class SubstrateInterface:
                     if call.name == call_function_name:
                         return call
 
-    def get_metadata_events(self, block_hash=None):
+    def get_metadata_events(self, block_hash=None) -&gt; list:
         &#34;&#34;&#34;
         Retrieves a list of all events in metadata active for given block_hash (or chaintip if block_hash is omitted)
 
@@ -2157,7 +2163,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        list
         &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
@@ -2197,7 +2203,7 @@ class SubstrateInterface:
                     if event.name == event_name:
                         return event
 
-    def get_metadata_constants(self, block_hash=None):
+    def get_metadata_constants(self, block_hash=None) -&gt; list:
         &#34;&#34;&#34;
         Retrieves a list of all constants in metadata active at given block_hash (or chaintip if block_hash is omitted)
 
@@ -2207,7 +2213,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        list
         &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
@@ -2273,7 +2279,7 @@ class SubstrateInterface:
                 constant.type, ScaleBytes(constant.constant_value), block_hash=block_hash, return_scale_obj=True
             )
 
-    def get_metadata_storage_functions(self, block_hash=None):
+    def get_metadata_storage_functions(self, block_hash=None) -&gt; list:
         &#34;&#34;&#34;
         Retrieves a list of all storage functions in metadata active at given block_hash (or chaintip if block_hash is
         omitted)
@@ -2284,7 +2290,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        list
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -2324,7 +2330,7 @@ class SubstrateInterface:
         if pallet:
             return pallet.get_storage_function(storage_name)
 
-    def get_metadata_errors(self, block_hash=None):
+    def get_metadata_errors(self, block_hash=None) -&gt; list:
         &#34;&#34;&#34;
         Retrieves a list of all errors in metadata active at given block_hash (or chaintip if block_hash is omitted)
 
@@ -2334,7 +2340,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        list
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -2493,7 +2499,7 @@ class SubstrateInterface:
                 return decode_block(response[&#39;result&#39;][&#39;block&#39;], block_data_hash=block_hash)
 
     def get_block(self, block_hash: str = None, block_number: int = None, ignore_decoding_errors: bool = False,
-                  include_author: bool = False, finalized_only: bool = False):
+                  include_author: bool = False, finalized_only: bool = False) -&gt; Optional[dict]:
         &#34;&#34;&#34;
         Retrieves a block and decodes its containing extrinsics and log digest items. If `block_hash` and `block_number`
         is omited the chain tip will be retrieve, or the finalized head if `finalized_only` is set to true.
@@ -2649,7 +2655,7 @@ class SubstrateInterface:
     def get_runtime_block(self, block_hash: str = None, block_id: int = None, ignore_decoding_errors: bool = False,
                           include_author: bool = False):
         &#34;&#34;&#34;
-        Retrieves a block with method `chain_getBlock` and in addition decodes extrinsics and log items
+        Warning: &#39;get_runtime_block&#39; will be replaced by &#39;get_block&#39;
 
         Parameters
         ----------
@@ -2713,7 +2719,7 @@ class SubstrateInterface:
         else:
             return obj.value
 
-    def encode_scale(self, type_string, value, block_hash=None):
+    def encode_scale(self, type_string, value, block_hash=None) -&gt; ScaleBytes:
         &#34;&#34;&#34;
         Helper function to encode arbitrary data into SCALE-bytes for given RUST type_string
 
@@ -2725,7 +2731,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        ScaleBytes
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -2734,7 +2740,7 @@ class SubstrateInterface:
         )
         return obj.encode(value)
 
-    def ss58_encode(self, public_key: str) -&gt; str:
+    def ss58_encode(self, public_key: Union[str, bytes]) -&gt; str:
         &#34;&#34;&#34;
         Helper function to encode a public key to SS58 address
 
@@ -2744,7 +2750,7 @@ class SubstrateInterface:
 
         Returns
         -------
-        SS58 address
+        str containing the SS58 address
         &#34;&#34;&#34;
         return ss58_encode(public_key, ss58_format=self.ss58_format)
 
@@ -2758,7 +2764,7 @@ class SubstrateInterface:
 
         Returns
         -------
-        Public key
+        str containing the hex representation of the public key
         &#34;&#34;&#34;
         return ss58_decode(ss58_address, valid_ss58_format=self.ss58_format)
 
@@ -2778,7 +2784,7 @@ class SubstrateInterface:
 
     # Serializing helper function
 
-    def serialize_storage_item(self, storage_item, module, spec_version_id):
+    def serialize_storage_item(self, storage_item, module, spec_version_id) -&gt; dict:
         &#34;&#34;&#34;
         Helper function to serialize a storage item
 
@@ -2790,7 +2796,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        dict
         &#34;&#34;&#34;
         storage_dict = {
             &#34;storage_name&#34;: storage_item.name,
@@ -2834,7 +2840,7 @@ class SubstrateInterface:
 
         return storage_dict
 
-    def serialize_constant(self, constant, module, spec_version_id):
+    def serialize_constant(self, constant, module, spec_version_id) -&gt; dict:
         &#34;&#34;&#34;
         Helper function to serialize a constant
 
@@ -2846,7 +2852,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        dict
         &#34;&#34;&#34;
         try:
             value_obj = self.runtime_config.create_scale_object(
@@ -2868,7 +2874,7 @@ class SubstrateInterface:
             &#34;spec_version&#34;: spec_version_id
         }
 
-    def serialize_module_call(self, module, call, spec_version, call_index):
+    def serialize_module_call(self, module, call, spec_version, call_index=None) -&gt; dict:
         &#34;&#34;&#34;
         Helper function to serialize a call function
 
@@ -2881,7 +2887,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        dict
         &#34;&#34;&#34;
         return {
             # &#34;call_id&#34;: call.get_identifier(),
@@ -2895,7 +2901,7 @@ class SubstrateInterface:
             &#34;spec_version&#34;: spec_version
         }
 
-    def serialize_module_event(self, module, event, spec_version, event_index):
+    def serialize_module_event(self, module, event, spec_version, event_index) -&gt; dict:
         &#34;&#34;&#34;
         Helper function to serialize an event
 
@@ -2908,7 +2914,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        dict
         &#34;&#34;&#34;
         return {
             &#34;event_id&#34;: event.name,
@@ -2927,7 +2933,7 @@ class SubstrateInterface:
             &#34;spec_version&#34;: spec_version
         }
 
-    def serialize_module_error(self, module, error, spec_version):
+    def serialize_module_error(self, module, error, spec_version) -&gt; dict:
         &#34;&#34;&#34;
         Helper function to serialize an error
 
@@ -2939,7 +2945,7 @@ class SubstrateInterface:
 
         Returns
         -------
-
+        dict
         &#34;&#34;&#34;
         return {
             &#34;error_name&#34;: error.name,
@@ -2950,7 +2956,7 @@ class SubstrateInterface:
             &#34;spec_version&#34;: spec_version
         }
 
-    def update_type_registry_presets(self):
+    def update_type_registry_presets(self) -&gt; bool:
         try:
             update_type_registries()
             self.reload_type_registry(use_remote_preset=False)
@@ -3049,7 +3055,13 @@ class ExtrinsicReceipt:
         self.__weight = None
         self.__total_fee_amount = None
 
-    def get_extrinsic_identifier(self):
+    def get_extrinsic_identifier(self) -&gt; str:
+        &#34;&#34;&#34;
+        Returns the on-chain identifier for this extrinsic in format &#34;&lt;block_number&gt;-&lt;extrinsic_idx&gt;&#34; e.g. 134324-2
+        Returns
+        -------
+        str
+        &#34;&#34;&#34;
         if self.block_number is None:
             if self.block_hash is None:
                 raise ValueError(&#39;Cannot create extrinsic identifier: block_hash is not set&#39;)
@@ -3062,7 +3074,9 @@ class ExtrinsicReceipt:
         return f&#39;{self.block_number}-{self.extrinsic_idx}&#39;
 
     @classmethod
-    def create_from_extrinsic_identifier(cls, substrate: SubstrateInterface, extrinsic_identifier: str):
+    def create_from_extrinsic_identifier(
+            cls, substrate: SubstrateInterface, extrinsic_identifier: str
+    ) -&gt; &#34;ExtrinsicReceipt&#34;:
         id_parts = extrinsic_identifier.split(&#39;-&#39;, maxsplit=1)
         block_number: int = int(id_parts[0])
         extrinsic_idx: int = int(id_parts[1])
@@ -3110,7 +3124,7 @@ class ExtrinsicReceipt:
         return self.__extrinsic_idx
 
     @property
-    def extrinsic(self) -&gt; Extrinsic:
+    def extrinsic(self) -&gt; GenericExtrinsic:
         &#34;&#34;&#34;
         Retrieves the `Extrinsic` subject of this receipt
 
@@ -3466,7 +3480,13 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
         self.__weight = None
         self.__total_fee_amount = None
 
-    def get_extrinsic_identifier(self):
+    def get_extrinsic_identifier(self) -&gt; str:
+        &#34;&#34;&#34;
+        Returns the on-chain identifier for this extrinsic in format &#34;&lt;block_number&gt;-&lt;extrinsic_idx&gt;&#34; e.g. 134324-2
+        Returns
+        -------
+        str
+        &#34;&#34;&#34;
         if self.block_number is None:
             if self.block_hash is None:
                 raise ValueError(&#39;Cannot create extrinsic identifier: block_hash is not set&#39;)
@@ -3479,7 +3499,9 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
         return f&#39;{self.block_number}-{self.extrinsic_idx}&#39;
 
     @classmethod
-    def create_from_extrinsic_identifier(cls, substrate: SubstrateInterface, extrinsic_identifier: str):
+    def create_from_extrinsic_identifier(
+            cls, substrate: SubstrateInterface, extrinsic_identifier: str
+    ) -&gt; &#34;ExtrinsicReceipt&#34;:
         id_parts = extrinsic_identifier.split(&#39;-&#39;, maxsplit=1)
         block_number: int = int(id_parts[0])
         extrinsic_idx: int = int(id_parts[1])
@@ -3527,7 +3549,7 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
         return self.__extrinsic_idx
 
     @property
-    def extrinsic(self) -&gt; Extrinsic:
+    def extrinsic(self) -&gt; GenericExtrinsic:
         &#34;&#34;&#34;
         Retrieves the `Extrinsic` subject of this receipt
 
@@ -3771,7 +3793,7 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
 <h3>Static methods</h3>
 <dl>
 <dt id="substrateinterface.base.ExtrinsicReceipt.create_from_extrinsic_identifier"><code class="name flex">
-<span>def <span class="ident">create_from_extrinsic_identifier</span></span>(<span>substrate: <a title="substrateinterface.base.SubstrateInterface" href="#substrateinterface.base.SubstrateInterface">SubstrateInterface</a>, extrinsic_identifier: str)</span>
+<span>def <span class="ident">create_from_extrinsic_identifier</span></span>(<span>substrate: <a title="substrateinterface.base.SubstrateInterface" href="#substrateinterface.base.SubstrateInterface">SubstrateInterface</a>, extrinsic_identifier: str) ‑> <a title="substrateinterface.base.ExtrinsicReceipt" href="#substrateinterface.base.ExtrinsicReceipt">ExtrinsicReceipt</a></span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -3780,7 +3802,9 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
-def create_from_extrinsic_identifier(cls, substrate: SubstrateInterface, extrinsic_identifier: str):
+def create_from_extrinsic_identifier(
+        cls, substrate: SubstrateInterface, extrinsic_identifier: str
+) -&gt; &#34;ExtrinsicReceipt&#34;:
     id_parts = extrinsic_identifier.split(&#39;-&#39;, maxsplit=1)
     block_number: int = int(id_parts[0])
     extrinsic_idx: int = int(id_parts[1])
@@ -3830,7 +3854,7 @@ def error_message(self) -&gt; Optional[dict]:
     return self.__error_message</code></pre>
 </details>
 </dd>
-<dt id="substrateinterface.base.ExtrinsicReceipt.extrinsic"><code class="name">var <span class="ident">extrinsic</span> : scalecodec.types.Extrinsic</code></dt>
+<dt id="substrateinterface.base.ExtrinsicReceipt.extrinsic"><code class="name">var <span class="ident">extrinsic</span> : scalecodec.types.GenericExtrinsic</code></dt>
 <dd>
 <div class="desc"><p>Retrieves the <code>Extrinsic</code> subject of this receipt</p>
 <h2 id="returns">Returns</h2>
@@ -3843,7 +3867,7 @@ def error_message(self) -&gt; Optional[dict]:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def extrinsic(self) -&gt; Extrinsic:
+def extrinsic(self) -&gt; GenericExtrinsic:
     &#34;&#34;&#34;
     Retrieves the `Extrinsic` subject of this receipt
 
@@ -4023,15 +4047,27 @@ def weight(self) -&gt; int:
 </details>
 </dd>
 <dt id="substrateinterface.base.ExtrinsicReceipt.get_extrinsic_identifier"><code class="name flex">
-<span>def <span class="ident">get_extrinsic_identifier</span></span>(<span>self)</span>
+<span>def <span class="ident">get_extrinsic_identifier</span></span>(<span>self) ‑> str</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Returns the on-chain identifier for this extrinsic in format "<block_number>-<extrinsic_idx>" e.g. 134324-2
+Returns</p>
+<hr>
+<dl>
+<dt><code>str</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_extrinsic_identifier(self):
+<pre><code class="python">def get_extrinsic_identifier(self) -&gt; str:
+    &#34;&#34;&#34;
+    Returns the on-chain identifier for this extrinsic in format &#34;&lt;block_number&gt;-&lt;extrinsic_idx&gt;&#34; e.g. 134324-2
+    Returns
+    -------
+    str
+    &#34;&#34;&#34;
     if self.block_number is None:
         if self.block_hash is None:
             raise ValueError(&#39;Cannot create extrinsic identifier: block_hash is not set&#39;)
@@ -5390,7 +5426,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
     def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
         &#34;&#34;&#34;
-        A pass-though to existing JSONRPC method `chain_getBlock`. For a decoded version see `get_runtime_block()`
+        A pass-though to existing JSONRPC method `chain_getBlock`. For a decoded version see `get_block()`
 
         Parameters
         ----------
@@ -6033,6 +6069,9 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
         return None
 
     def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
+        &#34;&#34;&#34;
+        Warning: &#39;get_runtime_state&#39; will be replaced by &#39;query&#39;
+        &#34;&#34;&#34;
         warnings.warn(&#34;&#39;get_runtime_state&#39; will be replaced by &#39;query&#39;&#34;, DeprecationWarning)
 
         obj = self.query(module, storage_function, params=params, block_hash=block_hash)
@@ -6062,10 +6101,8 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
     def get_runtime_events(self, block_hash=None):
 
-        warnings.warn(&#34;&#39;get_runtime_events&#39; will be replaced by &#39;get_events&#39;&#34;, DeprecationWarning)
-
         &#34;&#34;&#34;
-        Convenience method to get events for a certain block (storage call for module &#39;System&#39; and function &#39;Events&#39;)
+        Warning: &#39;get_runtime_events&#39; will be replaced by &#39;get_events&#39;
 
         Parameters
         ----------
@@ -6075,6 +6112,8 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
         -------
         Collection of events
         &#34;&#34;&#34;
+        warnings.warn(&#34;&#39;get_runtime_events&#39; will be replaced by &#39;get_events&#39;&#34;, DeprecationWarning)
+
         return self.get_runtime_state(
             module=&#34;System&#34;,
             storage_function=&#34;Events&#34;,
@@ -6405,16 +6444,19 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
     def submit_extrinsic(self, extrinsic: GenericExtrinsic, wait_for_inclusion: bool = False,
                          wait_for_finalization: bool = False) -&gt; &#34;ExtrinsicReceipt&#34;:
         &#34;&#34;&#34;
+        Submit an extrinsic to the connected node, with the possibility to wait until the extrinsic is included
+         in a block and/or the block is finalized. The receipt returned provided information about the block and
+         triggered events
 
         Parameters
         ----------
-        extrinsic: Extrinsic The extinsic to be send to the network
+        extrinsic: Extrinsic The extrinsic to be sent to the network
         wait_for_inclusion: wait until extrinsic is included in a block (only works for websocket connections)
         wait_for_finalization: wait until extrinsic is finalized (only works for websocket connections)
 
         Returns
         -------
-        The hash of the extrinsic submitted to the network
+        ExtrinsicReceipt
 
         &#34;&#34;&#34;
 
@@ -6474,8 +6516,8 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         Parameters
         ----------
-        call Call object to estimate fees for
-        keypair Keypair of the sender, does not have to include private key because no valid signature is required
+        call: Call object to estimate fees for
+        keypair: Keypair of the sender, does not have to include private key because no valid signature is required
 
         Returns
         -------
@@ -6616,7 +6658,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         return decoder_class
 
-    def get_type_registry(self, block_hash: str = None):
+    def get_type_registry(self, block_hash: str = None) -&gt; dict:
         &#34;&#34;&#34;
         Generates an exhaustive list of which RUST types exist in the runtime specified at given block_hash (or
         chaintip if block_hash is omitted)
@@ -6627,7 +6669,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         Returns
         -------
-
+        dict
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -6730,7 +6772,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         return self.metadata_decoder.get_metadata_pallet(name)
 
-    def get_metadata_call_functions(self, block_hash=None):
+    def get_metadata_call_functions(self, block_hash=None) -&gt; list:
         &#34;&#34;&#34;
         Retrieves a list of all call functions in metadata active for given block_hash (or chaintip if block_hash is omitted)
 
@@ -6740,7 +6782,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         Returns
         -------
-
+        list
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -6781,7 +6823,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
                     if call.name == call_function_name:
                         return call
 
-    def get_metadata_events(self, block_hash=None):
+    def get_metadata_events(self, block_hash=None) -&gt; list:
         &#34;&#34;&#34;
         Retrieves a list of all events in metadata active for given block_hash (or chaintip if block_hash is omitted)
 
@@ -6791,7 +6833,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         Returns
         -------
-
+        list
         &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
@@ -6831,7 +6873,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
                     if event.name == event_name:
                         return event
 
-    def get_metadata_constants(self, block_hash=None):
+    def get_metadata_constants(self, block_hash=None) -&gt; list:
         &#34;&#34;&#34;
         Retrieves a list of all constants in metadata active at given block_hash (or chaintip if block_hash is omitted)
 
@@ -6841,7 +6883,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         Returns
         -------
-
+        list
         &#34;&#34;&#34;
 
         self.init_runtime(block_hash=block_hash)
@@ -6907,7 +6949,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
                 constant.type, ScaleBytes(constant.constant_value), block_hash=block_hash, return_scale_obj=True
             )
 
-    def get_metadata_storage_functions(self, block_hash=None):
+    def get_metadata_storage_functions(self, block_hash=None) -&gt; list:
         &#34;&#34;&#34;
         Retrieves a list of all storage functions in metadata active at given block_hash (or chaintip if block_hash is
         omitted)
@@ -6918,7 +6960,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         Returns
         -------
-
+        list
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -6958,7 +7000,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
         if pallet:
             return pallet.get_storage_function(storage_name)
 
-    def get_metadata_errors(self, block_hash=None):
+    def get_metadata_errors(self, block_hash=None) -&gt; list:
         &#34;&#34;&#34;
         Retrieves a list of all errors in metadata active at given block_hash (or chaintip if block_hash is omitted)
 
@@ -6968,7 +7010,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         Returns
         -------
-
+        list
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -7127,7 +7169,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
                 return decode_block(response[&#39;result&#39;][&#39;block&#39;], block_data_hash=block_hash)
 
     def get_block(self, block_hash: str = None, block_number: int = None, ignore_decoding_errors: bool = False,
-                  include_author: bool = False, finalized_only: bool = False):
+                  include_author: bool = False, finalized_only: bool = False) -&gt; Optional[dict]:
         &#34;&#34;&#34;
         Retrieves a block and decodes its containing extrinsics and log digest items. If `block_hash` and `block_number`
         is omited the chain tip will be retrieve, or the finalized head if `finalized_only` is set to true.
@@ -7283,7 +7325,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
     def get_runtime_block(self, block_hash: str = None, block_id: int = None, ignore_decoding_errors: bool = False,
                           include_author: bool = False):
         &#34;&#34;&#34;
-        Retrieves a block with method `chain_getBlock` and in addition decodes extrinsics and log items
+        Warning: &#39;get_runtime_block&#39; will be replaced by &#39;get_block&#39;
 
         Parameters
         ----------
@@ -7347,7 +7389,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
         else:
             return obj.value
 
-    def encode_scale(self, type_string, value, block_hash=None):
+    def encode_scale(self, type_string, value, block_hash=None) -&gt; ScaleBytes:
         &#34;&#34;&#34;
         Helper function to encode arbitrary data into SCALE-bytes for given RUST type_string
 
@@ -7359,7 +7401,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         Returns
         -------
-
+        ScaleBytes
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
@@ -7368,7 +7410,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
         )
         return obj.encode(value)
 
-    def ss58_encode(self, public_key: str) -&gt; str:
+    def ss58_encode(self, public_key: Union[str, bytes]) -&gt; str:
         &#34;&#34;&#34;
         Helper function to encode a public key to SS58 address
 
@@ -7378,7 +7420,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         Returns
         -------
-        SS58 address
+        str containing the SS58 address
         &#34;&#34;&#34;
         return ss58_encode(public_key, ss58_format=self.ss58_format)
 
@@ -7392,7 +7434,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         Returns
         -------
-        Public key
+        str containing the hex representation of the public key
         &#34;&#34;&#34;
         return ss58_decode(ss58_address, valid_ss58_format=self.ss58_format)
 
@@ -7412,7 +7454,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
     # Serializing helper function
 
-    def serialize_storage_item(self, storage_item, module, spec_version_id):
+    def serialize_storage_item(self, storage_item, module, spec_version_id) -&gt; dict:
         &#34;&#34;&#34;
         Helper function to serialize a storage item
 
@@ -7424,7 +7466,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         Returns
         -------
-
+        dict
         &#34;&#34;&#34;
         storage_dict = {
             &#34;storage_name&#34;: storage_item.name,
@@ -7468,7 +7510,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         return storage_dict
 
-    def serialize_constant(self, constant, module, spec_version_id):
+    def serialize_constant(self, constant, module, spec_version_id) -&gt; dict:
         &#34;&#34;&#34;
         Helper function to serialize a constant
 
@@ -7480,7 +7522,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         Returns
         -------
-
+        dict
         &#34;&#34;&#34;
         try:
             value_obj = self.runtime_config.create_scale_object(
@@ -7502,7 +7544,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
             &#34;spec_version&#34;: spec_version_id
         }
 
-    def serialize_module_call(self, module, call, spec_version, call_index):
+    def serialize_module_call(self, module, call, spec_version, call_index=None) -&gt; dict:
         &#34;&#34;&#34;
         Helper function to serialize a call function
 
@@ -7515,7 +7557,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         Returns
         -------
-
+        dict
         &#34;&#34;&#34;
         return {
             # &#34;call_id&#34;: call.get_identifier(),
@@ -7529,7 +7571,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
             &#34;spec_version&#34;: spec_version
         }
 
-    def serialize_module_event(self, module, event, spec_version, event_index):
+    def serialize_module_event(self, module, event, spec_version, event_index) -&gt; dict:
         &#34;&#34;&#34;
         Helper function to serialize an event
 
@@ -7542,7 +7584,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         Returns
         -------
-
+        dict
         &#34;&#34;&#34;
         return {
             &#34;event_id&#34;: event.name,
@@ -7561,7 +7603,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
             &#34;spec_version&#34;: spec_version
         }
 
-    def serialize_module_error(self, module, error, spec_version):
+    def serialize_module_error(self, module, error, spec_version) -&gt; dict:
         &#34;&#34;&#34;
         Helper function to serialize an error
 
@@ -7573,7 +7615,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         Returns
         -------
-
+        dict
         &#34;&#34;&#34;
         return {
             &#34;error_name&#34;: error.name,
@@ -7584,7 +7626,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
             &#34;spec_version&#34;: spec_version
         }
 
-    def update_type_registry_presets(self):
+    def update_type_registry_presets(self) -&gt; bool:
         try:
             update_type_registries()
             self.reload_type_registry(use_remote_preset=False)
@@ -8204,7 +8246,7 @@ is set</p>
 </details>
 </dd>
 <dt id="substrateinterface.base.SubstrateInterface.encode_scale"><code class="name flex">
-<span>def <span class="ident">encode_scale</span></span>(<span>self, type_string, value, block_hash=None)</span>
+<span>def <span class="ident">encode_scale</span></span>(<span>self, type_string, value, block_hash=None) ‑> scalecodec.base.ScaleBytes</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Helper function to encode arbitrary data into SCALE-bytes for given RUST type_string</p>
@@ -8217,12 +8259,16 @@ is set</p>
 <dt><strong><code>block_hash</code></strong></dt>
 <dd>&nbsp;</dd>
 </dl>
-<h2 id="returns">Returns</h2></div>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>ScaleBytes</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def encode_scale(self, type_string, value, block_hash=None):
+<pre><code class="python">def encode_scale(self, type_string, value, block_hash=None) -&gt; ScaleBytes:
     &#34;&#34;&#34;
     Helper function to encode arbitrary data into SCALE-bytes for given RUST type_string
 
@@ -8234,7 +8280,7 @@ is set</p>
 
     Returns
     -------
-
+    ScaleBytes
     &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
@@ -8491,7 +8537,7 @@ is set</p>
 </details>
 </dd>
 <dt id="substrateinterface.base.SubstrateInterface.get_block"><code class="name flex">
-<span>def <span class="ident">get_block</span></span>(<span>self, block_hash: str = None, block_number: int = None, ignore_decoding_errors: bool = False, include_author: bool = False, finalized_only: bool = False)</span>
+<span>def <span class="ident">get_block</span></span>(<span>self, block_hash: str = None, block_number: int = None, ignore_decoding_errors: bool = False, include_author: bool = False, finalized_only: bool = False) ‑> Optional[dict]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Retrieves a block and decodes its containing extrinsics and log digest items. If <code>block_hash</code> and <code>block_number</code>
@@ -8520,7 +8566,7 @@ is omited the chain tip will be retrieve, or the finalized head if <code>finaliz
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_block(self, block_hash: str = None, block_number: int = None, ignore_decoding_errors: bool = False,
-              include_author: bool = False, finalized_only: bool = False):
+              include_author: bool = False, finalized_only: bool = False) -&gt; Optional[dict]:
     &#34;&#34;&#34;
     Retrieves a block and decodes its containing extrinsics and log digest items. If `block_hash` and `block_number`
     is omited the chain tip will be retrieve, or the finalized head if `finalized_only` is set to true.
@@ -8807,7 +8853,7 @@ Parameters</p>
 <span>def <span class="ident">get_chain_block</span></span>(<span>self, block_hash=None, block_id=None, metadata_decoder=None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>A pass-though to existing JSONRPC method <code>chain_getBlock</code>. For a decoded version see <code>get_runtime_block()</code></p>
+<div class="desc"><p>A pass-though to existing JSONRPC method <code>chain_getBlock</code>. For a decoded version see <code>get_block()</code></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>block_hash</code></strong></dt>
@@ -8824,7 +8870,7 @@ Parameters</p>
 </summary>
 <pre><code class="python">def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
     &#34;&#34;&#34;
-    A pass-though to existing JSONRPC method `chain_getBlock`. For a decoded version see `get_runtime_block()`
+    A pass-though to existing JSONRPC method `chain_getBlock`. For a decoded version see `get_block()`
 
     Parameters
     ----------
@@ -9065,7 +9111,7 @@ Parameters</p>
 </details>
 </dd>
 <dt id="substrateinterface.base.SubstrateInterface.get_metadata_call_functions"><code class="name flex">
-<span>def <span class="ident">get_metadata_call_functions</span></span>(<span>self, block_hash=None)</span>
+<span>def <span class="ident">get_metadata_call_functions</span></span>(<span>self, block_hash=None) ‑> list</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Retrieves a list of all call functions in metadata active for given block_hash (or chaintip if block_hash is omitted)</p>
@@ -9074,12 +9120,16 @@ Parameters</p>
 <dt><strong><code>block_hash</code></strong></dt>
 <dd>&nbsp;</dd>
 </dl>
-<h2 id="returns">Returns</h2></div>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_metadata_call_functions(self, block_hash=None):
+<pre><code class="python">def get_metadata_call_functions(self, block_hash=None) -&gt; list:
     &#34;&#34;&#34;
     Retrieves a list of all call functions in metadata active for given block_hash (or chaintip if block_hash is omitted)
 
@@ -9089,7 +9139,7 @@ Parameters</p>
 
     Returns
     -------
-
+    list
     &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
@@ -9160,7 +9210,7 @@ Parameters</p>
 </details>
 </dd>
 <dt id="substrateinterface.base.SubstrateInterface.get_metadata_constants"><code class="name flex">
-<span>def <span class="ident">get_metadata_constants</span></span>(<span>self, block_hash=None)</span>
+<span>def <span class="ident">get_metadata_constants</span></span>(<span>self, block_hash=None) ‑> list</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Retrieves a list of all constants in metadata active at given block_hash (or chaintip if block_hash is omitted)</p>
@@ -9169,12 +9219,16 @@ Parameters</p>
 <dt><strong><code>block_hash</code></strong></dt>
 <dd>&nbsp;</dd>
 </dl>
-<h2 id="returns">Returns</h2></div>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_metadata_constants(self, block_hash=None):
+<pre><code class="python">def get_metadata_constants(self, block_hash=None) -&gt; list:
     &#34;&#34;&#34;
     Retrieves a list of all constants in metadata active at given block_hash (or chaintip if block_hash is omitted)
 
@@ -9184,7 +9238,7 @@ Parameters</p>
 
     Returns
     -------
-
+    list
     &#34;&#34;&#34;
 
     self.init_runtime(block_hash=block_hash)
@@ -9245,7 +9299,7 @@ Parameters</p>
 </details>
 </dd>
 <dt id="substrateinterface.base.SubstrateInterface.get_metadata_errors"><code class="name flex">
-<span>def <span class="ident">get_metadata_errors</span></span>(<span>self, block_hash=None)</span>
+<span>def <span class="ident">get_metadata_errors</span></span>(<span>self, block_hash=None) ‑> list</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Retrieves a list of all errors in metadata active at given block_hash (or chaintip if block_hash is omitted)</p>
@@ -9254,12 +9308,16 @@ Parameters</p>
 <dt><strong><code>block_hash</code></strong></dt>
 <dd>&nbsp;</dd>
 </dl>
-<h2 id="returns">Returns</h2></div>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_metadata_errors(self, block_hash=None):
+<pre><code class="python">def get_metadata_errors(self, block_hash=None) -&gt; list:
     &#34;&#34;&#34;
     Retrieves a list of all errors in metadata active at given block_hash (or chaintip if block_hash is omitted)
 
@@ -9269,7 +9327,7 @@ Parameters</p>
 
     Returns
     -------
-
+    list
     &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
@@ -9333,7 +9391,7 @@ Parameters</p>
 </details>
 </dd>
 <dt id="substrateinterface.base.SubstrateInterface.get_metadata_events"><code class="name flex">
-<span>def <span class="ident">get_metadata_events</span></span>(<span>self, block_hash=None)</span>
+<span>def <span class="ident">get_metadata_events</span></span>(<span>self, block_hash=None) ‑> list</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Retrieves a list of all events in metadata active for given block_hash (or chaintip if block_hash is omitted)</p>
@@ -9342,12 +9400,16 @@ Parameters</p>
 <dt><strong><code>block_hash</code></strong></dt>
 <dd>&nbsp;</dd>
 </dl>
-<h2 id="returns">Returns</h2></div>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_metadata_events(self, block_hash=None):
+<pre><code class="python">def get_metadata_events(self, block_hash=None) -&gt; list:
     &#34;&#34;&#34;
     Retrieves a list of all events in metadata active for given block_hash (or chaintip if block_hash is omitted)
 
@@ -9357,7 +9419,7 @@ Parameters</p>
 
     Returns
     -------
-
+    list
     &#34;&#34;&#34;
 
     self.init_runtime(block_hash=block_hash)
@@ -9497,7 +9559,7 @@ Parameters</p>
 </details>
 </dd>
 <dt id="substrateinterface.base.SubstrateInterface.get_metadata_storage_functions"><code class="name flex">
-<span>def <span class="ident">get_metadata_storage_functions</span></span>(<span>self, block_hash=None)</span>
+<span>def <span class="ident">get_metadata_storage_functions</span></span>(<span>self, block_hash=None) ‑> list</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Retrieves a list of all storage functions in metadata active at given block_hash (or chaintip if block_hash is
@@ -9507,12 +9569,16 @@ omitted)</p>
 <dt><strong><code>block_hash</code></strong></dt>
 <dd>&nbsp;</dd>
 </dl>
-<h2 id="returns">Returns</h2></div>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_metadata_storage_functions(self, block_hash=None):
+<pre><code class="python">def get_metadata_storage_functions(self, block_hash=None) -&gt; list:
     &#34;&#34;&#34;
     Retrieves a list of all storage functions in metadata active at given block_hash (or chaintip if block_hash is
     omitted)
@@ -9523,7 +9589,7 @@ omitted)</p>
 
     Returns
     -------
-
+    list
     &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
@@ -9549,8 +9615,12 @@ omitted)</p>
 <dd>
 <div class="desc"><p>Retrieves fee estimation via RPC for given extrinsic</p>
 <h2 id="parameters">Parameters</h2>
-<p>call Call object to estimate fees for
-keypair Keypair of the sender, does not have to include private key because no valid signature is required</p>
+<dl>
+<dt><strong><code>call</code></strong> :&ensp;<code>Call object to estimate fees for</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>keypair</code></strong> :&ensp;<code><a title="substrateinterface.base.Keypair" href="#substrateinterface.base.Keypair">Keypair</a></code> of <code>the sender, does not have to include private key because no valid signature is required</code></dt>
+<dd>&nbsp;</dd>
+</dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>Dict with payment info</code></dt>
@@ -9567,8 +9637,8 @@ keypair Keypair of the sender, does not have to include private key because no v
 
     Parameters
     ----------
-    call Call object to estimate fees for
-    keypair Keypair of the sender, does not have to include private key because no valid signature is required
+    call: Call object to estimate fees for
+    keypair: Keypair of the sender, does not have to include private key because no valid signature is required
 
     Returns
     -------
@@ -9609,7 +9679,7 @@ keypair Keypair of the sender, does not have to include private key because no v
 <span>def <span class="ident">get_runtime_block</span></span>(<span>self, block_hash: str = None, block_id: int = None, ignore_decoding_errors: bool = False, include_author: bool = False)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Retrieves a block with method <code>chain_getBlock</code> and in addition decodes extrinsics and log items</p>
+<div class="desc"><p>Warning: 'get_runtime_block' will be replaced by 'get_block'</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>block_hash</code></strong></dt>
@@ -9629,7 +9699,7 @@ keypair Keypair of the sender, does not have to include private key because no v
 <pre><code class="python">def get_runtime_block(self, block_hash: str = None, block_id: int = None, ignore_decoding_errors: bool = False,
                       include_author: bool = False):
     &#34;&#34;&#34;
-    Retrieves a block with method `chain_getBlock` and in addition decodes extrinsics and log items
+    Warning: &#39;get_runtime_block&#39; will be replaced by &#39;get_block&#39;
 
     Parameters
     ----------
@@ -9663,17 +9733,25 @@ keypair Keypair of the sender, does not have to include private key because no v
 <span>def <span class="ident">get_runtime_events</span></span>(<span>self, block_hash=None)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Warning: 'get_runtime_events' will be replaced by 'get_events'</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Collection</code> of <code>events</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_runtime_events(self, block_hash=None):
 
-    warnings.warn(&#34;&#39;get_runtime_events&#39; will be replaced by &#39;get_events&#39;&#34;, DeprecationWarning)
-
     &#34;&#34;&#34;
-    Convenience method to get events for a certain block (storage call for module &#39;System&#39; and function &#39;Events&#39;)
+    Warning: &#39;get_runtime_events&#39; will be replaced by &#39;get_events&#39;
 
     Parameters
     ----------
@@ -9683,6 +9761,8 @@ keypair Keypair of the sender, does not have to include private key because no v
     -------
     Collection of events
     &#34;&#34;&#34;
+    warnings.warn(&#34;&#39;get_runtime_events&#39; will be replaced by &#39;get_events&#39;&#34;, DeprecationWarning)
+
     return self.get_runtime_state(
         module=&#34;System&#34;,
         storage_function=&#34;Events&#34;,
@@ -9737,12 +9817,15 @@ keypair Keypair of the sender, does not have to include private key because no v
 <span>def <span class="ident">get_runtime_state</span></span>(<span>self, module, storage_function, params=None, block_hash=None)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Warning: 'get_runtime_state' will be replaced by 'query'</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
+    &#34;&#34;&#34;
+    Warning: &#39;get_runtime_state&#39; will be replaced by &#39;query&#39;
+    &#34;&#34;&#34;
     warnings.warn(&#34;&#39;get_runtime_state&#39; will be replaced by &#39;query&#39;&#34;, DeprecationWarning)
 
     obj = self.query(module, storage_function, params=params, block_hash=block_hash)
@@ -9824,7 +9907,7 @@ keypair Keypair of the sender, does not have to include private key because no v
 </details>
 </dd>
 <dt id="substrateinterface.base.SubstrateInterface.get_type_registry"><code class="name flex">
-<span>def <span class="ident">get_type_registry</span></span>(<span>self, block_hash: str = None)</span>
+<span>def <span class="ident">get_type_registry</span></span>(<span>self, block_hash: str = None) ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Generates an exhaustive list of which RUST types exist in the runtime specified at given block_hash (or
@@ -9834,12 +9917,16 @@ chaintip if block_hash is omitted)</p>
 <dt><strong><code>block_hash</code></strong> :&ensp;<code>Chaintip will be used if block_hash is omitted</code></dt>
 <dd>&nbsp;</dd>
 </dl>
-<h2 id="returns">Returns</h2></div>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_type_registry(self, block_hash: str = None):
+<pre><code class="python">def get_type_registry(self, block_hash: str = None) -&gt; dict:
     &#34;&#34;&#34;
     Generates an exhaustive list of which RUST types exist in the runtime specified at given block_hash (or
     chaintip if block_hash is omitted)
@@ -9850,7 +9937,7 @@ chaintip if block_hash is omitted)</p>
 
     Returns
     -------
-
+    dict
     &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
@@ -10794,7 +10881,7 @@ use this method to perform the request.</p>
 </details>
 </dd>
 <dt id="substrateinterface.base.SubstrateInterface.serialize_constant"><code class="name flex">
-<span>def <span class="ident">serialize_constant</span></span>(<span>self, constant, module, spec_version_id)</span>
+<span>def <span class="ident">serialize_constant</span></span>(<span>self, constant, module, spec_version_id) ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Helper function to serialize a constant</p>
@@ -10807,12 +10894,16 @@ use this method to perform the request.</p>
 <dt><strong><code>spec_version_id</code></strong></dt>
 <dd>&nbsp;</dd>
 </dl>
-<h2 id="returns">Returns</h2></div>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def serialize_constant(self, constant, module, spec_version_id):
+<pre><code class="python">def serialize_constant(self, constant, module, spec_version_id) -&gt; dict:
     &#34;&#34;&#34;
     Helper function to serialize a constant
 
@@ -10824,7 +10915,7 @@ use this method to perform the request.</p>
 
     Returns
     -------
-
+    dict
     &#34;&#34;&#34;
     try:
         value_obj = self.runtime_config.create_scale_object(
@@ -10848,7 +10939,7 @@ use this method to perform the request.</p>
 </details>
 </dd>
 <dt id="substrateinterface.base.SubstrateInterface.serialize_module_call"><code class="name flex">
-<span>def <span class="ident">serialize_module_call</span></span>(<span>self, module, call, spec_version, call_index)</span>
+<span>def <span class="ident">serialize_module_call</span></span>(<span>self, module, call, spec_version, call_index=None) ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Helper function to serialize a call function</p>
@@ -10863,12 +10954,16 @@ use this method to perform the request.</p>
 <dt><strong><code>call_index</code></strong></dt>
 <dd>&nbsp;</dd>
 </dl>
-<h2 id="returns">Returns</h2></div>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def serialize_module_call(self, module, call, spec_version, call_index):
+<pre><code class="python">def serialize_module_call(self, module, call, spec_version, call_index=None) -&gt; dict:
     &#34;&#34;&#34;
     Helper function to serialize a call function
 
@@ -10881,7 +10976,7 @@ use this method to perform the request.</p>
 
     Returns
     -------
-
+    dict
     &#34;&#34;&#34;
     return {
         # &#34;call_id&#34;: call.get_identifier(),
@@ -10897,7 +10992,7 @@ use this method to perform the request.</p>
 </details>
 </dd>
 <dt id="substrateinterface.base.SubstrateInterface.serialize_module_error"><code class="name flex">
-<span>def <span class="ident">serialize_module_error</span></span>(<span>self, module, error, spec_version)</span>
+<span>def <span class="ident">serialize_module_error</span></span>(<span>self, module, error, spec_version) ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Helper function to serialize an error</p>
@@ -10910,12 +11005,16 @@ use this method to perform the request.</p>
 <dt><strong><code>spec_version</code></strong></dt>
 <dd>&nbsp;</dd>
 </dl>
-<h2 id="returns">Returns</h2></div>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def serialize_module_error(self, module, error, spec_version):
+<pre><code class="python">def serialize_module_error(self, module, error, spec_version) -&gt; dict:
     &#34;&#34;&#34;
     Helper function to serialize an error
 
@@ -10927,7 +11026,7 @@ use this method to perform the request.</p>
 
     Returns
     -------
-
+    dict
     &#34;&#34;&#34;
     return {
         &#34;error_name&#34;: error.name,
@@ -10940,7 +11039,7 @@ use this method to perform the request.</p>
 </details>
 </dd>
 <dt id="substrateinterface.base.SubstrateInterface.serialize_module_event"><code class="name flex">
-<span>def <span class="ident">serialize_module_event</span></span>(<span>self, module, event, spec_version, event_index)</span>
+<span>def <span class="ident">serialize_module_event</span></span>(<span>self, module, event, spec_version, event_index) ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Helper function to serialize an event</p>
@@ -10955,12 +11054,16 @@ use this method to perform the request.</p>
 <dt><strong><code>event_index</code></strong></dt>
 <dd>&nbsp;</dd>
 </dl>
-<h2 id="returns">Returns</h2></div>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def serialize_module_event(self, module, event, spec_version, event_index):
+<pre><code class="python">def serialize_module_event(self, module, event, spec_version, event_index) -&gt; dict:
     &#34;&#34;&#34;
     Helper function to serialize an event
 
@@ -10973,7 +11076,7 @@ use this method to perform the request.</p>
 
     Returns
     -------
-
+    dict
     &#34;&#34;&#34;
     return {
         &#34;event_id&#34;: event.name,
@@ -10994,7 +11097,7 @@ use this method to perform the request.</p>
 </details>
 </dd>
 <dt id="substrateinterface.base.SubstrateInterface.serialize_storage_item"><code class="name flex">
-<span>def <span class="ident">serialize_storage_item</span></span>(<span>self, storage_item, module, spec_version_id)</span>
+<span>def <span class="ident">serialize_storage_item</span></span>(<span>self, storage_item, module, spec_version_id) ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Helper function to serialize a storage item</p>
@@ -11007,12 +11110,16 @@ use this method to perform the request.</p>
 <dt><strong><code>spec_version_id</code></strong></dt>
 <dd>&nbsp;</dd>
 </dl>
-<h2 id="returns">Returns</h2></div>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def serialize_storage_item(self, storage_item, module, spec_version_id):
+<pre><code class="python">def serialize_storage_item(self, storage_item, module, spec_version_id) -&gt; dict:
     &#34;&#34;&#34;
     Helper function to serialize a storage item
 
@@ -11024,7 +11131,7 @@ use this method to perform the request.</p>
 
     Returns
     -------
-
+    dict
     &#34;&#34;&#34;
     storage_dict = {
         &#34;storage_name&#34;: storage_item.name,
@@ -11081,7 +11188,7 @@ use this method to perform the request.</p>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>Public key</code></dt>
+<dt><code>str containing the hex representation</code> of <code>the public key</code></dt>
 <dd>&nbsp;</dd>
 </dl></div>
 <details class="source">
@@ -11098,13 +11205,13 @@ use this method to perform the request.</p>
 
     Returns
     -------
-    Public key
+    str containing the hex representation of the public key
     &#34;&#34;&#34;
     return ss58_decode(ss58_address, valid_ss58_format=self.ss58_format)</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.base.SubstrateInterface.ss58_encode"><code class="name flex">
-<span>def <span class="ident">ss58_encode</span></span>(<span>self, public_key: str) ‑> str</span>
+<span>def <span class="ident">ss58_encode</span></span>(<span>self, public_key: Union[bytes, str]) ‑> str</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Helper function to encode a public key to SS58 address</p>
@@ -11115,14 +11222,14 @@ use this method to perform the request.</p>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>SS58 address</code></dt>
+<dt><code>str containing the SS58 address</code></dt>
 <dd>&nbsp;</dd>
 </dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def ss58_encode(self, public_key: str) -&gt; str:
+<pre><code class="python">def ss58_encode(self, public_key: Union[str, bytes]) -&gt; str:
     &#34;&#34;&#34;
     Helper function to encode a public key to SS58 address
 
@@ -11132,7 +11239,7 @@ use this method to perform the request.</p>
 
     Returns
     -------
-    SS58 address
+    str containing the SS58 address
     &#34;&#34;&#34;
     return ss58_encode(public_key, ss58_format=self.ss58_format)</code></pre>
 </details>
@@ -11141,9 +11248,12 @@ use this method to perform the request.</p>
 <span>def <span class="ident">submit_extrinsic</span></span>(<span>self, extrinsic: scalecodec.types.GenericExtrinsic, wait_for_inclusion: bool = False, wait_for_finalization: bool = False) ‑> <a title="substrateinterface.base.ExtrinsicReceipt" href="#substrateinterface.base.ExtrinsicReceipt">ExtrinsicReceipt</a></span>
 </code></dt>
 <dd>
-<div class="desc"><h2 id="parameters">Parameters</h2>
+<div class="desc"><p>Submit an extrinsic to the connected node, with the possibility to wait until the extrinsic is included
+in a block and/or the block is finalized. The receipt returned provided information about the block and
+triggered events</p>
+<h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>extrinsic</code></strong> :&ensp;<code>Extrinsic The extinsic to be send to the network</code></dt>
+<dt><strong><code>extrinsic</code></strong> :&ensp;<code>Extrinsic The extrinsic to be sent to the network</code></dt>
 <dd>&nbsp;</dd>
 <dt><strong><code>wait_for_inclusion</code></strong> :&ensp;<code>wait until extrinsic is included in a block (only works for websocket connections)</code></dt>
 <dd>&nbsp;</dd>
@@ -11152,7 +11262,7 @@ use this method to perform the request.</p>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>The hash</code> of <code>the extrinsic submitted to the network</code></dt>
+<dt><code><a title="substrateinterface.base.ExtrinsicReceipt" href="#substrateinterface.base.ExtrinsicReceipt">ExtrinsicReceipt</a></code></dt>
 <dd>&nbsp;</dd>
 </dl></div>
 <details class="source">
@@ -11162,16 +11272,19 @@ use this method to perform the request.</p>
 <pre><code class="python">def submit_extrinsic(self, extrinsic: GenericExtrinsic, wait_for_inclusion: bool = False,
                      wait_for_finalization: bool = False) -&gt; &#34;ExtrinsicReceipt&#34;:
     &#34;&#34;&#34;
+    Submit an extrinsic to the connected node, with the possibility to wait until the extrinsic is included
+     in a block and/or the block is finalized. The receipt returned provided information about the block and
+     triggered events
 
     Parameters
     ----------
-    extrinsic: Extrinsic The extinsic to be send to the network
+    extrinsic: Extrinsic The extrinsic to be sent to the network
     wait_for_inclusion: wait until extrinsic is included in a block (only works for websocket connections)
     wait_for_finalization: wait until extrinsic is finalized (only works for websocket connections)
 
     Returns
     -------
-    The hash of the extrinsic submitted to the network
+    ExtrinsicReceipt
 
     &#34;&#34;&#34;
 
@@ -11306,7 +11419,7 @@ result = substrate.subscribe_block_headers(subscription_handler, include_author=
 </details>
 </dd>
 <dt id="substrateinterface.base.SubstrateInterface.update_type_registry_presets"><code class="name flex">
-<span>def <span class="ident">update_type_registry_presets</span></span>(<span>self)</span>
+<span>def <span class="ident">update_type_registry_presets</span></span>(<span>self) ‑> bool</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -11314,7 +11427,7 @@ result = substrate.subscribe_block_headers(subscription_handler, include_author=
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def update_type_registry_presets(self):
+<pre><code class="python">def update_type_registry_presets(self) -&gt; bool:
     try:
         update_type_registries()
         self.reload_type_registry(use_remote_preset=False)
