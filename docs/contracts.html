@@ -70,13 +70,14 @@ class ContractMetadata:
         metadata_dict
         substrate
         &#34;&#34;&#34;
+        self.metadata_version = None
         self.metadata_dict = metadata_dict
         self.substrate = substrate
         self.type_registry = {}
 
         self.__type_offset = 0
 
-        self.__parse_type_registry()
+        self.__parse_metadata()
 
     @classmethod
     def create_from_file(cls, metadata_file: str, substrate: SubstrateInterface) -&gt; &#34;ContractMetadata&#34;:
@@ -103,7 +104,7 @@ class ContractMetadata:
         else:
             raise AttributeError(&#34;&#39;{}&#39; object has no attribute &#39;{}&#39;&#34;.format(self.__class__.__name__, item))
 
-    def __parse_type_registry(self):
+    def __convert_to_latest_metadata(self):
 
         if &#39;metadataVersion&#39; in self.metadata_dict:
             # Convert legacy format as V0
@@ -112,15 +113,50 @@ class ContractMetadata:
                 &#39;storage&#39;: self.metadata_dict.get(&#39;storage&#39;),
                 &#39;types&#39;: self.metadata_dict.get(&#39;types&#39;),
             }
-
-        # Check metadata version
+            self.metadata_version = &#39;V0&#39;
         elif &#39;V1&#39; in self.metadata_dict:
-            self.metadata_dict[&#39;spec&#39;] = self.metadata_dict[&#39;V1&#39;][&#39;spec&#39;]
-            self.metadata_dict[&#39;storage&#39;] = self.metadata_dict[&#39;V1&#39;][&#39;storage&#39;]
-            self.metadata_dict[&#39;types&#39;] = self.metadata_dict[&#39;V1&#39;][&#39;types&#39;]
-
+            self.metadata_version = &#39;V1&#39;
+        elif &#39;V2&#39; in self.metadata_dict:
+            self.metadata_version = &#39;V2&#39;
+        elif &#39;V3&#39; in self.metadata_dict:
+            self.metadata_version = &#39;V3&#39;
         else:
-            raise ContractMetadataParseException(&#34;Unknown contract metadata version&#34;)
+            raise ContractMetadataParseException(&#34;Unsupported metadata version&#34;)
+
+        self.metadata_dict[&#39;spec&#39;] = self.metadata_dict[self.metadata_version][&#39;spec&#39;]
+        self.metadata_dict[&#39;storage&#39;] = self.metadata_dict[self.metadata_version][&#39;storage&#39;]
+        self.metadata_dict[&#39;types&#39;] = self.metadata_dict[self.metadata_version][&#39;types&#39;]
+        del self.metadata_dict[self.metadata_version]
+
+        # Version converters
+
+        # V1 -&gt; V2: name becomes label; no longer array
+        if self.metadata_version &lt;= &#39;V1&#39;:
+            def replace_name_with_label(obj):
+                if &#39;name&#39; in obj:
+                    if type(obj[&#39;name&#39;]) is list:
+                        obj[&#39;label&#39;] = &#39;::&#39;.join(obj.pop(&#39;name&#39;))
+                    else:
+                        obj[&#39;label&#39;] = obj.pop(&#39;name&#39;)
+
+                return obj
+
+            for section in [&#39;constructors&#39;, &#39;events&#39;, &#39;messages&#39;]:
+
+                for idx, c in enumerate(self.metadata_dict[&#39;spec&#39;][section]):
+                    self.metadata_dict[&#39;spec&#39;][section][idx][&#39;args&#39;] = [
+                        replace_name_with_label(a) for a in c[&#39;args&#39;]
+                    ]
+                    replace_name_with_label(c)
+
+        # V2 -&gt; V3: new payable flags for constructors: default to true
+        if self.metadata_version &lt;= &#39;V2&#39;:
+            for idx, c in enumerate(self.metadata_dict[&#39;spec&#39;][&#39;constructors&#39;]):
+                c[&#34;payable&#34;] = True
+
+    def __parse_metadata(self):
+
+        self.__convert_to_latest_metadata()
 
         # Check requirements
         if &#39;types&#39; not in self.metadata_dict:
@@ -145,7 +181,7 @@ class ContractMetadata:
 
         self.type_string_prefix = f&#34;ink::{self.metadata_dict[&#39;source&#39;][&#39;hash&#39;]}&#34;
 
-        if &#39;V0&#39; in self.metadata_dict:
+        if self.metadata_version == &#39;V0&#39;:
 
             for idx, metadata_type in enumerate(self.metadata_dict[&#39;types&#39;]):
 
@@ -154,10 +190,10 @@ class ContractMetadata:
                 if idx not in self.type_registry:
                     self.type_registry[idx] = self.get_type_string_for_metadata_type(idx)
 
-        elif &#39;V1&#39; in self.metadata_dict:
+        else:
             self.substrate.init_runtime()
             portable_registry = self.substrate.runtime_config.create_scale_object(&#39;PortableRegistry&#39;)
-            portable_registry.encode({&#34;types&#34;: self.metadata_dict[&#34;V1&#34;][&#34;types&#34;]})
+            portable_registry.encode({&#34;types&#34;: self.metadata_dict[&#34;types&#34;]})
 
             self.substrate.runtime_config.update_from_scale_info_types(
                 portable_registry[&#39;types&#39;], prefix=self.type_string_prefix
@@ -181,16 +217,16 @@ class ContractMetadata:
             args = {}
 
         for constructor in self.metadata_dict[&#39;spec&#39;][&#39;constructors&#39;]:
-            if name in constructor[&#39;name&#39;]:
+            if name == constructor[&#39;label&#39;]:
                 data = ScaleBytes(constructor[&#39;selector&#39;])
 
                 for arg in constructor[&#39;args&#39;]:
-                    if arg[&#39;name&#39;] not in args:
-                        raise ValueError(f&#34;Argument \&#34;{arg[&#39;name&#39;]}\&#34; is missing&#34;)
+                    if arg[&#39;label&#39;] not in args:
+                        raise ValueError(f&#34;Argument \&#34;{arg[&#39;label&#39;]}\&#34; is missing&#34;)
                     else:
                         data += self.substrate.encode_scale(
                             type_string=self.get_type_string_for_metadata_type(arg[&#39;type&#39;][&#39;type&#39;]),
-                            value=args[arg[&#39;name&#39;]]
+                            value=args[arg[&#39;label&#39;]]
                         )
                 return data
 
@@ -210,14 +246,14 @@ class ContractMetadata:
         str
         &#34;&#34;&#34;
 
-        if &#39;V1&#39; in self.metadata_dict:
+        if self.metadata_version &gt;= &#39;V1&#39;:
 
             if type_id &gt; len(self.metadata_dict[&#39;types&#39;]):
                 raise ValueError(f&#39;type_id {type_id} not found in metadata&#39;)
 
             return f&#39;{self.type_string_prefix}::{type_id}&#39;
 
-        if &#39;V0&#39; in self.metadata_dict:
+        if self.metadata_version == &#39;V0&#39;:
             # Legacy type parsing
 
             # Check if already processed
@@ -325,7 +361,7 @@ class ContractMetadata:
 
     def get_return_type_string_for_message(self, name) -&gt; str:
         for message in self.metadata_dict[&#39;spec&#39;][&#39;messages&#39;]:
-            if name in message[&#39;name&#39;]:
+            if name == message[&#39;label&#39;]:
                 if message[&#39;returnType&#39;] is None:
                     return &#39;Null&#39;
                 else:
@@ -351,17 +387,17 @@ class ContractMetadata:
             args = {}
 
         for message in self.metadata_dict[&#39;spec&#39;][&#39;messages&#39;]:
-            if name in message[&#39;name&#39;]:
+            if name == message[&#39;label&#39;]:
                 data = ScaleBytes(message[&#39;selector&#39;])
 
                 for arg in message[&#39;args&#39;]:
-                    if arg[&#39;name&#39;] not in args:
-                        raise ValueError(f&#34;Argument \&#34;{arg[&#39;name&#39;]}\&#34; is missing&#34;)
+                    if arg[&#39;label&#39;] not in args:
+                        raise ValueError(f&#34;Argument \&#34;{arg[&#39;label&#39;]}\&#34; is missing&#34;)
                     else:
 
                         data += self.substrate.encode_scale(
                             type_string=self.get_type_string_for_metadata_type(arg[&#39;type&#39;][&#39;type&#39;]),
-                            value=args[arg[&#39;name&#39;]]
+                            value=args[arg[&#39;label&#39;]]
                         )
                 return data
 
@@ -405,7 +441,7 @@ class ContractEvent(ScaleType):
 
         event_data = self.contract_metadata.get_event_data(self.event_id)
 
-        self.name = event_data[&#39;name&#39;]
+        self.name = event_data[&#39;label&#39;]
         self.docs = event_data[&#39;docs&#39;]
         self.args = event_data[&#39;args&#39;]
 
@@ -477,7 +513,7 @@ class ContractExecutionReceipt(ExtrinsicReceipt):
                     if event.value[&#39;module_id&#39;] == &#39;Contracts&#39; and event.value[&#39;event_id&#39;] == &#39;ContractEmitted&#39;:
                         # Create contract event
                         contract_event_obj = ContractEvent(
-                            data=ScaleBytes(event.value[&#39;attributes&#39;][1]),
+                            data=ScaleBytes(event[&#39;event&#39;][1][1][1].value_object),
                             runtime_config=self.substrate.runtime_config,
                             contract_metadata=self.contract_metadata
                         )
@@ -603,7 +639,8 @@ class ContractCode:
         return self.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
 
     def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None,
-               deployment_salt: str = None, upload_code: bool = False) -&gt; &#34;ContractInstance&#34;:
+               deployment_salt: str = None, upload_code: bool = False, storage_deposit_limit: int = None
+               ) -&gt; &#34;ContractInstance&#34;:
         &#34;&#34;&#34;
         Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
         constructor arguments
@@ -617,6 +654,7 @@ class ContractCode:
         args: arguments for the constructor
         deployment_salt: optional string or hex-string that acts as a salt for this deployment
         upload_code: When True the WASM blob itself will be uploaded with the deploy, False if the WASM is already present on-chain
+        storage_deposit_limit: The maximum amount of balance that can be charged to pay for the storage consumed.
 
         Returns
         -------
@@ -638,15 +676,17 @@ class ContractCode:
                     call_module=&#39;Contracts&#39;,
                     call_function=&#39;instantiate_with_code&#39;,
                     call_params={
-                        &#39;endowment&#39;: endowment,
+                        &#39;endowment&#39;: endowment,  # deprecated
+                        &#39;value&#39;: endowment,
                         &#39;gas_limit&#39;: gas_limit,
+                        &#39;storage_deposit_limit&#39;: storage_deposit_limit,
                         &#39;code&#39;: &#39;0x{}&#39;.format(self.wasm_bytes.hex()),
                         &#39;data&#39;: data.to_hex(),
                         &#39;salt&#39;: deployment_salt or &#39;&#39;
                     }
                 )
             else:
-                # Legacy mode: put code in seperate call
+                # Legacy mode: put code in separate call
 
                 self.upload_wasm(keypair)
 
@@ -654,8 +694,10 @@ class ContractCode:
                     call_module=&#39;Contracts&#39;,
                     call_function=&#39;instantiate&#39;,
                     call_params={
-                        &#39;endowment&#39;: endowment,
+                        &#39;endowment&#39;: endowment,  # deprecated
+                        &#39;value&#39;: endowment,
                         &#39;gas_limit&#39;: gas_limit,
+                        &#39;storage_deposit_limit&#39;: storage_deposit_limit,
                         &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
                         &#39;data&#39;: data.to_hex(),
                         &#39;salt&#39;: deployment_salt or &#39;&#39;
@@ -667,8 +709,10 @@ class ContractCode:
                 call_module=&#39;Contracts&#39;,
                 call_function=&#39;instantiate&#39;,
                 call_params={
-                    &#39;endowment&#39;: endowment,
+                    &#39;endowment&#39;: endowment,  # deprecated
+                    &#39;value&#39;: endowment,
                     &#39;gas_limit&#39;: gas_limit,
+                    &#39;storage_deposit_limit&#39;: storage_deposit_limit,
                     &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
                     &#39;data&#39;: data.to_hex(),
                     &#39;salt&#39;: deployment_salt or &#39;&#39;
@@ -777,6 +821,7 @@ class ContractInstance:
             if &#39;result&#39; in response[&#39;result&#39;]:
 
                 contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;gasConsumed&#39;]
+                contract_exec_result.gas_required = response[&#39;result&#39;][&#39;gasRequired&#39;]
 
                 if &#39;Ok&#39; in response[&#39;result&#39;][&#39;result&#39;]:
 
@@ -824,7 +869,8 @@ class ContractInstance:
         raise ContractReadFailedException(response)
 
     def exec(self, keypair: Keypair, method: str, args: dict = None,
-             value: int = 0, gas_limit: Optional[int] = None) -&gt; ContractExecutionReceipt:
+             value: int = 0, gas_limit: Optional[int] = None, storage_deposit_limit: int = None
+             ) -&gt; ContractExecutionReceipt:
         &#34;&#34;&#34;
         Executes provided message by creating and submitting an extrinsic. To get a gas prediction or perform a
         &#39;dry-run&#39; of executing this message, see `ContractInstance.read`.
@@ -836,6 +882,7 @@ class ContractInstance:
         args: arguments of message in {&#39;name&#39;: value} format
         value: value to send when executing the message
         gas_limit: When left to None the gas limit will be calculated with a read()
+        storage_deposit_limit: The maximum amount of balance that can be charged to pay for the storage consumed
 
         Returns
         -------
@@ -844,7 +891,7 @@ class ContractInstance:
 
         if gas_limit is None:
             gas_predit_result = self.read(keypair, method, args, value)
-            gas_limit = gas_predit_result.gas_consumed
+            gas_limit = gas_predit_result.gas_required
 
         input_data = self.metadata.generate_message_data(name=method, args=args)
 
@@ -855,6 +902,7 @@ class ContractInstance:
                 &#39;dest&#39;: self.contract_address,
                 &#39;value&#39;: value,
                 &#39;gas_limit&#39;: gas_limit,
+                &#39;storage_deposit_limit&#39;: storage_deposit_limit,
                 &#39;data&#39;: input_data.to_hex()
             }
         )
@@ -992,7 +1040,8 @@ the WASM bytes and metadata</p>
         return self.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
 
     def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None,
-               deployment_salt: str = None, upload_code: bool = False) -&gt; &#34;ContractInstance&#34;:
+               deployment_salt: str = None, upload_code: bool = False, storage_deposit_limit: int = None
+               ) -&gt; &#34;ContractInstance&#34;:
         &#34;&#34;&#34;
         Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
         constructor arguments
@@ -1006,6 +1055,7 @@ the WASM bytes and metadata</p>
         args: arguments for the constructor
         deployment_salt: optional string or hex-string that acts as a salt for this deployment
         upload_code: When True the WASM blob itself will be uploaded with the deploy, False if the WASM is already present on-chain
+        storage_deposit_limit: The maximum amount of balance that can be charged to pay for the storage consumed.
 
         Returns
         -------
@@ -1027,15 +1077,17 @@ the WASM bytes and metadata</p>
                     call_module=&#39;Contracts&#39;,
                     call_function=&#39;instantiate_with_code&#39;,
                     call_params={
-                        &#39;endowment&#39;: endowment,
+                        &#39;endowment&#39;: endowment,  # deprecated
+                        &#39;value&#39;: endowment,
                         &#39;gas_limit&#39;: gas_limit,
+                        &#39;storage_deposit_limit&#39;: storage_deposit_limit,
                         &#39;code&#39;: &#39;0x{}&#39;.format(self.wasm_bytes.hex()),
                         &#39;data&#39;: data.to_hex(),
                         &#39;salt&#39;: deployment_salt or &#39;&#39;
                     }
                 )
             else:
-                # Legacy mode: put code in seperate call
+                # Legacy mode: put code in separate call
 
                 self.upload_wasm(keypair)
 
@@ -1043,8 +1095,10 @@ the WASM bytes and metadata</p>
                     call_module=&#39;Contracts&#39;,
                     call_function=&#39;instantiate&#39;,
                     call_params={
-                        &#39;endowment&#39;: endowment,
+                        &#39;endowment&#39;: endowment,  # deprecated
+                        &#39;value&#39;: endowment,
                         &#39;gas_limit&#39;: gas_limit,
+                        &#39;storage_deposit_limit&#39;: storage_deposit_limit,
                         &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
                         &#39;data&#39;: data.to_hex(),
                         &#39;salt&#39;: deployment_salt or &#39;&#39;
@@ -1056,8 +1110,10 @@ the WASM bytes and metadata</p>
                 call_module=&#39;Contracts&#39;,
                 call_function=&#39;instantiate&#39;,
                 call_params={
-                    &#39;endowment&#39;: endowment,
+                    &#39;endowment&#39;: endowment,  # deprecated
+                    &#39;value&#39;: endowment,
                     &#39;gas_limit&#39;: gas_limit,
+                    &#39;storage_deposit_limit&#39;: storage_deposit_limit,
                     &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
                     &#39;data&#39;: data.to_hex(),
                     &#39;salt&#39;: deployment_salt or &#39;&#39;
@@ -1194,7 +1250,7 @@ def create_from_contract_files(cls, wasm_file: str, metadata_file: str,
 <h3>Methods</h3>
 <dl>
 <dt id="substrateinterface.contracts.ContractCode.deploy"><code class="name flex">
-<span>def <span class="ident">deploy</span></span>(<span>self, keypair, endowment, gas_limit, constructor, args: dict = None, deployment_salt: str = None, upload_code: bool = False) ‑> <a title="substrateinterface.contracts.ContractInstance" href="#substrateinterface.contracts.ContractInstance">ContractInstance</a></span>
+<span>def <span class="ident">deploy</span></span>(<span>self, keypair, endowment, gas_limit, constructor, args: dict = None, deployment_salt: str = None, upload_code: bool = False, storage_deposit_limit: int = None) ‑> <a title="substrateinterface.contracts.ContractInstance" href="#substrateinterface.contracts.ContractInstance">ContractInstance</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
@@ -1215,6 +1271,7 @@ constructor arguments</p>
 <dt><strong><code>upload_code</code></strong> :&ensp;<code>When True the WASM blob itself will be uploaded with the deploy, False if the WASM is already present on-chain</code></dt>
 <dd>&nbsp;</dd>
 </dl>
+<p>storage_deposit_limit: The maximum amount of balance that can be charged to pay for the storage consumed.</p>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code><a title="substrateinterface.contracts.ContractInstance" href="#substrateinterface.contracts.ContractInstance">ContractInstance</a></code></dt>
@@ -1225,7 +1282,8 @@ constructor arguments</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None,
-           deployment_salt: str = None, upload_code: bool = False) -&gt; &#34;ContractInstance&#34;:
+           deployment_salt: str = None, upload_code: bool = False, storage_deposit_limit: int = None
+           ) -&gt; &#34;ContractInstance&#34;:
     &#34;&#34;&#34;
     Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
     constructor arguments
@@ -1239,6 +1297,7 @@ constructor arguments</p>
     args: arguments for the constructor
     deployment_salt: optional string or hex-string that acts as a salt for this deployment
     upload_code: When True the WASM blob itself will be uploaded with the deploy, False if the WASM is already present on-chain
+    storage_deposit_limit: The maximum amount of balance that can be charged to pay for the storage consumed.
 
     Returns
     -------
@@ -1260,15 +1319,17 @@ constructor arguments</p>
                 call_module=&#39;Contracts&#39;,
                 call_function=&#39;instantiate_with_code&#39;,
                 call_params={
-                    &#39;endowment&#39;: endowment,
+                    &#39;endowment&#39;: endowment,  # deprecated
+                    &#39;value&#39;: endowment,
                     &#39;gas_limit&#39;: gas_limit,
+                    &#39;storage_deposit_limit&#39;: storage_deposit_limit,
                     &#39;code&#39;: &#39;0x{}&#39;.format(self.wasm_bytes.hex()),
                     &#39;data&#39;: data.to_hex(),
                     &#39;salt&#39;: deployment_salt or &#39;&#39;
                 }
             )
         else:
-            # Legacy mode: put code in seperate call
+            # Legacy mode: put code in separate call
 
             self.upload_wasm(keypair)
 
@@ -1276,8 +1337,10 @@ constructor arguments</p>
                 call_module=&#39;Contracts&#39;,
                 call_function=&#39;instantiate&#39;,
                 call_params={
-                    &#39;endowment&#39;: endowment,
+                    &#39;endowment&#39;: endowment,  # deprecated
+                    &#39;value&#39;: endowment,
                     &#39;gas_limit&#39;: gas_limit,
+                    &#39;storage_deposit_limit&#39;: storage_deposit_limit,
                     &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
                     &#39;data&#39;: data.to_hex(),
                     &#39;salt&#39;: deployment_salt or &#39;&#39;
@@ -1289,8 +1352,10 @@ constructor arguments</p>
             call_module=&#39;Contracts&#39;,
             call_function=&#39;instantiate&#39;,
             call_params={
-                &#39;endowment&#39;: endowment,
+                &#39;endowment&#39;: endowment,  # deprecated
+                &#39;value&#39;: endowment,
                 &#39;gas_limit&#39;: gas_limit,
+                &#39;storage_deposit_limit&#39;: storage_deposit_limit,
                 &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
                 &#39;data&#39;: data.to_hex(),
                 &#39;salt&#39;: deployment_salt or &#39;&#39;
@@ -1408,7 +1473,7 @@ the generic "Contracts.ContractExecution" event that is triggered after a succes
 
         event_data = self.contract_metadata.get_event_data(self.event_id)
 
-        self.name = event_data[&#39;name&#39;]
+        self.name = event_data[&#39;label&#39;]
         self.docs = event_data[&#39;docs&#39;]
         self.args = event_data[&#39;args&#39;]
 
@@ -1455,7 +1520,7 @@ the generic "Contracts.ContractExecution" event that is triggered after a succes
 
     event_data = self.contract_metadata.get_event_data(self.event_id)
 
-    self.name = event_data[&#39;name&#39;]
+    self.name = event_data[&#39;label&#39;]
     self.docs = event_data[&#39;docs&#39;]
     self.args = event_data[&#39;args&#39;]
 
@@ -1557,7 +1622,7 @@ the generic "Contracts.ContractExecution" event that is triggered after a succes
                     if event.value[&#39;module_id&#39;] == &#39;Contracts&#39; and event.value[&#39;event_id&#39;] == &#39;ContractEmitted&#39;:
                         # Create contract event
                         contract_event_obj = ContractEvent(
-                            data=ScaleBytes(event.value[&#39;attributes&#39;][1]),
+                            data=ScaleBytes(event[&#39;event&#39;][1][1][1].value_object),
                             runtime_config=self.substrate.runtime_config,
                             contract_metadata=self.contract_metadata
                         )
@@ -1683,7 +1748,7 @@ def contract_events(self):
                 if event.value[&#39;module_id&#39;] == &#39;Contracts&#39; and event.value[&#39;event_id&#39;] == &#39;ContractEmitted&#39;:
                     # Create contract event
                     contract_event_obj = ContractEvent(
-                        data=ScaleBytes(event.value[&#39;attributes&#39;][1]),
+                        data=ScaleBytes(event[&#39;event&#39;][1][1][1].value_object),
                         runtime_config=self.substrate.runtime_config,
                         contract_metadata=self.contract_metadata
                     )
@@ -1806,6 +1871,7 @@ def contract_events(self):
             if &#39;result&#39; in response[&#39;result&#39;]:
 
                 contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;gasConsumed&#39;]
+                contract_exec_result.gas_required = response[&#39;result&#39;][&#39;gasRequired&#39;]
 
                 if &#39;Ok&#39; in response[&#39;result&#39;][&#39;result&#39;]:
 
@@ -1853,7 +1919,8 @@ def contract_events(self):
         raise ContractReadFailedException(response)
 
     def exec(self, keypair: Keypair, method: str, args: dict = None,
-             value: int = 0, gas_limit: Optional[int] = None) -&gt; ContractExecutionReceipt:
+             value: int = 0, gas_limit: Optional[int] = None, storage_deposit_limit: int = None
+             ) -&gt; ContractExecutionReceipt:
         &#34;&#34;&#34;
         Executes provided message by creating and submitting an extrinsic. To get a gas prediction or perform a
         &#39;dry-run&#39; of executing this message, see `ContractInstance.read`.
@@ -1865,6 +1932,7 @@ def contract_events(self):
         args: arguments of message in {&#39;name&#39;: value} format
         value: value to send when executing the message
         gas_limit: When left to None the gas limit will be calculated with a read()
+        storage_deposit_limit: The maximum amount of balance that can be charged to pay for the storage consumed
 
         Returns
         -------
@@ -1873,7 +1941,7 @@ def contract_events(self):
 
         if gas_limit is None:
             gas_predit_result = self.read(keypair, method, args, value)
-            gas_limit = gas_predit_result.gas_consumed
+            gas_limit = gas_predit_result.gas_required
 
         input_data = self.metadata.generate_message_data(name=method, args=args)
 
@@ -1884,6 +1952,7 @@ def contract_events(self):
                 &#39;dest&#39;: self.contract_address,
                 &#39;value&#39;: value,
                 &#39;gas_limit&#39;: gas_limit,
+                &#39;storage_deposit_limit&#39;: storage_deposit_limit,
                 &#39;data&#39;: input_data.to_hex()
             }
         )
@@ -1947,7 +2016,7 @@ def create_from_address(cls, contract_address: str, metadata_file: str,
 <h3>Methods</h3>
 <dl>
 <dt id="substrateinterface.contracts.ContractInstance.exec"><code class="name flex">
-<span>def <span class="ident">exec</span></span>(<span>self, keypair: <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a>, method: str, args: dict = None, value: int = 0, gas_limit: Optional[int] = None) ‑> <a title="substrateinterface.contracts.ContractExecutionReceipt" href="#substrateinterface.contracts.ContractExecutionReceipt">ContractExecutionReceipt</a></span>
+<span>def <span class="ident">exec</span></span>(<span>self, keypair: <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a>, method: str, args: dict = None, value: int = 0, gas_limit: Optional[int] = None, storage_deposit_limit: int = None) ‑> <a title="substrateinterface.contracts.ContractExecutionReceipt" href="#substrateinterface.contracts.ContractExecutionReceipt">ContractExecutionReceipt</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Executes provided message by creating and submitting an extrinsic. To get a gas prediction or perform a
@@ -1964,6 +2033,8 @@ def create_from_address(cls, contract_address: str, metadata_file: str,
 <dd>&nbsp;</dd>
 <dt><strong><code>gas_limit</code></strong> :&ensp;<code>When left to None the gas limit will be calculated with a read()</code></dt>
 <dd>&nbsp;</dd>
+<dt><strong><code>storage_deposit_limit</code></strong> :&ensp;<code>The maximum amount</code> of <code>balance that can be charged to pay for the storage consumed</code></dt>
+<dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -1975,7 +2046,8 @@ def create_from_address(cls, contract_address: str, metadata_file: str,
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def exec(self, keypair: Keypair, method: str, args: dict = None,
-         value: int = 0, gas_limit: Optional[int] = None) -&gt; ContractExecutionReceipt:
+         value: int = 0, gas_limit: Optional[int] = None, storage_deposit_limit: int = None
+         ) -&gt; ContractExecutionReceipt:
     &#34;&#34;&#34;
     Executes provided message by creating and submitting an extrinsic. To get a gas prediction or perform a
     &#39;dry-run&#39; of executing this message, see `ContractInstance.read`.
@@ -1987,6 +2059,7 @@ def create_from_address(cls, contract_address: str, metadata_file: str,
     args: arguments of message in {&#39;name&#39;: value} format
     value: value to send when executing the message
     gas_limit: When left to None the gas limit will be calculated with a read()
+    storage_deposit_limit: The maximum amount of balance that can be charged to pay for the storage consumed
 
     Returns
     -------
@@ -1995,7 +2068,7 @@ def create_from_address(cls, contract_address: str, metadata_file: str,
 
     if gas_limit is None:
         gas_predit_result = self.read(keypair, method, args, value)
-        gas_limit = gas_predit_result.gas_consumed
+        gas_limit = gas_predit_result.gas_required
 
     input_data = self.metadata.generate_message_data(name=method, args=args)
 
@@ -2006,6 +2079,7 @@ def create_from_address(cls, contract_address: str, metadata_file: str,
             &#39;dest&#39;: self.contract_address,
             &#39;value&#39;: value,
             &#39;gas_limit&#39;: gas_limit,
+            &#39;storage_deposit_limit&#39;: storage_deposit_limit,
             &#39;data&#39;: input_data.to_hex()
         }
     )
@@ -2089,6 +2163,7 @@ This method does not submit an extrinsic.</p>
         if &#39;result&#39; in response[&#39;result&#39;]:
 
             contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;gasConsumed&#39;]
+            contract_exec_result.gas_required = response[&#39;result&#39;][&#39;gasRequired&#39;]
 
             if &#39;Ok&#39; in response[&#39;result&#39;][&#39;result&#39;]:
 
@@ -2168,13 +2243,14 @@ parsed and the used types are extracted, composed and added to the type registry
         metadata_dict
         substrate
         &#34;&#34;&#34;
+        self.metadata_version = None
         self.metadata_dict = metadata_dict
         self.substrate = substrate
         self.type_registry = {}
 
         self.__type_offset = 0
 
-        self.__parse_type_registry()
+        self.__parse_metadata()
 
     @classmethod
     def create_from_file(cls, metadata_file: str, substrate: SubstrateInterface) -&gt; &#34;ContractMetadata&#34;:
@@ -2201,7 +2277,7 @@ parsed and the used types are extracted, composed and added to the type registry
         else:
             raise AttributeError(&#34;&#39;{}&#39; object has no attribute &#39;{}&#39;&#34;.format(self.__class__.__name__, item))
 
-    def __parse_type_registry(self):
+    def __convert_to_latest_metadata(self):
 
         if &#39;metadataVersion&#39; in self.metadata_dict:
             # Convert legacy format as V0
@@ -2210,15 +2286,50 @@ parsed and the used types are extracted, composed and added to the type registry
                 &#39;storage&#39;: self.metadata_dict.get(&#39;storage&#39;),
                 &#39;types&#39;: self.metadata_dict.get(&#39;types&#39;),
             }
-
-        # Check metadata version
+            self.metadata_version = &#39;V0&#39;
         elif &#39;V1&#39; in self.metadata_dict:
-            self.metadata_dict[&#39;spec&#39;] = self.metadata_dict[&#39;V1&#39;][&#39;spec&#39;]
-            self.metadata_dict[&#39;storage&#39;] = self.metadata_dict[&#39;V1&#39;][&#39;storage&#39;]
-            self.metadata_dict[&#39;types&#39;] = self.metadata_dict[&#39;V1&#39;][&#39;types&#39;]
-
+            self.metadata_version = &#39;V1&#39;
+        elif &#39;V2&#39; in self.metadata_dict:
+            self.metadata_version = &#39;V2&#39;
+        elif &#39;V3&#39; in self.metadata_dict:
+            self.metadata_version = &#39;V3&#39;
         else:
-            raise ContractMetadataParseException(&#34;Unknown contract metadata version&#34;)
+            raise ContractMetadataParseException(&#34;Unsupported metadata version&#34;)
+
+        self.metadata_dict[&#39;spec&#39;] = self.metadata_dict[self.metadata_version][&#39;spec&#39;]
+        self.metadata_dict[&#39;storage&#39;] = self.metadata_dict[self.metadata_version][&#39;storage&#39;]
+        self.metadata_dict[&#39;types&#39;] = self.metadata_dict[self.metadata_version][&#39;types&#39;]
+        del self.metadata_dict[self.metadata_version]
+
+        # Version converters
+
+        # V1 -&gt; V2: name becomes label; no longer array
+        if self.metadata_version &lt;= &#39;V1&#39;:
+            def replace_name_with_label(obj):
+                if &#39;name&#39; in obj:
+                    if type(obj[&#39;name&#39;]) is list:
+                        obj[&#39;label&#39;] = &#39;::&#39;.join(obj.pop(&#39;name&#39;))
+                    else:
+                        obj[&#39;label&#39;] = obj.pop(&#39;name&#39;)
+
+                return obj
+
+            for section in [&#39;constructors&#39;, &#39;events&#39;, &#39;messages&#39;]:
+
+                for idx, c in enumerate(self.metadata_dict[&#39;spec&#39;][section]):
+                    self.metadata_dict[&#39;spec&#39;][section][idx][&#39;args&#39;] = [
+                        replace_name_with_label(a) for a in c[&#39;args&#39;]
+                    ]
+                    replace_name_with_label(c)
+
+        # V2 -&gt; V3: new payable flags for constructors: default to true
+        if self.metadata_version &lt;= &#39;V2&#39;:
+            for idx, c in enumerate(self.metadata_dict[&#39;spec&#39;][&#39;constructors&#39;]):
+                c[&#34;payable&#34;] = True
+
+    def __parse_metadata(self):
+
+        self.__convert_to_latest_metadata()
 
         # Check requirements
         if &#39;types&#39; not in self.metadata_dict:
@@ -2243,7 +2354,7 @@ parsed and the used types are extracted, composed and added to the type registry
 
         self.type_string_prefix = f&#34;ink::{self.metadata_dict[&#39;source&#39;][&#39;hash&#39;]}&#34;
 
-        if &#39;V0&#39; in self.metadata_dict:
+        if self.metadata_version == &#39;V0&#39;:
 
             for idx, metadata_type in enumerate(self.metadata_dict[&#39;types&#39;]):
 
@@ -2252,10 +2363,10 @@ parsed and the used types are extracted, composed and added to the type registry
                 if idx not in self.type_registry:
                     self.type_registry[idx] = self.get_type_string_for_metadata_type(idx)
 
-        elif &#39;V1&#39; in self.metadata_dict:
+        else:
             self.substrate.init_runtime()
             portable_registry = self.substrate.runtime_config.create_scale_object(&#39;PortableRegistry&#39;)
-            portable_registry.encode({&#34;types&#34;: self.metadata_dict[&#34;V1&#34;][&#34;types&#34;]})
+            portable_registry.encode({&#34;types&#34;: self.metadata_dict[&#34;types&#34;]})
 
             self.substrate.runtime_config.update_from_scale_info_types(
                 portable_registry[&#39;types&#39;], prefix=self.type_string_prefix
@@ -2279,16 +2390,16 @@ parsed and the used types are extracted, composed and added to the type registry
             args = {}
 
         for constructor in self.metadata_dict[&#39;spec&#39;][&#39;constructors&#39;]:
-            if name in constructor[&#39;name&#39;]:
+            if name == constructor[&#39;label&#39;]:
                 data = ScaleBytes(constructor[&#39;selector&#39;])
 
                 for arg in constructor[&#39;args&#39;]:
-                    if arg[&#39;name&#39;] not in args:
-                        raise ValueError(f&#34;Argument \&#34;{arg[&#39;name&#39;]}\&#34; is missing&#34;)
+                    if arg[&#39;label&#39;] not in args:
+                        raise ValueError(f&#34;Argument \&#34;{arg[&#39;label&#39;]}\&#34; is missing&#34;)
                     else:
                         data += self.substrate.encode_scale(
                             type_string=self.get_type_string_for_metadata_type(arg[&#39;type&#39;][&#39;type&#39;]),
-                            value=args[arg[&#39;name&#39;]]
+                            value=args[arg[&#39;label&#39;]]
                         )
                 return data
 
@@ -2308,14 +2419,14 @@ parsed and the used types are extracted, composed and added to the type registry
         str
         &#34;&#34;&#34;
 
-        if &#39;V1&#39; in self.metadata_dict:
+        if self.metadata_version &gt;= &#39;V1&#39;:
 
             if type_id &gt; len(self.metadata_dict[&#39;types&#39;]):
                 raise ValueError(f&#39;type_id {type_id} not found in metadata&#39;)
 
             return f&#39;{self.type_string_prefix}::{type_id}&#39;
 
-        if &#39;V0&#39; in self.metadata_dict:
+        if self.metadata_version == &#39;V0&#39;:
             # Legacy type parsing
 
             # Check if already processed
@@ -2423,7 +2534,7 @@ parsed and the used types are extracted, composed and added to the type registry
 
     def get_return_type_string_for_message(self, name) -&gt; str:
         for message in self.metadata_dict[&#39;spec&#39;][&#39;messages&#39;]:
-            if name in message[&#39;name&#39;]:
+            if name == message[&#39;label&#39;]:
                 if message[&#39;returnType&#39;] is None:
                     return &#39;Null&#39;
                 else:
@@ -2449,17 +2560,17 @@ parsed and the used types are extracted, composed and added to the type registry
             args = {}
 
         for message in self.metadata_dict[&#39;spec&#39;][&#39;messages&#39;]:
-            if name in message[&#39;name&#39;]:
+            if name == message[&#39;label&#39;]:
                 data = ScaleBytes(message[&#39;selector&#39;])
 
                 for arg in message[&#39;args&#39;]:
-                    if arg[&#39;name&#39;] not in args:
-                        raise ValueError(f&#34;Argument \&#34;{arg[&#39;name&#39;]}\&#34; is missing&#34;)
+                    if arg[&#39;label&#39;] not in args:
+                        raise ValueError(f&#34;Argument \&#34;{arg[&#39;label&#39;]}\&#34; is missing&#34;)
                     else:
 
                         data += self.substrate.encode_scale(
                             type_string=self.get_type_string_for_metadata_type(arg[&#39;type&#39;][&#39;type&#39;]),
-                            value=args[arg[&#39;name&#39;]]
+                            value=args[arg[&#39;label&#39;]]
                         )
                 return data
 
@@ -2569,16 +2680,16 @@ of given constructor</p>
         args = {}
 
     for constructor in self.metadata_dict[&#39;spec&#39;][&#39;constructors&#39;]:
-        if name in constructor[&#39;name&#39;]:
+        if name == constructor[&#39;label&#39;]:
             data = ScaleBytes(constructor[&#39;selector&#39;])
 
             for arg in constructor[&#39;args&#39;]:
-                if arg[&#39;name&#39;] not in args:
-                    raise ValueError(f&#34;Argument \&#34;{arg[&#39;name&#39;]}\&#34; is missing&#34;)
+                if arg[&#39;label&#39;] not in args:
+                    raise ValueError(f&#34;Argument \&#34;{arg[&#39;label&#39;]}\&#34; is missing&#34;)
                 else:
                     data += self.substrate.encode_scale(
                         type_string=self.get_type_string_for_metadata_type(arg[&#39;type&#39;][&#39;type&#39;]),
-                        value=args[arg[&#39;name&#39;]]
+                        value=args[arg[&#39;label&#39;]]
                     )
             return data
 
@@ -2625,17 +2736,17 @@ of provided message name</p>
         args = {}
 
     for message in self.metadata_dict[&#39;spec&#39;][&#39;messages&#39;]:
-        if name in message[&#39;name&#39;]:
+        if name == message[&#39;label&#39;]:
             data = ScaleBytes(message[&#39;selector&#39;])
 
             for arg in message[&#39;args&#39;]:
-                if arg[&#39;name&#39;] not in args:
-                    raise ValueError(f&#34;Argument \&#34;{arg[&#39;name&#39;]}\&#34; is missing&#34;)
+                if arg[&#39;label&#39;] not in args:
+                    raise ValueError(f&#34;Argument \&#34;{arg[&#39;label&#39;]}\&#34; is missing&#34;)
                 else:
 
                     data += self.substrate.encode_scale(
                         type_string=self.get_type_string_for_metadata_type(arg[&#39;type&#39;][&#39;type&#39;]),
-                        value=args[arg[&#39;name&#39;]]
+                        value=args[arg[&#39;label&#39;]]
                     )
             return data
 
@@ -2686,7 +2797,7 @@ of provided message name</p>
 </summary>
 <pre><code class="python">def get_return_type_string_for_message(self, name) -&gt; str:
     for message in self.metadata_dict[&#39;spec&#39;][&#39;messages&#39;]:
-        if name in message[&#39;name&#39;]:
+        if name == message[&#39;label&#39;]:
             if message[&#39;returnType&#39;] is None:
                 return &#39;Null&#39;
             else:
@@ -2726,14 +2837,14 @@ produces a type string that can be used in the scope of the <code>RuntimeConfigu
     str
     &#34;&#34;&#34;
 
-    if &#39;V1&#39; in self.metadata_dict:
+    if self.metadata_version &gt;= &#39;V1&#39;:
 
         if type_id &gt; len(self.metadata_dict[&#39;types&#39;]):
             raise ValueError(f&#39;type_id {type_id} not found in metadata&#39;)
 
         return f&#39;{self.type_string_prefix}::{type_id}&#39;
 
-    if &#39;V0&#39; in self.metadata_dict:
+    if self.metadata_version == &#39;V0&#39;:
         # Legacy type parsing
 
         # Check if already processed

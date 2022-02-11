@@ -289,7 +289,7 @@ To access these nested structures you can access those formally using:
 
 As a convenient shorthand you can also use:
 
-`account_info['data']['free']
+`account_info['data']['free']`
 
 `ScaleType` objects can also be automatically converted to an iterable, so if the object
 is for example the `others` in the result Struct of `Staking.eraStakers` can be iterated via:

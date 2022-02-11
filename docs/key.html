@@ -66,7 +66,7 @@ class DeriveJunction:
             path_scale = Bytes()
             path_scale.encode(path)
 
-            if len(path) &gt; JUNCTION_ID_LEN:
+            if len(path_scale.data) &gt; JUNCTION_ID_LEN:
                 chain_code = blake2b(path_scale.data.data, digest_size=32).digest()
             else:
                 chain_code = bytes(path_scale.data.data.ljust(32, b&#39;\x00&#39;))
@@ -161,7 +161,7 @@ def extract_derive_path(derive_path: str):
             path_scale = Bytes()
             path_scale.encode(path)
 
-            if len(path) &gt; JUNCTION_ID_LEN:
+            if len(path_scale.data) &gt; JUNCTION_ID_LEN:
                 chain_code = blake2b(path_scale.data.data, digest_size=32).digest()
             else:
                 chain_code = bytes(path_scale.data.data.ljust(32, b&#39;\x00&#39;))
@@ -190,7 +190,7 @@ def from_derive_path(cls, path: str, is_hard=False):
         path_scale = Bytes()
         path_scale.encode(path)
 
-        if len(path) &gt; JUNCTION_ID_LEN:
+        if len(path_scale.data) &gt; JUNCTION_ID_LEN:
             chain_code = blake2b(path_scale.data.data, digest_size=32).digest()
         else:
             chain_code = bytes(path_scale.data.data.ljust(32, b&#39;\x00&#39;))

@@ -201,7 +201,8 @@ the WASM bytes and metadata</p>
         return self.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
 
     def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None,
-               deployment_salt: str = None, upload_code: bool = False) -&gt; &#34;ContractInstance&#34;:
+               deployment_salt: str = None, upload_code: bool = False, storage_deposit_limit: int = None
+               ) -&gt; &#34;ContractInstance&#34;:
         &#34;&#34;&#34;
         Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
         constructor arguments
@@ -215,6 +216,7 @@ the WASM bytes and metadata</p>
         args: arguments for the constructor
         deployment_salt: optional string or hex-string that acts as a salt for this deployment
         upload_code: When True the WASM blob itself will be uploaded with the deploy, False if the WASM is already present on-chain
+        storage_deposit_limit: The maximum amount of balance that can be charged to pay for the storage consumed.
 
         Returns
         -------
@@ -236,15 +238,17 @@ the WASM bytes and metadata</p>
                     call_module=&#39;Contracts&#39;,
                     call_function=&#39;instantiate_with_code&#39;,
                     call_params={
-                        &#39;endowment&#39;: endowment,
+                        &#39;endowment&#39;: endowment,  # deprecated
+                        &#39;value&#39;: endowment,
                         &#39;gas_limit&#39;: gas_limit,
+                        &#39;storage_deposit_limit&#39;: storage_deposit_limit,
                         &#39;code&#39;: &#39;0x{}&#39;.format(self.wasm_bytes.hex()),
                         &#39;data&#39;: data.to_hex(),
                         &#39;salt&#39;: deployment_salt or &#39;&#39;
                     }
                 )
             else:
-                # Legacy mode: put code in seperate call
+                # Legacy mode: put code in separate call
 
                 self.upload_wasm(keypair)
 
@@ -252,8 +256,10 @@ the WASM bytes and metadata</p>
                     call_module=&#39;Contracts&#39;,
                     call_function=&#39;instantiate&#39;,
                     call_params={
-                        &#39;endowment&#39;: endowment,
+                        &#39;endowment&#39;: endowment,  # deprecated
+                        &#39;value&#39;: endowment,
                         &#39;gas_limit&#39;: gas_limit,
+                        &#39;storage_deposit_limit&#39;: storage_deposit_limit,
                         &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
                         &#39;data&#39;: data.to_hex(),
                         &#39;salt&#39;: deployment_salt or &#39;&#39;
@@ -265,8 +271,10 @@ the WASM bytes and metadata</p>
                 call_module=&#39;Contracts&#39;,
                 call_function=&#39;instantiate&#39;,
                 call_params={
-                    &#39;endowment&#39;: endowment,
+                    &#39;endowment&#39;: endowment,  # deprecated
+                    &#39;value&#39;: endowment,
                     &#39;gas_limit&#39;: gas_limit,
+                    &#39;storage_deposit_limit&#39;: storage_deposit_limit,
                     &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
                     &#39;data&#39;: data.to_hex(),
                     &#39;salt&#39;: deployment_salt or &#39;&#39;
@@ -403,7 +411,7 @@ def create_from_contract_files(cls, wasm_file: str, metadata_file: str,
 <h3>Methods</h3>
 <dl>
 <dt id="substrateinterface.ContractCode.deploy"><code class="name flex">
-<span>def <span class="ident">deploy</span></span>(<span>self, keypair, endowment, gas_limit, constructor, args: dict = None, deployment_salt: str = None, upload_code: bool = False) ‑> <a title="substrateinterface.contracts.ContractInstance" href="contracts.html#substrateinterface.contracts.ContractInstance">ContractInstance</a></span>
+<span>def <span class="ident">deploy</span></span>(<span>self, keypair, endowment, gas_limit, constructor, args: dict = None, deployment_salt: str = None, upload_code: bool = False, storage_deposit_limit: int = None) ‑> <a title="substrateinterface.contracts.ContractInstance" href="contracts.html#substrateinterface.contracts.ContractInstance">ContractInstance</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
@@ -424,6 +432,7 @@ constructor arguments</p>
 <dt><strong><code>upload_code</code></strong> :&ensp;<code>When True the WASM blob itself will be uploaded with the deploy, False if the WASM is already present on-chain</code></dt>
 <dd>&nbsp;</dd>
 </dl>
+<p>storage_deposit_limit: The maximum amount of balance that can be charged to pay for the storage consumed.</p>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code><a title="substrateinterface.ContractInstance" href="#substrateinterface.ContractInstance">ContractInstance</a></code></dt>
@@ -434,7 +443,8 @@ constructor arguments</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None,
-           deployment_salt: str = None, upload_code: bool = False) -&gt; &#34;ContractInstance&#34;:
+           deployment_salt: str = None, upload_code: bool = False, storage_deposit_limit: int = None
+           ) -&gt; &#34;ContractInstance&#34;:
     &#34;&#34;&#34;
     Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
     constructor arguments
@@ -448,6 +458,7 @@ constructor arguments</p>
     args: arguments for the constructor
     deployment_salt: optional string or hex-string that acts as a salt for this deployment
     upload_code: When True the WASM blob itself will be uploaded with the deploy, False if the WASM is already present on-chain
+    storage_deposit_limit: The maximum amount of balance that can be charged to pay for the storage consumed.
 
     Returns
     -------
@@ -469,15 +480,17 @@ constructor arguments</p>
                 call_module=&#39;Contracts&#39;,
                 call_function=&#39;instantiate_with_code&#39;,
                 call_params={
-                    &#39;endowment&#39;: endowment,
+                    &#39;endowment&#39;: endowment,  # deprecated
+                    &#39;value&#39;: endowment,
                     &#39;gas_limit&#39;: gas_limit,
+                    &#39;storage_deposit_limit&#39;: storage_deposit_limit,
                     &#39;code&#39;: &#39;0x{}&#39;.format(self.wasm_bytes.hex()),
                     &#39;data&#39;: data.to_hex(),
                     &#39;salt&#39;: deployment_salt or &#39;&#39;
                 }
             )
         else:
-            # Legacy mode: put code in seperate call
+            # Legacy mode: put code in separate call
 
             self.upload_wasm(keypair)
 
@@ -485,8 +498,10 @@ constructor arguments</p>
                 call_module=&#39;Contracts&#39;,
                 call_function=&#39;instantiate&#39;,
                 call_params={
-                    &#39;endowment&#39;: endowment,
+                    &#39;endowment&#39;: endowment,  # deprecated
+                    &#39;value&#39;: endowment,
                     &#39;gas_limit&#39;: gas_limit,
+                    &#39;storage_deposit_limit&#39;: storage_deposit_limit,
                     &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
                     &#39;data&#39;: data.to_hex(),
                     &#39;salt&#39;: deployment_salt or &#39;&#39;
@@ -498,8 +513,10 @@ constructor arguments</p>
             call_module=&#39;Contracts&#39;,
             call_function=&#39;instantiate&#39;,
             call_params={
-                &#39;endowment&#39;: endowment,
+                &#39;endowment&#39;: endowment,  # deprecated
+                &#39;value&#39;: endowment,
                 &#39;gas_limit&#39;: gas_limit,
+                &#39;storage_deposit_limit&#39;: storage_deposit_limit,
                 &#39;code_hash&#39;: f&#39;0x{self.code_hash.hex()}&#39;,
                 &#39;data&#39;: data.to_hex(),
                 &#39;salt&#39;: deployment_salt or &#39;&#39;
@@ -617,7 +634,7 @@ the generic "Contracts.ContractExecution" event that is triggered after a succes
 
         event_data = self.contract_metadata.get_event_data(self.event_id)
 
-        self.name = event_data[&#39;name&#39;]
+        self.name = event_data[&#39;label&#39;]
         self.docs = event_data[&#39;docs&#39;]
         self.args = event_data[&#39;args&#39;]
 
@@ -664,7 +681,7 @@ the generic "Contracts.ContractExecution" event that is triggered after a succes
 
     event_data = self.contract_metadata.get_event_data(self.event_id)
 
-    self.name = event_data[&#39;name&#39;]
+    self.name = event_data[&#39;label&#39;]
     self.docs = event_data[&#39;docs&#39;]
     self.args = event_data[&#39;args&#39;]
 
@@ -766,7 +783,7 @@ the generic "Contracts.ContractExecution" event that is triggered after a succes
                     if event.value[&#39;module_id&#39;] == &#39;Contracts&#39; and event.value[&#39;event_id&#39;] == &#39;ContractEmitted&#39;:
                         # Create contract event
                         contract_event_obj = ContractEvent(
-                            data=ScaleBytes(event.value[&#39;attributes&#39;][1]),
+                            data=ScaleBytes(event[&#39;event&#39;][1][1][1].value_object),
                             runtime_config=self.substrate.runtime_config,
                             contract_metadata=self.contract_metadata
                         )
@@ -892,7 +909,7 @@ def contract_events(self):
                 if event.value[&#39;module_id&#39;] == &#39;Contracts&#39; and event.value[&#39;event_id&#39;] == &#39;ContractEmitted&#39;:
                     # Create contract event
                     contract_event_obj = ContractEvent(
-                        data=ScaleBytes(event.value[&#39;attributes&#39;][1]),
+                        data=ScaleBytes(event[&#39;event&#39;][1][1][1].value_object),
                         runtime_config=self.substrate.runtime_config,
                         contract_metadata=self.contract_metadata
                     )
@@ -1015,6 +1032,7 @@ def contract_events(self):
             if &#39;result&#39; in response[&#39;result&#39;]:
 
                 contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;gasConsumed&#39;]
+                contract_exec_result.gas_required = response[&#39;result&#39;][&#39;gasRequired&#39;]
 
                 if &#39;Ok&#39; in response[&#39;result&#39;][&#39;result&#39;]:
 
@@ -1062,7 +1080,8 @@ def contract_events(self):
         raise ContractReadFailedException(response)
 
     def exec(self, keypair: Keypair, method: str, args: dict = None,
-             value: int = 0, gas_limit: Optional[int] = None) -&gt; ContractExecutionReceipt:
+             value: int = 0, gas_limit: Optional[int] = None, storage_deposit_limit: int = None
+             ) -&gt; ContractExecutionReceipt:
         &#34;&#34;&#34;
         Executes provided message by creating and submitting an extrinsic. To get a gas prediction or perform a
         &#39;dry-run&#39; of executing this message, see `ContractInstance.read`.
@@ -1074,6 +1093,7 @@ def contract_events(self):
         args: arguments of message in {&#39;name&#39;: value} format
         value: value to send when executing the message
         gas_limit: When left to None the gas limit will be calculated with a read()
+        storage_deposit_limit: The maximum amount of balance that can be charged to pay for the storage consumed
 
         Returns
         -------
@@ -1082,7 +1102,7 @@ def contract_events(self):
 
         if gas_limit is None:
             gas_predit_result = self.read(keypair, method, args, value)
-            gas_limit = gas_predit_result.gas_consumed
+            gas_limit = gas_predit_result.gas_required
 
         input_data = self.metadata.generate_message_data(name=method, args=args)
 
@@ -1093,6 +1113,7 @@ def contract_events(self):
                 &#39;dest&#39;: self.contract_address,
                 &#39;value&#39;: value,
                 &#39;gas_limit&#39;: gas_limit,
+                &#39;storage_deposit_limit&#39;: storage_deposit_limit,
                 &#39;data&#39;: input_data.to_hex()
             }
         )
@@ -1156,7 +1177,7 @@ def create_from_address(cls, contract_address: str, metadata_file: str,
 <h3>Methods</h3>
 <dl>
 <dt id="substrateinterface.ContractInstance.exec"><code class="name flex">
-<span>def <span class="ident">exec</span></span>(<span>self, keypair: <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a>, method: str, args: dict = None, value: int = 0, gas_limit: Optional[int] = None) ‑> <a title="substrateinterface.contracts.ContractExecutionReceipt" href="contracts.html#substrateinterface.contracts.ContractExecutionReceipt">ContractExecutionReceipt</a></span>
+<span>def <span class="ident">exec</span></span>(<span>self, keypair: <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a>, method: str, args: dict = None, value: int = 0, gas_limit: Optional[int] = None, storage_deposit_limit: int = None) ‑> <a title="substrateinterface.contracts.ContractExecutionReceipt" href="contracts.html#substrateinterface.contracts.ContractExecutionReceipt">ContractExecutionReceipt</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Executes provided message by creating and submitting an extrinsic. To get a gas prediction or perform a
@@ -1173,6 +1194,8 @@ def create_from_address(cls, contract_address: str, metadata_file: str,
 <dd>&nbsp;</dd>
 <dt><strong><code>gas_limit</code></strong> :&ensp;<code>When left to None the gas limit will be calculated with a read()</code></dt>
 <dd>&nbsp;</dd>
+<dt><strong><code>storage_deposit_limit</code></strong> :&ensp;<code>The maximum amount</code> of <code>balance that can be charged to pay for the storage consumed</code></dt>
+<dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -1184,7 +1207,8 @@ def create_from_address(cls, contract_address: str, metadata_file: str,
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def exec(self, keypair: Keypair, method: str, args: dict = None,
-         value: int = 0, gas_limit: Optional[int] = None) -&gt; ContractExecutionReceipt:
+         value: int = 0, gas_limit: Optional[int] = None, storage_deposit_limit: int = None
+         ) -&gt; ContractExecutionReceipt:
     &#34;&#34;&#34;
     Executes provided message by creating and submitting an extrinsic. To get a gas prediction or perform a
     &#39;dry-run&#39; of executing this message, see `ContractInstance.read`.
@@ -1196,6 +1220,7 @@ def create_from_address(cls, contract_address: str, metadata_file: str,
     args: arguments of message in {&#39;name&#39;: value} format
     value: value to send when executing the message
     gas_limit: When left to None the gas limit will be calculated with a read()
+    storage_deposit_limit: The maximum amount of balance that can be charged to pay for the storage consumed
 
     Returns
     -------
@@ -1204,7 +1229,7 @@ def create_from_address(cls, contract_address: str, metadata_file: str,
 
     if gas_limit is None:
         gas_predit_result = self.read(keypair, method, args, value)
-        gas_limit = gas_predit_result.gas_consumed
+        gas_limit = gas_predit_result.gas_required
 
     input_data = self.metadata.generate_message_data(name=method, args=args)
 
@@ -1215,6 +1240,7 @@ def create_from_address(cls, contract_address: str, metadata_file: str,
             &#39;dest&#39;: self.contract_address,
             &#39;value&#39;: value,
             &#39;gas_limit&#39;: gas_limit,
+            &#39;storage_deposit_limit&#39;: storage_deposit_limit,
             &#39;data&#39;: input_data.to_hex()
         }
     )
@@ -1298,6 +1324,7 @@ This method does not submit an extrinsic.</p>
         if &#39;result&#39; in response[&#39;result&#39;]:
 
             contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;gasConsumed&#39;]
+            contract_exec_result.gas_required = response[&#39;result&#39;][&#39;gasRequired&#39;]
 
             if &#39;Ok&#39; in response[&#39;result&#39;][&#39;result&#39;]:
 
@@ -1377,13 +1404,14 @@ parsed and the used types are extracted, composed and added to the type registry
         metadata_dict
         substrate
         &#34;&#34;&#34;
+        self.metadata_version = None
         self.metadata_dict = metadata_dict
         self.substrate = substrate
         self.type_registry = {}
 
         self.__type_offset = 0
 
-        self.__parse_type_registry()
+        self.__parse_metadata()
 
     @classmethod
     def create_from_file(cls, metadata_file: str, substrate: SubstrateInterface) -&gt; &#34;ContractMetadata&#34;:
@@ -1410,7 +1438,7 @@ parsed and the used types are extracted, composed and added to the type registry
         else:
             raise AttributeError(&#34;&#39;{}&#39; object has no attribute &#39;{}&#39;&#34;.format(self.__class__.__name__, item))
 
-    def __parse_type_registry(self):
+    def __convert_to_latest_metadata(self):
 
         if &#39;metadataVersion&#39; in self.metadata_dict:
             # Convert legacy format as V0
@@ -1419,15 +1447,50 @@ parsed and the used types are extracted, composed and added to the type registry
                 &#39;storage&#39;: self.metadata_dict.get(&#39;storage&#39;),
                 &#39;types&#39;: self.metadata_dict.get(&#39;types&#39;),
             }
-
-        # Check metadata version
+            self.metadata_version = &#39;V0&#39;
         elif &#39;V1&#39; in self.metadata_dict:
-            self.metadata_dict[&#39;spec&#39;] = self.metadata_dict[&#39;V1&#39;][&#39;spec&#39;]
-            self.metadata_dict[&#39;storage&#39;] = self.metadata_dict[&#39;V1&#39;][&#39;storage&#39;]
-            self.metadata_dict[&#39;types&#39;] = self.metadata_dict[&#39;V1&#39;][&#39;types&#39;]
-
+            self.metadata_version = &#39;V1&#39;
+        elif &#39;V2&#39; in self.metadata_dict:
+            self.metadata_version = &#39;V2&#39;
+        elif &#39;V3&#39; in self.metadata_dict:
+            self.metadata_version = &#39;V3&#39;
         else:
-            raise ContractMetadataParseException(&#34;Unknown contract metadata version&#34;)
+            raise ContractMetadataParseException(&#34;Unsupported metadata version&#34;)
+
+        self.metadata_dict[&#39;spec&#39;] = self.metadata_dict[self.metadata_version][&#39;spec&#39;]
+        self.metadata_dict[&#39;storage&#39;] = self.metadata_dict[self.metadata_version][&#39;storage&#39;]
+        self.metadata_dict[&#39;types&#39;] = self.metadata_dict[self.metadata_version][&#39;types&#39;]
+        del self.metadata_dict[self.metadata_version]
+
+        # Version converters
+
+        # V1 -&gt; V2: name becomes label; no longer array
+        if self.metadata_version &lt;= &#39;V1&#39;:
+            def replace_name_with_label(obj):
+                if &#39;name&#39; in obj:
+                    if type(obj[&#39;name&#39;]) is list:
+                        obj[&#39;label&#39;] = &#39;::&#39;.join(obj.pop(&#39;name&#39;))
+                    else:
+                        obj[&#39;label&#39;] = obj.pop(&#39;name&#39;)
+
+                return obj
+
+            for section in [&#39;constructors&#39;, &#39;events&#39;, &#39;messages&#39;]:
+
+                for idx, c in enumerate(self.metadata_dict[&#39;spec&#39;][section]):
+                    self.metadata_dict[&#39;spec&#39;][section][idx][&#39;args&#39;] = [
+                        replace_name_with_label(a) for a in c[&#39;args&#39;]
+                    ]
+                    replace_name_with_label(c)
+
+        # V2 -&gt; V3: new payable flags for constructors: default to true
+        if self.metadata_version &lt;= &#39;V2&#39;:
+            for idx, c in enumerate(self.metadata_dict[&#39;spec&#39;][&#39;constructors&#39;]):
+                c[&#34;payable&#34;] = True
+
+    def __parse_metadata(self):
+
+        self.__convert_to_latest_metadata()
 
         # Check requirements
         if &#39;types&#39; not in self.metadata_dict:
@@ -1452,7 +1515,7 @@ parsed and the used types are extracted, composed and added to the type registry
 
         self.type_string_prefix = f&#34;ink::{self.metadata_dict[&#39;source&#39;][&#39;hash&#39;]}&#34;
 
-        if &#39;V0&#39; in self.metadata_dict:
+        if self.metadata_version == &#39;V0&#39;:
 
             for idx, metadata_type in enumerate(self.metadata_dict[&#39;types&#39;]):
 
@@ -1461,10 +1524,10 @@ parsed and the used types are extracted, composed and added to the type registry
                 if idx not in self.type_registry:
                     self.type_registry[idx] = self.get_type_string_for_metadata_type(idx)
 
-        elif &#39;V1&#39; in self.metadata_dict:
+        else:
             self.substrate.init_runtime()
             portable_registry = self.substrate.runtime_config.create_scale_object(&#39;PortableRegistry&#39;)
-            portable_registry.encode({&#34;types&#34;: self.metadata_dict[&#34;V1&#34;][&#34;types&#34;]})
+            portable_registry.encode({&#34;types&#34;: self.metadata_dict[&#34;types&#34;]})
 
             self.substrate.runtime_config.update_from_scale_info_types(
                 portable_registry[&#39;types&#39;], prefix=self.type_string_prefix
@@ -1488,16 +1551,16 @@ parsed and the used types are extracted, composed and added to the type registry
             args = {}
 
         for constructor in self.metadata_dict[&#39;spec&#39;][&#39;constructors&#39;]:
-            if name in constructor[&#39;name&#39;]:
+            if name == constructor[&#39;label&#39;]:
                 data = ScaleBytes(constructor[&#39;selector&#39;])
 
                 for arg in constructor[&#39;args&#39;]:
-                    if arg[&#39;name&#39;] not in args:
-                        raise ValueError(f&#34;Argument \&#34;{arg[&#39;name&#39;]}\&#34; is missing&#34;)
+                    if arg[&#39;label&#39;] not in args:
+                        raise ValueError(f&#34;Argument \&#34;{arg[&#39;label&#39;]}\&#34; is missing&#34;)
                     else:
                         data += self.substrate.encode_scale(
                             type_string=self.get_type_string_for_metadata_type(arg[&#39;type&#39;][&#39;type&#39;]),
-                            value=args[arg[&#39;name&#39;]]
+                            value=args[arg[&#39;label&#39;]]
                         )
                 return data
 
@@ -1517,14 +1580,14 @@ parsed and the used types are extracted, composed and added to the type registry
         str
         &#34;&#34;&#34;
 
-        if &#39;V1&#39; in self.metadata_dict:
+        if self.metadata_version &gt;= &#39;V1&#39;:
 
             if type_id &gt; len(self.metadata_dict[&#39;types&#39;]):
                 raise ValueError(f&#39;type_id {type_id} not found in metadata&#39;)
 
             return f&#39;{self.type_string_prefix}::{type_id}&#39;
 
-        if &#39;V0&#39; in self.metadata_dict:
+        if self.metadata_version == &#39;V0&#39;:
             # Legacy type parsing
 
             # Check if already processed
@@ -1632,7 +1695,7 @@ parsed and the used types are extracted, composed and added to the type registry
 
     def get_return_type_string_for_message(self, name) -&gt; str:
         for message in self.metadata_dict[&#39;spec&#39;][&#39;messages&#39;]:
-            if name in message[&#39;name&#39;]:
+            if name == message[&#39;label&#39;]:
                 if message[&#39;returnType&#39;] is None:
                     return &#39;Null&#39;
                 else:
@@ -1658,17 +1721,17 @@ parsed and the used types are extracted, composed and added to the type registry
             args = {}
 
         for message in self.metadata_dict[&#39;spec&#39;][&#39;messages&#39;]:
-            if name in message[&#39;name&#39;]:
+            if name == message[&#39;label&#39;]:
                 data = ScaleBytes(message[&#39;selector&#39;])
 
                 for arg in message[&#39;args&#39;]:
-                    if arg[&#39;name&#39;] not in args:
-                        raise ValueError(f&#34;Argument \&#34;{arg[&#39;name&#39;]}\&#34; is missing&#34;)
+                    if arg[&#39;label&#39;] not in args:
+                        raise ValueError(f&#34;Argument \&#34;{arg[&#39;label&#39;]}\&#34; is missing&#34;)
                     else:
 
                         data += self.substrate.encode_scale(
                             type_string=self.get_type_string_for_metadata_type(arg[&#39;type&#39;][&#39;type&#39;]),
-                            value=args[arg[&#39;name&#39;]]
+                            value=args[arg[&#39;label&#39;]]
                         )
                 return data
 
@@ -1778,16 +1841,16 @@ of given constructor</p>
         args = {}
 
     for constructor in self.metadata_dict[&#39;spec&#39;][&#39;constructors&#39;]:
-        if name in constructor[&#39;name&#39;]:
+        if name == constructor[&#39;label&#39;]:
             data = ScaleBytes(constructor[&#39;selector&#39;])
 
             for arg in constructor[&#39;args&#39;]:
-                if arg[&#39;name&#39;] not in args:
-                    raise ValueError(f&#34;Argument \&#34;{arg[&#39;name&#39;]}\&#34; is missing&#34;)
+                if arg[&#39;label&#39;] not in args:
+                    raise ValueError(f&#34;Argument \&#34;{arg[&#39;label&#39;]}\&#34; is missing&#34;)
                 else:
                     data += self.substrate.encode_scale(
                         type_string=self.get_type_string_for_metadata_type(arg[&#39;type&#39;][&#39;type&#39;]),
-                        value=args[arg[&#39;name&#39;]]
+                        value=args[arg[&#39;label&#39;]]
                     )
             return data
 
@@ -1834,17 +1897,17 @@ of provided message name</p>
         args = {}
 
     for message in self.metadata_dict[&#39;spec&#39;][&#39;messages&#39;]:
-        if name in message[&#39;name&#39;]:
+        if name == message[&#39;label&#39;]:
             data = ScaleBytes(message[&#39;selector&#39;])
 
             for arg in message[&#39;args&#39;]:
-                if arg[&#39;name&#39;] not in args:
-                    raise ValueError(f&#34;Argument \&#34;{arg[&#39;name&#39;]}\&#34; is missing&#34;)
+                if arg[&#39;label&#39;] not in args:
+                    raise ValueError(f&#34;Argument \&#34;{arg[&#39;label&#39;]}\&#34; is missing&#34;)
                 else:
 
                     data += self.substrate.encode_scale(
                         type_string=self.get_type_string_for_metadata_type(arg[&#39;type&#39;][&#39;type&#39;]),
-                        value=args[arg[&#39;name&#39;]]
+                        value=args[arg[&#39;label&#39;]]
                     )
             return data
 
@@ -1895,7 +1958,7 @@ of provided message name</p>
 </summary>
 <pre><code class="python">def get_return_type_string_for_message(self, name) -&gt; str:
     for message in self.metadata_dict[&#39;spec&#39;][&#39;messages&#39;]:
-        if name in message[&#39;name&#39;]:
+        if name == message[&#39;label&#39;]:
             if message[&#39;returnType&#39;] is None:
                 return &#39;Null&#39;
             else:
@@ -1935,14 +1998,14 @@ produces a type string that can be used in the scope of the <code>RuntimeConfigu
     str
     &#34;&#34;&#34;
 
-    if &#39;V1&#39; in self.metadata_dict:
+    if self.metadata_version &gt;= &#39;V1&#39;:
 
         if type_id &gt; len(self.metadata_dict[&#39;types&#39;]):
             raise ValueError(f&#39;type_id {type_id} not found in metadata&#39;)
 
         return f&#39;{self.type_string_prefix}::{type_id}&#39;
 
-    if &#39;V0&#39; in self.metadata_dict:
+    if self.metadata_version == &#39;V0&#39;:
         # Legacy type parsing
 
         # Check if already processed
@@ -2218,12 +2281,54 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
 
                     elif event.value[&#39;module_id&#39;] == &#39;System&#39; and event.value[&#39;event_id&#39;] == &#39;ExtrinsicFailed&#39;:
                         self.__is_success = False
+                        self.__weight = event.value[&#39;attributes&#39;][1][&#39;weight&#39;]
+
+                        for param in event.params:
+                            if &#39;Module&#39; in param:
+
+                                if type(param[&#39;Module&#39;]) is tuple:
+                                    module_index = param[&#39;Module&#39;][0]
+                                    error_index = param[&#39;Module&#39;][1]
+                                else:
+                                    module_index = param[&#39;Module&#39;][&#39;index&#39;]
+                                    error_index = param[&#39;Module&#39;][&#39;error&#39;]
+
+                                module_error = self.substrate.metadata_decoder.get_module_error(
+                                    module_index=module_index,
+                                    error_index=error_index
+                                )
+                                self.__error_message = {
+                                    &#39;type&#39;: &#39;Module&#39;,
+                                    &#39;name&#39;: module_error.name,
+                                    &#39;docs&#39;: module_error.docs
+                                }
+                            elif &#39;BadOrigin&#39; in param:
+                                self.__error_message = {
+                                    &#39;type&#39;: &#39;System&#39;,
+                                    &#39;name&#39;: &#39;BadOrigin&#39;,
+                                    &#39;docs&#39;: &#39;Bad origin&#39;
+                                }
+                            elif &#39;CannotLookup&#39; in param:
+                                self.__error_message = {
+                                    &#39;type&#39;: &#39;System&#39;,
+                                    &#39;name&#39;: &#39;CannotLookup&#39;,
+                                    &#39;docs&#39;: &#39;Cannot lookup&#39;
+                                }
+                            elif &#39;Other&#39; in param:
+                                self.__error_message = {
+                                    &#39;type&#39;: &#39;System&#39;,
+                                    &#39;name&#39;: &#39;Other&#39;,
+                                    &#39;docs&#39;: &#39;Unspecified error occurred&#39;
+                                }
 
                     elif event.value[&#39;module_id&#39;] == &#39;Treasury&#39; and event.value[&#39;event_id&#39;] == &#39;Deposit&#39;:
                         self.__total_fee_amount += event.value[&#39;attributes&#39;]
 
                     elif event.value[&#39;module_id&#39;] == &#39;Balances&#39; and event.value[&#39;event_id&#39;] == &#39;Deposit&#39;:
-                        self.__total_fee_amount += event.value[&#39;attributes&#39;][1]
+                        if type(event.value[&#39;attributes&#39;]) is tuple:
+                            self.__total_fee_amount += event.value[&#39;attributes&#39;][1]
+                        else:
+                            self.__total_fee_amount += event.value[&#39;attributes&#39;][&#39;amount&#39;]
                 else:
 
                     if event.event_module.name == &#39;System&#39; and event.event.name == &#39;ExtrinsicSuccess&#39;:
@@ -2664,12 +2769,54 @@ def weight(self) -&gt; int:
 
                 elif event.value[&#39;module_id&#39;] == &#39;System&#39; and event.value[&#39;event_id&#39;] == &#39;ExtrinsicFailed&#39;:
                     self.__is_success = False
+                    self.__weight = event.value[&#39;attributes&#39;][1][&#39;weight&#39;]
+
+                    for param in event.params:
+                        if &#39;Module&#39; in param:
+
+                            if type(param[&#39;Module&#39;]) is tuple:
+                                module_index = param[&#39;Module&#39;][0]
+                                error_index = param[&#39;Module&#39;][1]
+                            else:
+                                module_index = param[&#39;Module&#39;][&#39;index&#39;]
+                                error_index = param[&#39;Module&#39;][&#39;error&#39;]
+
+                            module_error = self.substrate.metadata_decoder.get_module_error(
+                                module_index=module_index,
+                                error_index=error_index
+                            )
+                            self.__error_message = {
+                                &#39;type&#39;: &#39;Module&#39;,
+                                &#39;name&#39;: module_error.name,
+                                &#39;docs&#39;: module_error.docs
+                            }
+                        elif &#39;BadOrigin&#39; in param:
+                            self.__error_message = {
+                                &#39;type&#39;: &#39;System&#39;,
+                                &#39;name&#39;: &#39;BadOrigin&#39;,
+                                &#39;docs&#39;: &#39;Bad origin&#39;
+                            }
+                        elif &#39;CannotLookup&#39; in param:
+                            self.__error_message = {
+                                &#39;type&#39;: &#39;System&#39;,
+                                &#39;name&#39;: &#39;CannotLookup&#39;,
+                                &#39;docs&#39;: &#39;Cannot lookup&#39;
+                            }
+                        elif &#39;Other&#39; in param:
+                            self.__error_message = {
+                                &#39;type&#39;: &#39;System&#39;,
+                                &#39;name&#39;: &#39;Other&#39;,
+                                &#39;docs&#39;: &#39;Unspecified error occurred&#39;
+                            }
 
                 elif event.value[&#39;module_id&#39;] == &#39;Treasury&#39; and event.value[&#39;event_id&#39;] == &#39;Deposit&#39;:
                     self.__total_fee_amount += event.value[&#39;attributes&#39;]
 
                 elif event.value[&#39;module_id&#39;] == &#39;Balances&#39; and event.value[&#39;event_id&#39;] == &#39;Deposit&#39;:
-                    self.__total_fee_amount += event.value[&#39;attributes&#39;][1]
+                    if type(event.value[&#39;attributes&#39;]) is tuple:
+                        self.__total_fee_amount += event.value[&#39;attributes&#39;][1]
+                    else:
+                        self.__total_fee_amount += event.value[&#39;attributes&#39;][&#39;amount&#39;]
             else:
 
                 if event.event_module.name == &#39;System&#39; and event.event.name == &#39;ExtrinsicSuccess&#39;:
@@ -3093,13 +3240,22 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
             raise TypeError(&#34;Signature should be of type bytes or a hex-string&#34;)
 
         if self.crypto_type == KeypairType.SR25519:
-            return sr25519.verify(signature, data, self.public_key)
+            crypto_verify_fn = sr25519.verify
         elif self.crypto_type == KeypairType.ED25519:
-            return ed25519_dalek.ed_verify(signature, data, self.public_key)
+            crypto_verify_fn = ed25519_dalek.ed_verify
         elif self.crypto_type == KeypairType.ECDSA:
-            return ecdsa_verify(signature, data, self.public_key)
+            crypto_verify_fn = ecdsa_verify
         else:
             raise ConfigurationError(&#34;Crypto type not supported&#34;)
+
+        verified = crypto_verify_fn(signature, data, self.public_key)
+
+        if not verified:
+            # Another attempt with the data wrapped, as discussed in https://github.com/polkadot-js/extension/pull/743
+            # Note: As Python apps are trusted sources on its own, no need to wrap data when signing from this lib
+            verified = crypto_verify_fn(signature, b&#39;&lt;Bytes&gt;&#39; + data + b&#39;&lt;/Bytes&gt;&#39;, self.public_key)
+
+        return verified
 
     def __repr__(self):
         if self.ss58_address:
@@ -3521,13 +3677,22 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
         raise TypeError(&#34;Signature should be of type bytes or a hex-string&#34;)
 
     if self.crypto_type == KeypairType.SR25519:
-        return sr25519.verify(signature, data, self.public_key)
+        crypto_verify_fn = sr25519.verify
     elif self.crypto_type == KeypairType.ED25519:
-        return ed25519_dalek.ed_verify(signature, data, self.public_key)
+        crypto_verify_fn = ed25519_dalek.ed_verify
     elif self.crypto_type == KeypairType.ECDSA:
-        return ecdsa_verify(signature, data, self.public_key)
+        crypto_verify_fn = ecdsa_verify
     else:
-        raise ConfigurationError(&#34;Crypto type not supported&#34;)</code></pre>
+        raise ConfigurationError(&#34;Crypto type not supported&#34;)
+
+    verified = crypto_verify_fn(signature, data, self.public_key)
+
+    if not verified:
+        # Another attempt with the data wrapped, as discussed in https://github.com/polkadot-js/extension/pull/743
+        # Note: As Python apps are trusted sources on its own, no need to wrap data when signing from this lib
+        verified = crypto_verify_fn(signature, b&#39;&lt;Bytes&gt;&#39; + data + b&#39;&lt;/Bytes&gt;&#39;, self.public_key)
+
+    return verified</code></pre>
 </details>
 </dd>
 </dl>
@@ -3564,7 +3729,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 </dd>
 <dt id="substrateinterface.SubstrateInterface"><code class="flex name class">
 <span>class <span class="ident">SubstrateInterface</span></span>
-<span>(</span><span>url=None, websocket=None, ss58_format=None, type_registry=None, type_registry_preset=None, cache_region=None, runtime_config=None, use_remote_preset=False, ws_options=None, auto_discover=True)</span>
+<span>(</span><span>url=None, websocket=None, ss58_format=None, type_registry=None, type_registry_preset=None, cache_region=None, runtime_config=None, use_remote_preset=False, ws_options=None, auto_discover=True, auto_reconnect=True)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A specialized class in interfacing with a Substrate node.</p>
@@ -3593,7 +3758,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
     def __init__(self, url=None, websocket=None, ss58_format=None, type_registry=None, type_registry_preset=None,
                  cache_region=None, runtime_config=None, use_remote_preset=False, ws_options=None,
-                 auto_discover=True):
+                 auto_discover=True, auto_reconnect=True):
         &#34;&#34;&#34;
         A specialized class in interfacing with a Substrate node.
 
@@ -3679,7 +3844,8 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         self.config = {
             &#39;use_remote_preset&#39;: use_remote_preset,
-            &#39;auto_discover&#39;: auto_discover
+            &#39;auto_discover&#39;: auto_discover,
+            &#39;auto_reconnect&#39;: auto_reconnect
         }
 
         self.reload_type_registry(use_remote_preset=use_remote_preset, auto_discover=auto_discover)
@@ -3786,7 +3952,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
                             update_nr += 1
 
             except WebSocketConnectionClosedException:
-                if self.url:
+                if self.config.get(&#39;auto_reconnect&#39;) and self.url:
                     # Try to reconnect websocket and retry rpc_request
                     self.debug_message(&#34;Connection Closed; Trying to reconnecting...&#34;)
                     self.connect_websocket()
@@ -4414,7 +4580,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
         )
 
     def query(self, module: str, storage_function: str, params: list = None, block_hash: str = None,
-              subscription_handler: callable = None) -&gt; Optional[ScaleType]:
+              subscription_handler: callable = None, raw_storage_key: bytes = None) -&gt; Optional[ScaleType]:
         &#34;&#34;&#34;
         Retrieves the storage entry for given module, function and optional parameters at given block hash.
 
@@ -4444,6 +4610,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
         params: list of params, in the decoded format of the applicable ScaleTypes
         block_hash: Optional block hash, when omitted the chain tip will be used
         subscription_handler: Callback function that processes the updates of the storage query subscription
+        raw_storage_key: Optional raw storage key to query decode instead of generating one
 
         Returns
         -------
@@ -4471,35 +4638,39 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
             raise StorageFunctionNotFound(&#39;Storage function &#34;{}.{}&#34; not found&#39;.format(module, storage_function))
 
         # Process specific type of storage function
-
         value_scale_type = storage_item.get_value_type_string()
         param_types = storage_item.get_params_type_string()
         hashers = storage_item.get_param_hashers()
 
-        if len(params) != len(param_types):
-            raise ValueError(f&#39;Storage function requires {len(param_types)} parameters, {len(params)} given&#39;)
+        if raw_storage_key:
+            storage_hash = f&#39;0x{raw_storage_key.hex()}&#39;
+        else:
+            if len(params) != len(param_types):
+                raise ValueError(f&#39;Storage function requires {len(param_types)} parameters, {len(params)} given&#39;)
 
-        # Encode parameters
-        for idx, param in enumerate(params):
-            param = self.convert_storage_parameter(param_types[idx], param)
-            param_obj = self.runtime_config.create_scale_object(type_string=param_types[idx])
-            params[idx] = param_obj.encode(param)
+            # Encode parameters
+            for idx, param in enumerate(params):
+                param = self.convert_storage_parameter(param_types[idx], param)
+                param_obj = self.runtime_config.create_scale_object(type_string=param_types[idx])
+                params[idx] = param_obj.encode(param)
 
-        storage_hash = self.generate_storage_hash(
-            storage_module=metadata_module.value[&#39;storage&#39;][&#39;prefix&#39;],
-            storage_function=storage_function,
-            params=params,
-            hashers=hashers
-        )
+            storage_hash = self.generate_storage_hash(
+                storage_module=metadata_module.value[&#39;storage&#39;][&#39;prefix&#39;],
+                storage_function=storage_function,
+                params=params,
+                hashers=hashers
+            )
 
         def result_handler(message, update_nr, subscription_id):
             if value_scale_type:
 
                 for change_storage_key, change_data in message[&#39;params&#39;][&#39;result&#39;][&#39;changes&#39;]:
                     if change_storage_key == storage_hash:
+                        result_found = False
 
                         if change_data is not None:
                             change_scale_type = value_scale_type
+                            result_found = True
                         elif storage_item.value[&#39;modifier&#39;] == &#39;Default&#39;:
                             # Fallback to default value of storage function if no result
                             change_scale_type = value_scale_type
@@ -4515,6 +4686,8 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
                             metadata=self.metadata_decoder
                         )
                         updated_obj.decode()
+                        updated_obj.meta_info = {&#39;result_found&#39;: result_found}
+
                         subscription_result = subscription_handler(updated_obj, update_nr, subscription_id)
 
                         if subscription_result is not None:
@@ -4525,9 +4698,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         if callable(subscription_handler):
 
-            result = self.rpc_request(&#34;state_subscribeStorage&#34;, [[storage_hash]], result_handler=result_handler)
-
-            return result
+            return self.rpc_request(&#34;state_subscribeStorage&#34;, [[storage_hash]], result_handler=result_handler)
 
         else:
 
@@ -4555,6 +4726,8 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
                         metadata=self.metadata_decoder
                     )
                     obj.decode()
+                    obj.meta_info = {&#39;result_found&#39;: response.get(&#39;result&#39;) is not None}
+
                     return obj
 
         return None
@@ -5789,6 +5962,22 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
         return self.__get_block_handler(
             block_hash, subscription_handler=subscription_handler, ignore_decoding_errors=ignore_decoding_errors,
             include_author=include_author, finalized_only=finalized_only
+        )
+
+    def retrieve_extrinsic_by_identifier(self, extrinsic_identifier: str) -&gt; &#34;ExtrinsicReceipt&#34;:
+        &#34;&#34;&#34;
+        Retrieve an extrinsic by its identifier in format &#34;&lt;block_number&gt;-&lt;extrinsic_index&gt;&#34; e.g. 333456-4
+
+        Parameters
+        ----------
+        extrinsic_identifier
+
+        Returns
+        -------
+        ExtrinsicReceipt
+        &#34;&#34;&#34;
+        return ExtrinsicReceipt.create_from_extrinsic_identifier(
+            substrate=self, extrinsic_identifier=extrinsic_identifier
         )
 
     def get_runtime_block(self, block_hash: str = None, block_id: int = None, ignore_decoding_errors: bool = False,
@@ -8715,7 +8904,7 @@ In the future there could be support for caching backends like Redis to make thi
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.query"><code class="name flex">
-<span>def <span class="ident">query</span></span>(<span>self, module: str, storage_function: str, params: list = None, block_hash: str = None, subscription_handler: <built-in function callable> = None) ‑> Optional[scalecodec.base.ScaleType]</span>
+<span>def <span class="ident">query</span></span>(<span>self, module: str, storage_function: str, params: list = None, block_hash: str = None, subscription_handler: <built-in function callable> = None, raw_storage_key: bytes = None) ‑> Optional[scalecodec.base.ScaleType]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Retrieves the storage entry for given module, function and optional parameters at given block hash.</p>
@@ -8747,6 +8936,8 @@ handler doesn't return a value.</p>
 <dd>&nbsp;</dd>
 <dt><strong><code>subscription_handler</code></strong> :&ensp;<code>Callback function that processes the updates</code> of <code>the storage query subscription</code></dt>
 <dd>&nbsp;</dd>
+<dt><strong><code>raw_storage_key</code></strong> :&ensp;<code>Optional raw storage <a title="substrateinterface.key" href="key.html">substrateinterface.key</a> to query decode instead</code> of <code>generating one</code></dt>
+<dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -8758,7 +8949,7 @@ handler doesn't return a value.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def query(self, module: str, storage_function: str, params: list = None, block_hash: str = None,
-          subscription_handler: callable = None) -&gt; Optional[ScaleType]:
+          subscription_handler: callable = None, raw_storage_key: bytes = None) -&gt; Optional[ScaleType]:
     &#34;&#34;&#34;
     Retrieves the storage entry for given module, function and optional parameters at given block hash.
 
@@ -8788,6 +8979,7 @@ handler doesn't return a value.</p>
     params: list of params, in the decoded format of the applicable ScaleTypes
     block_hash: Optional block hash, when omitted the chain tip will be used
     subscription_handler: Callback function that processes the updates of the storage query subscription
+    raw_storage_key: Optional raw storage key to query decode instead of generating one
 
     Returns
     -------
@@ -8815,35 +9007,39 @@ handler doesn't return a value.</p>
         raise StorageFunctionNotFound(&#39;Storage function &#34;{}.{}&#34; not found&#39;.format(module, storage_function))
 
     # Process specific type of storage function
-
     value_scale_type = storage_item.get_value_type_string()
     param_types = storage_item.get_params_type_string()
     hashers = storage_item.get_param_hashers()
 
-    if len(params) != len(param_types):
-        raise ValueError(f&#39;Storage function requires {len(param_types)} parameters, {len(params)} given&#39;)
+    if raw_storage_key:
+        storage_hash = f&#39;0x{raw_storage_key.hex()}&#39;
+    else:
+        if len(params) != len(param_types):
+            raise ValueError(f&#39;Storage function requires {len(param_types)} parameters, {len(params)} given&#39;)
 
-    # Encode parameters
-    for idx, param in enumerate(params):
-        param = self.convert_storage_parameter(param_types[idx], param)
-        param_obj = self.runtime_config.create_scale_object(type_string=param_types[idx])
-        params[idx] = param_obj.encode(param)
+        # Encode parameters
+        for idx, param in enumerate(params):
+            param = self.convert_storage_parameter(param_types[idx], param)
+            param_obj = self.runtime_config.create_scale_object(type_string=param_types[idx])
+            params[idx] = param_obj.encode(param)
 
-    storage_hash = self.generate_storage_hash(
-        storage_module=metadata_module.value[&#39;storage&#39;][&#39;prefix&#39;],
-        storage_function=storage_function,
-        params=params,
-        hashers=hashers
-    )
+        storage_hash = self.generate_storage_hash(
+            storage_module=metadata_module.value[&#39;storage&#39;][&#39;prefix&#39;],
+            storage_function=storage_function,
+            params=params,
+            hashers=hashers
+        )
 
     def result_handler(message, update_nr, subscription_id):
         if value_scale_type:
 
             for change_storage_key, change_data in message[&#39;params&#39;][&#39;result&#39;][&#39;changes&#39;]:
                 if change_storage_key == storage_hash:
+                    result_found = False
 
                     if change_data is not None:
                         change_scale_type = value_scale_type
+                        result_found = True
                     elif storage_item.value[&#39;modifier&#39;] == &#39;Default&#39;:
                         # Fallback to default value of storage function if no result
                         change_scale_type = value_scale_type
@@ -8859,6 +9055,8 @@ handler doesn't return a value.</p>
                         metadata=self.metadata_decoder
                     )
                     updated_obj.decode()
+                    updated_obj.meta_info = {&#39;result_found&#39;: result_found}
+
                     subscription_result = subscription_handler(updated_obj, update_nr, subscription_id)
 
                     if subscription_result is not None:
@@ -8869,9 +9067,7 @@ handler doesn't return a value.</p>
 
     if callable(subscription_handler):
 
-        result = self.rpc_request(&#34;state_subscribeStorage&#34;, [[storage_hash]], result_handler=result_handler)
-
-        return result
+        return self.rpc_request(&#34;state_subscribeStorage&#34;, [[storage_hash]], result_handler=result_handler)
 
     else:
 
@@ -8899,6 +9095,8 @@ handler doesn't return a value.</p>
                     metadata=self.metadata_decoder
                 )
                 obj.decode()
+                obj.meta_info = {&#39;result_found&#39;: response.get(&#39;result&#39;) is not None}
+
                 return obj
 
     return None</code></pre>
@@ -9129,6 +9327,42 @@ changes in type definitions when a runtime upgrade occurred</p>
     self.apply_type_registry_presets(use_remote_preset=use_remote_preset, auto_discover=auto_discover)</code></pre>
 </details>
 </dd>
+<dt id="substrateinterface.SubstrateInterface.retrieve_extrinsic_by_identifier"><code class="name flex">
+<span>def <span class="ident">retrieve_extrinsic_by_identifier</span></span>(<span>self, extrinsic_identifier: str) ‑> <a title="substrateinterface.base.ExtrinsicReceipt" href="base.html#substrateinterface.base.ExtrinsicReceipt">ExtrinsicReceipt</a></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieve an extrinsic by its identifier in format "<block_number>-<extrinsic_index>" e.g. 333456-4</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>extrinsic_identifier</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="substrateinterface.ExtrinsicReceipt" href="#substrateinterface.ExtrinsicReceipt">ExtrinsicReceipt</a></code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def retrieve_extrinsic_by_identifier(self, extrinsic_identifier: str) -&gt; &#34;ExtrinsicReceipt&#34;:
+    &#34;&#34;&#34;
+    Retrieve an extrinsic by its identifier in format &#34;&lt;block_number&gt;-&lt;extrinsic_index&gt;&#34; e.g. 333456-4
+
+    Parameters
+    ----------
+    extrinsic_identifier
+
+    Returns
+    -------
+    ExtrinsicReceipt
+    &#34;&#34;&#34;
+    return ExtrinsicReceipt.create_from_extrinsic_identifier(
+        substrate=self, extrinsic_identifier=extrinsic_identifier
+    )</code></pre>
+</details>
+</dd>
 <dt id="substrateinterface.SubstrateInterface.rpc_request"><code class="name flex">
 <span>def <span class="ident">rpc_request</span></span>(<span>self, method, params, result_handler=None)</span>
 </code></dt>
@@ -9229,7 +9463,7 @@ use this method to perform the request.</p>
                         update_nr += 1
 
         except WebSocketConnectionClosedException:
-            if self.url:
+            if self.config.get(&#39;auto_reconnect&#39;) and self.url:
                 # Try to reconnect websocket and retry rpc_request
                 self.debug_message(&#34;Connection Closed; Trying to reconnecting...&#34;)
                 self.connect_websocket()
@@ -9951,6 +10185,7 @@ result = substrate.subscribe_block_headers(subscription_handler, include_author=
 <li><code><a title="substrateinterface.SubstrateInterface.query" href="#substrateinterface.SubstrateInterface.query">query</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.query_map" href="#substrateinterface.SubstrateInterface.query_map">query_map</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.reload_type_registry" href="#substrateinterface.SubstrateInterface.reload_type_registry">reload_type_registry</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.retrieve_extrinsic_by_identifier" href="#substrateinterface.SubstrateInterface.retrieve_extrinsic_by_identifier">retrieve_extrinsic_by_identifier</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.rpc_request" href="#substrateinterface.SubstrateInterface.rpc_request">rpc_request</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.serialize_constant" href="#substrateinterface.SubstrateInterface.serialize_constant">serialize_constant</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.serialize_module_call" href="#substrateinterface.SubstrateInterface.serialize_module_call">serialize_module_call</a></code></li>
