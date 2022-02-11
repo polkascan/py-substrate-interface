@@ -2169,7 +2169,7 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
 
     def get_extrinsic_identifier(self) -&gt; str:
         &#34;&#34;&#34;
-        Returns the on-chain identifier for this extrinsic in format &#34;&lt;block_number&gt;-&lt;extrinsic_idx&gt;&#34; e.g. 134324-2
+        Returns the on-chain identifier for this extrinsic in format &#34;[block_number]-[extrinsic_idx]&#34; e.g. 134324-2
         Returns
         -------
         str
@@ -2737,7 +2737,7 @@ def weight(self) -&gt; int:
 <span>def <span class="ident">get_extrinsic_identifier</span></span>(<span>self) ‑> str</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Returns the on-chain identifier for this extrinsic in format "<block_number>-<extrinsic_idx>" e.g. 134324-2
+<div class="desc"><p>Returns the on-chain identifier for this extrinsic in format "[block_number]-[extrinsic_idx]" e.g. 134324-2
 Returns</p>
 <hr>
 <dl>
@@ -2750,7 +2750,7 @@ Returns</p>
 </summary>
 <pre><code class="python">def get_extrinsic_identifier(self) -&gt; str:
     &#34;&#34;&#34;
-    Returns the on-chain identifier for this extrinsic in format &#34;&lt;block_number&gt;-&lt;extrinsic_idx&gt;&#34; e.g. 134324-2
+    Returns the on-chain identifier for this extrinsic in format &#34;[block_number]-[extrinsic_idx]&#34; e.g. 134324-2
     Returns
     -------
     str
@@ -3104,7 +3104,7 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
             cls, suri: str, ss58_format: Optional[int] = 42, crypto_type=KeypairType.SR25519
     ) -&gt; &#39;Keypair&#39;:
         &#34;&#34;&#34;
-        Creates Keypair for specified suri in following format: `&lt;mnemonic&gt;/&lt;soft-path&gt;//&lt;hard-path&gt;`
+        Creates Keypair for specified suri in following format: `[mnemonic]/[soft-path]//[hard-path]`
 
         Parameters
         ----------
@@ -3463,7 +3463,7 @@ def create_from_seed(
 <span>def <span class="ident">create_from_uri</span></span>(<span>suri: str, ss58_format: Optional[int] = 42, crypto_type=1) ‑> <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a></span>
 </code></dt>
 <dd>
-<div class="desc"><p>Creates Keypair for specified suri in following format: <code>&lt;mnemonic&gt;/&lt;soft-path&gt;//&lt;hard-path&gt;</code></p>
+<div class="desc"><p>Creates Keypair for specified suri in following format: <code>[mnemonic]/[soft-path]//[hard-path]</code></p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt>suri:</dt>
@@ -3486,7 +3486,7 @@ def create_from_uri(
         cls, suri: str, ss58_format: Optional[int] = 42, crypto_type=KeypairType.SR25519
 ) -&gt; &#39;Keypair&#39;:
     &#34;&#34;&#34;
-    Creates Keypair for specified suri in following format: `&lt;mnemonic&gt;/&lt;soft-path&gt;//&lt;hard-path&gt;`
+    Creates Keypair for specified suri in following format: `[mnemonic]/[soft-path]//[hard-path]`
 
     Parameters
     ----------
@@ -5020,7 +5020,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
         ----------
         call: GenericCall to create extrinsic for
         keypair: Keypair used to sign the extrinsic
-        era: Specify mortality in blocks in follow format: {&#39;period&#39;: &lt;amount_blocks&gt;} If omitted the extrinsic is immortal
+        era: Specify mortality in blocks in follow format: {&#39;period&#39;: [amount_blocks]} If omitted the extrinsic is immortal
         nonce: nonce to include in extrinsics, if omitted the current nonce is retrieved on-chain
         tip: The tip for the block author to gain priority during network congestion
         tip_asset_id: Optional asset ID with which to pay the tip
@@ -5995,7 +5995,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
     def retrieve_extrinsic_by_identifier(self, extrinsic_identifier: str) -&gt; &#34;ExtrinsicReceipt&#34;:
         &#34;&#34;&#34;
-        Retrieve an extrinsic by its identifier in format &#34;&lt;block_number&gt;-&lt;extrinsic_index&gt;&#34; e.g. 333456-4
+        Retrieve an extrinsic by its identifier in format &#34;[block_number]-[extrinsic_index]&#34; e.g. 333456-4
 
         Parameters
         ----------
@@ -6701,7 +6701,7 @@ automatically at moment of <code>block_hash</code>, or chain tip if omitted.</p>
 <dd>&nbsp;</dd>
 <dt><strong><code>keypair</code></strong> :&ensp;<code><a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a> used to sign the extrinsic</code></dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>era</code></strong> :&ensp;<code>Specify mortality in blocks in follow format: {'period': &lt;amount_blocks&gt;} If omitted the extrinsic is immortal</code></dt>
+<dt><strong><code>era</code></strong> :&ensp;<code>Specify mortality in blocks in follow format: {'period': [amount_blocks]} If omitted the extrinsic is immortal</code></dt>
 <dd>&nbsp;</dd>
 <dt><strong><code>nonce</code></strong> :&ensp;<code>nonce to include in extrinsics, if omitted the current nonce is retrieved on-chain</code></dt>
 <dd>&nbsp;</dd>
@@ -6730,7 +6730,7 @@ automatically at moment of <code>block_hash</code>, or chain tip if omitted.</p>
     ----------
     call: GenericCall to create extrinsic for
     keypair: Keypair used to sign the extrinsic
-    era: Specify mortality in blocks in follow format: {&#39;period&#39;: &lt;amount_blocks&gt;} If omitted the extrinsic is immortal
+    era: Specify mortality in blocks in follow format: {&#39;period&#39;: [amount_blocks]} If omitted the extrinsic is immortal
     nonce: nonce to include in extrinsics, if omitted the current nonce is retrieved on-chain
     tip: The tip for the block author to gain priority during network congestion
     tip_asset_id: Optional asset ID with which to pay the tip
@@ -9405,7 +9405,7 @@ changes in type definitions when a runtime upgrade occurred</p>
 <span>def <span class="ident">retrieve_extrinsic_by_identifier</span></span>(<span>self, extrinsic_identifier: str) ‑> <a title="substrateinterface.base.ExtrinsicReceipt" href="base.html#substrateinterface.base.ExtrinsicReceipt">ExtrinsicReceipt</a></span>
 </code></dt>
 <dd>
-<div class="desc"><p>Retrieve an extrinsic by its identifier in format "<block_number>-<extrinsic_index>" e.g. 333456-4</p>
+<div class="desc"><p>Retrieve an extrinsic by its identifier in format "[block_number]-[extrinsic_index]" e.g. 333456-4</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>extrinsic_identifier</code></strong></dt>
@@ -9422,7 +9422,7 @@ changes in type definitions when a runtime upgrade occurred</p>
 </summary>
 <pre><code class="python">def retrieve_extrinsic_by_identifier(self, extrinsic_identifier: str) -&gt; &#34;ExtrinsicReceipt&#34;:
     &#34;&#34;&#34;
-    Retrieve an extrinsic by its identifier in format &#34;&lt;block_number&gt;-&lt;extrinsic_index&gt;&#34; e.g. 333456-4
+    Retrieve an extrinsic by its identifier in format &#34;[block_number]-[extrinsic_index]&#34; e.g. 333456-4
 
     Parameters
     ----------

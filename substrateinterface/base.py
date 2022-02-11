@@ -209,7 +209,7 @@ class Keypair:
             cls, suri: str, ss58_format: Optional[int] = 42, crypto_type=KeypairType.SR25519
     ) -> 'Keypair':
         """
-        Creates Keypair for specified suri in following format: `<mnemonic>/<soft-path>//<hard-path>`
+        Creates Keypair for specified suri in following format: `[mnemonic]/[soft-path]//[hard-path]`
 
         Parameters
         ----------
@@ -1635,7 +1635,7 @@ class SubstrateInterface:
         ----------
         call: GenericCall to create extrinsic for
         keypair: Keypair used to sign the extrinsic
-        era: Specify mortality in blocks in follow format: {'period': <amount_blocks>} If omitted the extrinsic is immortal
+        era: Specify mortality in blocks in follow format: {'period': [amount_blocks]} If omitted the extrinsic is immortal
         nonce: nonce to include in extrinsics, if omitted the current nonce is retrieved on-chain
         tip: The tip for the block author to gain priority during network congestion
         tip_asset_id: Optional asset ID with which to pay the tip
@@ -2610,7 +2610,7 @@ class SubstrateInterface:
 
     def retrieve_extrinsic_by_identifier(self, extrinsic_identifier: str) -> "ExtrinsicReceipt":
         """
-        Retrieve an extrinsic by its identifier in format "<block_number>-<extrinsic_index>" e.g. 333456-4
+        Retrieve an extrinsic by its identifier in format "[block_number]-[extrinsic_index]" e.g. 333456-4
 
         Parameters
         ----------
@@ -3029,7 +3029,7 @@ class ExtrinsicReceipt:
 
     def get_extrinsic_identifier(self) -> str:
         """
-        Returns the on-chain identifier for this extrinsic in format "<block_number>-<extrinsic_idx>" e.g. 134324-2
+        Returns the on-chain identifier for this extrinsic in format "[block_number]-[extrinsic_idx]" e.g. 134324-2
         Returns
         -------
         str
