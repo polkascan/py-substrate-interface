@@ -18,6 +18,7 @@ import unittest
 from unittest.mock import MagicMock
 
 from substrateinterface import SubstrateInterface
+from substrateinterface.exceptions import StorageFunctionNotFound
 from test import settings
 
 
@@ -66,7 +67,7 @@ class QueryTestCase(unittest.TestCase):
             }, result.value)
 
     def test_non_existing_query(self):
-        with self.assertRaises(ValueError) as cm:
+        with self.assertRaises(StorageFunctionNotFound) as cm:
             self.kusama_substrate.query("Unknown", "StorageFunction")
 
         self.assertEqual('Storage function "Unknown.StorageFunction" not found', str(cm.exception))
@@ -96,6 +97,18 @@ class QueryTestCase(unittest.TestCase):
     def test_identity_hasher(self):
         result = self.kusama_substrate.query("Claims", "Claims", ["0x00000a9c44f24e314127af63ae55b864a28d7aee"])
         self.assertEqual(45880000000000, result.value)
+
+    def test_well_known_keys_result(self):
+        result = self.kusama_substrate.query("Substrate", "Code")
+        self.assertIsNotNone(result.value)
+
+    def test_well_known_keys_default(self):
+        result = self.kusama_substrate.query("Substrate", "HeapPages")
+        self.assertEqual(0, result.value)
+
+    def test_well_known_keys_not_found(self):
+        with self.assertRaises(StorageFunctionNotFound):
+            self.kusama_substrate.query("Substrate", "Unknown")
 
 
 if __name__ == '__main__':

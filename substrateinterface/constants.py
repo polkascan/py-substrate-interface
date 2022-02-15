@@ -18,3 +18,24 @@ STORAGE_HASH_SYSTEM_EVENTS = "0xcc956bdb7605e3547539f321ac2bc95c"
 STORAGE_HASH_SYSTEM_EVENTS_V9 = "0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7"
 
 DEV_PHRASE = 'bottom drive obey lake curtain smoke basket hold race lonely fit walk'
+
+WELL_KNOWN_STORAGE_KEYS = {
+    "Code": {
+        "storage_key": "0x3a636f6465",
+        "value_type_string": "RawBytes",
+        "docs": "Wasm code of the runtime",
+        "default": None
+    },
+    "HeapPages": {
+        "storage_key": "0x3a686561707061676573",
+        "value_type_string": "u64",
+        "docs": "Number of wasm linear memory pages required for execution of the runtime.",
+        "default": "0x0000000000000000"
+    },
+    "ExtrinsicIndex": {
+        "storage_key": "0x3a65787472696e7369635f696e646578",
+        "value_type_string": "u32",
+        "docs": "Number of wasm linear memory pages required for execution of the runtime.",
+        "default": "0x00000000"
+    },
+}
