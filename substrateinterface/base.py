@@ -1268,6 +1268,10 @@ class SubstrateInterface:
 
         self.init_runtime(block_hash=block_hash)
 
+        if module == 'Substrate':
+            # Search for 'well-known' storage keys
+            return self.__query_well_known(storage_function, block_hash)
+
         # Search storage call in metadata
         metadata_module = self.get_metadata_module(module, block_hash=block_hash)
         storage_item = self.get_metadata_storage_function(module, storage_function, block_hash=block_hash)
@@ -1369,6 +1373,37 @@ class SubstrateInterface:
                     return obj
 
         return None
+
+    def __query_well_known(self, name: str, block_hash: str) -> Optional[ScaleType]:
+        """
+        Query well-known storage keys as defined in Substrate
+
+        Parameters
+        ----------
+        name
+        block_hash
+
+        Returns
+        -------
+        Optional[ScaleType]
+        """
+        if name not in WELL_KNOWN_STORAGE_KEYS:
+            raise StorageFunctionNotFound(f'Well known storage key for "{name}" not found')
+
+        result = self.get_storage_by_key(block_hash, WELL_KNOWN_STORAGE_KEYS[name]['storage_key'])
+        obj = self.runtime_config.create_scale_object(
+            WELL_KNOWN_STORAGE_KEYS[name]['value_type_string']
+        )
+        if result:
+            obj.decode(ScaleBytes(result))
+            obj.meta_info = {'result_found': True}
+            return obj
+        elif WELL_KNOWN_STORAGE_KEYS[name]['default']:
+            obj.decode(ScaleBytes(WELL_KNOWN_STORAGE_KEYS[name]['default']))
+            obj.meta_info = {'result_found': False}
+            return obj
+        else:
+            return None
 
     def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
         """
