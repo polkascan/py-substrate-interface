@@ -22,10 +22,10 @@ import json
 import logging
 import re
 
-import eth_keys
 import requests
 from typing import Optional, Union
 
+from eth_keys.datatypes import PrivateKey
 from websocket import create_connection, WebSocketConnectionClosedException
 
 from scalecodec.base import ScaleDecoder, ScaleBytes, RuntimeConfigurationObject, ScaleType
@@ -34,7 +34,7 @@ from scalecodec.type_registry import load_type_registry_preset
 from scalecodec.updater import update_type_registries
 
 from .key import extract_derive_path
-from .utils.ecdsa_helpers import mnemonic_to_ecdsa_private_key, ecdsa_verify
+from .utils.ecdsa_helpers import mnemonic_to_ecdsa_private_key, ecdsa_verify, ecdsa_sign
 from .utils.hasher import blake2_256, two_x64_concat, xxh128, blake2_128, blake2_128_concat, identity
 from .exceptions import SubstrateRequestException, ConfigurationError, StorageFunctionNotFound, BlockNotFound, \
     ExtrinsicNotFound
@@ -61,15 +61,15 @@ class Keypair:
     def __init__(self, ss58_address: str = None, public_key: bytes = None, private_key: Union[bytes, str] = None,
                  ss58_format: int = None, seed_hex: str = None, crypto_type: int = KeypairType.SR25519):
         """
-        Allows generation of Keypairs from a variety of input combination, such as a public/private key combination, a
-        mnemonic or a uri containing soft and hard derivation paths. With these Keypairs data can be signed and verified
+        Allows generation of Keypairs from a variety of input combination, such as a public/private key combination,
+        mnemonic or URI containing soft and hard derivation paths. With these Keypairs data can be signed and verified
 
         Parameters
         ----------
         ss58_address: Substrate address
         public_key: hex string or bytes of public_key key
         private_key: hex string or bytes of private key
-        ss58_format: Substrate address format, default = 42
+        ss58_format: Substrate address format, default to 42 when omitted
         seed_hex: hex string of seed
         crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
         """
@@ -90,7 +90,7 @@ class Keypair:
                 raise ValueError('Secret key should be 64 bytes long')
 
             if self.crypto_type == KeypairType.ECDSA:
-                private_key_obj = eth_keys.keys.PrivateKey(private_key)
+                private_key_obj = PrivateKey(private_key)
                 public_key = private_key_obj.public_key.to_address()
                 ss58_address = private_key_obj.public_key.to_checksum_address()
 
@@ -332,8 +332,7 @@ class Keypair:
             signature = ed25519_dalek.ed_sign(self.public_key, self.private_key, data)
 
         elif self.crypto_type == KeypairType.ECDSA:
-            signer = eth_keys.keys.PrivateKey(self.private_key)
-            signature = signer.sign_msg(data).to_bytes()
+            signature = ecdsa_sign(self.private_key, data)
 
         else:
             raise ConfigurationError("Crypto type not supported")
