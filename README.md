@@ -64,8 +64,9 @@ substrate = SubstrateInterface(
 When only an `url` is provided, it tries to determine certain properties like `ss58_format` and 
 `type_registry_preset` automatically by calling the RPC method `system_properties`. 
 
-At the moment this will work for Polkadot, Kusama, Kulupu and Westend nodes, for other chains the `ss58_format` 
-(default 42) and  `type_registry` (defaults to the latest vanilla Substrate types) should be set manually. 
+At the moment this will work for most `MetadataV14` and above chains like Polkadot, Kusama, Acala, Moonbeam, for other 
+chains the `ss58_format` (default 42) and  `type_registry` (defaults to the latest vanilla Substrate types) should be 
+set manually. 
 
 ### Manually set required properties
 
@@ -117,39 +118,6 @@ substrate = SubstrateInterface(
     url="ws://127.0.0.1:9944",
     ss58_format=42,
     type_registry_preset='substrate-node-template'
-)
- 
-```
-
-If custom types are introduced in the Substrate chain, the following example will add compatibility by creating a custom type 
-registry JSON file and including this during initialization:
-
-```json
-{
-  "runtime_id": 2,
-  "types": {
-    "MyCustomInt": "u32",
-    "MyStruct": {
-      "type": "struct",
-      "type_mapping": [
-         ["account", "AccountId"],
-         ["message", "Vec<u8>"]
-      ]
-    }
-  },
-  "versioning": [
-  ]
-}
-```
-
-```python
-custom_type_registry = load_type_registry_file("my-custom-types.json")
-
-substrate = SubstrateInterface(
-    url="ws://127.0.0.1:9944",
-    ss58_format=42,
-    type_registry_preset='substrate-node-template',
-    type_registry=custom_type_registry
 )
  
 ```
@@ -238,7 +206,7 @@ result = substrate.subscribe_block_headers(subscription_handler, include_author=
 The modules and storage functions are provided in the metadata (see `substrate.get_metadata_storage_functions()`),
 parameters will be automatically converted to SCALE-bytes (also including decoding of SS58 addresses).
 
-Example: 
+#### Example 
 
 ```python
 result = substrate.query(
@@ -251,7 +219,7 @@ print(result.value['nonce']) #  7695
 print(result.value['data']['free']) # 635278638077956496
 ```
 
-Or get the account info at a specific block hash:
+#### Get the account info at a specific block hash:
 
 ```python
 account_info = substrate.query(
@@ -265,6 +233,25 @@ print(account_info['nonce'].value) #  7673
 print(account_info['data']['free'].value) # 637747267365404068
 ```
 
+#### Type information about how to format parameters
+
+To retrieve more information about how to format the parameters of a storage function:
+
+```python
+storage_function = self.substrate.get_metadata_storage_function("Tokens", "TotalIssuance")
+
+print(storage_function.get_param_info())
+# [{'variant': {'variants': [{'name': 'Token', 'fields': [{'name': None, 'type': 44, 'typeName': 'TokenSymbol', 'docs': []}], 'index': 0, 'docs': [], 'value': {'variant': {'variants': [{'name': 'ACA', 'fields': [], 'index': 0, 'docs': []}, {'name': 'AUSD', 'fields': [], 'index': 1, 'docs': []}, {'name': 'DOT', 'fields': [], 'index': 2, 'docs': []}, {'name': 'LDOT', 'fields': [], 'index': 3, 'docs': []}, {'name': 'RENBTC', 'fields': [], 'index': 20, 'docs': []}, {'name': 'CASH', 'fields': [], 'index': 21, 'docs': []}, {'name': 'KAR', 'fields': [], 'index': 128, 'docs': []}, {'name': 'KUSD', 'fields': [], 'index': 129, 'docs': []}, {'name': 'KSM', 'fields': [], 'index': 130, 'docs': []}, {'name': 'LKSM', 'fields': [], 'index': 131, 'docs': []}, {'name': 'TAI', 'fields': [], 'index': 132, 'docs': []}, {'name': 'BNC', 'fields': [], 'index': 168, 'docs': []}, {'name': 'VSKSM', 'fields': [], 'index': 169, 'docs': []}, {'name': 'PHA', 'fields': [], 'index': 170, 'docs': []}, {'name': 'KINT', 'fields': [], 'index': 171, 'docs': []}, {'name': 'KBTC', 'fields': [], 'index': 172, 'docs': []}]}}}, {'name': 'DexShare', 'fields': [{'name': None, 'type': 45, 'typeName': 'DexShare', 'docs': []}, {'name': None, 'type': 45, 'typeName': 'DexShare', 'docs': []}], 'index': 1, 'docs': [], 'value': {'variant': {'variants': [{'name': 'Token', 'fields': [{'name': None, 'type': 44, 'typeName': 'TokenSymbol', 'docs': []}], 'index': 0, 'docs': [], 'value': {'variant': {'variants': [{'name': 'ACA', 'fields': [], 'index': 0, 'docs': []}, {'name': 'AUSD', 'fields': [], 'index': 1, 'docs': []}, {'name': 'DOT', 'fields': [], 'index': 2, 'docs': []}, {'name': 'LDOT', 'fields': [], 'index': 3, 'docs': []}, {'name': 'RENBTC', 'fields': [], 'index': 20, 'docs': []}, {'name': 'CASH', 'fields': [], 'index': 21, 'docs': []}, {'name': 'KAR', 'fields': [], 'index': 128, 'docs': []}, {'name': 'KUSD', 'fields': [], 'index': 129, 'docs': []}, {'name': 'KSM', 'fields': [], 'index': 130, 'docs': []}, {'name': 'LKSM', 'fields': [], 'index': 131, 'docs': []}, {'name': 'TAI', 'fields': [], 'index': 132, 'docs': []}, {'name': 'BNC', 'fields': [], 'index': 168, 'docs': []}, {'name': 'VSKSM', 'fields': [], 'index': 169, 'docs': []}, {'name': 'PHA', 'fields': [], 'index': 170, 'docs': []}, {'name': 'KINT', 'fields': [], 'index': 171, 'docs': []}, {'name': 'KBTC', 'fields': [], 'index': 172, 'docs': []}]}}}, {'name': 'Erc20', 'fields': [{'name': None, 'type': 46, 'typeName': 'EvmAddress', 'docs': []}], 'index': 1, 'docs': [], 'value': {'composite': {'fields': [{'name': None, 'type': 47, 'typeName': '[u8; 20]', 'docs': [], 'value': {'array': {'len': 20, 'type': 2, 'value': {'primitive': 'u8'}}}}]}}}, {'name': 'LiquidCrowdloan', 'fields': [{'name': None, 'type': 4, 'typeName': 'Lease', 'docs': []}], 'index': 2, 'docs': [], 'value': {'primitive': 'u32'}}, {'name': 'ForeignAsset', 'fields': [{'name': None, 'type': 36, 'typeName': 'ForeignAssetId', 'docs': []}], 'index': 3, 'docs': [], 'value': {'primitive': 'u16'}}]}}}, {'name': 'Erc20', 'fields': [{'name': None, 'type': 46, 'typeName': 'EvmAddress', 'docs': []}], 'index': 2, 'docs': [], 'value': {'composite': {'fields': [{'name': None, 'type': 47, 'typeName': '[u8; 20]', 'docs': [], 'value': {'array': {'len': 20, 'type': 2, 'value': {'primitive': 'u8'}}}}]}}}, {'name': 'StableAssetPoolToken', 'fields': [{'name': None, 'type': 4, 'typeName': 'StableAssetPoolId', 'docs': []}], 'index': 3, 'docs': [], 'value': {'primitive': 'u32'}}, {'name': 'LiquidCrowdloan', 'fields': [{'name': None, 'type': 4, 'typeName': 'Lease', 'docs': []}], 'index': 4, 'docs': [], 'value': {'primitive': 'u32'}}, {'name': 'ForeignAsset', 'fields': [{'name': None, 'type': 36, 'typeName': 'ForeignAssetId', 'docs': []}], 'index': 5, 'docs': [], 'value': {'primitive': 'u16'}}]}}]
+```
+
+The `query_map()` function can also be used to see examples of used parameters:
+
+```python
+result = substrate.query_map("Tokens", "TotalIssuance")
+
+print(list(result))
+# [[<scale_info::43(value={'DexShare': ({'Token': 'KSM'}, {'Token': 'LKSM'})})>, <U128(value=11513623028320124)>], [<scale_info::43(value={'DexShare': ({'Token': 'KUSD'}, {'Token': 'BNC'})})>, <U128(value=2689948474603237982)>], [<scale_info::43(value={'DexShare': ({'Token': 'KSM'}, {'ForeignAsset': 0})})>, <U128(value=5285939253205090)>], [<scale_info::43(value={'Token': 'VSKSM'})>, <U128(value=273783457141483)>], [<scale_info::43(value={'DexShare': ({'Token': 'KAR'}, {'Token': 'KSM'})})>, <U128(value=1175872380578192993)>], [<scale_info::43(value={'DexShare': ({'Token': 'KUSD'}, {'Token': 'KSM'})})>, <U128(value=3857629383220790030)>], [<scale_info::43(value={'DexShare': ({'Token': 'KUSD'}, {'ForeignAsset': 0})})>, <U128(value=494116000924219532)>], [<scale_info::43(value={'Token': 'KSM'})>, <U128(value=77261320750464113)>], [<scale_info::43(value={'Token': 'TAI'})>, <U128(value=10000000000000000000)>], [<scale_info::43(value={'Token': 'LKSM'})>, <U128(value=681009957030687853)>], [<scale_info::43(value={'DexShare': ({'Token': 'KUSD'}, {'Token': 'LKSM'})})>, <U128(value=4873824439975242272)>], [<scale_info::43(value={'Token': 'KUSD'})>, <U128(value=5799665835441836111)>], [<scale_info::43(value={'ForeignAsset': 0})>, <U128(value=2319784932899895)>], [<scale_info::43(value={'DexShare': ({'Token': 'KAR'}, {'Token': 'LKSM'})})>, <U128(value=635158183535133903)>], [<scale_info::43(value={'Token': 'BNC'})>, <U128(value=1163757660576711961)>]]
+```
 
 ### Using ScaleType objects
 
