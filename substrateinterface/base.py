@@ -543,53 +543,6 @@ class SubstrateInterface:
         if self.websocket:
             try:
                 self.websocket.send(json.dumps(payload))
-
-                update_nr = 0
-                json_body = None
-                subscription_id = None
-
-                while json_body is None:
-
-                    self.__rpc_message_queue.append(json.loads(self.websocket.recv()))
-
-                    # Search for subscriptions
-                    for message in self.__rpc_message_queue:
-
-                        # Check if result message is matching request ID
-                        if 'id' in message and message['id'] == request_id:
-
-                            self.__rpc_message_queue.remove(message)
-
-                            # Check if response has error
-                            if 'error' in message:
-                                raise SubstrateRequestException(message['error'])
-
-                            # If result handler is set, pass result through and loop until handler return value is set
-                            if callable(result_handler):
-
-                                # Set subscription ID and only listen to messages containing this ID
-                                subscription_id = message['result']
-                                self.debug_message(f"Websocket subscription [{subscription_id}] created")
-
-                            else:
-                                json_body = message
-
-                    # Process subscription updates
-                    for message in self.__rpc_message_queue:
-                        # Check if message is meant for this subscription
-                        if 'params' in message and message['params']['subscription'] == subscription_id:
-
-                            self.__rpc_message_queue.remove(message)
-
-                            self.debug_message(f"Websocket result [{subscription_id} #{update_nr}]: {message}")
-
-                            # Call result_handler with message for processing
-                            callback_result = result_handler(message, update_nr, subscription_id)
-                            if callback_result is not None:
-                                json_body = callback_result
-
-                            update_nr += 1
-
             except WebSocketConnectionClosedException:
                 if self.config.get('auto_reconnect') and self.url:
                     # Try to reconnect websocket and retry rpc_request
@@ -600,6 +553,52 @@ class SubstrateInterface:
                 else:
                     # websocket connection is externally created, re-raise exception
                     raise
+
+            update_nr = 0
+            json_body = None
+            subscription_id = None
+
+            while json_body is None:
+
+                self.__rpc_message_queue.append(json.loads(self.websocket.recv()))
+
+                # Search for subscriptions
+                for message in self.__rpc_message_queue:
+
+                    # Check if result message is matching request ID
+                    if 'id' in message and message['id'] == request_id:
+
+                        self.__rpc_message_queue.remove(message)
+
+                        # Check if response has error
+                        if 'error' in message:
+                            raise SubstrateRequestException(message['error'])
+
+                        # If result handler is set, pass result through and loop until handler return value is set
+                        if callable(result_handler):
+
+                            # Set subscription ID and only listen to messages containing this ID
+                            subscription_id = message['result']
+                            self.debug_message(f"Websocket subscription [{subscription_id}] created")
+
+                        else:
+                            json_body = message
+
+                # Process subscription updates
+                for message in self.__rpc_message_queue:
+                    # Check if message is meant for this subscription
+                    if 'params' in message and message['params']['subscription'] == subscription_id:
+
+                        self.__rpc_message_queue.remove(message)
+
+                        self.debug_message(f"Websocket result [{subscription_id} #{update_nr}]: {message}")
+
+                        # Call result_handler with message for processing
+                        callback_result = result_handler(message, update_nr, subscription_id)
+                        if callback_result is not None:
+                            json_body = callback_result
+
+                        update_nr += 1
 
         else:
 
