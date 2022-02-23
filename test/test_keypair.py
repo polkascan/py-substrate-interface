@@ -28,11 +28,22 @@ class KeyPairTestCase(unittest.TestCase):
 
     def test_generate_mnemonic(self):
         mnemonic = Keypair.generate_mnemonic()
-        self.assertTrue(bip39_validate(mnemonic))
+        self.assertTrue(Keypair.validate_mnemonic(mnemonic))
 
-    def test_invalid_mnemic(self):
+    def test_valid_mnemonic(self):
+        mnemonic = "old leopard transfer rib spatial phone calm indicate online fire caution review"
+        self.assertTrue(Keypair.validate_mnemonic(mnemonic))
+
+    def test_valid_mnemonic_multi_lang(self):
+        mnemonic = "秘 心 姜 封 迈 走 描 朗 出 莫 人 口"
+        self.assertTrue(Keypair.validate_mnemonic(mnemonic, 'zh-hans'))
+
+        mnemonic = "nation armure tympan devancer temporel capsule ogive médecin acheter narquois abrasif brasier"
+        self.assertTrue(Keypair.validate_mnemonic(mnemonic, 'fr'))
+
+    def test_invalid_mnemonic(self):
         mnemonic = "This is an invalid mnemonic"
-        self.assertFalse(bip39_validate(mnemonic))
+        self.assertFalse(Keypair.validate_mnemonic(mnemonic))
 
     def test_create_sr25519_keypair(self):
         mnemonic = "old leopard transfer rib spatial phone calm indicate online fire caution review"
@@ -67,6 +78,12 @@ class KeyPairTestCase(unittest.TestCase):
     def test_sign_and_verify(self):
         mnemonic = Keypair.generate_mnemonic()
         keypair = Keypair.create_from_mnemonic(mnemonic)
+        signature = keypair.sign("Test123")
+        self.assertTrue(keypair.verify("Test123", signature))
+
+    def test_sign_and_verify_multi_lang(self):
+        mnemonic = Keypair.generate_mnemonic(language_code='fr')
+        keypair = Keypair.create_from_mnemonic(mnemonic, language_code='fr')
         signature = keypair.sign("Test123")
         self.assertTrue(keypair.verify("Test123", signature))
 
