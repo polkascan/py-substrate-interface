@@ -41,7 +41,7 @@ from .exceptions import SubstrateRequestException, ConfigurationError, StorageFu
 from .constants import *
 from .utils.ss58 import ss58_decode, ss58_encode, is_valid_ss58_address
 
-from bip39 import bip39_to_mini_secret, bip39_generate
+from bip39 import bip39_to_mini_secret, bip39_generate, bip39_validate
 import sr25519
 import ed25519_dalek
 
@@ -121,22 +121,40 @@ class Keypair:
         self.mnemonic = None
 
     @classmethod
-    def generate_mnemonic(cls, words: int = 12) -> str:
+    def generate_mnemonic(cls, words: int = 12, language_code: str = 'en') -> str:
         """
         Generates a new seed phrase with given amount of words (default 12)
 
         Parameters
         ----------
         words: The amount of words to generate, valid values are 12, 15, 18, 21 and 24
+        language_code: The language to use, valid values are: 'en', 'zh-hans', 'zh-hant', 'fr', 'it', 'jap', 'ko', 'es'. Defaults to 'en'
 
         Returns
         -------
-        Seed phrase
+        str: Seed phrase
         """
-        return bip39_generate(words)
+        return bip39_generate(words, language_code)
 
     @classmethod
-    def create_from_mnemonic(cls, mnemonic: str, ss58_format=42, crypto_type=KeypairType.SR25519) -> 'Keypair':
+    def validate_mnemonic(cls, mnemonic: str, language_code: str = 'en') -> bool:
+        """
+        Verify if specified mnemonic is valid
+
+        Parameters
+        ----------
+        mnemonic: Seed phrase
+        language_code: The language to use, valid values are: 'en', 'zh-hans', 'zh-hant', 'fr', 'it', 'jap', 'ko', 'es'. Defaults to 'en'
+
+        Returns
+        -------
+        bool
+        """
+        return bip39_validate(mnemonic, language_code)
+
+    @classmethod
+    def create_from_mnemonic(cls, mnemonic: str, ss58_format=42, crypto_type=KeypairType.SR25519,
+                             language_code: str = 'en') -> 'Keypair':
         """
         Create a Keypair for given memonic
 
@@ -145,6 +163,7 @@ class Keypair:
         mnemonic: Seed phrase
         ss58_format: Substrate address format
         crypto_type: Use `KeypairType.SR25519` or `KeypairType.ED25519` cryptography for generating the Keypair
+        language_code: The language to use, valid values are: 'en', 'zh-hans', 'zh-hant', 'fr', 'it', 'jap', 'ko', 'es'. Defaults to 'en'
 
         Returns
         -------
@@ -152,12 +171,14 @@ class Keypair:
         """
 
         if crypto_type == KeypairType.ECDSA:
+            if language_code != 'en':
+                raise ValueError("ECDSA mnemonic only supports english")
 
             private_key = mnemonic_to_ecdsa_private_key(mnemonic)
             keypair = cls.create_from_private_key(private_key, ss58_format=ss58_format, crypto_type=crypto_type)
 
         else:
-            seed_array = bip39_to_mini_secret(mnemonic, "")
+            seed_array = bip39_to_mini_secret(mnemonic, "", language_code)
 
             keypair = cls.create_from_seed(
                 seed_hex=binascii.hexlify(bytearray(seed_array)).decode("ascii"),
@@ -206,7 +227,7 @@ class Keypair:
 
     @classmethod
     def create_from_uri(
-            cls, suri: str, ss58_format: Optional[int] = 42, crypto_type=KeypairType.SR25519
+            cls, suri: str, ss58_format: Optional[int] = 42, crypto_type=KeypairType.SR25519, language_code: str = 'en'
     ) -> 'Keypair':
         """
         Creates Keypair for specified suri in following format: `[mnemonic]/[soft-path]//[hard-path]`
@@ -216,6 +237,7 @@ class Keypair:
         suri:
         ss58_format: Substrate address format
         crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+        language_code: The language to use, valid values are: 'en', 'zh-hans', 'zh-hant', 'fr', 'it', 'jap', 'ko', 'es'. Defaults to 'en'
 
         Returns
         -------
@@ -230,6 +252,9 @@ class Keypair:
         suri_parts = suri_regex.groupdict()
 
         if crypto_type == KeypairType.ECDSA:
+            if language_code != 'en':
+                raise ValueError("ECDSA mnemonic only supports english")
+
             private_key = mnemonic_to_ecdsa_private_key(
                 mnemonic=suri_parts['phrase'],
                 str_derivation_path=suri_parts['path'][1:],
@@ -242,7 +267,7 @@ class Keypair:
                 raise NotImplementedError(f"Passwords in suri not supported for crypto_type '{crypto_type}'")
 
             derived_keypair = cls.create_from_mnemonic(
-                suri_parts['phrase'], ss58_format=ss58_format, crypto_type=crypto_type
+                suri_parts['phrase'], ss58_format=ss58_format, crypto_type=crypto_type, language_code=language_code
             )
 
             if suri_parts['path'] != '':

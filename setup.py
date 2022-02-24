@@ -188,9 +188,9 @@ setup(
         'eth_utils>=1.3.0,<3',
         'pycryptodome>=3.11.0,<4',
         'scalecodec>=1.0.34,<2',
-        'py-sr25519-bindings>=0.1.2,<1',
+        'py-sr25519-bindings>=0.1.4,<1',
         'py-ed25519-bindings>=1.0,<2',
-        'py-bip39-bindings>=0.1.8,<1'
+        'py-bip39-bindings>=0.1.9,<1'
     ],
 
     # List additional groups of dependencies here (e.g. development
