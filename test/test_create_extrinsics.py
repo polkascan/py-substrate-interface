@@ -39,49 +39,14 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
             type_registry_preset='polkadot'
         )
 
-        cls.substrate_v13 = SubstrateInterface(
-            url=settings.POLKADOT_NODE_URL,
-            ss58_format=0,
-            type_registry_preset='polkadot'
-        )
-
         module_path = os.path.dirname(__file__)
         cls.metadata_fixture_dict = load_type_registry_file(
             os.path.join(module_path, 'fixtures', 'metadata_hex.json')
         )
 
-        cls.metadata_v13_obj = cls.substrate_v13.runtime_config.create_scale_object(
-            'MetadataVersioned', data=ScaleBytes(cls.metadata_fixture_dict['V13'])
-        )
-        cls.metadata_v13_obj.decode()
-        cls.substrate_v13.init_runtime()
-        cls.substrate_v13.metadata_decoder = cls.metadata_v13_obj
-
         # Create new keypair
         mnemonic = Keypair.generate_mnemonic()
         cls.keypair = Keypair.create_from_mnemonic(mnemonic)
-
-    def test_create_extrinsic_metadata_v13(self):
-
-        # Create balance transfer call
-        call = self.substrate_v13.compose_call(
-            call_module='Balances',
-            call_function='transfer',
-            call_params={
-                'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
-                'value': 3 * 10 ** 3
-            }
-        )
-
-        extrinsic = self.substrate_v13.create_signed_extrinsic(call=call, keypair=self.keypair, tip=1)
-
-        decoded_extrinsic = self.substrate_v13.create_scale_object("Extrinsic")
-        decoded_extrinsic.decode(extrinsic.data)
-
-        self.assertEqual(decoded_extrinsic['call']['call_module'].name, 'Balances')
-        self.assertEqual(decoded_extrinsic['call']['call_function'].name, 'transfer')
-        self.assertEqual(extrinsic['nonce'], 0)
-        self.assertEqual(extrinsic['tip'], 1)
 
     def test_create_extrinsic_metadata_v14(self):
 
