@@ -128,7 +128,7 @@ class Keypair:
         Parameters
         ----------
         words: The amount of words to generate, valid values are 12, 15, 18, 21 and 24
-        language_code: The language to use, valid values are: 'en', 'zh-hans', 'zh-hant', 'fr', 'it', 'jap', 'ko', 'es'. Defaults to 'en'
+        language_code: The language to use, valid values are: 'en', 'zh-hans', 'zh-hant', 'fr', 'it', 'ja', 'ko', 'es'. Defaults to 'en'
 
         Returns
         -------
@@ -144,7 +144,7 @@ class Keypair:
         Parameters
         ----------
         mnemonic: Seed phrase
-        language_code: The language to use, valid values are: 'en', 'zh-hans', 'zh-hant', 'fr', 'it', 'jap', 'ko', 'es'. Defaults to 'en'
+        language_code: The language to use, valid values are: 'en', 'zh-hans', 'zh-hant', 'fr', 'it', 'ja', 'ko', 'es'. Defaults to 'en'
 
         Returns
         -------
@@ -163,7 +163,7 @@ class Keypair:
         mnemonic: Seed phrase
         ss58_format: Substrate address format
         crypto_type: Use `KeypairType.SR25519` or `KeypairType.ED25519` cryptography for generating the Keypair
-        language_code: The language to use, valid values are: 'en', 'zh-hans', 'zh-hant', 'fr', 'it', 'jap', 'ko', 'es'. Defaults to 'en'
+        language_code: The language to use, valid values are: 'en', 'zh-hans', 'zh-hant', 'fr', 'it', 'ja', 'ko', 'es'. Defaults to 'en'
 
         Returns
         -------
@@ -237,7 +237,7 @@ class Keypair:
         suri:
         ss58_format: Substrate address format
         crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
-        language_code: The language to use, valid values are: 'en', 'zh-hans', 'zh-hant', 'fr', 'it', 'jap', 'ko', 'es'. Defaults to 'en'
+        language_code: The language to use, valid values are: 'en', 'zh-hans', 'zh-hant', 'fr', 'it', 'ja', 'ko', 'es'. Defaults to 'en'
 
         Returns
         -------
