@@ -20,7 +20,7 @@ from substrateinterface.constants import DEV_PHRASE
 from substrateinterface.key import extract_derive_path
 from substrateinterface.exceptions import ConfigurationError
 from scalecodec.base import ScaleBytes
-from substrateinterface import Keypair, KeypairType
+from substrateinterface import Keypair, KeypairType, MnemonicLanguageCode
 from bip39 import bip39_validate
 
 
@@ -36,10 +36,10 @@ class KeyPairTestCase(unittest.TestCase):
 
     def test_valid_mnemonic_multi_lang(self):
         mnemonic = "秘 心 姜 封 迈 走 描 朗 出 莫 人 口"
-        self.assertTrue(Keypair.validate_mnemonic(mnemonic, 'zh-hans'))
+        self.assertTrue(Keypair.validate_mnemonic(mnemonic, MnemonicLanguageCode.CHINESE_SIMPLIFIED))
 
         mnemonic = "nation armure tympan devancer temporel capsule ogive médecin acheter narquois abrasif brasier"
-        self.assertTrue(Keypair.validate_mnemonic(mnemonic, 'fr'))
+        self.assertTrue(Keypair.validate_mnemonic(mnemonic, MnemonicLanguageCode.FRENCH))
 
     def test_invalid_mnemonic(self):
         mnemonic = "This is an invalid mnemonic"
@@ -82,8 +82,8 @@ class KeyPairTestCase(unittest.TestCase):
         self.assertTrue(keypair.verify("Test123", signature))
 
     def test_sign_and_verify_multi_lang(self):
-        mnemonic = Keypair.generate_mnemonic(language_code='fr')
-        keypair = Keypair.create_from_mnemonic(mnemonic, language_code='fr')
+        mnemonic = Keypair.generate_mnemonic(language_code=MnemonicLanguageCode.FRENCH)
+        keypair = Keypair.create_from_mnemonic(mnemonic, language_code=MnemonicLanguageCode.FRENCH)
         signature = keypair.sign("Test123")
         self.assertTrue(keypair.verify("Test123", signature))
 
