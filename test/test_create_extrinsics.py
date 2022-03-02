@@ -70,38 +70,6 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
         self.assertEqual(extrinsic['nonce'], 0)
         self.assertEqual(extrinsic['tip'], 1)
 
-    def test_create_balance_transfer(self):
-
-        for substrate in [self.kusama_substrate, self.polkadot_substrate]:
-
-            # Create balance transfer call
-            call = substrate.compose_call(
-                call_module='Balances',
-                call_function='transfer',
-                call_params={
-                    'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
-                    'value': 3 * 10 ** 3
-                }
-            )
-
-            extrinsic = substrate.create_signed_extrinsic(call=call, keypair=self.keypair)
-
-            self.assertEqual(extrinsic['address'].value, f'0x{self.keypair.public_key.hex()}')
-            self.assertEqual(extrinsic['call']['call_module'].name, 'Balances')
-            self.assertEqual(extrinsic['call']['call_function'].name, 'transfer')
-
-            # Randomly created account should always have 0 nonce, otherwise account already exists
-            self.assertEqual(extrinsic['nonce'].value, 0)
-
-            try:
-                substrate.submit_extrinsic(extrinsic)
-
-                self.fail('Should raise no funds to pay fees exception')
-
-            except SubstrateRequestException as e:
-                # Extrinsic should be successful if account had balance, eitherwise 'Bad proof' error should be raised
-                pass
-
     def test_create_mortal_extrinsic(self):
 
         for substrate in [self.kusama_substrate, self.polkadot_substrate]:
