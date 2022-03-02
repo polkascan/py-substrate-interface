@@ -45,7 +45,28 @@
 STORAGE_HASH_SYSTEM_EVENTS = &#34;0xcc956bdb7605e3547539f321ac2bc95c&#34;
 STORAGE_HASH_SYSTEM_EVENTS_V9 = &#34;0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7&#34;
 
-DEV_PHRASE = &#39;bottom drive obey lake curtain smoke basket hold race lonely fit walk&#39;</code></pre>
+DEV_PHRASE = &#39;bottom drive obey lake curtain smoke basket hold race lonely fit walk&#39;
+
+WELL_KNOWN_STORAGE_KEYS = {
+    &#34;Code&#34;: {
+        &#34;storage_key&#34;: &#34;0x3a636f6465&#34;,
+        &#34;value_type_string&#34;: &#34;RawBytes&#34;,
+        &#34;docs&#34;: &#34;Wasm code of the runtime&#34;,
+        &#34;default&#34;: None
+    },
+    &#34;HeapPages&#34;: {
+        &#34;storage_key&#34;: &#34;0x3a686561707061676573&#34;,
+        &#34;value_type_string&#34;: &#34;u64&#34;,
+        &#34;docs&#34;: &#34;Number of wasm linear memory pages required for execution of the runtime.&#34;,
+        &#34;default&#34;: &#34;0x0000000000000000&#34;
+    },
+    &#34;ExtrinsicIndex&#34;: {
+        &#34;storage_key&#34;: &#34;0x3a65787472696e7369635f696e646578&#34;,
+        &#34;value_type_string&#34;: &#34;u32&#34;,
+        &#34;docs&#34;: &#34;Number of wasm linear memory pages required for execution of the runtime.&#34;,
+        &#34;default&#34;: &#34;0x00000000&#34;
+    },
+}</code></pre>
 </details>
 </section>
 <section>

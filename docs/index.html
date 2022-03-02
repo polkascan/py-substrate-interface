@@ -2930,8 +2930,8 @@ Returns</p>
 <span>(</span><span>ss58_address: str = None, public_key: bytes = None, private_key: Union[bytes, str] = None, ss58_format: int = None, seed_hex: str = None, crypto_type: int = 1)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Allows generation of Keypairs from a variety of input combination, such as a public/private key combination, a
-mnemonic or a uri containing soft and hard derivation paths. With these Keypairs data can be signed and verified</p>
+<div class="desc"><p>Allows generation of Keypairs from a variety of input combination, such as a public/private key combination,
+mnemonic or URI containing soft and hard derivation paths. With these Keypairs data can be signed and verified</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>ss58_address</code></strong> :&ensp;<code>Substrate address</code></dt>
@@ -2940,7 +2940,7 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
 <dd>&nbsp;</dd>
 <dt><strong><code>private_key</code></strong> :&ensp;<code>hex string</code> or <code>bytes</code> of <code>private <a title="substrateinterface.key" href="key.html">substrateinterface.key</a></code></dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>ss58_format</code></strong> :&ensp;<code>Substrate address format</code>, default <code>= 42</code></dt>
+<dt><strong><code>ss58_format</code></strong> :&ensp;<code>Substrate address format</code>, default <code>to 42 when omitted</code></dt>
 <dd>&nbsp;</dd>
 <dt><strong><code>seed_hex</code></strong> :&ensp;<code>hex string</code> of <code>seed</code></dt>
 <dd>&nbsp;</dd>
@@ -2956,15 +2956,15 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
     def __init__(self, ss58_address: str = None, public_key: bytes = None, private_key: Union[bytes, str] = None,
                  ss58_format: int = None, seed_hex: str = None, crypto_type: int = KeypairType.SR25519):
         &#34;&#34;&#34;
-        Allows generation of Keypairs from a variety of input combination, such as a public/private key combination, a
-        mnemonic or a uri containing soft and hard derivation paths. With these Keypairs data can be signed and verified
+        Allows generation of Keypairs from a variety of input combination, such as a public/private key combination,
+        mnemonic or URI containing soft and hard derivation paths. With these Keypairs data can be signed and verified
 
         Parameters
         ----------
         ss58_address: Substrate address
         public_key: hex string or bytes of public_key key
         private_key: hex string or bytes of private key
-        ss58_format: Substrate address format, default = 42
+        ss58_format: Substrate address format, default to 42 when omitted
         seed_hex: hex string of seed
         crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
         &#34;&#34;&#34;
@@ -2985,7 +2985,7 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
                 raise ValueError(&#39;Secret key should be 64 bytes long&#39;)
 
             if self.crypto_type == KeypairType.ECDSA:
-                private_key_obj = eth_keys.keys.PrivateKey(private_key)
+                private_key_obj = PrivateKey(private_key)
                 public_key = private_key_obj.public_key.to_address()
                 ss58_address = private_key_obj.public_key.to_checksum_address()
 
@@ -3016,22 +3016,40 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
         self.mnemonic = None
 
     @classmethod
-    def generate_mnemonic(cls, words: int = 12) -&gt; str:
+    def generate_mnemonic(cls, words: int = 12, language_code: str = MnemonicLanguageCode.ENGLISH) -&gt; str:
         &#34;&#34;&#34;
         Generates a new seed phrase with given amount of words (default 12)
 
         Parameters
         ----------
         words: The amount of words to generate, valid values are 12, 15, 18, 21 and 24
+        language_code: The language to use, valid values are: &#39;en&#39;, &#39;zh-hans&#39;, &#39;zh-hant&#39;, &#39;fr&#39;, &#39;it&#39;, &#39;ja&#39;, &#39;ko&#39;, &#39;es&#39;. Defaults to `MnemonicLanguageCode.ENGLISH`
 
         Returns
         -------
-        Seed phrase
+        str: Seed phrase
         &#34;&#34;&#34;
-        return bip39_generate(words)
+        return bip39_generate(words, language_code)
 
     @classmethod
-    def create_from_mnemonic(cls, mnemonic: str, ss58_format=42, crypto_type=KeypairType.SR25519) -&gt; &#39;Keypair&#39;:
+    def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageCode.ENGLISH) -&gt; bool:
+        &#34;&#34;&#34;
+        Verify if specified mnemonic is valid
+
+        Parameters
+        ----------
+        mnemonic: Seed phrase
+        language_code: The language to use, valid values are: &#39;en&#39;, &#39;zh-hans&#39;, &#39;zh-hant&#39;, &#39;fr&#39;, &#39;it&#39;, &#39;ja&#39;, &#39;ko&#39;, &#39;es&#39;. Defaults to `MnemonicLanguageCode.ENGLISH`
+
+        Returns
+        -------
+        bool
+        &#34;&#34;&#34;
+        return bip39_validate(mnemonic, language_code)
+
+    @classmethod
+    def create_from_mnemonic(cls, mnemonic: str, ss58_format=42, crypto_type=KeypairType.SR25519,
+                             language_code: str = MnemonicLanguageCode.ENGLISH) -&gt; &#39;Keypair&#39;:
         &#34;&#34;&#34;
         Create a Keypair for given memonic
 
@@ -3040,6 +3058,7 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
         mnemonic: Seed phrase
         ss58_format: Substrate address format
         crypto_type: Use `KeypairType.SR25519` or `KeypairType.ED25519` cryptography for generating the Keypair
+        language_code: The language to use, valid values are: &#39;en&#39;, &#39;zh-hans&#39;, &#39;zh-hant&#39;, &#39;fr&#39;, &#39;it&#39;, &#39;ja&#39;, &#39;ko&#39;, &#39;es&#39;. Defaults to `MnemonicLanguageCode.ENGLISH`
 
         Returns
         -------
@@ -3047,12 +3066,14 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
         &#34;&#34;&#34;
 
         if crypto_type == KeypairType.ECDSA:
+            if language_code != MnemonicLanguageCode.ENGLISH:
+                raise ValueError(&#34;ECDSA mnemonic only supports english&#34;)
 
             private_key = mnemonic_to_ecdsa_private_key(mnemonic)
             keypair = cls.create_from_private_key(private_key, ss58_format=ss58_format, crypto_type=crypto_type)
 
         else:
-            seed_array = bip39_to_mini_secret(mnemonic, &#34;&#34;)
+            seed_array = bip39_to_mini_secret(mnemonic, &#34;&#34;, language_code)
 
             keypair = cls.create_from_seed(
                 seed_hex=binascii.hexlify(bytearray(seed_array)).decode(&#34;ascii&#34;),
@@ -3101,7 +3122,7 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
 
     @classmethod
     def create_from_uri(
-            cls, suri: str, ss58_format: Optional[int] = 42, crypto_type=KeypairType.SR25519
+            cls, suri: str, ss58_format: Optional[int] = 42, crypto_type=KeypairType.SR25519, language_code: str = MnemonicLanguageCode.ENGLISH
     ) -&gt; &#39;Keypair&#39;:
         &#34;&#34;&#34;
         Creates Keypair for specified suri in following format: `[mnemonic]/[soft-path]//[hard-path]`
@@ -3111,6 +3132,7 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
         suri:
         ss58_format: Substrate address format
         crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+        language_code: The language to use, valid values are: &#39;en&#39;, &#39;zh-hans&#39;, &#39;zh-hant&#39;, &#39;fr&#39;, &#39;it&#39;, &#39;ja&#39;, &#39;ko&#39;, &#39;es&#39;. Defaults to `MnemonicLanguageCode.ENGLISH`
 
         Returns
         -------
@@ -3125,6 +3147,9 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
         suri_parts = suri_regex.groupdict()
 
         if crypto_type == KeypairType.ECDSA:
+            if language_code != MnemonicLanguageCode.ENGLISH:
+                raise ValueError(&#34;ECDSA mnemonic only supports english&#34;)
+
             private_key = mnemonic_to_ecdsa_private_key(
                 mnemonic=suri_parts[&#39;phrase&#39;],
                 str_derivation_path=suri_parts[&#39;path&#39;][1:],
@@ -3137,7 +3162,7 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
                 raise NotImplementedError(f&#34;Passwords in suri not supported for crypto_type &#39;{crypto_type}&#39;&#34;)
 
             derived_keypair = cls.create_from_mnemonic(
-                suri_parts[&#39;phrase&#39;], ss58_format=ss58_format, crypto_type=crypto_type
+                suri_parts[&#39;phrase&#39;], ss58_format=ss58_format, crypto_type=crypto_type, language_code=language_code
             )
 
             if suri_parts[&#39;path&#39;] != &#39;&#39;:
@@ -3227,8 +3252,7 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
             signature = ed25519_dalek.ed_sign(self.public_key, self.private_key, data)
 
         elif self.crypto_type == KeypairType.ECDSA:
-            signer = eth_keys.keys.PrivateKey(self.private_key)
-            signature = signer.sign_msg(data).to_bytes()
+            signature = ecdsa_sign(self.private_key, data)
 
         else:
             raise ConfigurationError(&#34;Crypto type not supported&#34;)
@@ -3289,7 +3313,7 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
 <h3>Static methods</h3>
 <dl>
 <dt id="substrateinterface.Keypair.create_from_mnemonic"><code class="name flex">
-<span>def <span class="ident">create_from_mnemonic</span></span>(<span>mnemonic: str, ss58_format=42, crypto_type=1) ‑> <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a></span>
+<span>def <span class="ident">create_from_mnemonic</span></span>(<span>mnemonic: str, ss58_format=42, crypto_type=1, language_code: str = 'en') ‑> <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create a Keypair for given memonic</p>
@@ -3300,6 +3324,8 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
 <dt><strong><code>ss58_format</code></strong> :&ensp;<code>Substrate address format</code></dt>
 <dd>&nbsp;</dd>
 <dt><strong><code>crypto_type</code></strong> :&ensp;<code>Use </code>KeypairType.SR25519<code> or </code>KeypairType.ED25519<code> cryptography for generating the <a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a></code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>language_code</code></strong> :&ensp;<code>The language to use, valid values are: 'en', 'zh-hans', 'zh-hant', 'fr', 'it', 'ja', 'ko', 'es'. Defaults to</code>MnemonicLanguageCode.ENGLISH``</dt>
 <dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -3312,7 +3338,8 @@ mnemonic or a uri containing soft and hard derivation paths. With these Keypairs
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
-def create_from_mnemonic(cls, mnemonic: str, ss58_format=42, crypto_type=KeypairType.SR25519) -&gt; &#39;Keypair&#39;:
+def create_from_mnemonic(cls, mnemonic: str, ss58_format=42, crypto_type=KeypairType.SR25519,
+                         language_code: str = MnemonicLanguageCode.ENGLISH) -&gt; &#39;Keypair&#39;:
     &#34;&#34;&#34;
     Create a Keypair for given memonic
 
@@ -3321,6 +3348,7 @@ def create_from_mnemonic(cls, mnemonic: str, ss58_format=42, crypto_type=Keypair
     mnemonic: Seed phrase
     ss58_format: Substrate address format
     crypto_type: Use `KeypairType.SR25519` or `KeypairType.ED25519` cryptography for generating the Keypair
+    language_code: The language to use, valid values are: &#39;en&#39;, &#39;zh-hans&#39;, &#39;zh-hant&#39;, &#39;fr&#39;, &#39;it&#39;, &#39;ja&#39;, &#39;ko&#39;, &#39;es&#39;. Defaults to `MnemonicLanguageCode.ENGLISH`
 
     Returns
     -------
@@ -3328,12 +3356,14 @@ def create_from_mnemonic(cls, mnemonic: str, ss58_format=42, crypto_type=Keypair
     &#34;&#34;&#34;
 
     if crypto_type == KeypairType.ECDSA:
+        if language_code != MnemonicLanguageCode.ENGLISH:
+            raise ValueError(&#34;ECDSA mnemonic only supports english&#34;)
 
         private_key = mnemonic_to_ecdsa_private_key(mnemonic)
         keypair = cls.create_from_private_key(private_key, ss58_format=ss58_format, crypto_type=crypto_type)
 
     else:
-        seed_array = bip39_to_mini_secret(mnemonic, &#34;&#34;)
+        seed_array = bip39_to_mini_secret(mnemonic, &#34;&#34;, language_code)
 
         keypair = cls.create_from_seed(
             seed_hex=binascii.hexlify(bytearray(seed_array)).decode(&#34;ascii&#34;),
@@ -3460,7 +3490,7 @@ def create_from_seed(
 </details>
 </dd>
 <dt id="substrateinterface.Keypair.create_from_uri"><code class="name flex">
-<span>def <span class="ident">create_from_uri</span></span>(<span>suri: str, ss58_format: Optional[int] = 42, crypto_type=1) ‑> <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a></span>
+<span>def <span class="ident">create_from_uri</span></span>(<span>suri: str, ss58_format: Optional[int] = 42, crypto_type=1, language_code: str = 'en') ‑> <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Creates Keypair for specified suri in following format: <code>[mnemonic]/[soft-path]//[hard-path]</code></p>
@@ -3470,6 +3500,8 @@ def create_from_seed(
 <dt><strong><code>ss58_format</code></strong> :&ensp;<code>Substrate address format</code></dt>
 <dd>&nbsp;</dd>
 <dt><strong><code>crypto_type</code></strong> :&ensp;<code>Use <a title="substrateinterface.KeypairType.SR25519" href="#substrateinterface.KeypairType.SR25519">KeypairType.SR25519</a></code> or <code><a title="substrateinterface.KeypairType.ED25519" href="#substrateinterface.KeypairType.ED25519">KeypairType.ED25519</a> cryptography for generating the <a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a></code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>language_code</code></strong> :&ensp;<code>The language to use, valid values are: 'en', 'zh-hans', 'zh-hant', 'fr', 'it', 'ja', 'ko', 'es'. Defaults to</code>MnemonicLanguageCode.ENGLISH``</dt>
 <dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -3483,7 +3515,7 @@ def create_from_seed(
 </summary>
 <pre><code class="python">@classmethod
 def create_from_uri(
-        cls, suri: str, ss58_format: Optional[int] = 42, crypto_type=KeypairType.SR25519
+        cls, suri: str, ss58_format: Optional[int] = 42, crypto_type=KeypairType.SR25519, language_code: str = MnemonicLanguageCode.ENGLISH
 ) -&gt; &#39;Keypair&#39;:
     &#34;&#34;&#34;
     Creates Keypair for specified suri in following format: `[mnemonic]/[soft-path]//[hard-path]`
@@ -3493,6 +3525,7 @@ def create_from_uri(
     suri:
     ss58_format: Substrate address format
     crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+    language_code: The language to use, valid values are: &#39;en&#39;, &#39;zh-hans&#39;, &#39;zh-hant&#39;, &#39;fr&#39;, &#39;it&#39;, &#39;ja&#39;, &#39;ko&#39;, &#39;es&#39;. Defaults to `MnemonicLanguageCode.ENGLISH`
 
     Returns
     -------
@@ -3507,6 +3540,9 @@ def create_from_uri(
     suri_parts = suri_regex.groupdict()
 
     if crypto_type == KeypairType.ECDSA:
+        if language_code != MnemonicLanguageCode.ENGLISH:
+            raise ValueError(&#34;ECDSA mnemonic only supports english&#34;)
+
         private_key = mnemonic_to_ecdsa_private_key(
             mnemonic=suri_parts[&#39;phrase&#39;],
             str_derivation_path=suri_parts[&#39;path&#39;][1:],
@@ -3519,7 +3555,7 @@ def create_from_uri(
             raise NotImplementedError(f&#34;Passwords in suri not supported for crypto_type &#39;{crypto_type}&#39;&#34;)
 
         derived_keypair = cls.create_from_mnemonic(
-            suri_parts[&#39;phrase&#39;], ss58_format=ss58_format, crypto_type=crypto_type
+            suri_parts[&#39;phrase&#39;], ss58_format=ss58_format, crypto_type=crypto_type, language_code=language_code
         )
 
         if suri_parts[&#39;path&#39;] != &#39;&#39;:
@@ -3556,7 +3592,7 @@ def create_from_uri(
 </details>
 </dd>
 <dt id="substrateinterface.Keypair.generate_mnemonic"><code class="name flex">
-<span>def <span class="ident">generate_mnemonic</span></span>(<span>words: int = 12) ‑> str</span>
+<span>def <span class="ident">generate_mnemonic</span></span>(<span>words: int = 12, language_code: str = 'en') ‑> str</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Generates a new seed phrase with given amount of words (default 12)</p>
@@ -3564,10 +3600,12 @@ def create_from_uri(
 <dl>
 <dt><strong><code>words</code></strong> :&ensp;<code>The amount</code> of <code>words to generate, valid values are 12, 15, 18, 21 and 24</code></dt>
 <dd>&nbsp;</dd>
+<dt><strong><code>language_code</code></strong> :&ensp;<code>The language to use, valid values are: 'en', 'zh-hans', 'zh-hant', 'fr', 'it', 'ja', 'ko', 'es'. Defaults to</code>MnemonicLanguageCode.ENGLISH``</dt>
+<dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>Seed phrase</code></dt>
+<dt><strong><code>str</code></strong> :&ensp;<code>Seed phrase</code></dt>
 <dd>&nbsp;</dd>
 </dl></div>
 <details class="source">
@@ -3575,19 +3613,58 @@ def create_from_uri(
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@classmethod
-def generate_mnemonic(cls, words: int = 12) -&gt; str:
+def generate_mnemonic(cls, words: int = 12, language_code: str = MnemonicLanguageCode.ENGLISH) -&gt; str:
     &#34;&#34;&#34;
     Generates a new seed phrase with given amount of words (default 12)
 
     Parameters
     ----------
     words: The amount of words to generate, valid values are 12, 15, 18, 21 and 24
+    language_code: The language to use, valid values are: &#39;en&#39;, &#39;zh-hans&#39;, &#39;zh-hant&#39;, &#39;fr&#39;, &#39;it&#39;, &#39;ja&#39;, &#39;ko&#39;, &#39;es&#39;. Defaults to `MnemonicLanguageCode.ENGLISH`
 
     Returns
     -------
-    Seed phrase
+    str: Seed phrase
     &#34;&#34;&#34;
-    return bip39_generate(words)</code></pre>
+    return bip39_generate(words, language_code)</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.Keypair.validate_mnemonic"><code class="name flex">
+<span>def <span class="ident">validate_mnemonic</span></span>(<span>mnemonic: str, language_code: str = 'en') ‑> bool</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Verify if specified mnemonic is valid</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>mnemonic</code></strong> :&ensp;<code>Seed phrase</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>language_code</code></strong> :&ensp;<code>The language to use, valid values are: 'en', 'zh-hans', 'zh-hant', 'fr', 'it', 'ja', 'ko', 'es'. Defaults to</code>MnemonicLanguageCode.ENGLISH``</dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageCode.ENGLISH) -&gt; bool:
+    &#34;&#34;&#34;
+    Verify if specified mnemonic is valid
+
+    Parameters
+    ----------
+    mnemonic: Seed phrase
+    language_code: The language to use, valid values are: &#39;en&#39;, &#39;zh-hans&#39;, &#39;zh-hant&#39;, &#39;fr&#39;, &#39;it&#39;, &#39;ja&#39;, &#39;ko&#39;, &#39;es&#39;. Defaults to `MnemonicLanguageCode.ENGLISH`
+
+    Returns
+    -------
+    bool
+    &#34;&#34;&#34;
+    return bip39_validate(mnemonic, language_code)</code></pre>
 </details>
 </dd>
 </dl>
@@ -3642,8 +3719,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
         signature = ed25519_dalek.ed_sign(self.public_key, self.private_key, data)
 
     elif self.crypto_type == KeypairType.ECDSA:
-        signer = eth_keys.keys.PrivateKey(self.private_key)
-        signature = signer.sign_msg(data).to_bytes()
+        signature = ecdsa_sign(self.private_key, data)
 
     else:
         raise ConfigurationError(&#34;Crypto type not supported&#34;)
@@ -3745,6 +3821,61 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 <div class="desc"></div>
 </dd>
 <dt id="substrateinterface.KeypairType.SR25519"><code class="name">var <span class="ident">SR25519</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="substrateinterface.MnemonicLanguageCode"><code class="flex name class">
+<span>class <span class="ident">MnemonicLanguageCode</span></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MnemonicLanguageCode:
+    ENGLISH = &#39;en&#39;
+    CHINESE_SIMPLIFIED = &#39;zh-hans&#39;
+    CHINESE_TRADITIONAL = &#39;zh-hant&#39;
+    FRENCH = &#39;fr&#39;
+    ITALIAN = &#39;it&#39;
+    JAPANESE = &#39;ja&#39;
+    KOREAN = &#39;ko&#39;
+    SPANISH = &#39;es&#39;</code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="substrateinterface.MnemonicLanguageCode.CHINESE_SIMPLIFIED"><code class="name">var <span class="ident">CHINESE_SIMPLIFIED</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="substrateinterface.MnemonicLanguageCode.CHINESE_TRADITIONAL"><code class="name">var <span class="ident">CHINESE_TRADITIONAL</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="substrateinterface.MnemonicLanguageCode.ENGLISH"><code class="name">var <span class="ident">ENGLISH</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="substrateinterface.MnemonicLanguageCode.FRENCH"><code class="name">var <span class="ident">FRENCH</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="substrateinterface.MnemonicLanguageCode.ITALIAN"><code class="name">var <span class="ident">ITALIAN</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="substrateinterface.MnemonicLanguageCode.JAPANESE"><code class="name">var <span class="ident">JAPANESE</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="substrateinterface.MnemonicLanguageCode.KOREAN"><code class="name">var <span class="ident">KOREAN</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="substrateinterface.MnemonicLanguageCode.SPANISH"><code class="name">var <span class="ident">SPANISH</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -3871,6 +4002,8 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
             &#39;auto_reconnect&#39;: auto_reconnect
         }
 
+        self.session = requests.Session()
+
         self.reload_type_registry(use_remote_preset=use_remote_preset, auto_discover=auto_discover)
 
     def connect_websocket(self):
@@ -3927,53 +4060,6 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
         if self.websocket:
             try:
                 self.websocket.send(json.dumps(payload))
-
-                update_nr = 0
-                json_body = None
-                subscription_id = None
-
-                while json_body is None:
-
-                    self.__rpc_message_queue.append(json.loads(self.websocket.recv()))
-
-                    # Search for subscriptions
-                    for message in self.__rpc_message_queue:
-
-                        # Check if result message is matching request ID
-                        if &#39;id&#39; in message and message[&#39;id&#39;] == request_id:
-
-                            self.__rpc_message_queue.remove(message)
-
-                            # Check if response has error
-                            if &#39;error&#39; in message:
-                                raise SubstrateRequestException(message[&#39;error&#39;])
-
-                            # If result handler is set, pass result through and loop until handler return value is set
-                            if callable(result_handler):
-
-                                # Set subscription ID and only listen to messages containing this ID
-                                subscription_id = message[&#39;result&#39;]
-                                self.debug_message(f&#34;Websocket subscription [{subscription_id}] created&#34;)
-
-                            else:
-                                json_body = message
-
-                    # Process subscription updates
-                    for message in self.__rpc_message_queue:
-                        # Check if message is meant for this subscription
-                        if &#39;params&#39; in message and message[&#39;params&#39;][&#39;subscription&#39;] == subscription_id:
-
-                            self.__rpc_message_queue.remove(message)
-
-                            self.debug_message(f&#34;Websocket result [{subscription_id} #{update_nr}]: {message}&#34;)
-
-                            # Call result_handler with message for processing
-                            callback_result = result_handler(message, update_nr, subscription_id)
-                            if callback_result is not None:
-                                json_body = callback_result
-
-                            update_nr += 1
-
             except WebSocketConnectionClosedException:
                 if self.config.get(&#39;auto_reconnect&#39;) and self.url:
                     # Try to reconnect websocket and retry rpc_request
@@ -3985,12 +4071,58 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
                     # websocket connection is externally created, re-raise exception
                     raise
 
+            update_nr = 0
+            json_body = None
+            subscription_id = None
+
+            while json_body is None:
+
+                self.__rpc_message_queue.append(json.loads(self.websocket.recv()))
+
+                # Search for subscriptions
+                for message in self.__rpc_message_queue:
+
+                    # Check if result message is matching request ID
+                    if &#39;id&#39; in message and message[&#39;id&#39;] == request_id:
+
+                        self.__rpc_message_queue.remove(message)
+
+                        # Check if response has error
+                        if &#39;error&#39; in message:
+                            raise SubstrateRequestException(message[&#39;error&#39;])
+
+                        # If result handler is set, pass result through and loop until handler return value is set
+                        if callable(result_handler):
+
+                            # Set subscription ID and only listen to messages containing this ID
+                            subscription_id = message[&#39;result&#39;]
+                            self.debug_message(f&#34;Websocket subscription [{subscription_id}] created&#34;)
+
+                        else:
+                            json_body = message
+
+                # Process subscription updates
+                for message in self.__rpc_message_queue:
+                    # Check if message is meant for this subscription
+                    if &#39;params&#39; in message and message[&#39;params&#39;][&#39;subscription&#39;] == subscription_id:
+
+                        self.__rpc_message_queue.remove(message)
+
+                        self.debug_message(f&#34;Websocket result [{subscription_id} #{update_nr}]: {message}&#34;)
+
+                        # Call result_handler with message for processing
+                        callback_result = result_handler(message, update_nr, subscription_id)
+                        if callback_result is not None:
+                            json_body = callback_result
+
+                        update_nr += 1
+
         else:
 
             if result_handler:
                 raise ConfigurationError(&#34;Result handlers only available for websockets (ws://) connections&#34;)
 
-            response = requests.request(&#34;POST&#34;, self.url, data=json.dumps(payload), headers=self.default_headers)
+            response = self.session.request(&#34;POST&#34;, self.url, data=json.dumps(payload), headers=self.default_headers)
 
             if response.status_code != 200:
                 raise SubstrateRequestException(
@@ -4205,7 +4337,7 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
             if response[&#39;result&#39;]:
                 return int(response[&#39;result&#39;][&#39;number&#39;], 16)
 
-    def get_block_metadata(self, block_hash=None, decode=True):
+    def get_metadata(self, block_hash=None, decode=True):
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `state_getMetadata`.
 
@@ -4235,6 +4367,13 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
             return metadata_decoder
 
         return response
+
+    def get_block_metadata(self, block_hash=None, decode=True):
+        &#34;&#34;&#34;
+        Warning: &#39;get_block_metadata&#39; will be replaced by &#39;get_metadata&#39;
+        &#34;&#34;&#34;
+        warnings.warn(&#34;&#39;get_block_metadata&#39; will be replaced by &#39;get_metadata&#39;&#34;, DeprecationWarning)
+        return self.get_metadata(block_hash=block_hash, decode=decode)
 
     def get_storage_by_key(self, block_hash, storage_key):
         &#34;&#34;&#34;
@@ -4653,6 +4792,10 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
 
         self.init_runtime(block_hash=block_hash)
 
+        if module == &#39;Substrate&#39;:
+            # Search for &#39;well-known&#39; storage keys
+            return self.__query_well_known(storage_function, block_hash)
+
         # Search storage call in metadata
         metadata_module = self.get_metadata_module(module, block_hash=block_hash)
         storage_item = self.get_metadata_storage_function(module, storage_function, block_hash=block_hash)
@@ -4754,6 +4897,37 @@ def generate_mnemonic(cls, words: int = 12) -&gt; str:
                     return obj
 
         return None
+
+    def __query_well_known(self, name: str, block_hash: str) -&gt; Optional[ScaleType]:
+        &#34;&#34;&#34;
+        Query well-known storage keys as defined in Substrate
+
+        Parameters
+        ----------
+        name
+        block_hash
+
+        Returns
+        -------
+        Optional[ScaleType]
+        &#34;&#34;&#34;
+        if name not in WELL_KNOWN_STORAGE_KEYS:
+            raise StorageFunctionNotFound(f&#39;Well known storage key for &#34;{name}&#34; not found&#39;)
+
+        result = self.get_storage_by_key(block_hash, WELL_KNOWN_STORAGE_KEYS[name][&#39;storage_key&#39;])
+        obj = self.runtime_config.create_scale_object(
+            WELL_KNOWN_STORAGE_KEYS[name][&#39;value_type_string&#39;]
+        )
+        if result:
+            obj.decode(ScaleBytes(result))
+            obj.meta_info = {&#39;result_found&#39;: True}
+            return obj
+        elif WELL_KNOWN_STORAGE_KEYS[name][&#39;default&#39;]:
+            obj.decode(ScaleBytes(WELL_KNOWN_STORAGE_KEYS[name][&#39;default&#39;]))
+            obj.meta_info = {&#39;result_found&#39;: False}
+            return obj
+        else:
+            return None
 
     def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
         &#34;&#34;&#34;
@@ -7418,49 +7592,17 @@ is omited the chain tip will be retrieve, or the finalized head if <code>finaliz
 <span>def <span class="ident">get_block_metadata</span></span>(<span>self, block_hash=None, decode=True)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>A pass-though to existing JSONRPC method <code>state_getMetadata</code>.</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>block_hash</code></strong></dt>
-<dd>&nbsp;</dd>
-<dt><strong><code>decode</code></strong> :&ensp;<code>True for decoded version</code></dt>
-<dd>&nbsp;</dd>
-</dl>
-<h2 id="returns">Returns</h2></div>
+<div class="desc"><p>Warning: 'get_block_metadata' will be replaced by 'get_metadata'</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_block_metadata(self, block_hash=None, decode=True):
     &#34;&#34;&#34;
-    A pass-though to existing JSONRPC method `state_getMetadata`.
-
-    Parameters
-    ----------
-    block_hash
-    decode: True for decoded version
-
-    Returns
-    -------
-
+    Warning: &#39;get_block_metadata&#39; will be replaced by &#39;get_metadata&#39;
     &#34;&#34;&#34;
-    params = None
-    if block_hash:
-        params = [block_hash]
-    response = self.rpc_request(&#34;state_getMetadata&#34;, params)
-
-    if &#39;error&#39; in response:
-        raise SubstrateRequestException(response[&#39;error&#39;][&#39;message&#39;])
-
-    if response.get(&#39;result&#39;) and decode:
-        metadata_decoder = self.runtime_config.create_scale_object(
-            &#39;MetadataVersioned&#39;, data=ScaleBytes(response.get(&#39;result&#39;))
-        )
-        metadata_decoder.decode()
-
-        return metadata_decoder
-
-    return response</code></pre>
+    warnings.warn(&#34;&#39;get_block_metadata&#39; will be replaced by &#39;get_metadata&#39;&#34;, DeprecationWarning)
+    return self.get_metadata(block_hash=block_hash, decode=decode)</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.get_block_number"><code class="name flex">
@@ -7751,6 +7893,55 @@ Parameters</p>
     if storage_obj:
         events += storage_obj.elements
     return events</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_metadata"><code class="name flex">
+<span>def <span class="ident">get_metadata</span></span>(<span>self, block_hash=None, decode=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>A pass-though to existing JSONRPC method <code>state_getMetadata</code>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>decode</code></strong> :&ensp;<code>True for decoded version</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_metadata(self, block_hash=None, decode=True):
+    &#34;&#34;&#34;
+    A pass-though to existing JSONRPC method `state_getMetadata`.
+
+    Parameters
+    ----------
+    block_hash
+    decode: True for decoded version
+
+    Returns
+    -------
+
+    &#34;&#34;&#34;
+    params = None
+    if block_hash:
+        params = [block_hash]
+    response = self.rpc_request(&#34;state_getMetadata&#34;, params)
+
+    if &#39;error&#39; in response:
+        raise SubstrateRequestException(response[&#39;error&#39;][&#39;message&#39;])
+
+    if response.get(&#39;result&#39;) and decode:
+        metadata_decoder = self.runtime_config.create_scale_object(
+            &#39;MetadataVersioned&#39;, data=ScaleBytes(response.get(&#39;result&#39;))
+        )
+        metadata_decoder.decode()
+
+        return metadata_decoder
+
+    return response</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.get_metadata_call_function"><code class="name flex">
@@ -9073,6 +9264,10 @@ handler doesn't return a value.</p>
 
     self.init_runtime(block_hash=block_hash)
 
+    if module == &#39;Substrate&#39;:
+        # Search for &#39;well-known&#39; storage keys
+        return self.__query_well_known(storage_function, block_hash)
+
     # Search storage call in metadata
     metadata_module = self.get_metadata_module(module, block_hash=block_hash)
     storage_item = self.get_metadata_storage_function(module, storage_function, block_hash=block_hash)
@@ -9489,53 +9684,6 @@ use this method to perform the request.</p>
     if self.websocket:
         try:
             self.websocket.send(json.dumps(payload))
-
-            update_nr = 0
-            json_body = None
-            subscription_id = None
-
-            while json_body is None:
-
-                self.__rpc_message_queue.append(json.loads(self.websocket.recv()))
-
-                # Search for subscriptions
-                for message in self.__rpc_message_queue:
-
-                    # Check if result message is matching request ID
-                    if &#39;id&#39; in message and message[&#39;id&#39;] == request_id:
-
-                        self.__rpc_message_queue.remove(message)
-
-                        # Check if response has error
-                        if &#39;error&#39; in message:
-                            raise SubstrateRequestException(message[&#39;error&#39;])
-
-                        # If result handler is set, pass result through and loop until handler return value is set
-                        if callable(result_handler):
-
-                            # Set subscription ID and only listen to messages containing this ID
-                            subscription_id = message[&#39;result&#39;]
-                            self.debug_message(f&#34;Websocket subscription [{subscription_id}] created&#34;)
-
-                        else:
-                            json_body = message
-
-                # Process subscription updates
-                for message in self.__rpc_message_queue:
-                    # Check if message is meant for this subscription
-                    if &#39;params&#39; in message and message[&#39;params&#39;][&#39;subscription&#39;] == subscription_id:
-
-                        self.__rpc_message_queue.remove(message)
-
-                        self.debug_message(f&#34;Websocket result [{subscription_id} #{update_nr}]: {message}&#34;)
-
-                        # Call result_handler with message for processing
-                        callback_result = result_handler(message, update_nr, subscription_id)
-                        if callback_result is not None:
-                            json_body = callback_result
-
-                        update_nr += 1
-
         except WebSocketConnectionClosedException:
             if self.config.get(&#39;auto_reconnect&#39;) and self.url:
                 # Try to reconnect websocket and retry rpc_request
@@ -9547,12 +9695,58 @@ use this method to perform the request.</p>
                 # websocket connection is externally created, re-raise exception
                 raise
 
+        update_nr = 0
+        json_body = None
+        subscription_id = None
+
+        while json_body is None:
+
+            self.__rpc_message_queue.append(json.loads(self.websocket.recv()))
+
+            # Search for subscriptions
+            for message in self.__rpc_message_queue:
+
+                # Check if result message is matching request ID
+                if &#39;id&#39; in message and message[&#39;id&#39;] == request_id:
+
+                    self.__rpc_message_queue.remove(message)
+
+                    # Check if response has error
+                    if &#39;error&#39; in message:
+                        raise SubstrateRequestException(message[&#39;error&#39;])
+
+                    # If result handler is set, pass result through and loop until handler return value is set
+                    if callable(result_handler):
+
+                        # Set subscription ID and only listen to messages containing this ID
+                        subscription_id = message[&#39;result&#39;]
+                        self.debug_message(f&#34;Websocket subscription [{subscription_id}] created&#34;)
+
+                    else:
+                        json_body = message
+
+            # Process subscription updates
+            for message in self.__rpc_message_queue:
+                # Check if message is meant for this subscription
+                if &#39;params&#39; in message and message[&#39;params&#39;][&#39;subscription&#39;] == subscription_id:
+
+                    self.__rpc_message_queue.remove(message)
+
+                    self.debug_message(f&#34;Websocket result [{subscription_id} #{update_nr}]: {message}&#34;)
+
+                    # Call result_handler with message for processing
+                    callback_result = result_handler(message, update_nr, subscription_id)
+                    if callback_result is not None:
+                        json_body = callback_result
+
+                    update_nr += 1
+
     else:
 
         if result_handler:
             raise ConfigurationError(&#34;Result handlers only available for websockets (ws://) connections&#34;)
 
-        response = requests.request(&#34;POST&#34;, self.url, data=json.dumps(payload), headers=self.default_headers)
+        response = self.session.request(&#34;POST&#34;, self.url, data=json.dumps(payload), headers=self.default_headers)
 
         if response.status_code != 200:
             raise SubstrateRequestException(
@@ -10216,6 +10410,7 @@ result = substrate.subscribe_block_headers(subscription_handler, include_author=
 <li><code><a title="substrateinterface.Keypair.create_from_uri" href="#substrateinterface.Keypair.create_from_uri">create_from_uri</a></code></li>
 <li><code><a title="substrateinterface.Keypair.generate_mnemonic" href="#substrateinterface.Keypair.generate_mnemonic">generate_mnemonic</a></code></li>
 <li><code><a title="substrateinterface.Keypair.sign" href="#substrateinterface.Keypair.sign">sign</a></code></li>
+<li><code><a title="substrateinterface.Keypair.validate_mnemonic" href="#substrateinterface.Keypair.validate_mnemonic">validate_mnemonic</a></code></li>
 <li><code><a title="substrateinterface.Keypair.verify" href="#substrateinterface.Keypair.verify">verify</a></code></li>
 </ul>
 </li>
@@ -10225,6 +10420,19 @@ result = substrate.subscribe_block_headers(subscription_handler, include_author=
 <li><code><a title="substrateinterface.KeypairType.ECDSA" href="#substrateinterface.KeypairType.ECDSA">ECDSA</a></code></li>
 <li><code><a title="substrateinterface.KeypairType.ED25519" href="#substrateinterface.KeypairType.ED25519">ED25519</a></code></li>
 <li><code><a title="substrateinterface.KeypairType.SR25519" href="#substrateinterface.KeypairType.SR25519">SR25519</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="substrateinterface.MnemonicLanguageCode" href="#substrateinterface.MnemonicLanguageCode">MnemonicLanguageCode</a></code></h4>
+<ul class="two-column">
+<li><code><a title="substrateinterface.MnemonicLanguageCode.CHINESE_SIMPLIFIED" href="#substrateinterface.MnemonicLanguageCode.CHINESE_SIMPLIFIED">CHINESE_SIMPLIFIED</a></code></li>
+<li><code><a title="substrateinterface.MnemonicLanguageCode.CHINESE_TRADITIONAL" href="#substrateinterface.MnemonicLanguageCode.CHINESE_TRADITIONAL">CHINESE_TRADITIONAL</a></code></li>
+<li><code><a title="substrateinterface.MnemonicLanguageCode.ENGLISH" href="#substrateinterface.MnemonicLanguageCode.ENGLISH">ENGLISH</a></code></li>
+<li><code><a title="substrateinterface.MnemonicLanguageCode.FRENCH" href="#substrateinterface.MnemonicLanguageCode.FRENCH">FRENCH</a></code></li>
+<li><code><a title="substrateinterface.MnemonicLanguageCode.ITALIAN" href="#substrateinterface.MnemonicLanguageCode.ITALIAN">ITALIAN</a></code></li>
+<li><code><a title="substrateinterface.MnemonicLanguageCode.JAPANESE" href="#substrateinterface.MnemonicLanguageCode.JAPANESE">JAPANESE</a></code></li>
+<li><code><a title="substrateinterface.MnemonicLanguageCode.KOREAN" href="#substrateinterface.MnemonicLanguageCode.KOREAN">KOREAN</a></code></li>
+<li><code><a title="substrateinterface.MnemonicLanguageCode.SPANISH" href="#substrateinterface.MnemonicLanguageCode.SPANISH">SPANISH</a></code></li>
 </ul>
 </li>
 <li>
@@ -10256,6 +10464,7 @@ result = substrate.subscribe_block_headers(subscription_handler, include_author=
 <li><code><a title="substrateinterface.SubstrateInterface.get_chain_head" href="#substrateinterface.SubstrateInterface.get_chain_head">get_chain_head</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_constant" href="#substrateinterface.SubstrateInterface.get_constant">get_constant</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_events" href="#substrateinterface.SubstrateInterface.get_events">get_events</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_metadata" href="#substrateinterface.SubstrateInterface.get_metadata">get_metadata</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_metadata_call_function" href="#substrateinterface.SubstrateInterface.get_metadata_call_function">get_metadata_call_function</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_metadata_call_functions" href="#substrateinterface.SubstrateInterface.get_metadata_call_functions">get_metadata_call_functions</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_metadata_constant" href="#substrateinterface.SubstrateInterface.get_metadata_constant">get_metadata_constant</a></code></li>
