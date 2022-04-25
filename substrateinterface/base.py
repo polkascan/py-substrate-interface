@@ -3233,6 +3233,10 @@ class ExtrinsicReceipt:
                                     module_index = param['Module']['index']
                                     error_index = param['Module']['error']
 
+                                if type(error_index) is str:
+                                    # Actual error index is first u8 in new [u8; 4] format
+                                    error_index = int(error_index[2:4], 16)
+
                                 module_error = self.substrate.metadata_decoder.get_module_error(
                                     module_index=module_index,
                                     error_index=error_index
@@ -3285,6 +3289,13 @@ class ExtrinsicReceipt:
                         for param in event.params:
                             if param['type'] == 'DispatchError':
                                 if 'Module' in param['value']:
+
+                                    if type(param['value']['Module']['error']) is str:
+                                        # Actual error index is first u8 in new [u8; 4] format (e.g. 0x01000000)
+                                        error_index = int(param['value']['Module']['error'][2:4], 16)
+                                    else:
+                                        error_index = param['value']['Module']['error']
+
                                     module_error = self.substrate.metadata_decoder.get_module_error(
                                         module_index=param['value']['Module']['index'],
                                         error_index=param['value']['Module']['error']
