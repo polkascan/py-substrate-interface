@@ -21,7 +21,10 @@ import binascii
 import json
 import logging
 import re
+import secrets
 
+import nacl.bindings
+import nacl.public
 import requests
 from typing import Optional, Union
 
@@ -419,6 +422,58 @@ class Keypair:
             verified = crypto_verify_fn(signature, b'<Bytes>' + data + b'</Bytes>', self.public_key)
 
         return verified
+
+    def encrypt_message(
+        self, message: Union[bytes, str], recipient_public_key: bytes, nonce: bytes = secrets.token_bytes(24),
+    ) -> bytes:
+        """
+        Encrypts message with for specified recipient
+
+        Parameters
+        ----------
+        message: message to be encrypted, bytes or string
+        recipient_public_key: recipient's public key
+        nonce: the nonce to use in the encryption
+
+        Returns
+        -------
+        Encrypted message
+        """
+
+        if not self.private_key:
+            raise ConfigurationError('No private key set to encrypt')
+        if self.crypto_type != KeypairType.ED25519:
+            raise ConfigurationError('Only ed25519 keypair type supported')
+        curve25519_public_key = nacl.bindings.crypto_sign_ed25519_pk_to_curve25519(recipient_public_key)
+        recipient = nacl.public.PublicKey(curve25519_public_key)
+        private_key = nacl.bindings.crypto_sign_ed25519_sk_to_curve25519(self.private_key + self.public_key)
+        sender = nacl.public.PrivateKey(private_key)
+        box = nacl.public.Box(sender, recipient)
+        return box.encrypt(message if isinstance(message, bytes) else message.encode("utf-8"), nonce)
+
+    def decrypt_message(self, encrypted_message_with_nonce: bytes, sender_public_key: bytes) -> bytes:
+        """
+        Decrypts message from a specified sender
+
+        Parameters
+        ----------
+        encrypted_message_with_nonce: message to be decrypted
+        sender_public_key: sender's public key
+
+        Returns
+        -------
+        Decrypted message
+        """
+
+        if not self.private_key:
+            raise ConfigurationError('No private key set to decrypt')
+        if self.crypto_type != KeypairType.ED25519:
+            raise ConfigurationError('Only ed25519 keypair type supported')
+        private_key = nacl.bindings.crypto_sign_ed25519_sk_to_curve25519(self.private_key + self.public_key)
+        recipient = nacl.public.PrivateKey(private_key)
+        curve25519_public_key = nacl.bindings.crypto_sign_ed25519_pk_to_curve25519(sender_public_key)
+        sender = nacl.public.PublicKey(curve25519_public_key)
+        return nacl.public.Box(recipient, sender).decrypt(encrypted_message_with_nonce)
 
     def __repr__(self):
         if self.ss58_address:

@@ -187,6 +187,7 @@ setup(
         'eth-keys>=0.2.1,<1',
         'eth_utils>=1.3.0,<3',
         'pycryptodome>=3.11.0,<4',
+        'PyNaCl>=1.0.1,<2',
         'scalecodec>=1.0.35,<2',
         'py-sr25519-bindings>=0.1.4,<1',
         'py-ed25519-bindings>=1.0,<2',
