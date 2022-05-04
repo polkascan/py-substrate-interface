@@ -314,6 +314,16 @@ class KeyPairTestCase(unittest.TestCase):
         self.assertRaises(ValueError, extract_derive_path, 'no_slashes')
         self.assertRaises(ValueError, extract_derive_path, '//')
 
+    def test_encrypt_decrypt_message(self):
+        sender = Keypair.create_from_mnemonic("nominee lift horse divert crop quantum proud between pink goose attack market", crypto_type=KeypairType.ED25519)
+        recipient = Keypair(ss58_address="5DFZ8UzF5zeCLVPVRMkopNjVyxJNb1dHgGJYFDaVbm4CqNku", crypto_type=KeypairType.ED25519)
+        message = "Violence is the last refuge of the incompetent - Isaac Asimov, Foundation"
+        message_encrypted = sender.encrypt_message(message, recipient.public_key)
+        recipient = Keypair.create_from_mnemonic("almost desk skull craft chuckle bubble hollow innocent require physical purchase rabbit", crypto_type=KeypairType.ED25519)
+        sender = Keypair(ss58_address="5DYUhnXkHux1rGTDaS9ACPQekbpSR2J5SyedDQNJVrk4Tn5t", crypto_type=KeypairType.ED25519)
+        message_decrypted = recipient.decrypt_message(message_encrypted, sender.public_key).decode("utf-8")
+        self.assertEqual(message_decrypted, message)
+
 
 if __name__ == '__main__':
     unittest.main()
