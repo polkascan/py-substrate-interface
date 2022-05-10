@@ -182,6 +182,32 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
 
         self.assertEqual(signature_payload.length, 32)
 
+    def test_create_extrinsic_bytes_signature(self):
+        # Create balance transfer call
+        call = self.kusama_substrate.compose_call(
+            call_module='Balances',
+            call_function='transfer',
+            call_params={
+                'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
+                'value': 3 * 10 ** 3
+            }
+        )
+
+        signature_hex = '01741d037f6ea0c5269c6d78cde9505178ee928bb1077db49c684f9d1cad430e767e09808bc556ea2962a7b21a' \
+                        'ada78b3aaf63a8b41e035acfdb0f650634863f83'
+
+        extrinsic = self.kusama_substrate.create_signed_extrinsic(
+            call=call, keypair=self.keypair, signature=f'0x{signature_hex}'
+        )
+
+        self.assertEqual(extrinsic.value['signature']['Sr25519'], f'0x{signature_hex[2:]}')
+
+        extrinsic = self.kusama_substrate.create_signed_extrinsic(
+            call=call, keypair=self.keypair, signature=bytes.fromhex(signature_hex)
+        )
+
+        self.assertEqual(extrinsic.value['signature']['Sr25519'], f'0x{signature_hex[2:]}')
+
     def test_check_extrinsic_receipt(self):
         result = ExtrinsicReceipt(
             substrate=self.kusama_substrate,

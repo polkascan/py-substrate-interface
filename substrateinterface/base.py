@@ -351,7 +351,7 @@ class Keypair:
 
         Returns
         -------
-        signature in hex string format
+        signature in bytes
 
         """
         if type(data) is ScaleBytes:
@@ -1753,7 +1753,7 @@ class SubstrateInterface:
         return signature_payload.data
 
     def create_signed_extrinsic(self, call: GenericCall, keypair: Keypair, era: dict = None, nonce: int = None,
-                                tip: int = 0, tip_asset_id: int = None, signature: str = None) -> GenericExtrinsic:
+                                tip: int = 0, tip_asset_id: int = None, signature: Union[bytes, str] = None) -> GenericExtrinsic:
         """
         Creates a extrinsic signed by given account details
 
@@ -1798,15 +1798,15 @@ class SubstrateInterface:
 
         if signature is not None:
 
-            signature = signature.replace('0x', '')
+            if type(signature) is str and signature[0:2] == '0x':
+                signature = bytes.fromhex(signature[2:])
 
             # Check if signature is a MultiSignature and contains signature version
-            if len(signature) == 130:
-                signature_version = int(signature[0:2], 16)
-                signature = bytes.fromhex(signature[2:])
+            if len(signature) == 65:
+                signature_version = signature[0]
+                signature = signature[1:]
             else:
                 signature_version = keypair.crypto_type
-                signature = bytes.fromhex(signature)
 
         else:
             # Create signature payload
