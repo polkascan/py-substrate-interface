@@ -72,8 +72,9 @@ class MnemonicLanguageCode:
 
 class Keypair:
 
-    def __init__(self, ss58_address: str = None, public_key: bytes = None, private_key: Union[bytes, str] = None,
-                 ss58_format: int = None, seed_hex: str = None, crypto_type: int = KeypairType.SR25519):
+    def __init__(self, ss58_address: str = None, public_key: Union[bytes, str] = None,
+                 private_key: Union[bytes, str] = None, ss58_format: int = None, seed_hex: str = None,
+                 crypto_type: int = KeypairType.SR25519):
         """
         Allows generation of Keypairs from a variety of input combination, such as a public/private key combination,
         mnemonic or URI containing soft and hard derivation paths. With these Keypairs data can be signed and verified
@@ -358,7 +359,7 @@ class Keypair:
             data = bytes(data.data)
         elif data[0:2] == '0x':
             data = bytes.fromhex(data[2:])
-        else:
+        elif type(data) is str:
             data = data.encode()
 
         if not self.private_key:
@@ -396,7 +397,7 @@ class Keypair:
             data = bytes(data.data)
         elif data[0:2] == '0x':
             data = bytes.fromhex(data[2:])
-        else:
+        elif type(data) is str:
             data = data.encode()
 
         if type(signature) is str and signature[0:2] == '0x':

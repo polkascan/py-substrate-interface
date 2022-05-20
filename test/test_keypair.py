@@ -217,6 +217,13 @@ class KeyPairTestCase(unittest.TestCase):
             crypto_type=2
         )
 
+    def test_sign_and_verify_bytes(self):
+        mnemonic = Keypair.generate_mnemonic()
+        keypair = Keypair.create_from_mnemonic(mnemonic)
+        signature = keypair.sign(b"Test123")
+
+        self.assertTrue(keypair.verify(b"Test123", signature))
+
     def test_create_keypair_from_private_key(self):
         keypair = Keypair.create_from_private_key(
             ss58_address='16ADqpMa4yzfmWs3nuTSMhfZ2ckeGtvqhPWCNqECEGDcGgU2',
