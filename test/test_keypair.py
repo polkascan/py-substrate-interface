@@ -224,6 +224,21 @@ class KeyPairTestCase(unittest.TestCase):
 
         self.assertTrue(keypair.verify(b"Test123", signature))
 
+    def test_sign_and_verify_public_ss58_address(self):
+        keypair = Keypair.create_from_uri("//Alice", crypto_type=KeypairType.SR25519)
+        signature = keypair.sign('test')
+
+        keypair_public = Keypair(ss58_address='5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
+                                 crypto_type=KeypairType.SR25519)
+        self.assertTrue(keypair_public.verify('test', signature))
+
+    def test_sign_and_verify_public_ethereum_address(self):
+        keypair = Keypair.create_from_uri("/m/44'/60/0'/0", crypto_type=KeypairType.ECDSA)
+        signature = keypair.sign('test')
+
+        keypair_public = Keypair(public_key='0x5e20a619338338772e97aa444e001043da96a43b', crypto_type=KeypairType.ECDSA)
+        self.assertTrue(keypair_public.verify('test', signature))
+
     def test_create_keypair_from_private_key(self):
         keypair = Keypair.create_from_private_key(
             ss58_address='16ADqpMa4yzfmWs3nuTSMhfZ2ckeGtvqhPWCNqECEGDcGgU2',

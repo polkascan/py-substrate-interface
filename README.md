@@ -33,6 +33,7 @@ management and versioning of types.
   * [Keypair creation and signing](#keypair-creation-and-signing)
   * [Creating keypairs with soft and hard key derivation paths](#creating-keypairs-with-soft-and-hard-key-derivation-paths)
   * [Creating ECDSA keypairs with BIP44 derivation paths](#creating-ecdsa-keypairs-with-bip44-derivation-paths)
+  * [Verify generated signature with public address](#verify-generated-signature-with-public-address)
   * [Getting estimate of network fees for extrinsic in advance](#getting-estimate-of-network-fees-for-extrinsic-in-advance)
   * [Offline signing of extrinsics](#offline-signing-of-extrinsics)
   * [Accessing runtime constants](#accessing-runtime-constants)
@@ -577,6 +578,25 @@ mnemonic = Keypair.generate_mnemonic()
 keypair = Keypair.create_from_uri(f"{mnemonic}/m/44'/60'/0'/0/0", crypto_type=KeypairType.ECDSA)
 ```
 
+### Verify generated signature with public address
+
+#### Substrate style addresses
+```python
+keypair = Keypair.create_from_uri("//Alice", crypto_type=KeypairType.SR25519)
+signature = keypair.sign('test')
+
+keypair_public = Keypair(ss58_address='5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', crypto_type=KeypairType.SR25519)
+result = keypair_public.verify('test', signature)
+```
+
+#### Ethereum style addresses
+```python
+keypair = Keypair.create_from_uri("/m/44'/60/0'/0", crypto_type=KeypairType.ECDSA)
+signature = keypair.sign('test')
+
+keypair_public = Keypair(public_key='0x5e20a619338338772e97aa444e001043da96a43b', crypto_type=KeypairType.ECDSA)
+result = keypair_public.verify('test', signature)
+```
 
 ### Getting estimate of network fees for extrinsic in advance
 
