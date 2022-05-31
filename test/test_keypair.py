@@ -346,6 +346,21 @@ class KeyPairTestCase(unittest.TestCase):
         message_decrypted = recipient.decrypt_message(message_encrypted, sender.public_key).decode("utf-8")
         self.assertEqual(message_decrypted, message)
 
+    def test_hdkd_multi_lang(self):
+        mnemonic_path = "秘 心 姜 封 迈 走 描 朗 出 莫 人 口//0"
+        keypair = Keypair.create_from_uri(mnemonic_path, language_code=MnemonicLanguageCode.CHINESE_SIMPLIFIED)
+        self.assertNotEqual(keypair, None)
+
+        # "é" as multibyte unicode character
+        mnemonic_path = "nation armure tympan devancer temporel capsule ogive médecin acheter narquois abrasif brasier//0"
+        keypair = Keypair.create_from_uri(mnemonic_path, language_code=MnemonicLanguageCode.FRENCH)
+        self.assertNotEqual(keypair, None)
+
+        # "é" as one byte unicode character:
+        mnemonic_path = "nation armure tympan devancer temporel capsule ogive médecin acheter narquois abrasif brasier//0"
+        keypair = Keypair.create_from_uri(mnemonic_path, language_code=MnemonicLanguageCode.FRENCH)
+        self.assertNotEqual(keypair, None)
+
 
 if __name__ == '__main__':
     unittest.main()
