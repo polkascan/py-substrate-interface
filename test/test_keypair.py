@@ -41,6 +41,20 @@ class KeyPairTestCase(unittest.TestCase):
         mnemonic = "nation armure tympan devancer temporel capsule ogive médecin acheter narquois abrasif brasier"
         self.assertTrue(Keypair.validate_mnemonic(mnemonic, MnemonicLanguageCode.FRENCH))
 
+        keypair = Keypair.create_from_mnemonic(mnemonic, language_code=MnemonicLanguageCode.FRENCH)
+        self.assertEqual("5FUQmUcb3KAR9rBJekCVcNX1DyPV3n7ZyLfkxohjpbL3xkxR", keypair.ss58_address)
+
+    def test_create_mnemonic_multi_lang(self):
+        mnemonic_path = "秘 心 姜 封 迈 走 描 朗 出 莫 人 口//0"
+        keypair = Keypair.create_from_uri(mnemonic_path, language_code=MnemonicLanguageCode.CHINESE_SIMPLIFIED)
+        self.assertNotEqual(keypair, None)
+        self.assertEqual("5CnobodXqobQhfeH6gJj7m8b7yKfSyYpVLneLUSDEbvAKTg3", keypair.ss58_address)
+
+        mnemonic_path = "nation armure tympan devancer temporel capsule ogive médecin acheter narquois abrasif brasier"
+        keypair = Keypair.create_from_uri(mnemonic_path, language_code=MnemonicLanguageCode.FRENCH)
+        self.assertNotEqual(keypair, None)
+        self.assertEqual("5FUQmUcb3KAR9rBJekCVcNX1DyPV3n7ZyLfkxohjpbL3xkxR", keypair.ss58_address)
+
     def test_invalid_mnemonic(self):
         mnemonic = "This is an invalid mnemonic"
         self.assertFalse(Keypair.validate_mnemonic(mnemonic))
