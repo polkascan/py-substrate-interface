@@ -225,6 +225,23 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
 
         self.assertTrue(result.is_success)
 
+    def test_extrinsic_receipt_by_identifier(self):
+        receipt = self.polkadot_substrate.retrieve_extrinsic_by_identifier("11529741-2")
+        self.assertEqual(receipt.extrinsic.value['address'], '16amaf1FuEFHstAoKjQiq8ZLWR6zjsYTvAiyHupA8DJ9Mhwu')
+        self.assertEqual(
+            receipt.extrinsic.value['call']['call_args'][0]['value'], '1pg9GBY7Xm5wZSNBr9BrmS978f5g33PGt45PyjiwKpU4hZG'
+        )
+
+    def test_extrinsic_receipt_by_hash(self):
+        receipt = self.polkadot_substrate.retrieve_extrinsic_by_hash(
+            block_hash="0x9f726d0ba1e7622c3df8c9f1eacdd1df03deabfc1d788623fc47f494e18c3f38",
+            extrinsic_hash="0xe1ca67a62655d45863be7bf87004a79351bf4a798ba92f666d3a8152bb769d0c"
+        )
+        self.assertEqual(receipt.extrinsic.value['address'], '16amaf1FuEFHstAoKjQiq8ZLWR6zjsYTvAiyHupA8DJ9Mhwu')
+        self.assertEqual(
+            receipt.extrinsic.value['call']['call_args'][0]['value'], '1pg9GBY7Xm5wZSNBr9BrmS978f5g33PGt45PyjiwKpU4hZG'
+        )
+
     def test_check_extrinsic_failed_result(self):
         result = ExtrinsicReceipt(
             substrate=self.kusama_substrate,

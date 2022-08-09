@@ -112,6 +112,12 @@ class TestHelperFunctions(unittest.TestCase):
             'type_string': 'Bytes'}
         )
 
+    def test_get_metadata(self):
+        metadata = self.substrate.get_metadata()
+
+        self.assertIsNotNone(metadata)
+        self.assertEqual(metadata.__class__.__name__, 'MetadataVersioned')
+
     def test_get_metadata_modules(self):
         for module in self.substrate.get_metadata_modules():
             self.assertIn('module_id', module)
