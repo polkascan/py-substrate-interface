@@ -23,7 +23,7 @@ from substrateinterface.exceptions import SubstrateRequestException
 try:
     substrate = SubstrateInterface(
         url="ws://127.0.0.1:9944",
-        type_registry_preset='development'
+        type_registry_preset="substrate-node-template"
     )
 except ConnectionRefusedError:
     print("⚠️ No local Substrate node running, try running 'start_local_substrate_node.sh' first")
@@ -36,12 +36,20 @@ account_info = substrate.query('System', 'Account', params=[keypair.ss58_address
 
 print('Account info', account_info.value)
 
-call = substrate.compose_call(
+balance_call = substrate.compose_call(
     call_module='Balances',
     call_function='transfer',
     call_params={
         'dest': '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty',
         'value': 1 * 10**15
+    }
+)
+
+call = substrate.compose_call(
+    call_module='Utility',
+    call_function='batch',
+    call_params={
+        'calls': [balance_call, balance_call]
     }
 )
 
