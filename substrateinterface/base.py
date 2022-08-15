@@ -262,7 +262,7 @@ class Keypair:
         if suri and suri.startswith('/'):
             suri = DEV_PHRASE + suri
 
-        suri_regex = re.match(r'^(?P<phrase>.[^/]+( .[^/]+)*)(?P<path>(//?[^/]+)*)(///(?P<password>.*))?$', suri)
+        suri_regex = re.match(r'^(?P<phrase>\w+( \w+)*)(?P<path>(//?[^/]+)*)(///(?P<password>.*))?$', suri)
 
         suri_parts = suri_regex.groupdict()
 
