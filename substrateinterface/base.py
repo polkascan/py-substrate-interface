@@ -319,8 +319,8 @@ class Keypair:
 
     @classmethod
     def create_from_private_key(
-            cls, private_key: Union[bytes, str], public_key: bytes = None, ss58_address: str = None,
-            ss58_format: int = None, crypto_type=KeypairType.SR25519
+            cls, private_key: Union[bytes, str], public_key: Union[bytes, str] = None, ss58_address: str = None,
+            ss58_format: int = None, crypto_type: int = KeypairType.SR25519
     ) -> 'Keypair':
         """
         Creates Keypair for specified public/private keys
@@ -330,7 +330,7 @@ class Keypair:
         public_key: hex string or bytes of public key
         ss58_address: Substrate address
         ss58_format: Substrate address format, default = 42
-        crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+        crypto_type: Use KeypairType.[SR25519|ED25519|ECDSA] cryptography for generating the Keypair
 
         Returns
         -------
@@ -1527,27 +1527,6 @@ class SubstrateInterface:
         if storage_obj:
             events += storage_obj.elements
         return events
-
-    def get_runtime_events(self, block_hash=None):
-
-        """
-        Warning: 'get_runtime_events' will be replaced by 'get_events'
-
-        Parameters
-        ----------
-        block_hash
-
-        Returns
-        -------
-        Collection of events
-        """
-        warnings.warn("'get_runtime_events' will be replaced by 'get_events'", DeprecationWarning)
-
-        return self.get_runtime_state(
-            module="System",
-            storage_function="Events",
-            block_hash=block_hash
-        )
 
     def get_metadata(self, block_hash=None):
         """
