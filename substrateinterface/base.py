@@ -1528,6 +1528,23 @@ class SubstrateInterface:
             events += storage_obj.elements
         return events
 
+    def get_metadata(self, block_hash=None):
+        """
+        Returns `MetadataVersioned` object for given block_hash or chaintip if block_hash is omitted
+
+
+        Parameters
+        ----------
+        block_hash
+
+        Returns
+        -------
+        MetadataVersioned
+        """
+        self.init_runtime(block_hash=block_hash)
+
+        return self.metadata_decoder
+
     def get_runtime_metadata(self, block_hash=None):
         """
         Retrieves and decodes the metadata for given block or chaintip if block_hash is omitted.
@@ -2730,6 +2747,25 @@ class SubstrateInterface:
             substrate=self, extrinsic_identifier=extrinsic_identifier
         )
 
+    def retrieve_extrinsic_by_hash(self, block_hash: str, extrinsic_hash: str) -> "ExtrinsicReceipt":
+        """
+        Retrieve an extrinsic by providing the block_hash and the extrinsic hash
+
+        Parameters
+        ----------
+        block_hash
+        extrinsic_hash
+
+        Returns
+        -------
+        ExtrinsicReceipt
+        """
+        return ExtrinsicReceipt(
+            substrate=self,
+            block_hash=block_hash,
+            extrinsic_hash=extrinsic_hash
+        )
+
     def get_runtime_block(self, block_hash: str = None, block_id: int = None, ignore_decoding_errors: bool = False,
                           include_author: bool = False):
         """
@@ -3155,6 +3191,17 @@ class ExtrinsicReceipt:
     def create_from_extrinsic_identifier(
             cls, substrate: SubstrateInterface, extrinsic_identifier: str
     ) -> "ExtrinsicReceipt":
+        """
+
+        Parameters
+        ----------
+        substrate
+        extrinsic_identifier
+
+        Returns
+        -------
+        ExtrinsicReceipt
+        """
         id_parts = extrinsic_identifier.split('-', maxsplit=1)
         block_number: int = int(id_parts[0])
         extrinsic_idx: int = int(id_parts[1])
