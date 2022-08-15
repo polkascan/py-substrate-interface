@@ -93,9 +93,6 @@ class Keypair:
         self.seed_hex = seed_hex
         self.derive_path = None
 
-        if ss58_format is None:
-            ss58_format = 42
-
         if crypto_type != KeypairType.ECDSA and ss58_address and not public_key:
             public_key = ss58_decode(ss58_address, valid_ss58_format=ss58_format)
 
