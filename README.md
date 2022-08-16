@@ -439,9 +439,7 @@ print(receipt.error_message['name']) # 'LiquidityRestrictions'
 
 ```python
 
-receipt = ExtrinsicReceipt.create_from_extrinsic_identifier(
-    substrate=substrate, extrinsic_identifier="5233297-1"
-)
+receipt = substrate.retrieve_extrinsic_by_identifier("5233297-1")
 
 print(receipt.is_success) # False
 print(receipt.extrinsic.call_module.name) # 'Identity'
