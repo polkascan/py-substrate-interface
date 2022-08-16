@@ -456,7 +456,7 @@ for event in receipt.triggered_events:
 
 #### Deploy a contract 
 
-Tested on [canvas-node](https://github.com/paritytech/canvas-node) with the [Flipper contract from the tutorial](https://substrate.dev/substrate-contracts-workshop/#/0/deploy-contract)_:
+Tested on [canvas-node](https://github.com/paritytech/canvas-node) with the [Flipper contract from the tutorial](https://docs.substrate.io/tutorials/smart-contracts/prepare-your-first-contract/):
 
 ```python
 substrate = SubstrateInterface(
