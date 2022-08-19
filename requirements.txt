@@ -13,5 +13,5 @@ PyNaCl>=1.0.1,<2
 
 scalecodec>=1.0.41,<2
 py-sr25519-bindings>=0.1.4,<1
-py-ed25519-bindings>=1.0,<2
+py-ed25519-zebra-bindings>=1.0,<2
 py-bip39-bindings>=0.1.9,<1
