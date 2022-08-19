@@ -46,9 +46,8 @@ import hashlib
 import hmac
 import struct
 
-from ecdsa import SigningKey
 from ecdsa.curves import SECP256k1
-from eth_keys.datatypes import Signature
+from eth_keys.datatypes import Signature, PrivateKey
 from eth_utils import to_checksum_address, keccak as eth_utils_keccak
 
 BIP39_PBKDF2_ROUNDS = 2048
@@ -136,9 +135,8 @@ def mnemonic_to_ecdsa_private_key(mnemonic: str, str_derivation_path: str = None
 
 
 def ecdsa_sign(private_key: bytes, message: bytes) -&gt; bytes:
-    sk = SigningKey.from_string(
-        private_key, curve=SECP256k1)
-    return sk.sign(message)
+    signer = PrivateKey(private_key)
+    return signer.sign_msg(message).to_bytes()
 
 
 def ecdsa_verify(signature: bytes, data: bytes, address: bytes) -&gt; bool:
@@ -210,9 +208,8 @@ def ecdsa_verify(signature: bytes, data: bytes, address: bytes) -&gt; bool:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def ecdsa_sign(private_key: bytes, message: bytes) -&gt; bytes:
-    sk = SigningKey.from_string(
-        private_key, curve=SECP256k1)
-    return sk.sign(message)</code></pre>
+    signer = PrivateKey(private_key)
+    return signer.sign_msg(message).to_bytes()</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.utils.ecdsa_helpers.ecdsa_verify"><code class="name flex">

@@ -938,6 +938,7 @@ def contract_events(self):
 <ul class="hlist">
 <li><code><b><a title="substrateinterface.base.ExtrinsicReceipt" href="base.html#substrateinterface.base.ExtrinsicReceipt">ExtrinsicReceipt</a></b></code>:
 <ul class="hlist">
+<li><code><a title="substrateinterface.base.ExtrinsicReceipt.create_from_extrinsic_identifier" href="base.html#substrateinterface.base.ExtrinsicReceipt.create_from_extrinsic_identifier">create_from_extrinsic_identifier</a></code></li>
 <li><code><a title="substrateinterface.base.ExtrinsicReceipt.error_message" href="base.html#substrateinterface.base.ExtrinsicReceipt.error_message">error_message</a></code></li>
 <li><code><a title="substrateinterface.base.ExtrinsicReceipt.extrinsic" href="base.html#substrateinterface.base.ExtrinsicReceipt.extrinsic">extrinsic</a></code></li>
 <li><code><a title="substrateinterface.base.ExtrinsicReceipt.extrinsic_idx" href="base.html#substrateinterface.base.ExtrinsicReceipt.extrinsic_idx">extrinsic_idx</a></code></li>
@@ -2189,6 +2190,17 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
     def create_from_extrinsic_identifier(
             cls, substrate: SubstrateInterface, extrinsic_identifier: str
     ) -&gt; &#34;ExtrinsicReceipt&#34;:
+        &#34;&#34;&#34;
+
+        Parameters
+        ----------
+        substrate
+        extrinsic_identifier
+
+        Returns
+        -------
+        ExtrinsicReceipt
+        &#34;&#34;&#34;
         id_parts = extrinsic_identifier.split(&#39;-&#39;, maxsplit=1)
         block_number: int = int(id_parts[0])
         extrinsic_idx: int = int(id_parts[1])
@@ -2302,6 +2314,10 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
                                     module_index = param[&#39;Module&#39;][&#39;index&#39;]
                                     error_index = param[&#39;Module&#39;][&#39;error&#39;]
 
+                                if type(error_index) is str:
+                                    # Actual error index is first u8 in new [u8; 4] format
+                                    error_index = int(error_index[2:4], 16)
+
                                 module_error = self.substrate.metadata_decoder.get_module_error(
                                     module_index=module_index,
                                     error_index=error_index
@@ -2354,6 +2370,13 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
                         for param in event.params:
                             if param[&#39;type&#39;] == &#39;DispatchError&#39;:
                                 if &#39;Module&#39; in param[&#39;value&#39;]:
+
+                                    if type(param[&#39;value&#39;][&#39;Module&#39;][&#39;error&#39;]) is str:
+                                        # Actual error index is first u8 in new [u8; 4] format (e.g. 0x01000000)
+                                        error_index = int(param[&#39;value&#39;][&#39;Module&#39;][&#39;error&#39;][2:4], 16)
+                                    else:
+                                        error_index = param[&#39;value&#39;][&#39;Module&#39;][&#39;error&#39;]
+
                                     module_error = self.substrate.metadata_decoder.get_module_error(
                                         module_index=param[&#39;value&#39;][&#39;Module&#39;][&#39;index&#39;],
                                         error_index=param[&#39;value&#39;][&#39;Module&#39;][&#39;error&#39;]
@@ -2483,7 +2506,18 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
 <span>def <span class="ident">create_from_extrinsic_identifier</span></span>(<span>substrate: <a title="substrateinterface.base.SubstrateInterface" href="base.html#substrateinterface.base.SubstrateInterface">SubstrateInterface</a>, extrinsic_identifier: str) ‑> <a title="substrateinterface.base.ExtrinsicReceipt" href="base.html#substrateinterface.base.ExtrinsicReceipt">ExtrinsicReceipt</a></span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>substrate</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>extrinsic_identifier</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="substrateinterface.ExtrinsicReceipt" href="#substrateinterface.ExtrinsicReceipt">ExtrinsicReceipt</a></code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2492,6 +2526,17 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
 def create_from_extrinsic_identifier(
         cls, substrate: SubstrateInterface, extrinsic_identifier: str
 ) -&gt; &#34;ExtrinsicReceipt&#34;:
+    &#34;&#34;&#34;
+
+    Parameters
+    ----------
+    substrate
+    extrinsic_identifier
+
+    Returns
+    -------
+    ExtrinsicReceipt
+    &#34;&#34;&#34;
     id_parts = extrinsic_identifier.split(&#39;-&#39;, maxsplit=1)
     block_number: int = int(id_parts[0])
     extrinsic_idx: int = int(id_parts[1])
@@ -2804,6 +2849,10 @@ Returns</p>
                                 module_index = param[&#39;Module&#39;][&#39;index&#39;]
                                 error_index = param[&#39;Module&#39;][&#39;error&#39;]
 
+                            if type(error_index) is str:
+                                # Actual error index is first u8 in new [u8; 4] format
+                                error_index = int(error_index[2:4], 16)
+
                             module_error = self.substrate.metadata_decoder.get_module_error(
                                 module_index=module_index,
                                 error_index=error_index
@@ -2856,6 +2905,13 @@ Returns</p>
                     for param in event.params:
                         if param[&#39;type&#39;] == &#39;DispatchError&#39;:
                             if &#39;Module&#39; in param[&#39;value&#39;]:
+
+                                if type(param[&#39;value&#39;][&#39;Module&#39;][&#39;error&#39;]) is str:
+                                    # Actual error index is first u8 in new [u8; 4] format (e.g. 0x01000000)
+                                    error_index = int(param[&#39;value&#39;][&#39;Module&#39;][&#39;error&#39;][2:4], 16)
+                                else:
+                                    error_index = param[&#39;value&#39;][&#39;Module&#39;][&#39;error&#39;]
+
                                 module_error = self.substrate.metadata_decoder.get_module_error(
                                     module_index=param[&#39;value&#39;][&#39;Module&#39;][&#39;index&#39;],
                                     error_index=param[&#39;value&#39;][&#39;Module&#39;][&#39;error&#39;]
@@ -2927,7 +2983,7 @@ Returns</p>
 </dd>
 <dt id="substrateinterface.Keypair"><code class="flex name class">
 <span>class <span class="ident">Keypair</span></span>
-<span>(</span><span>ss58_address: str = None, public_key: bytes = None, private_key: Union[bytes, str] = None, ss58_format: int = None, seed_hex: str = None, crypto_type: int = 1)</span>
+<span>(</span><span>ss58_address: str = None, public_key: Union[bytes, str] = None, private_key: Union[bytes, str] = None, ss58_format: int = None, seed_hex: str = None, crypto_type: int = 1)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Allows generation of Keypairs from a variety of input combination, such as a public/private key combination,
@@ -2953,8 +3009,9 @@ mnemonic or URI containing soft and hard derivation paths. With these Keypairs d
 </summary>
 <pre><code class="python">class Keypair:
 
-    def __init__(self, ss58_address: str = None, public_key: bytes = None, private_key: Union[bytes, str] = None,
-                 ss58_format: int = None, seed_hex: str = None, crypto_type: int = KeypairType.SR25519):
+    def __init__(self, ss58_address: str = None, public_key: Union[bytes, str] = None,
+                 private_key: Union[bytes, str] = None, ss58_format: int = None, seed_hex: str = None,
+                 crypto_type: int = KeypairType.SR25519):
         &#34;&#34;&#34;
         Allows generation of Keypairs from a variety of input combination, such as a public/private key combination,
         mnemonic or URI containing soft and hard derivation paths. With these Keypairs data can be signed and verified
@@ -3142,7 +3199,7 @@ mnemonic or URI containing soft and hard derivation paths. With these Keypairs d
         if suri and suri.startswith(&#39;/&#39;):
             suri = DEV_PHRASE + suri
 
-        suri_regex = re.match(r&#39;^(?P&lt;phrase&gt;\w+( \w+)*)(?P&lt;path&gt;(//?[^/]+)*)(///(?P&lt;password&gt;.*))?$&#39;, suri)
+        suri_regex = re.match(r&#39;^(?P&lt;phrase&gt;.[^/]+( .[^/]+)*)(?P&lt;path&gt;(//?[^/]+)*)(///(?P&lt;password&gt;.*))?$&#39;, suri)
 
         suri_parts = suri_regex.groupdict()
 
@@ -3199,8 +3256,8 @@ mnemonic or URI containing soft and hard derivation paths. With these Keypairs d
 
     @classmethod
     def create_from_private_key(
-            cls, private_key: Union[bytes, str], public_key: bytes = None, ss58_address: str = None,
-            ss58_format: int = None, crypto_type=KeypairType.SR25519
+            cls, private_key: Union[bytes, str], public_key: Union[bytes, str] = None, ss58_address: str = None,
+            ss58_format: int = None, crypto_type: int = KeypairType.SR25519
     ) -&gt; &#39;Keypair&#39;:
         &#34;&#34;&#34;
         Creates Keypair for specified public/private keys
@@ -3210,7 +3267,7 @@ mnemonic or URI containing soft and hard derivation paths. With these Keypairs d
         public_key: hex string or bytes of public key
         ss58_address: Substrate address
         ss58_format: Substrate address format, default = 42
-        crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+        crypto_type: Use KeypairType.[SR25519|ED25519|ECDSA] cryptography for generating the Keypair
 
         Returns
         -------
@@ -3232,14 +3289,14 @@ mnemonic or URI containing soft and hard derivation paths. With these Keypairs d
 
         Returns
         -------
-        signature in hex string format
+        signature in bytes
 
         &#34;&#34;&#34;
         if type(data) is ScaleBytes:
             data = bytes(data.data)
         elif data[0:2] == &#39;0x&#39;:
             data = bytes.fromhex(data[2:])
-        else:
+        elif type(data) is str:
             data = data.encode()
 
         if not self.private_key:
@@ -3277,7 +3334,7 @@ mnemonic or URI containing soft and hard derivation paths. With these Keypairs d
             data = bytes(data.data)
         elif data[0:2] == &#39;0x&#39;:
             data = bytes.fromhex(data[2:])
-        else:
+        elif type(data) is str:
             data = data.encode()
 
         if type(signature) is str and signature[0:2] == &#39;0x&#39;:
@@ -3303,6 +3360,58 @@ mnemonic or URI containing soft and hard derivation paths. With these Keypairs d
             verified = crypto_verify_fn(signature, b&#39;&lt;Bytes&gt;&#39; + data + b&#39;&lt;/Bytes&gt;&#39;, self.public_key)
 
         return verified
+
+    def encrypt_message(
+        self, message: Union[bytes, str], recipient_public_key: bytes, nonce: bytes = secrets.token_bytes(24),
+    ) -&gt; bytes:
+        &#34;&#34;&#34;
+        Encrypts message with for specified recipient
+
+        Parameters
+        ----------
+        message: message to be encrypted, bytes or string
+        recipient_public_key: recipient&#39;s public key
+        nonce: the nonce to use in the encryption
+
+        Returns
+        -------
+        Encrypted message
+        &#34;&#34;&#34;
+
+        if not self.private_key:
+            raise ConfigurationError(&#39;No private key set to encrypt&#39;)
+        if self.crypto_type != KeypairType.ED25519:
+            raise ConfigurationError(&#39;Only ed25519 keypair type supported&#39;)
+        curve25519_public_key = nacl.bindings.crypto_sign_ed25519_pk_to_curve25519(recipient_public_key)
+        recipient = nacl.public.PublicKey(curve25519_public_key)
+        private_key = nacl.bindings.crypto_sign_ed25519_sk_to_curve25519(self.private_key + self.public_key)
+        sender = nacl.public.PrivateKey(private_key)
+        box = nacl.public.Box(sender, recipient)
+        return box.encrypt(message if isinstance(message, bytes) else message.encode(&#34;utf-8&#34;), nonce)
+
+    def decrypt_message(self, encrypted_message_with_nonce: bytes, sender_public_key: bytes) -&gt; bytes:
+        &#34;&#34;&#34;
+        Decrypts message from a specified sender
+
+        Parameters
+        ----------
+        encrypted_message_with_nonce: message to be decrypted
+        sender_public_key: sender&#39;s public key
+
+        Returns
+        -------
+        Decrypted message
+        &#34;&#34;&#34;
+
+        if not self.private_key:
+            raise ConfigurationError(&#39;No private key set to decrypt&#39;)
+        if self.crypto_type != KeypairType.ED25519:
+            raise ConfigurationError(&#39;Only ed25519 keypair type supported&#39;)
+        private_key = nacl.bindings.crypto_sign_ed25519_sk_to_curve25519(self.private_key + self.public_key)
+        recipient = nacl.public.PrivateKey(private_key)
+        curve25519_public_key = nacl.bindings.crypto_sign_ed25519_pk_to_curve25519(sender_public_key)
+        sender = nacl.public.PublicKey(curve25519_public_key)
+        return nacl.public.Box(recipient, sender).decrypt(encrypted_message_with_nonce)
 
     def __repr__(self):
         if self.ss58_address:
@@ -3377,7 +3486,7 @@ def create_from_mnemonic(cls, mnemonic: str, ss58_format=42, crypto_type=Keypair
 </details>
 </dd>
 <dt id="substrateinterface.Keypair.create_from_private_key"><code class="name flex">
-<span>def <span class="ident">create_from_private_key</span></span>(<span>private_key: Union[bytes, str], public_key: bytes = None, ss58_address: str = None, ss58_format: int = None, crypto_type=1) ‑> <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a></span>
+<span>def <span class="ident">create_from_private_key</span></span>(<span>private_key: Union[bytes, str], public_key: Union[bytes, str] = None, ss58_address: str = None, ss58_format: int = None, crypto_type: int = 1) ‑> <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Creates Keypair for specified public/private keys
@@ -3392,7 +3501,7 @@ Parameters</p>
 <dd>&nbsp;</dd>
 <dt><strong><code>ss58_format</code></strong> :&ensp;<code>Substrate address format</code>, default <code>= 42</code></dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>crypto_type</code></strong> :&ensp;<code>Use <a title="substrateinterface.KeypairType.SR25519" href="#substrateinterface.KeypairType.SR25519">KeypairType.SR25519</a></code> or <code><a title="substrateinterface.KeypairType.ED25519" href="#substrateinterface.KeypairType.ED25519">KeypairType.ED25519</a> cryptography for generating the <a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a></code></dt>
+<dt><strong><code>crypto_type</code></strong> :&ensp;<code>Use KeypairType.[SR25519|ED25519|ECDSA] cryptography for generating the Keypair</code></dt>
 <dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -3406,8 +3515,8 @@ Parameters</p>
 </summary>
 <pre><code class="python">@classmethod
 def create_from_private_key(
-        cls, private_key: Union[bytes, str], public_key: bytes = None, ss58_address: str = None,
-        ss58_format: int = None, crypto_type=KeypairType.SR25519
+        cls, private_key: Union[bytes, str], public_key: Union[bytes, str] = None, ss58_address: str = None,
+        ss58_format: int = None, crypto_type: int = KeypairType.SR25519
 ) -&gt; &#39;Keypair&#39;:
     &#34;&#34;&#34;
     Creates Keypair for specified public/private keys
@@ -3417,7 +3526,7 @@ def create_from_private_key(
     public_key: hex string or bytes of public key
     ss58_address: Substrate address
     ss58_format: Substrate address format, default = 42
-    crypto_type: Use KeypairType.SR25519 or KeypairType.ED25519 cryptography for generating the Keypair
+    crypto_type: Use KeypairType.[SR25519|ED25519|ECDSA] cryptography for generating the Keypair
 
     Returns
     -------
@@ -3535,7 +3644,7 @@ def create_from_uri(
     if suri and suri.startswith(&#39;/&#39;):
         suri = DEV_PHRASE + suri
 
-    suri_regex = re.match(r&#39;^(?P&lt;phrase&gt;\w+( \w+)*)(?P&lt;path&gt;(//?[^/]+)*)(///(?P&lt;password&gt;.*))?$&#39;, suri)
+    suri_regex = re.match(r&#39;^(?P&lt;phrase&gt;.[^/]+( .[^/]+)*)(?P&lt;path&gt;(//?[^/]+)*)(///(?P&lt;password&gt;.*))?$&#39;, suri)
 
     suri_parts = suri_regex.groupdict()
 
@@ -3670,6 +3779,104 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
 </dl>
 <h3>Methods</h3>
 <dl>
+<dt id="substrateinterface.Keypair.decrypt_message"><code class="name flex">
+<span>def <span class="ident">decrypt_message</span></span>(<span>self, encrypted_message_with_nonce: bytes, sender_public_key: bytes) ‑> bytes</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Decrypts message from a specified sender</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>encrypted_message_with_nonce</code></strong> :&ensp;<code>message to be decrypted</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>sender_public_key</code></strong> :&ensp;<code>sender's public key</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Decrypted message</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def decrypt_message(self, encrypted_message_with_nonce: bytes, sender_public_key: bytes) -&gt; bytes:
+    &#34;&#34;&#34;
+    Decrypts message from a specified sender
+
+    Parameters
+    ----------
+    encrypted_message_with_nonce: message to be decrypted
+    sender_public_key: sender&#39;s public key
+
+    Returns
+    -------
+    Decrypted message
+    &#34;&#34;&#34;
+
+    if not self.private_key:
+        raise ConfigurationError(&#39;No private key set to decrypt&#39;)
+    if self.crypto_type != KeypairType.ED25519:
+        raise ConfigurationError(&#39;Only ed25519 keypair type supported&#39;)
+    private_key = nacl.bindings.crypto_sign_ed25519_sk_to_curve25519(self.private_key + self.public_key)
+    recipient = nacl.public.PrivateKey(private_key)
+    curve25519_public_key = nacl.bindings.crypto_sign_ed25519_pk_to_curve25519(sender_public_key)
+    sender = nacl.public.PublicKey(curve25519_public_key)
+    return nacl.public.Box(recipient, sender).decrypt(encrypted_message_with_nonce)</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.Keypair.encrypt_message"><code class="name flex">
+<span>def <span class="ident">encrypt_message</span></span>(<span>self, message: Union[bytes, str], recipient_public_key: bytes, nonce: bytes = b'\xa4H\xcb\xab\x07_\x1d\x05\xbe\xf5_|~\xab(\x193\xb9\xf6\xe9w*\x9d\x94') ‑> bytes</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Encrypts message with for specified recipient</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>message</code></strong> :&ensp;<code>message to be encrypted, bytes</code> or <code>string</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>recipient_public_key</code></strong> :&ensp;<code>recipient's public key</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>nonce</code></strong> :&ensp;<code>the nonce to use in the encryption</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Encrypted message</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def encrypt_message(
+    self, message: Union[bytes, str], recipient_public_key: bytes, nonce: bytes = secrets.token_bytes(24),
+) -&gt; bytes:
+    &#34;&#34;&#34;
+    Encrypts message with for specified recipient
+
+    Parameters
+    ----------
+    message: message to be encrypted, bytes or string
+    recipient_public_key: recipient&#39;s public key
+    nonce: the nonce to use in the encryption
+
+    Returns
+    -------
+    Encrypted message
+    &#34;&#34;&#34;
+
+    if not self.private_key:
+        raise ConfigurationError(&#39;No private key set to encrypt&#39;)
+    if self.crypto_type != KeypairType.ED25519:
+        raise ConfigurationError(&#39;Only ed25519 keypair type supported&#39;)
+    curve25519_public_key = nacl.bindings.crypto_sign_ed25519_pk_to_curve25519(recipient_public_key)
+    recipient = nacl.public.PublicKey(curve25519_public_key)
+    private_key = nacl.bindings.crypto_sign_ed25519_sk_to_curve25519(self.private_key + self.public_key)
+    sender = nacl.public.PrivateKey(private_key)
+    box = nacl.public.Box(sender, recipient)
+    return box.encrypt(message if isinstance(message, bytes) else message.encode(&#34;utf-8&#34;), nonce)</code></pre>
+</details>
+</dd>
 <dt id="substrateinterface.Keypair.sign"><code class="name flex">
 <span>def <span class="ident">sign</span></span>(<span>self, data: Union[scalecodec.base.ScaleBytes, bytes, str]) ‑> bytes</span>
 </code></dt>
@@ -3682,7 +3889,7 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>signature in hex string format</code></dt>
+<dt><code>signature in bytes</code></dt>
 <dd>&nbsp;</dd>
 </dl></div>
 <details class="source">
@@ -3699,14 +3906,14 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
 
     Returns
     -------
-    signature in hex string format
+    signature in bytes
 
     &#34;&#34;&#34;
     if type(data) is ScaleBytes:
         data = bytes(data.data)
     elif data[0:2] == &#39;0x&#39;:
         data = bytes.fromhex(data[2:])
-    else:
+    elif type(data) is str:
         data = data.encode()
 
     if not self.private_key:
@@ -3766,7 +3973,7 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
         data = bytes(data.data)
     elif data[0:2] == &#39;0x&#39;:
         data = bytes.fromhex(data[2:])
-    else:
+    elif type(data) is str:
         data = data.encode()
 
     if type(signature) is str and signature[0:2] == &#39;0x&#39;:
@@ -4337,7 +4544,7 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
             if response[&#39;result&#39;]:
                 return int(response[&#39;result&#39;][&#39;number&#39;], 16)
 
-    def get_metadata(self, block_hash=None, decode=True):
+    def get_block_metadata(self, block_hash=None, decode=True):
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `state_getMetadata`.
 
@@ -4367,13 +4574,6 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
             return metadata_decoder
 
         return response
-
-    def get_block_metadata(self, block_hash=None, decode=True):
-        &#34;&#34;&#34;
-        Warning: &#39;get_block_metadata&#39; will be replaced by &#39;get_metadata&#39;
-        &#34;&#34;&#34;
-        warnings.warn(&#34;&#39;get_block_metadata&#39; will be replaced by &#39;get_metadata&#39;&#34;, DeprecationWarning)
-        return self.get_metadata(block_hash=block_hash, decode=decode)
 
     def get_storage_by_key(self, block_hash, storage_key):
         &#34;&#34;&#34;
@@ -4960,10 +5160,10 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
             events += storage_obj.elements
         return events
 
-    def get_runtime_events(self, block_hash=None):
-
+    def get_metadata(self, block_hash=None):
         &#34;&#34;&#34;
-        Warning: &#39;get_runtime_events&#39; will be replaced by &#39;get_events&#39;
+        Returns `MetadataVersioned` object for given block_hash or chaintip if block_hash is omitted
+
 
         Parameters
         ----------
@@ -4971,15 +5171,11 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
 
         Returns
         -------
-        Collection of events
+        MetadataVersioned
         &#34;&#34;&#34;
-        warnings.warn(&#34;&#39;get_runtime_events&#39; will be replaced by &#39;get_events&#39;&#34;, DeprecationWarning)
+        self.init_runtime(block_hash=block_hash)
 
-        return self.get_runtime_state(
-            module=&#34;System&#34;,
-            storage_function=&#34;Events&#34;,
-            block_hash=block_hash
-        )
+        return self.metadata_decoder
 
     def get_runtime_metadata(self, block_hash=None):
         &#34;&#34;&#34;
@@ -5186,7 +5382,7 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
         return signature_payload.data
 
     def create_signed_extrinsic(self, call: GenericCall, keypair: Keypair, era: dict = None, nonce: int = None,
-                                tip: int = 0, tip_asset_id: int = None, signature: str = None) -&gt; GenericExtrinsic:
+                                tip: int = 0, tip_asset_id: int = None, signature: Union[bytes, str] = None) -&gt; GenericExtrinsic:
         &#34;&#34;&#34;
         Creates a extrinsic signed by given account details
 
@@ -5231,15 +5427,15 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
 
         if signature is not None:
 
-            signature = signature.replace(&#39;0x&#39;, &#39;&#39;)
+            if type(signature) is str and signature[0:2] == &#39;0x&#39;:
+                signature = bytes.fromhex(signature[2:])
 
             # Check if signature is a MultiSignature and contains signature version
-            if len(signature) == 130:
-                signature_version = int(signature[0:2], 16)
-                signature = bytes.fromhex(signature[2:])
+            if len(signature) == 65:
+                signature_version = signature[0]
+                signature = signature[1:]
             else:
                 signature_version = keypair.crypto_type
-                signature = bytes.fromhex(signature)
 
         else:
             # Create signature payload
@@ -6183,6 +6379,25 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
             substrate=self, extrinsic_identifier=extrinsic_identifier
         )
 
+    def retrieve_extrinsic_by_hash(self, block_hash: str, extrinsic_hash: str) -&gt; &#34;ExtrinsicReceipt&#34;:
+        &#34;&#34;&#34;
+        Retrieve an extrinsic by providing the block_hash and the extrinsic hash
+
+        Parameters
+        ----------
+        block_hash
+        extrinsic_hash
+
+        Returns
+        -------
+        ExtrinsicReceipt
+        &#34;&#34;&#34;
+        return ExtrinsicReceipt(
+            substrate=self,
+            block_hash=block_hash,
+            extrinsic_hash=extrinsic_hash
+        )
+
     def get_runtime_block(self, block_hash: str = None, block_id: int = None, ignore_decoding_errors: bool = False,
                           include_author: bool = False):
         &#34;&#34;&#34;
@@ -6865,7 +7080,7 @@ automatically at moment of <code>block_hash</code>, or chain tip if omitted.</p>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.create_signed_extrinsic"><code class="name flex">
-<span>def <span class="ident">create_signed_extrinsic</span></span>(<span>self, call: scalecodec.types.GenericCall, keypair: <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a>, era: dict = None, nonce: int = None, tip: int = 0, tip_asset_id: int = None, signature: str = None) ‑> scalecodec.types.GenericExtrinsic</span>
+<span>def <span class="ident">create_signed_extrinsic</span></span>(<span>self, call: scalecodec.types.GenericCall, keypair: <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a>, era: dict = None, nonce: int = None, tip: int = 0, tip_asset_id: int = None, signature: Union[bytes, str] = None) ‑> scalecodec.types.GenericExtrinsic</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Creates a extrinsic signed by given account details</p>
@@ -6896,7 +7111,7 @@ automatically at moment of <code>block_hash</code>, or chain tip if omitted.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def create_signed_extrinsic(self, call: GenericCall, keypair: Keypair, era: dict = None, nonce: int = None,
-                            tip: int = 0, tip_asset_id: int = None, signature: str = None) -&gt; GenericExtrinsic:
+                            tip: int = 0, tip_asset_id: int = None, signature: Union[bytes, str] = None) -&gt; GenericExtrinsic:
     &#34;&#34;&#34;
     Creates a extrinsic signed by given account details
 
@@ -6941,15 +7156,15 @@ automatically at moment of <code>block_hash</code>, or chain tip if omitted.</p>
 
     if signature is not None:
 
-        signature = signature.replace(&#39;0x&#39;, &#39;&#39;)
+        if type(signature) is str and signature[0:2] == &#39;0x&#39;:
+            signature = bytes.fromhex(signature[2:])
 
         # Check if signature is a MultiSignature and contains signature version
-        if len(signature) == 130:
-            signature_version = int(signature[0:2], 16)
-            signature = bytes.fromhex(signature[2:])
+        if len(signature) == 65:
+            signature_version = signature[0]
+            signature = signature[1:]
         else:
             signature_version = keypair.crypto_type
-            signature = bytes.fromhex(signature)
 
     else:
         # Create signature payload
@@ -7592,17 +7807,49 @@ is omited the chain tip will be retrieve, or the finalized head if <code>finaliz
 <span>def <span class="ident">get_block_metadata</span></span>(<span>self, block_hash=None, decode=True)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Warning: 'get_block_metadata' will be replaced by 'get_metadata'</p></div>
+<div class="desc"><p>A pass-though to existing JSONRPC method <code>state_getMetadata</code>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>decode</code></strong> :&ensp;<code>True for decoded version</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_block_metadata(self, block_hash=None, decode=True):
     &#34;&#34;&#34;
-    Warning: &#39;get_block_metadata&#39; will be replaced by &#39;get_metadata&#39;
+    A pass-though to existing JSONRPC method `state_getMetadata`.
+
+    Parameters
+    ----------
+    block_hash
+    decode: True for decoded version
+
+    Returns
+    -------
+
     &#34;&#34;&#34;
-    warnings.warn(&#34;&#39;get_block_metadata&#39; will be replaced by &#39;get_metadata&#39;&#34;, DeprecationWarning)
-    return self.get_metadata(block_hash=block_hash, decode=decode)</code></pre>
+    params = None
+    if block_hash:
+        params = [block_hash]
+    response = self.rpc_request(&#34;state_getMetadata&#34;, params)
+
+    if &#39;error&#39; in response:
+        raise SubstrateRequestException(response[&#39;error&#39;][&#39;message&#39;])
+
+    if response.get(&#39;result&#39;) and decode:
+        metadata_decoder = self.runtime_config.create_scale_object(
+            &#39;MetadataVersioned&#39;, data=ScaleBytes(response.get(&#39;result&#39;))
+        )
+        metadata_decoder.decode()
+
+        return metadata_decoder
+
+    return response</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.get_block_number"><code class="name flex">
@@ -7896,52 +8143,40 @@ Parameters</p>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.get_metadata"><code class="name flex">
-<span>def <span class="ident">get_metadata</span></span>(<span>self, block_hash=None, decode=True)</span>
+<span>def <span class="ident">get_metadata</span></span>(<span>self, block_hash=None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>A pass-though to existing JSONRPC method <code>state_getMetadata</code>.</p>
+<div class="desc"><p>Returns <code>MetadataVersioned</code> object for given block_hash or chaintip if block_hash is omitted</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>block_hash</code></strong></dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>decode</code></strong> :&ensp;<code>True for decoded version</code></dt>
-<dd>&nbsp;</dd>
 </dl>
-<h2 id="returns">Returns</h2></div>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>MetadataVersioned</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_metadata(self, block_hash=None, decode=True):
+<pre><code class="python">def get_metadata(self, block_hash=None):
     &#34;&#34;&#34;
-    A pass-though to existing JSONRPC method `state_getMetadata`.
+    Returns `MetadataVersioned` object for given block_hash or chaintip if block_hash is omitted
+
 
     Parameters
     ----------
     block_hash
-    decode: True for decoded version
 
     Returns
     -------
-
+    MetadataVersioned
     &#34;&#34;&#34;
-    params = None
-    if block_hash:
-        params = [block_hash]
-    response = self.rpc_request(&#34;state_getMetadata&#34;, params)
+    self.init_runtime(block_hash=block_hash)
 
-    if &#39;error&#39; in response:
-        raise SubstrateRequestException(response[&#39;error&#39;][&#39;message&#39;])
-
-    if response.get(&#39;result&#39;) and decode:
-        metadata_decoder = self.runtime_config.create_scale_object(
-            &#39;MetadataVersioned&#39;, data=ScaleBytes(response.get(&#39;result&#39;))
-        )
-        metadata_decoder.decode()
-
-        return metadata_decoder
-
-    return response</code></pre>
+    return self.metadata_decoder</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.get_metadata_call_function"><code class="name flex">
@@ -8605,47 +8840,6 @@ omitted)</p>
 
     if block:
         return {&#39;block&#39;: block}</code></pre>
-</details>
-</dd>
-<dt id="substrateinterface.SubstrateInterface.get_runtime_events"><code class="name flex">
-<span>def <span class="ident">get_runtime_events</span></span>(<span>self, block_hash=None)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Warning: 'get_runtime_events' will be replaced by 'get_events'</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>block_hash</code></strong></dt>
-<dd>&nbsp;</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>Collection</code> of <code>events</code></dt>
-<dd>&nbsp;</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_runtime_events(self, block_hash=None):
-
-    &#34;&#34;&#34;
-    Warning: &#39;get_runtime_events&#39; will be replaced by &#39;get_events&#39;
-
-    Parameters
-    ----------
-    block_hash
-
-    Returns
-    -------
-    Collection of events
-    &#34;&#34;&#34;
-    warnings.warn(&#34;&#39;get_runtime_events&#39; will be replaced by &#39;get_events&#39;&#34;, DeprecationWarning)
-
-    return self.get_runtime_state(
-        module=&#34;System&#34;,
-        storage_function=&#34;Events&#34;,
-        block_hash=block_hash
-    )</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.get_runtime_metadata"><code class="name flex">
@@ -9596,6 +9790,47 @@ changes in type definitions when a runtime upgrade occurred</p>
     self.apply_type_registry_presets(use_remote_preset=use_remote_preset, auto_discover=auto_discover)</code></pre>
 </details>
 </dd>
+<dt id="substrateinterface.SubstrateInterface.retrieve_extrinsic_by_hash"><code class="name flex">
+<span>def <span class="ident">retrieve_extrinsic_by_hash</span></span>(<span>self, block_hash: str, extrinsic_hash: str) ‑> <a title="substrateinterface.base.ExtrinsicReceipt" href="base.html#substrateinterface.base.ExtrinsicReceipt">ExtrinsicReceipt</a></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Retrieve an extrinsic by providing the block_hash and the extrinsic hash</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>block_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>extrinsic_hash</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="substrateinterface.ExtrinsicReceipt" href="#substrateinterface.ExtrinsicReceipt">ExtrinsicReceipt</a></code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def retrieve_extrinsic_by_hash(self, block_hash: str, extrinsic_hash: str) -&gt; &#34;ExtrinsicReceipt&#34;:
+    &#34;&#34;&#34;
+    Retrieve an extrinsic by providing the block_hash and the extrinsic hash
+
+    Parameters
+    ----------
+    block_hash
+    extrinsic_hash
+
+    Returns
+    -------
+    ExtrinsicReceipt
+    &#34;&#34;&#34;
+    return ExtrinsicReceipt(
+        substrate=self,
+        block_hash=block_hash,
+        extrinsic_hash=extrinsic_hash
+    )</code></pre>
+</details>
+</dd>
 <dt id="substrateinterface.SubstrateInterface.retrieve_extrinsic_by_identifier"><code class="name flex">
 <span>def <span class="ident">retrieve_extrinsic_by_identifier</span></span>(<span>self, extrinsic_identifier: str) ‑> <a title="substrateinterface.base.ExtrinsicReceipt" href="base.html#substrateinterface.base.ExtrinsicReceipt">ExtrinsicReceipt</a></span>
 </code></dt>
@@ -10408,6 +10643,8 @@ result = substrate.subscribe_block_headers(subscription_handler, include_author=
 <li><code><a title="substrateinterface.Keypair.create_from_private_key" href="#substrateinterface.Keypair.create_from_private_key">create_from_private_key</a></code></li>
 <li><code><a title="substrateinterface.Keypair.create_from_seed" href="#substrateinterface.Keypair.create_from_seed">create_from_seed</a></code></li>
 <li><code><a title="substrateinterface.Keypair.create_from_uri" href="#substrateinterface.Keypair.create_from_uri">create_from_uri</a></code></li>
+<li><code><a title="substrateinterface.Keypair.decrypt_message" href="#substrateinterface.Keypair.decrypt_message">decrypt_message</a></code></li>
+<li><code><a title="substrateinterface.Keypair.encrypt_message" href="#substrateinterface.Keypair.encrypt_message">encrypt_message</a></code></li>
 <li><code><a title="substrateinterface.Keypair.generate_mnemonic" href="#substrateinterface.Keypair.generate_mnemonic">generate_mnemonic</a></code></li>
 <li><code><a title="substrateinterface.Keypair.sign" href="#substrateinterface.Keypair.sign">sign</a></code></li>
 <li><code><a title="substrateinterface.Keypair.validate_mnemonic" href="#substrateinterface.Keypair.validate_mnemonic">validate_mnemonic</a></code></li>
@@ -10479,7 +10716,6 @@ result = substrate.subscribe_block_headers(subscription_handler, include_author=
 <li><code><a title="substrateinterface.SubstrateInterface.get_metadata_storage_functions" href="#substrateinterface.SubstrateInterface.get_metadata_storage_functions">get_metadata_storage_functions</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_payment_info" href="#substrateinterface.SubstrateInterface.get_payment_info">get_payment_info</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_runtime_block" href="#substrateinterface.SubstrateInterface.get_runtime_block">get_runtime_block</a></code></li>
-<li><code><a title="substrateinterface.SubstrateInterface.get_runtime_events" href="#substrateinterface.SubstrateInterface.get_runtime_events">get_runtime_events</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_runtime_metadata" href="#substrateinterface.SubstrateInterface.get_runtime_metadata">get_runtime_metadata</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_runtime_state" href="#substrateinterface.SubstrateInterface.get_runtime_state">get_runtime_state</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_storage_by_key" href="#substrateinterface.SubstrateInterface.get_storage_by_key">get_storage_by_key</a></code></li>
@@ -10494,6 +10730,7 @@ result = substrate.subscribe_block_headers(subscription_handler, include_author=
 <li><code><a title="substrateinterface.SubstrateInterface.query" href="#substrateinterface.SubstrateInterface.query">query</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.query_map" href="#substrateinterface.SubstrateInterface.query_map">query_map</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.reload_type_registry" href="#substrateinterface.SubstrateInterface.reload_type_registry">reload_type_registry</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.retrieve_extrinsic_by_hash" href="#substrateinterface.SubstrateInterface.retrieve_extrinsic_by_hash">retrieve_extrinsic_by_hash</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.retrieve_extrinsic_by_identifier" href="#substrateinterface.SubstrateInterface.retrieve_extrinsic_by_identifier">retrieve_extrinsic_by_identifier</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.rpc_request" href="#substrateinterface.SubstrateInterface.rpc_request">rpc_request</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.serialize_constant" href="#substrateinterface.SubstrateInterface.serialize_constant">serialize_constant</a></code></li>
