@@ -303,6 +303,11 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
 
         self.assertEqual(2749998966, result.total_fee_amount)
 
+    def test_check_extrinsic_total_fee_amount_new_event(self):
+        receipt = self.polkadot_substrate.retrieve_extrinsic_by_identifier("12031188-2")
+
+        self.assertEqual(156673273, receipt.total_fee_amount)
+
     def test_check_failed_extrinsic_weight(self):
         result = ExtrinsicReceipt(
             substrate=self.kusama_substrate,
