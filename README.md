@@ -28,6 +28,7 @@ management and versioning of types.
   * [Query a mapped storage function](#query-a-mapped-storage-function)
   * [Create and send signed extrinsics](#create-and-send-signed-extrinsics)
   * [Examining the ExtrinsicReceipt object](#examining-the-extrinsicreceipt-object)
+  * [Initiate and finalize multisig extrinsics](#initiate-and-finalize-multisig-extrinsics)
   * [Type decomposition of call params](#type-decomposition-of-call-params)
   * [ink! contract interfacing](#ink-contract-interfacing)
   * [Create mortal extrinsics](#create-mortal-extrinsics)
@@ -452,6 +453,62 @@ print(receipt.error_message['docs']) # [' Sender is not a sub-account.']
 for event in receipt.triggered_events:
     print(f'* {event.value}')
 ```
+
+### Initiate and finalize multisig extrinsics
+
+To initiate and finalize multisig extrinsics, the following helper functions are available:
+
+```python
+# Define the multisig account by supplying its signatories and threshold
+keypair_alice = Keypair.create_from_uri('//Alice', ss58_format=substrate.ss58_format)
+
+multisig_account = substrate.generate_multisig_account(
+    signatories=[
+        keypair_alice.ss58_address, 
+        '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty', 
+        '5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y'
+    ], 
+    threshold=2
+)
+```
+
+Then initiate the multisig extrinsic by providing the call and a keypair of one of its signatories:
+
+```python
+call = substrate.compose_call(
+    call_module='System',
+    call_function='remark_with_event',
+    call_params={
+        'remark': 'Multisig test'
+    }
+)
+
+extrinsic = substrate.create_multisig_extrinsic(call, keypair_alice, multisig_account, era={'period': 64})
+receipt = substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
+```
+
+Then a second signatory approves and finalizes the call by providing the same call to another multisig extrinsic:
+
+```python
+# Define the multisig account by supplying its signatories and threshold
+keypair_charlie = Keypair.create_from_uri('//Charlie', ss58_format=substrate.ss58_format)
+
+multisig_account = substrate.generate_multisig_account(
+    signatories=[
+        keypair_charlie.ss58_address, 
+        '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', 
+        '5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y'
+    ], 
+    threshold=2
+)
+
+extrinsic = substrate.create_multisig_extrinsic(call, keypair_charlie, multisig_account, era={'period': 64})
+receipt = substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
+```
+
+The call will be executed when the second and final multisig extrinsic is submitted, condition and state of the multig 
+will be checked on-chain during processing of the multisig extrinsic.
+
 
 ### Type decomposition of call params
 
