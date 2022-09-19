@@ -3292,6 +3292,15 @@ class ExtrinsicReceipt:
 
             self.__total_fee_amount = 0
 
+            # Process fees
+            has_transaction_fee_paid_event = False
+
+            for event in self.triggered_events:
+                if event.value['module_id'] == 'TransactionPayment' and event.value['event_id'] == 'TransactionFeePaid':
+                    self.__total_fee_amount = event.value['attributes'][1]
+                    has_transaction_fee_paid_event = True
+
+            # Process other events
             for event in self.triggered_events:
                 # Check events
 
@@ -3347,14 +3356,17 @@ class ExtrinsicReceipt:
                                     'docs': 'Unspecified error occurred'
                                 }
 
-                    elif event.value['module_id'] == 'Treasury' and event.value['event_id'] == 'Deposit':
-                        self.__total_fee_amount += event.value['attributes']
+                    elif not has_transaction_fee_paid_event:
 
-                    elif event.value['module_id'] == 'Balances' and event.value['event_id'] == 'Deposit':
-                        if type(event.value['attributes']) is tuple:
-                            self.__total_fee_amount += event.value['attributes'][1]
-                        else:
-                            self.__total_fee_amount += event.value['attributes']['amount']
+                        if event.value['module_id'] == 'Treasury' and event.value['event_id'] == 'Deposit':
+                            self.__total_fee_amount += event.value['attributes']
+
+                        elif event.value['module_id'] == 'Balances' and event.value['event_id'] == 'Deposit':
+                            if type(event.value['attributes']) is tuple:
+                                self.__total_fee_amount += event.value['attributes'][1]
+                            else:
+                                self.__total_fee_amount += event.value['attributes']['amount']
+
                 else:
 
                     if event.event_module.name == 'System' and event.event.name == 'ExtrinsicSuccess':
