@@ -32,7 +32,7 @@ from eth_keys.datatypes import PrivateKey
 from websocket import create_connection, WebSocketConnectionClosedException
 
 from scalecodec.base import ScaleDecoder, ScaleBytes, RuntimeConfigurationObject, ScaleType
-from scalecodec.types import GenericCall, GenericExtrinsic, Extrinsic
+from scalecodec.types import GenericCall, GenericExtrinsic, Extrinsic, MultiAccountId
 from scalecodec.type_registry import load_type_registry_preset
 from scalecodec.updater import update_type_registries
 
@@ -1865,6 +1865,87 @@ class SubstrateInterface:
         })
 
         return extrinsic
+
+    def generate_multisig_account(self, signatories: list, threshold: int) -> MultiAccountId:
+        """
+        Generate deterministic Multisig account with supplied signatories and threshold
+        Parameters
+        ----------
+        signatories: List of signatories
+        threshold: Amount of approvals needed to execute
+
+        Returns
+        -------
+        MultiAccountId
+        """
+
+        multi_sig_account = MultiAccountId.create_from_account_list(signatories, threshold)
+
+        multi_sig_account.ss58_address = ss58_encode(multi_sig_account.value.replace('0x', ''), self.ss58_format)
+
+        return multi_sig_account
+
+    def create_multisig_extrinsic(self, call: GenericCall, keypair: Keypair, multisig_account: MultiAccountId,
+                                  max_weight: Optional[int] = None, era: dict = None, nonce: int = None, tip: int = 0,
+                                  tip_asset_id: int = None, signature: Union[bytes, str] = None) -> GenericExtrinsic:
+        """
+        Create a Multisig extrinsic that will be signed by one of the signatories. Checks on-chain if the threshold
+        of the multisig account is reached and try to execute the call accordingly.
+
+        Parameters
+        ----------
+        call: GenericCall to create extrinsic for
+        keypair: Keypair of the signatory to approve given call
+        multisig_account: MultiAccountId to use of origin of the extrinsic (see `generate_multisig_account()`)
+        max_weight: Maximum allowed weight to execute the call ( Uses `get_payment_info()` by default)
+        era: Specify mortality in blocks in follow format: {'period': [amount_blocks]} If omitted the extrinsic is immortal
+        nonce: nonce to include in extrinsics, if omitted the current nonce is retrieved on-chain
+        tip: The tip for the block author to gain priority during network congestion
+        tip_asset_id: Optional asset ID with which to pay the tip
+        signature: Optionally provide signature if externally signed
+
+        Returns
+        -------
+        GenericExtrinsic
+        """
+        if max_weight is None:
+            payment_info = self.get_payment_info(call, keypair)
+            # Check type of weight as per https://github.com/paritytech/substrate/pull/12138
+            if type(payment_info["weight"]) is dict:
+                max_weight = payment_info["weight"]["ref_time"]
+            else:
+                max_weight = payment_info["weight"]
+
+        # Check if call has existing approvals
+        multisig_details = self.query("Multisig", "Multisigs", [multisig_account.value, call.call_hash])
+
+        if multisig_details.value:
+            maybe_timepoint = multisig_details.value['when']
+        else:
+            maybe_timepoint = None
+
+        # Compose 'as_multi' when final, 'approve_as_multi' otherwise
+        if multisig_details.value and len(multisig_details.value['approvals']) + 1 == multisig_account.threshold:
+            multi_sig_call = self.compose_call("Multisig", "as_multi", {
+                'other_signatories': [s for s in multisig_account.signatories if s != f'0x{keypair.public_key.hex()}'],
+                'threshold': multisig_account.threshold,
+                'maybe_timepoint': maybe_timepoint,
+                'call': call,
+                'store_call': False,
+                'max_weight': max_weight
+            })
+        else:
+            multi_sig_call = self.compose_call("Multisig", "approve_as_multi", {
+                'other_signatories': [s for s in multisig_account.signatories if s != f'0x{keypair.public_key.hex()}'],
+                'threshold': multisig_account.threshold,
+                'maybe_timepoint': maybe_timepoint,
+                'call_hash': call.call_hash,
+                'max_weight': max_weight
+            })
+
+        return self.create_signed_extrinsic(
+            multi_sig_call, keypair, era=era, nonce=nonce, tip=tip, tip_asset_id=tip_asset_id, signature=signature
+        )
 
     def submit_extrinsic(self, extrinsic: GenericExtrinsic, wait_for_inclusion: bool = False,
                          wait_for_finalization: bool = False) -> "ExtrinsicReceipt":

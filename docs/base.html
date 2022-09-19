@@ -60,7 +60,7 @@ from eth_keys.datatypes import PrivateKey
 from websocket import create_connection, WebSocketConnectionClosedException
 
 from scalecodec.base import ScaleDecoder, ScaleBytes, RuntimeConfigurationObject, ScaleType
-from scalecodec.types import GenericCall, GenericExtrinsic, Extrinsic
+from scalecodec.types import GenericCall, GenericExtrinsic, Extrinsic, MultiAccountId
 from scalecodec.type_registry import load_type_registry_preset
 from scalecodec.updater import update_type_registries
 
@@ -74,7 +74,7 @@ from .utils.ss58 import ss58_decode, ss58_encode, is_valid_ss58_address
 
 from bip39 import bip39_to_mini_secret, bip39_generate, bip39_validate
 import sr25519
-import ed25519_dalek
+import ed25519_zebra
 
 __all__ = [&#39;Keypair&#39;, &#39;KeypairType&#39;, &#39;SubstrateInterface&#39;, &#39;ExtrinsicReceipt&#39;, &#39;logger&#39;, &#39;MnemonicLanguageCode&#39;]
 
@@ -254,7 +254,7 @@ class Keypair:
         if crypto_type == KeypairType.SR25519:
             public_key, private_key = sr25519.pair_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
         elif crypto_type == KeypairType.ED25519:
-            private_key, public_key = ed25519_dalek.ed_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
+            private_key, public_key = ed25519_zebra.ed_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
         else:
             raise ValueError(&#39;crypto_type &#34;{}&#34; not supported&#39;.format(crypto_type))
 
@@ -397,7 +397,7 @@ class Keypair:
             signature = sr25519.sign((self.public_key, self.private_key), data)
 
         elif self.crypto_type == KeypairType.ED25519:
-            signature = ed25519_dalek.ed_sign(self.public_key, self.private_key, data)
+            signature = ed25519_zebra.ed_sign(self.private_key, data)
 
         elif self.crypto_type == KeypairType.ECDSA:
             signature = ecdsa_sign(self.private_key, data)
@@ -437,7 +437,7 @@ class Keypair:
         if self.crypto_type == KeypairType.SR25519:
             crypto_verify_fn = sr25519.verify
         elif self.crypto_type == KeypairType.ED25519:
-            crypto_verify_fn = ed25519_dalek.ed_verify
+            crypto_verify_fn = ed25519_zebra.ed_verify
         elif self.crypto_type == KeypairType.ECDSA:
             crypto_verify_fn = ecdsa_verify
         else:
@@ -1893,6 +1893,87 @@ class SubstrateInterface:
         })
 
         return extrinsic
+
+    def generate_multisig_account(self, signatories: list, threshold: int) -&gt; MultiAccountId:
+        &#34;&#34;&#34;
+        Generate deterministic Multisig account with supplied signatories and threshold
+        Parameters
+        ----------
+        signatories: List of signatories
+        threshold: Amount of approvals needed to execute
+
+        Returns
+        -------
+        MultiAccountId
+        &#34;&#34;&#34;
+
+        multi_sig_account = MultiAccountId.create_from_account_list(signatories, threshold)
+
+        multi_sig_account.ss58_address = ss58_encode(multi_sig_account.value.replace(&#39;0x&#39;, &#39;&#39;), self.ss58_format)
+
+        return multi_sig_account
+
+    def create_multisig_extrinsic(self, call: GenericCall, keypair: Keypair, multisig_account: MultiAccountId,
+                                  max_weight: Optional[int] = None, era: dict = None, nonce: int = None, tip: int = 0,
+                                  tip_asset_id: int = None, signature: Union[bytes, str] = None) -&gt; GenericExtrinsic:
+        &#34;&#34;&#34;
+        Create a Multisig extrinsic that will be signed by one of the signatories. Checks on-chain if the threshold
+        of the multisig account is reached and try to execute the call accordingly.
+
+        Parameters
+        ----------
+        call: GenericCall to create extrinsic for
+        keypair: Keypair of the signatory to approve given call
+        multisig_account: MultiAccountId to use of origin of the extrinsic (see `generate_multisig_account()`)
+        max_weight: Maximum allowed weight to execute the call ( Uses `get_payment_info()` by default)
+        era: Specify mortality in blocks in follow format: {&#39;period&#39;: [amount_blocks]} If omitted the extrinsic is immortal
+        nonce: nonce to include in extrinsics, if omitted the current nonce is retrieved on-chain
+        tip: The tip for the block author to gain priority during network congestion
+        tip_asset_id: Optional asset ID with which to pay the tip
+        signature: Optionally provide signature if externally signed
+
+        Returns
+        -------
+        GenericExtrinsic
+        &#34;&#34;&#34;
+        if max_weight is None:
+            payment_info = self.get_payment_info(call, keypair)
+            # Check type of weight as per https://github.com/paritytech/substrate/pull/12138
+            if type(payment_info[&#34;weight&#34;]) is dict:
+                max_weight = payment_info[&#34;weight&#34;][&#34;ref_time&#34;]
+            else:
+                max_weight = payment_info[&#34;weight&#34;]
+
+        # Check if call has existing approvals
+        multisig_details = self.query(&#34;Multisig&#34;, &#34;Multisigs&#34;, [multisig_account.value, call.call_hash])
+
+        if multisig_details.value:
+            maybe_timepoint = multisig_details.value[&#39;when&#39;]
+        else:
+            maybe_timepoint = None
+
+        # Compose &#39;as_multi&#39; when final, &#39;approve_as_multi&#39; otherwise
+        if multisig_details.value and len(multisig_details.value[&#39;approvals&#39;]) + 1 == multisig_account.threshold:
+            multi_sig_call = self.compose_call(&#34;Multisig&#34;, &#34;as_multi&#34;, {
+                &#39;other_signatories&#39;: [s for s in multisig_account.signatories if s != f&#39;0x{keypair.public_key.hex()}&#39;],
+                &#39;threshold&#39;: multisig_account.threshold,
+                &#39;maybe_timepoint&#39;: maybe_timepoint,
+                &#39;call&#39;: call,
+                &#39;store_call&#39;: False,
+                &#39;max_weight&#39;: max_weight
+            })
+        else:
+            multi_sig_call = self.compose_call(&#34;Multisig&#34;, &#34;approve_as_multi&#34;, {
+                &#39;other_signatories&#39;: [s for s in multisig_account.signatories if s != f&#39;0x{keypair.public_key.hex()}&#39;],
+                &#39;threshold&#39;: multisig_account.threshold,
+                &#39;maybe_timepoint&#39;: maybe_timepoint,
+                &#39;call_hash&#39;: call.call_hash,
+                &#39;max_weight&#39;: max_weight
+            })
+
+        return self.create_signed_extrinsic(
+            multi_sig_call, keypair, era=era, nonce=nonce, tip=tip, tip_asset_id=tip_asset_id, signature=signature
+        )
 
     def submit_extrinsic(self, extrinsic: GenericExtrinsic, wait_for_inclusion: bool = False,
                          wait_for_finalization: bool = False) -&gt; &#34;ExtrinsicReceipt&#34;:
@@ -4639,7 +4720,7 @@ mnemonic or URI containing soft and hard derivation paths. With these Keypairs d
         if crypto_type == KeypairType.SR25519:
             public_key, private_key = sr25519.pair_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
         elif crypto_type == KeypairType.ED25519:
-            private_key, public_key = ed25519_dalek.ed_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
+            private_key, public_key = ed25519_zebra.ed_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
         else:
             raise ValueError(&#39;crypto_type &#34;{}&#34; not supported&#39;.format(crypto_type))
 
@@ -4782,7 +4863,7 @@ mnemonic or URI containing soft and hard derivation paths. With these Keypairs d
             signature = sr25519.sign((self.public_key, self.private_key), data)
 
         elif self.crypto_type == KeypairType.ED25519:
-            signature = ed25519_dalek.ed_sign(self.public_key, self.private_key, data)
+            signature = ed25519_zebra.ed_sign(self.private_key, data)
 
         elif self.crypto_type == KeypairType.ECDSA:
             signature = ecdsa_sign(self.private_key, data)
@@ -4822,7 +4903,7 @@ mnemonic or URI containing soft and hard derivation paths. With these Keypairs d
         if self.crypto_type == KeypairType.SR25519:
             crypto_verify_fn = sr25519.verify
         elif self.crypto_type == KeypairType.ED25519:
-            crypto_verify_fn = ed25519_dalek.ed_verify
+            crypto_verify_fn = ed25519_zebra.ed_verify
         elif self.crypto_type == KeypairType.ECDSA:
             crypto_verify_fn = ecdsa_verify
         else:
@@ -5059,7 +5140,7 @@ def create_from_seed(
     if crypto_type == KeypairType.SR25519:
         public_key, private_key = sr25519.pair_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
     elif crypto_type == KeypairType.ED25519:
-        private_key, public_key = ed25519_dalek.ed_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
+        private_key, public_key = ed25519_zebra.ed_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
     else:
         raise ValueError(&#39;crypto_type &#34;{}&#34; not supported&#39;.format(crypto_type))
 
@@ -5302,7 +5383,7 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
 </details>
 </dd>
 <dt id="substrateinterface.base.Keypair.encrypt_message"><code class="name flex">
-<span>def <span class="ident">encrypt_message</span></span>(<span>self, message: Union[bytes, str], recipient_public_key: bytes, nonce: bytes = b'\xa4H\xcb\xab\x07_\x1d\x05\xbe\xf5_|~\xab(\x193\xb9\xf6\xe9w*\x9d\x94') ‑> bytes</span>
+<span>def <span class="ident">encrypt_message</span></span>(<span>self, message: Union[bytes, str], recipient_public_key: bytes, nonce: bytes = b&#x27;\xeaN&lt;\xfd\x11\xeb\xdc?\xf2L\x8cb(\x9e\x9bdD\t\xde\x0b#\xb0\xa7\xb4&#x27;) ‑> bytes</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Encrypts message with for specified recipient</p>
@@ -5399,7 +5480,7 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
         signature = sr25519.sign((self.public_key, self.private_key), data)
 
     elif self.crypto_type == KeypairType.ED25519:
-        signature = ed25519_dalek.ed_sign(self.public_key, self.private_key, data)
+        signature = ed25519_zebra.ed_sign(self.private_key, data)
 
     elif self.crypto_type == KeypairType.ECDSA:
         signature = ecdsa_sign(self.private_key, data)
@@ -5461,7 +5542,7 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
     if self.crypto_type == KeypairType.SR25519:
         crypto_verify_fn = sr25519.verify
     elif self.crypto_type == KeypairType.ED25519:
-        crypto_verify_fn = ed25519_dalek.ed_verify
+        crypto_verify_fn = ed25519_zebra.ed_verify
     elif self.crypto_type == KeypairType.ECDSA:
         crypto_verify_fn = ecdsa_verify
     else:
@@ -6973,6 +7054,87 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
         })
 
         return extrinsic
+
+    def generate_multisig_account(self, signatories: list, threshold: int) -&gt; MultiAccountId:
+        &#34;&#34;&#34;
+        Generate deterministic Multisig account with supplied signatories and threshold
+        Parameters
+        ----------
+        signatories: List of signatories
+        threshold: Amount of approvals needed to execute
+
+        Returns
+        -------
+        MultiAccountId
+        &#34;&#34;&#34;
+
+        multi_sig_account = MultiAccountId.create_from_account_list(signatories, threshold)
+
+        multi_sig_account.ss58_address = ss58_encode(multi_sig_account.value.replace(&#39;0x&#39;, &#39;&#39;), self.ss58_format)
+
+        return multi_sig_account
+
+    def create_multisig_extrinsic(self, call: GenericCall, keypair: Keypair, multisig_account: MultiAccountId,
+                                  max_weight: Optional[int] = None, era: dict = None, nonce: int = None, tip: int = 0,
+                                  tip_asset_id: int = None, signature: Union[bytes, str] = None) -&gt; GenericExtrinsic:
+        &#34;&#34;&#34;
+        Create a Multisig extrinsic that will be signed by one of the signatories. Checks on-chain if the threshold
+        of the multisig account is reached and try to execute the call accordingly.
+
+        Parameters
+        ----------
+        call: GenericCall to create extrinsic for
+        keypair: Keypair of the signatory to approve given call
+        multisig_account: MultiAccountId to use of origin of the extrinsic (see `generate_multisig_account()`)
+        max_weight: Maximum allowed weight to execute the call ( Uses `get_payment_info()` by default)
+        era: Specify mortality in blocks in follow format: {&#39;period&#39;: [amount_blocks]} If omitted the extrinsic is immortal
+        nonce: nonce to include in extrinsics, if omitted the current nonce is retrieved on-chain
+        tip: The tip for the block author to gain priority during network congestion
+        tip_asset_id: Optional asset ID with which to pay the tip
+        signature: Optionally provide signature if externally signed
+
+        Returns
+        -------
+        GenericExtrinsic
+        &#34;&#34;&#34;
+        if max_weight is None:
+            payment_info = self.get_payment_info(call, keypair)
+            # Check type of weight as per https://github.com/paritytech/substrate/pull/12138
+            if type(payment_info[&#34;weight&#34;]) is dict:
+                max_weight = payment_info[&#34;weight&#34;][&#34;ref_time&#34;]
+            else:
+                max_weight = payment_info[&#34;weight&#34;]
+
+        # Check if call has existing approvals
+        multisig_details = self.query(&#34;Multisig&#34;, &#34;Multisigs&#34;, [multisig_account.value, call.call_hash])
+
+        if multisig_details.value:
+            maybe_timepoint = multisig_details.value[&#39;when&#39;]
+        else:
+            maybe_timepoint = None
+
+        # Compose &#39;as_multi&#39; when final, &#39;approve_as_multi&#39; otherwise
+        if multisig_details.value and len(multisig_details.value[&#39;approvals&#39;]) + 1 == multisig_account.threshold:
+            multi_sig_call = self.compose_call(&#34;Multisig&#34;, &#34;as_multi&#34;, {
+                &#39;other_signatories&#39;: [s for s in multisig_account.signatories if s != f&#39;0x{keypair.public_key.hex()}&#39;],
+                &#39;threshold&#39;: multisig_account.threshold,
+                &#39;maybe_timepoint&#39;: maybe_timepoint,
+                &#39;call&#39;: call,
+                &#39;store_call&#39;: False,
+                &#39;max_weight&#39;: max_weight
+            })
+        else:
+            multi_sig_call = self.compose_call(&#34;Multisig&#34;, &#34;approve_as_multi&#34;, {
+                &#39;other_signatories&#39;: [s for s in multisig_account.signatories if s != f&#39;0x{keypair.public_key.hex()}&#39;],
+                &#39;threshold&#39;: multisig_account.threshold,
+                &#39;maybe_timepoint&#39;: maybe_timepoint,
+                &#39;call_hash&#39;: call.call_hash,
+                &#39;max_weight&#39;: max_weight
+            })
+
+        return self.create_signed_extrinsic(
+            multi_sig_call, keypair, era=era, nonce=nonce, tip=tip, tip_asset_id=tip_asset_id, signature=signature
+        )
 
     def submit_extrinsic(self, extrinsic: GenericExtrinsic, wait_for_inclusion: bool = False,
                          wait_for_finalization: bool = False) -&gt; &#34;ExtrinsicReceipt&#34;:
@@ -8521,6 +8683,105 @@ def version(self):
     return value</code></pre>
 </details>
 </dd>
+<dt id="substrateinterface.base.SubstrateInterface.create_multisig_extrinsic"><code class="name flex">
+<span>def <span class="ident">create_multisig_extrinsic</span></span>(<span>self, call: scalecodec.types.GenericCall, keypair: <a title="substrateinterface.base.Keypair" href="#substrateinterface.base.Keypair">Keypair</a>, multisig_account: scalecodec.types.MultiAccountId, max_weight: Optional[int] = None, era: dict = None, nonce: int = None, tip: int = 0, tip_asset_id: int = None, signature: Union[bytes, str] = None) ‑> scalecodec.types.GenericExtrinsic</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a Multisig extrinsic that will be signed by one of the signatories. Checks on-chain if the threshold
+of the multisig account is reached and try to execute the call accordingly.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>call</code></strong> :&ensp;<code>GenericCall to create extrinsic for</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>keypair</code></strong> :&ensp;<code><a title="substrateinterface.base.Keypair" href="#substrateinterface.base.Keypair">Keypair</a></code> of <code>the signatory to approve given call</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>multisig_account</code></strong> :&ensp;<code>MultiAccountId to use</code> of <code>origin</code> of <code>the extrinsic (see </code>generate_multisig_account()<code>)</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>max_weight</code></strong> :&ensp;<code>Maximum allowed weight to execute the call ( Uses </code>get_payment_info()<code> by default)</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>era</code></strong> :&ensp;<code>Specify mortality in blocks in follow format: {'period': [amount_blocks]} If omitted the extrinsic is immortal</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>nonce</code></strong> :&ensp;<code>nonce to include in extrinsics, if omitted the current nonce is retrieved on-chain</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>tip</code></strong> :&ensp;<code>The tip for the block author to gain priority during network congestion</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>tip_asset_id</code></strong> :&ensp;<code>Optional asset ID with which to pay the tip</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>signature</code></strong> :&ensp;<code>Optionally provide signature if externally signed</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>GenericExtrinsic</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_multisig_extrinsic(self, call: GenericCall, keypair: Keypair, multisig_account: MultiAccountId,
+                              max_weight: Optional[int] = None, era: dict = None, nonce: int = None, tip: int = 0,
+                              tip_asset_id: int = None, signature: Union[bytes, str] = None) -&gt; GenericExtrinsic:
+    &#34;&#34;&#34;
+    Create a Multisig extrinsic that will be signed by one of the signatories. Checks on-chain if the threshold
+    of the multisig account is reached and try to execute the call accordingly.
+
+    Parameters
+    ----------
+    call: GenericCall to create extrinsic for
+    keypair: Keypair of the signatory to approve given call
+    multisig_account: MultiAccountId to use of origin of the extrinsic (see `generate_multisig_account()`)
+    max_weight: Maximum allowed weight to execute the call ( Uses `get_payment_info()` by default)
+    era: Specify mortality in blocks in follow format: {&#39;period&#39;: [amount_blocks]} If omitted the extrinsic is immortal
+    nonce: nonce to include in extrinsics, if omitted the current nonce is retrieved on-chain
+    tip: The tip for the block author to gain priority during network congestion
+    tip_asset_id: Optional asset ID with which to pay the tip
+    signature: Optionally provide signature if externally signed
+
+    Returns
+    -------
+    GenericExtrinsic
+    &#34;&#34;&#34;
+    if max_weight is None:
+        payment_info = self.get_payment_info(call, keypair)
+        # Check type of weight as per https://github.com/paritytech/substrate/pull/12138
+        if type(payment_info[&#34;weight&#34;]) is dict:
+            max_weight = payment_info[&#34;weight&#34;][&#34;ref_time&#34;]
+        else:
+            max_weight = payment_info[&#34;weight&#34;]
+
+    # Check if call has existing approvals
+    multisig_details = self.query(&#34;Multisig&#34;, &#34;Multisigs&#34;, [multisig_account.value, call.call_hash])
+
+    if multisig_details.value:
+        maybe_timepoint = multisig_details.value[&#39;when&#39;]
+    else:
+        maybe_timepoint = None
+
+    # Compose &#39;as_multi&#39; when final, &#39;approve_as_multi&#39; otherwise
+    if multisig_details.value and len(multisig_details.value[&#39;approvals&#39;]) + 1 == multisig_account.threshold:
+        multi_sig_call = self.compose_call(&#34;Multisig&#34;, &#34;as_multi&#34;, {
+            &#39;other_signatories&#39;: [s for s in multisig_account.signatories if s != f&#39;0x{keypair.public_key.hex()}&#39;],
+            &#39;threshold&#39;: multisig_account.threshold,
+            &#39;maybe_timepoint&#39;: maybe_timepoint,
+            &#39;call&#39;: call,
+            &#39;store_call&#39;: False,
+            &#39;max_weight&#39;: max_weight
+        })
+    else:
+        multi_sig_call = self.compose_call(&#34;Multisig&#34;, &#34;approve_as_multi&#34;, {
+            &#39;other_signatories&#39;: [s for s in multisig_account.signatories if s != f&#39;0x{keypair.public_key.hex()}&#39;],
+            &#39;threshold&#39;: multisig_account.threshold,
+            &#39;maybe_timepoint&#39;: maybe_timepoint,
+            &#39;call_hash&#39;: call.call_hash,
+            &#39;max_weight&#39;: max_weight
+        })
+
+    return self.create_signed_extrinsic(
+        multi_sig_call, keypair, era=era, nonce=nonce, tip=tip, tip_asset_id=tip_asset_id, signature=signature
+    )</code></pre>
+</details>
+</dd>
 <dt id="substrateinterface.base.SubstrateInterface.create_scale_object"><code class="name flex">
 <span>def <span class="ident">create_scale_object</span></span>(<span>self, type_string: str, data=None, block_hash=None, **kwargs) ‑> scalecodec.base.ScaleType</span>
 </code></dt>
@@ -8840,6 +9101,48 @@ is set</p>
         type_string=type_string, metadata=self.metadata_decoder
     )
     return obj.encode(value)</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.base.SubstrateInterface.generate_multisig_account"><code class="name flex">
+<span>def <span class="ident">generate_multisig_account</span></span>(<span>self, signatories: list, threshold: int) ‑> scalecodec.types.MultiAccountId</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Generate deterministic Multisig account with supplied signatories and threshold
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>signatories</code></strong> :&ensp;<code>List</code> of <code>signatories</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>threshold</code></strong> :&ensp;<code>Amount</code> of <code>approvals needed to execute</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>MultiAccountId</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_multisig_account(self, signatories: list, threshold: int) -&gt; MultiAccountId:
+    &#34;&#34;&#34;
+    Generate deterministic Multisig account with supplied signatories and threshold
+    Parameters
+    ----------
+    signatories: List of signatories
+    threshold: Amount of approvals needed to execute
+
+    Returns
+    -------
+    MultiAccountId
+    &#34;&#34;&#34;
+
+    multi_sig_account = MultiAccountId.create_from_account_list(signatories, threshold)
+
+    multi_sig_account.ss58_address = ss58_encode(multi_sig_account.value.replace(&#39;0x&#39;, &#39;&#39;), self.ss58_format)
+
+    return multi_sig_account</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.base.SubstrateInterface.generate_signature_payload"><code class="name flex">
@@ -12108,12 +12411,14 @@ result = substrate.subscribe_block_headers(subscription_handler, include_author=
 <li><code><a title="substrateinterface.base.SubstrateInterface.compose_call" href="#substrateinterface.base.SubstrateInterface.compose_call">compose_call</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.connect_websocket" href="#substrateinterface.base.SubstrateInterface.connect_websocket">connect_websocket</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.convert_storage_parameter" href="#substrateinterface.base.SubstrateInterface.convert_storage_parameter">convert_storage_parameter</a></code></li>
+<li><code><a title="substrateinterface.base.SubstrateInterface.create_multisig_extrinsic" href="#substrateinterface.base.SubstrateInterface.create_multisig_extrinsic">create_multisig_extrinsic</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.create_scale_object" href="#substrateinterface.base.SubstrateInterface.create_scale_object">create_scale_object</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.create_signed_extrinsic" href="#substrateinterface.base.SubstrateInterface.create_signed_extrinsic">create_signed_extrinsic</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.create_unsigned_extrinsic" href="#substrateinterface.base.SubstrateInterface.create_unsigned_extrinsic">create_unsigned_extrinsic</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.debug_message" href="#substrateinterface.base.SubstrateInterface.debug_message">debug_message</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.decode_scale" href="#substrateinterface.base.SubstrateInterface.decode_scale">decode_scale</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.encode_scale" href="#substrateinterface.base.SubstrateInterface.encode_scale">encode_scale</a></code></li>
+<li><code><a title="substrateinterface.base.SubstrateInterface.generate_multisig_account" href="#substrateinterface.base.SubstrateInterface.generate_multisig_account">generate_multisig_account</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.generate_signature_payload" href="#substrateinterface.base.SubstrateInterface.generate_signature_payload">generate_signature_payload</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.generate_storage_hash" href="#substrateinterface.base.SubstrateInterface.generate_storage_hash">generate_storage_hash</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.get_account_nonce" href="#substrateinterface.base.SubstrateInterface.get_account_nonce">get_account_nonce</a></code></li>

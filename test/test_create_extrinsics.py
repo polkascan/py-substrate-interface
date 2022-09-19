@@ -122,6 +122,38 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
         self.assertEqual('Utility', extrinsic.value['call']['call_module'])
         self.assertEqual('batch', extrinsic.value['call']['call_function'])
 
+    def test_create_multisig_extrinsic(self):
+
+        call = self.polkadot_substrate.compose_call(
+            call_module='Balances',
+            call_function='transfer',
+            call_params={
+                'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
+                'value': 3 * 10 ** 3
+            }
+        )
+
+        keypair_alice = Keypair.create_from_uri('//Alice', ss58_format=self.polkadot_substrate.ss58_format)
+        keypair_bob = Keypair.create_from_uri('//Bob', ss58_format=self.polkadot_substrate.ss58_format)
+        keypair_charlie = Keypair.create_from_uri('//Charlie', ss58_format=self.polkadot_substrate.ss58_format)
+
+        multisig_account = self.polkadot_substrate.generate_multisig_account(
+            signatories=[
+                keypair_alice.ss58_address,
+                keypair_bob.ss58_address,
+                keypair_charlie.ss58_address
+            ],
+            threshold=2
+        )
+
+        extrinsic = self.polkadot_substrate.create_multisig_extrinsic(call, self.keypair, multisig_account, era={'period': 64})
+
+        # Decode extrinsic again as test
+        extrinsic.decode(extrinsic.data)
+
+        self.assertEqual('Multisig', extrinsic.value['call']['call_module'])
+        self.assertEqual('approve_as_multi', extrinsic.value['call']['call_function'])
+
     def test_create_unsigned_extrinsic(self):
 
         call = self.kusama_substrate.compose_call(
