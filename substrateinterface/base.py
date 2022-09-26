@@ -2606,20 +2606,36 @@ class SubstrateInterface:
                         if include_author and 'PreRuntime' in log_digest.value:
 
                             if self.implements_scaleinfo():
-                                if log_digest.value['PreRuntime'][0] == f"0x{b'BABE'.hex()}":
+
+                                engine = bytes(log_digest[1][0])
+                                # Retrieve validator set
+                                validator_set = self.query("Session", "Validators", block_hash=block_hash)
+
+                                if engine == b'BABE':
                                     babe_predigest = self.runtime_config.create_scale_object(
                                         type_string='RawBabePreDigest',
-                                        data=ScaleBytes(log_digest.value['PreRuntime'][1])
+                                        data=ScaleBytes(log_digest[1][1])
                                     )
 
                                     babe_predigest.decode()
 
-                                    validator_set = self.query("Session", "Validators", block_hash=block_hash)
                                     rank_validator = babe_predigest[1].value['authority_index']
 
                                     block_author = validator_set[rank_validator]
                                     block_data['author'] = block_author.value
 
+                                elif engine == b'aura':
+                                    aura_predigest = self.runtime_config.create_scale_object(
+                                        type_string='RawAuraPreDigest',
+                                        data=ScaleBytes(bytes(log_digest[1][1]))
+                                    )
+
+                                    aura_predigest.decode()
+
+                                    rank_validator = aura_predigest.value['slot_number'] % len(validator_set)
+
+                                    block_author = validator_set[rank_validator]
+                                    block_data['author'] = block_author.value
                                 else:
                                     raise NotImplementedError(
                                         f"Cannot extract author for engine {log_digest.value['PreRuntime'][0]}"
