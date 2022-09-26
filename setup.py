@@ -182,7 +182,7 @@ setup(
         'certifi>=2019.3.9',
         'idna>=2.1.0,<4',
         'requests>=2.21.0,<3',
-        'xxhash>=1.3.0,<3',
+        'xxhash>=1.3.0,<4',
         'ecdsa>=0.17.0,<1',
         'eth-keys>=0.2.1,<1',
         'eth_utils>=1.3.0,<3',
