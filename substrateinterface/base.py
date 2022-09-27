@@ -2614,7 +2614,7 @@ class SubstrateInterface:
                                 if engine == b'BABE':
                                     babe_predigest = self.runtime_config.create_scale_object(
                                         type_string='RawBabePreDigest',
-                                        data=ScaleBytes(log_digest[1][1])
+                                        data=ScaleBytes(bytes(log_digest[1][1]))
                                     )
 
                                     babe_predigest.decode()
