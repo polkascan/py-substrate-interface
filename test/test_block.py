@@ -17,6 +17,8 @@
 import unittest
 from unittest.mock import MagicMock
 
+from test import settings
+
 from scalecodec.exceptions import RemainingScaleBytesNotEmptyException
 
 from substrateinterface import SubstrateInterface
@@ -160,6 +162,14 @@ class BlockTestCase(unittest.TestCase):
         cls.substrate.rpc_request = MagicMock(side_effect=mocked_request)
         cls.substrate.query = MagicMock(side_effect=mocked_query)
 
+        cls.babe_substrate = SubstrateInterface(
+            url=settings.BABE_NODE_URL
+        )
+
+        cls.aura_substrate = SubstrateInterface(
+            url=settings.AURA_NODE_URL
+        )
+
     def test_get_valid_extrinsics(self):
 
         block = self.substrate.get_block(
@@ -271,6 +281,18 @@ class BlockTestCase(unittest.TestCase):
                           block_hash='0xec828914eca09331dad704404479e2899a971a9b5948345dc40abca4ac818f93',
                           finalized_only=True
                           )
+
+    def test_block_author_babe(self):
+        block = self.babe_substrate.get_block(include_author=True)
+
+        self.assertIn('author', block)
+        self.assertIsNotNone(block['author'])
+
+    def test_block_author_aura(self):
+        block = self.aura_substrate.get_block(include_author=True)
+
+        self.assertIn('author', block)
+        self.assertIsNotNone(block['author'])
 
 
 if __name__ == '__main__':
