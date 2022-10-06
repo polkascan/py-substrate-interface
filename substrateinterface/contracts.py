@@ -78,32 +78,32 @@ class ContractMetadata:
 
     def __convert_to_latest_metadata(self):
 
+        # Determine version
         if 'metadataVersion' in self.metadata_dict:
-            # Convert legacy format as V0
-            self.metadata_dict['V0'] = {
-                'spec': self.metadata_dict.get('spec'),
-                'storage': self.metadata_dict.get('storage'),
-                'types': self.metadata_dict.get('types'),
-            }
-            self.metadata_version = 'V0'
+            self.metadata_version = 0
         elif 'V1' in self.metadata_dict:
-            self.metadata_version = 'V1'
+            self.metadata_version = 1
         elif 'V2' in self.metadata_dict:
-            self.metadata_version = 'V2'
+            self.metadata_version = 2
         elif 'V3' in self.metadata_dict:
-            self.metadata_version = 'V3'
-        else:
+            self.metadata_version = 3
+        elif 'version' in self.metadata_dict:
+            self.metadata_version = int(self.metadata_dict['version'])
+
+        if self.metadata_version is None or self.metadata_version > 4:
             raise ContractMetadataParseException("Unsupported metadata version")
 
-        self.metadata_dict['spec'] = self.metadata_dict[self.metadata_version]['spec']
-        self.metadata_dict['storage'] = self.metadata_dict[self.metadata_version]['storage']
-        self.metadata_dict['types'] = self.metadata_dict[self.metadata_version]['types']
-        del self.metadata_dict[self.metadata_version]
+        if 1 <= self.metadata_version <= 3:
+            version_key = f"V{self.metadata_version}"
+            self.metadata_dict['spec'] = self.metadata_dict[version_key]['spec']
+            self.metadata_dict['storage'] = self.metadata_dict[version_key]['storage']
+            self.metadata_dict['types'] = self.metadata_dict[version_key]['types']
+            del self.metadata_dict[version_key]
 
         # Version converters
 
         # V1 -> V2: name becomes label; no longer array
-        if self.metadata_version <= 'V1':
+        if self.metadata_version <= 1:
             def replace_name_with_label(obj):
                 if 'name' in obj:
                     if type(obj['name']) is list:
@@ -122,7 +122,7 @@ class ContractMetadata:
                     replace_name_with_label(c)
 
         # V2 -> V3: new payable flags for constructors: default to true
-        if self.metadata_version <= 'V2':
+        if self.metadata_version <= 2:
             for idx, c in enumerate(self.metadata_dict['spec']['constructors']):
                 c["payable"] = True
 
@@ -153,7 +153,7 @@ class ContractMetadata:
 
         self.type_string_prefix = f"ink::{self.metadata_dict['source']['hash']}"
 
-        if self.metadata_version == 'V0':
+        if self.metadata_version == 0:
 
             for idx, metadata_type in enumerate(self.metadata_dict['types']):
 
@@ -218,14 +218,14 @@ class ContractMetadata:
         str
         """
 
-        if self.metadata_version >= 'V1':
+        if self.metadata_version >= 1:
 
             if type_id > len(self.metadata_dict['types']):
                 raise ValueError(f'type_id {type_id} not found in metadata')
 
             return f'{self.type_string_prefix}::{type_id}'
 
-        if self.metadata_version == 'V0':
+        if self.metadata_version == 0:
             # Legacy type parsing
 
             # Check if already processed
