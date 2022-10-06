@@ -1592,7 +1592,7 @@ class SubstrateInterface:
 
     def compose_call(self, call_module: str, call_function: str, call_params: dict = None, block_hash: str = None):
         """
-        Composes a call payload which can be used as an unsigned extrinsic or a proposal.
+        Composes a call payload which can be used in an extrinsic.
 
         Parameters
         ----------

@@ -350,5 +350,100 @@ class ContractInstanceV3TestCase(ContractInstanceTestCase):
         )
 
 
+class FlipperMetadataV3TestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.substrate = SubstrateInterface(url=settings.KUSAMA_NODE_URL)
+
+    def setUp(self) -> None:
+        self.contract_metadata = ContractMetadata.create_from_file(
+            metadata_file=os.path.join(os.path.dirname(__file__), 'fixtures', 'flipper-v3.json'),
+            substrate=self.substrate
+        )
+
+    def test_metadata_parsed(self):
+        self.assertNotEqual(self.contract_metadata.metadata_dict, {})
+
+    def test_extract_typestring_from_types(self):
+        self.assertEqual(
+            'ink::0xf051c631190ac47f82e280ba763df932210f6e2447978e24cbe0dcc6d6903c7a::0',
+            self.contract_metadata.get_type_string_for_metadata_type(0)
+        )
+
+    def test_contract_types_added_type_registry(self):
+        type_string = self.contract_metadata.get_type_string_for_metadata_type(0)
+        if type_string != '()':
+            self.assertIsNotNone(self.substrate.runtime_config.get_decoder_class(type_string))
+
+    def test_return_type_for_message(self):
+        self.assertEqual(
+            'ink::0xf051c631190ac47f82e280ba763df932210f6e2447978e24cbe0dcc6d6903c7a::0',
+            self.contract_metadata.get_return_type_string_for_message('get')
+        )
+        self.assertEqual('Null', self.contract_metadata.get_return_type_string_for_message('flip'))
+
+    def test_constructor_data(self):
+
+        scale_data = self.contract_metadata.generate_constructor_data("new", args={'init_value': True})
+        self.assertEqual('0x9bae9d5e01', scale_data.to_hex())
+
+    def test_generate_message_data(self):
+
+        scale_data = self.contract_metadata.generate_message_data("get")
+        self.assertEqual('0x2f865bd9', scale_data.to_hex())
+
+
+class FlipperInstanceTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+
+        class MockedSubstrateInterface(SubstrateInterface):
+
+            def rpc_request(self, method, params, result_handler=None):
+
+                if method == 'contracts_call':
+                    return {
+                        'jsonrpc': '2.0',
+                        'result': {
+                            'gasConsumed': 7419127834,
+                            'gasRequired': 74999922688,
+                            'storageDeposit': {'charge': '0x0'},
+                            'debugMessage': '',
+                            'result': {'Ok': {'flags': 0, 'data': '0x00'}}
+                        },
+                        'id': self.request_id}
+
+                return super().rpc_request(method, params, result_handler)
+
+        cls.substrate = MockedSubstrateInterface(url=settings.KUSAMA_NODE_URL)
+        # cls.substrate = SubstrateInterface(url='ws://127.0.0.1:9944')
+
+        cls.keypair = Keypair.create_from_uri('//Alice')
+
+    def setUp(self) -> None:
+        self.contract = ContractInstance.create_from_address(
+            contract_address="5DaohteAvvR9PZEhynqWvbFT8HEaHNuiiPTZV61VEUHnqsfU",
+            metadata_file=os.path.join(os.path.dirname(__file__), 'fixtures', 'flipper-v3.json'),
+            substrate=self.substrate
+        )
+
+    def test_instance_read(self):
+
+        result = self.contract.read(self.keypair, 'get')
+
+        self.assertEqual(False, result.contract_result_data.value)
+
+
+class FlipperInstanceV4TestCase(FlipperInstanceTestCase):
+    def setUp(self) -> None:
+        self.contract = ContractInstance.create_from_address(
+            contract_address="5DaohteAvvR9PZEhynqWvbFT8HEaHNuiiPTZV61VEUHnqsfU",
+            metadata_file=os.path.join(os.path.dirname(__file__), 'fixtures', 'flipper-v4.json'),
+            substrate=self.substrate
+        )
+
+
 if __name__ == '__main__':
     unittest.main()
