@@ -1886,8 +1886,9 @@ class SubstrateInterface:
         return multi_sig_account
 
     def create_multisig_extrinsic(self, call: GenericCall, keypair: Keypair, multisig_account: MultiAccountId,
-                                  max_weight: Optional[int] = None, era: dict = None, nonce: int = None, tip: int = 0,
-                                  tip_asset_id: int = None, signature: Union[bytes, str] = None) -> GenericExtrinsic:
+                                  max_weight: Optional[Union[dict, int]] = None, era: dict = None, nonce: int = None,
+                                  tip: int = 0, tip_asset_id: int = None, signature: Union[bytes, str] = None
+                                  ) -> GenericExtrinsic:
         """
         Create a Multisig extrinsic that will be signed by one of the signatories. Checks on-chain if the threshold
         of the multisig account is reached and try to execute the call accordingly.
@@ -1911,10 +1912,7 @@ class SubstrateInterface:
         if max_weight is None:
             payment_info = self.get_payment_info(call, keypair)
             # Check type of weight as per https://github.com/paritytech/substrate/pull/12138
-            if type(payment_info["weight"]) is dict:
-                max_weight = payment_info["weight"]["ref_time"]
-            else:
-                max_weight = payment_info["weight"]
+            max_weight = payment_info["weight"]
 
         # Check if call has existing approvals
         multisig_details = self.query("Multisig", "Multisigs", [multisig_account.value, call.call_hash])
@@ -2029,7 +2027,7 @@ class SubstrateInterface:
         -------
         Dict with payment info
 
-        E.g. `{'class': 'normal', 'partialFee': 151000000, 'weight': 217238000}`
+        E.g. `{'class': 'normal', 'partialFee': 151000000, 'weight': {'ref_time': 143322000}}`
 
         """
 
@@ -3558,13 +3556,13 @@ class ExtrinsicReceipt:
         return self.__error_message
 
     @property
-    def weight(self) -> int:
+    def weight(self) -> Union[int, dict]:
         """
         Contains the actual weight when executing this extrinsic
 
         Returns
         -------
-        int
+        int (WeightV1) or dict (WeightV2)
         """
         if self.__weight is None:
             self.process_events()
