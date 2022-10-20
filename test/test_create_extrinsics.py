@@ -308,6 +308,12 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
         self.assertEqual(881719000, receipt.weight)
         self.assertEqual(receipt.error_message['name'], 'InsufficientBalance')
 
+    def test_check_extrinsic_weight_v2(self):
+        receipt = self.kusama_substrate.retrieve_extrinsic_by_identifier("14963132-10")
+
+        self.assertTrue(receipt.is_success)
+        self.assertEqual({'ref_time': 153773000}, receipt.weight)
+
     def test_check_extrinsic_total_fee_amount(self):
         result = ExtrinsicReceipt(
             substrate=self.kusama_substrate,
