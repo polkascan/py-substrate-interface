@@ -1,6 +1,6 @@
 # Python Substrate Interface Library
 #
-# Copyright 2018-2021 Stichting Polkascan (Polkascan Foundation).
+# Copyright 2018-2022 Stichting Polkascan (Polkascan Foundation).
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 import warnings
+from base64 import b64encode
 from hashlib import blake2b
 
 import binascii
@@ -38,6 +40,7 @@ from scalecodec.updater import update_type_registries
 
 from .key import extract_derive_path
 from .utils.ecdsa_helpers import mnemonic_to_ecdsa_private_key, ecdsa_verify, ecdsa_sign
+from .utils.encrypted_json import decode_pair_from_encrypted_json, encode_pair
 from .utils.hasher import blake2_256, two_x64_concat, xxh128, blake2_128, blake2_128_concat, identity
 from .exceptions import SubstrateRequestException, ConfigurationError, StorageFunctionNotFound, BlockNotFound, \
     ExtrinsicNotFound
@@ -73,7 +76,7 @@ class MnemonicLanguageCode:
 class Keypair:
 
     def __init__(self, ss58_address: str = None, public_key: Union[bytes, str] = None,
-                 private_key: Union[bytes, str] = None, ss58_format: int = None, seed_hex: str = None,
+                 private_key: Union[bytes, str] = None, ss58_format: int = None, seed_hex: Union[str, bytes] = None,
                  crypto_type: int = KeypairType.SR25519):
         """
         Allows generation of Keypairs from a variety of input combination, such as a public/private key combination,
@@ -101,8 +104,11 @@ class Keypair:
             if type(private_key) is str:
                 private_key = bytes.fromhex(private_key.replace('0x', ''))
 
-            if self.crypto_type == KeypairType.SR25519 and len(private_key) != 64:
-                raise ValueError('Secret key should be 64 bytes long')
+            if self.crypto_type == KeypairType.SR25519:
+                if len(private_key) != 64:
+                    raise ValueError('Secret key should be 64 bytes long')
+                if not public_key:
+                    public_key = sr25519.public_from_secret_key(private_key)
 
             if self.crypto_type == KeypairType.ECDSA:
                 private_key_obj = PrivateKey(private_key)
@@ -207,7 +213,7 @@ class Keypair:
 
     @classmethod
     def create_from_seed(
-            cls, seed_hex: str, ss58_format: Optional[int] = 42, crypto_type=KeypairType.SR25519
+            cls, seed_hex: Union[bytes, str], ss58_format: Optional[int] = 42, crypto_type=KeypairType.SR25519
     ) -> 'Keypair':
         """
         Create a Keypair for given seed
@@ -223,17 +229,17 @@ class Keypair:
         Keypair
         """
 
+        if type(seed_hex) is str:
+            seed_hex = bytes.fromhex(seed_hex.replace('0x', ''))
+
         if crypto_type == KeypairType.SR25519:
-            public_key, private_key = sr25519.pair_from_seed(bytes.fromhex(seed_hex.replace('0x', '')))
+            public_key, private_key = sr25519.pair_from_seed(seed_hex)
         elif crypto_type == KeypairType.ED25519:
-            private_key, public_key = ed25519_zebra.ed_from_seed(bytes.fromhex(seed_hex.replace('0x', '')))
+            private_key, public_key = ed25519_zebra.ed_from_seed(seed_hex)
         else:
             raise ValueError('crypto_type "{}" not supported'.format(crypto_type))
 
-        public_key = public_key.hex()
-        private_key = private_key.hex()
-
-        ss58_address = ss58_encode(f'0x{public_key}', ss58_format)
+        ss58_address = ss58_encode(public_key, ss58_format)
 
         return cls(
             ss58_address=ss58_address, public_key=public_key, private_key=private_key,
@@ -341,6 +347,51 @@ class Keypair:
             ss58_address=ss58_address, public_key=public_key, private_key=private_key,
             ss58_format=ss58_format, crypto_type=crypto_type
         )
+
+    @classmethod
+    def create_from_encrypted_json(cls, json_data: Union[str, dict], passphrase: Optional[str] = None,
+                                   ss58_format: int = None) -> 'Keypair':
+
+        if type(json_data) is str:
+            json_data = json.loads(json_data)
+
+        private_key, public_key = decode_pair_from_encrypted_json(json_data, passphrase)
+
+        if 'sr25519' in json_data['encoding']['content']:
+            crypto_type = KeypairType.SR25519
+        elif 'ed25519' in json_data['encoding']['content']:
+            crypto_type = KeypairType.ED25519
+            # Strip the nonce part of the private key
+            private_key = private_key[0:32]
+        else:
+            raise NotImplementedError("Unknown KeypairType found in JSON")
+
+        return cls.create_from_private_key(private_key, public_key, ss58_format=ss58_format, crypto_type=crypto_type)
+
+    def export_to_encrypted_json(self, passphrase: Optional[str] = None, name: str = None) -> dict:
+
+        if not name:
+            name = self.ss58_address
+
+        if self.crypto_type != KeypairType.SR25519:
+            raise NotImplementedError(f"Cannot create JSON for crypto_type '{self.crypto_type}'")
+
+        # Secret key from PolkadotJS is an Ed25519 expanded secret key, so has to be converted
+        # https://github.com/polkadot-js/wasm/blob/master/packages/wasm-crypto/src/rs/sr25519.rs#L125
+        converted_private_key = sr25519.convert_secret_key_to_ed25519(self.private_key)
+
+        encoded = encode_pair(self.public_key, converted_private_key, passphrase)
+
+        json_data = {
+            "encoded": b64encode(encoded).decode(),
+            "encoding": {"content": ["pkcs8", "sr25519"], "type": ["scrypt", "xsalsa20-poly1305"], "version": "3"},
+            "address": self.ss58_address,
+            "meta": {
+                "name": name, "tags": [], "whenCreated": int(time.time())
+            }
+        }
+
+        return json_data
 
     def sign(self, data: Union[ScaleBytes, bytes, str]) -> bytes:
         """
@@ -3487,7 +3538,7 @@ class ExtrinsicReceipt:
 
                                     module_error = self.substrate.metadata_decoder.get_module_error(
                                         module_index=param['value']['Module']['index'],
-                                        error_index=param['value']['Module']['error']
+                                        error_index=error_index
                                     )
                                     self.__error_message = {
                                         'type': 'Module',
