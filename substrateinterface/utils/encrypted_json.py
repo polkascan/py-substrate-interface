@@ -1,6 +1,7 @@
 import base64
 import json
-from random import randbytes
+from os import urandom
+
 from typing import Union, Optional
 
 from nacl.hashlib import scrypt
@@ -102,7 +103,7 @@ def encode_pair(public_key: bytes, private_key: bytes, passphrase: Optional[str]
     message = encode_pkcs8(public_key, private_key)
 
     if passphrase:
-        salt = randbytes(SALT_LENGTH)
+        salt = urandom(SALT_LENGTH)
         password = scrypt(passphrase.encode(), salt, n=SCRYPT_N, r=SCRYPT_R, p=SCRYPT_P, dklen=32, maxmem=2 ** 26)
 
         secret_box = SecretBox(key=password)
