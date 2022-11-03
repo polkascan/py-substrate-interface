@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>substrateinterface.utils.encrypted_json API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>substrateinterface.utils.encrypted_json</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import base64
+import json
+from os import urandom
+
+from typing import Union, Optional
+
+from nacl.hashlib import scrypt
+from nacl.secret import SecretBox
+from sr25519 import pair_from_ed25519_secret_key
+
+
+NONCE_LENGTH = 24
+SCRYPT_LENGTH = 32 + (3 * 4)
+PKCS8_DIVIDER = bytes([161, 35, 3, 33, 0])
+PKCS8_HEADER = bytes([48, 83, 2, 1, 1, 48, 5, 6, 3, 43, 101, 112, 4, 34, 4, 32])
+PUB_LENGTH = 32
+SALT_LENGTH = 32
+SEC_LENGTH = 64
+SEED_LENGTH = 32
+
+SCRYPT_N = 1 &lt;&lt; 15
+SCRYPT_P = 1
+SCRYPT_R = 8
+
+
+def decode_pair_from_encrypted_json(json_data: Union[str, dict], passphrase: str) -&gt; tuple:
+    &#34;&#34;&#34;
+    Decodes encrypted PKCS#8 message from PolkadotJS JSON format
+
+    Parameters
+    ----------
+    json_data
+    passphrase
+
+    Returns
+    -------
+    tuple containing private and public key
+    &#34;&#34;&#34;
+    if type(json_data) is str:
+        json_data = json.loads(json_data)
+
+    # Check requirements
+    if json_data.get(&#39;encoding&#39;, {}).get(&#39;version&#39;) != &#34;3&#34;:
+        raise ValueError(&#34;Unsupported JSON format&#34;)
+
+    encrypted = base64.b64decode(json_data[&#39;encoded&#39;])
+
+    if &#39;scrypt&#39; in json_data[&#39;encoding&#39;][&#39;type&#39;]:
+        salt = encrypted[0:32]
+        n = int.from_bytes(encrypted[32:36], byteorder=&#39;little&#39;)
+        p = int.from_bytes(encrypted[36:40], byteorder=&#39;little&#39;)
+        r = int.from_bytes(encrypted[40:44], byteorder=&#39;little&#39;)
+
+        password = scrypt(passphrase.encode(), salt, n=n, r=r, p=p, dklen=32, maxmem=2 ** 26)
+        encrypted = encrypted[SCRYPT_LENGTH:]
+
+    else:
+        password = passphrase.encode().rjust(32, b&#39;\x00&#39;)
+
+    if &#34;xsalsa20-poly1305&#34; not in json_data[&#39;encoding&#39;][&#39;type&#39;]:
+        raise ValueError(&#34;Unsupported encoding type&#34;)
+
+    nonce = encrypted[0:NONCE_LENGTH]
+    message = encrypted[NONCE_LENGTH:]
+
+    secret_box = SecretBox(key=password)
+    decrypted = secret_box.decrypt(message, nonce)
+
+    # Decode PKCS8 message
+    secret_key, public_key = decode_pkcs8(decrypted)
+
+    if &#39;sr25519&#39; in json_data[&#39;encoding&#39;][&#39;content&#39;]:
+        # Secret key from PolkadotJS is an Ed25519 expanded secret key, so has to be converted
+        # https://github.com/polkadot-js/wasm/blob/master/packages/wasm-crypto/src/rs/sr25519.rs#L125
+        converted_public_key, secret_key = pair_from_ed25519_secret_key(secret_key)
+        assert(public_key == converted_public_key)
+
+    return secret_key, public_key
+
+
+def decode_pkcs8(ciphertext: bytes) -&gt; tuple:
+    current_offset = 0
+
+    header = ciphertext[current_offset:len(PKCS8_HEADER)]
+    if header != PKCS8_HEADER:
+        raise ValueError(&#34;Invalid Pkcs8 header found in body&#34;)
+
+    current_offset += len(PKCS8_HEADER)
+
+    secret_key = ciphertext[current_offset:current_offset + SEC_LENGTH]
+    current_offset += SEC_LENGTH
+
+    divider = ciphertext[current_offset:current_offset + len(PKCS8_DIVIDER)]
+
+    if divider != PKCS8_DIVIDER:
+        raise ValueError(&#34;Invalid Pkcs8 divider found in body&#34;)
+
+    current_offset += len(PKCS8_DIVIDER)
+
+    public_key = ciphertext[current_offset: current_offset + PUB_LENGTH]
+
+    return secret_key, public_key
+
+
+def encode_pkcs8(public_key: bytes, private_key: bytes) -&gt; bytes:
+    return PKCS8_HEADER + private_key + PKCS8_DIVIDER + public_key
+
+
+def encode_pair(public_key: bytes, private_key: bytes, passphrase: str) -&gt; bytes:
+    &#34;&#34;&#34;
+    Encode a public/private pair to PKCS#8 format, encrypted with provided passphrase
+
+    Parameters
+    ----------
+    public_key: 32 bytes public key
+    private_key: 64 bytes private key
+    passphrase: passphrase to encrypt the PKCS#8 message
+
+    Returns
+    -------
+    (Encrypted) PKCS#8 message bytes
+    &#34;&#34;&#34;
+    message = encode_pkcs8(public_key, private_key)
+
+
+    salt = urandom(SALT_LENGTH)
+    password = scrypt(passphrase.encode(), salt, n=SCRYPT_N, r=SCRYPT_R, p=SCRYPT_P, dklen=32, maxmem=2 ** 26)
+
+    secret_box = SecretBox(key=password)
+    message = secret_box.encrypt(message)
+
+    scrypt_params = SCRYPT_N.to_bytes(4, &#39;little&#39;) + SCRYPT_P.to_bytes(4, &#39;little&#39;) + SCRYPT_R.to_bytes(4, &#39;little&#39;)
+
+    return salt + scrypt_params + message.nonce + message.ciphertext</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="substrateinterface.utils.encrypted_json.decode_pair_from_encrypted_json"><code class="name flex">
+<span>def <span class="ident">decode_pair_from_encrypted_json</span></span>(<span>json_data: Union[str, dict], passphrase: str) ‑> tuple</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Decodes encrypted PKCS#8 message from PolkadotJS JSON format</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>json_data</code></strong></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>passphrase</code></strong></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>tuple containing private and public key</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def decode_pair_from_encrypted_json(json_data: Union[str, dict], passphrase: str) -&gt; tuple:
+    &#34;&#34;&#34;
+    Decodes encrypted PKCS#8 message from PolkadotJS JSON format
+
+    Parameters
+    ----------
+    json_data
+    passphrase
+
+    Returns
+    -------
+    tuple containing private and public key
+    &#34;&#34;&#34;
+    if type(json_data) is str:
+        json_data = json.loads(json_data)
+
+    # Check requirements
+    if json_data.get(&#39;encoding&#39;, {}).get(&#39;version&#39;) != &#34;3&#34;:
+        raise ValueError(&#34;Unsupported JSON format&#34;)
+
+    encrypted = base64.b64decode(json_data[&#39;encoded&#39;])
+
+    if &#39;scrypt&#39; in json_data[&#39;encoding&#39;][&#39;type&#39;]:
+        salt = encrypted[0:32]
+        n = int.from_bytes(encrypted[32:36], byteorder=&#39;little&#39;)
+        p = int.from_bytes(encrypted[36:40], byteorder=&#39;little&#39;)
+        r = int.from_bytes(encrypted[40:44], byteorder=&#39;little&#39;)
+
+        password = scrypt(passphrase.encode(), salt, n=n, r=r, p=p, dklen=32, maxmem=2 ** 26)
+        encrypted = encrypted[SCRYPT_LENGTH:]
+
+    else:
+        password = passphrase.encode().rjust(32, b&#39;\x00&#39;)
+
+    if &#34;xsalsa20-poly1305&#34; not in json_data[&#39;encoding&#39;][&#39;type&#39;]:
+        raise ValueError(&#34;Unsupported encoding type&#34;)
+
+    nonce = encrypted[0:NONCE_LENGTH]
+    message = encrypted[NONCE_LENGTH:]
+
+    secret_box = SecretBox(key=password)
+    decrypted = secret_box.decrypt(message, nonce)
+
+    # Decode PKCS8 message
+    secret_key, public_key = decode_pkcs8(decrypted)
+
+    if &#39;sr25519&#39; in json_data[&#39;encoding&#39;][&#39;content&#39;]:
+        # Secret key from PolkadotJS is an Ed25519 expanded secret key, so has to be converted
+        # https://github.com/polkadot-js/wasm/blob/master/packages/wasm-crypto/src/rs/sr25519.rs#L125
+        converted_public_key, secret_key = pair_from_ed25519_secret_key(secret_key)
+        assert(public_key == converted_public_key)
+
+    return secret_key, public_key</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.utils.encrypted_json.decode_pkcs8"><code class="name flex">
+<span>def <span class="ident">decode_pkcs8</span></span>(<span>ciphertext: bytes) ‑> tuple</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def decode_pkcs8(ciphertext: bytes) -&gt; tuple:
+    current_offset = 0
+
+    header = ciphertext[current_offset:len(PKCS8_HEADER)]
+    if header != PKCS8_HEADER:
+        raise ValueError(&#34;Invalid Pkcs8 header found in body&#34;)
+
+    current_offset += len(PKCS8_HEADER)
+
+    secret_key = ciphertext[current_offset:current_offset + SEC_LENGTH]
+    current_offset += SEC_LENGTH
+
+    divider = ciphertext[current_offset:current_offset + len(PKCS8_DIVIDER)]
+
+    if divider != PKCS8_DIVIDER:
+        raise ValueError(&#34;Invalid Pkcs8 divider found in body&#34;)
+
+    current_offset += len(PKCS8_DIVIDER)
+
+    public_key = ciphertext[current_offset: current_offset + PUB_LENGTH]
+
+    return secret_key, public_key</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.utils.encrypted_json.encode_pair"><code class="name flex">
+<span>def <span class="ident">encode_pair</span></span>(<span>public_key: bytes, private_key: bytes, passphrase: str) ‑> bytes</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Encode a public/private pair to PKCS#8 format, encrypted with provided passphrase</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>public_key</code></strong> :&ensp;<code>32 bytes public key</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>private_key</code></strong> :&ensp;<code>64 bytes private key</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>passphrase</code></strong> :&ensp;<code>passphrase to encrypt the PKCS#8 message</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>(Encrypted) PKCS#8 message bytes</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def encode_pair(public_key: bytes, private_key: bytes, passphrase: str) -&gt; bytes:
+    &#34;&#34;&#34;
+    Encode a public/private pair to PKCS#8 format, encrypted with provided passphrase
+
+    Parameters
+    ----------
+    public_key: 32 bytes public key
+    private_key: 64 bytes private key
+    passphrase: passphrase to encrypt the PKCS#8 message
+
+    Returns
+    -------
+    (Encrypted) PKCS#8 message bytes
+    &#34;&#34;&#34;
+    message = encode_pkcs8(public_key, private_key)
+
+
+    salt = urandom(SALT_LENGTH)
+    password = scrypt(passphrase.encode(), salt, n=SCRYPT_N, r=SCRYPT_R, p=SCRYPT_P, dklen=32, maxmem=2 ** 26)
+
+    secret_box = SecretBox(key=password)
+    message = secret_box.encrypt(message)
+
+    scrypt_params = SCRYPT_N.to_bytes(4, &#39;little&#39;) + SCRYPT_P.to_bytes(4, &#39;little&#39;) + SCRYPT_R.to_bytes(4, &#39;little&#39;)
+
+    return salt + scrypt_params + message.nonce + message.ciphertext</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.utils.encrypted_json.encode_pkcs8"><code class="name flex">
+<span>def <span class="ident">encode_pkcs8</span></span>(<span>public_key: bytes, private_key: bytes) ‑> bytes</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def encode_pkcs8(public_key: bytes, private_key: bytes) -&gt; bytes:
+    return PKCS8_HEADER + private_key + PKCS8_DIVIDER + public_key</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.utils.encrypted_json.pair_from_ed25519_secret_key"><code class="name flex">
+<span>def <span class="ident">pair_from_ed25519_secret_key</span></span>(<span>secret_key)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns a public and private key pair from a Ed25519 expanded secret key</p>
+<h1 id="arguments">Arguments</h1>
+<ul>
+<li><code>secret_key</code> - An Ed25519 expanded secret key.</li>
+</ul>
+<h1 id="returns">Returns</h1>
+<p>A tuple containing the 32-byte public key and 64-byte secret key, in that order.</p></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="substrateinterface.utils" href="index.html">substrateinterface.utils</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="substrateinterface.utils.encrypted_json.decode_pair_from_encrypted_json" href="#substrateinterface.utils.encrypted_json.decode_pair_from_encrypted_json">decode_pair_from_encrypted_json</a></code></li>
+<li><code><a title="substrateinterface.utils.encrypted_json.decode_pkcs8" href="#substrateinterface.utils.encrypted_json.decode_pkcs8">decode_pkcs8</a></code></li>
+<li><code><a title="substrateinterface.utils.encrypted_json.encode_pair" href="#substrateinterface.utils.encrypted_json.encode_pair">encode_pair</a></code></li>
+<li><code><a title="substrateinterface.utils.encrypted_json.encode_pkcs8" href="#substrateinterface.utils.encrypted_json.encode_pkcs8">encode_pkcs8</a></code></li>
+<li><code><a title="substrateinterface.utils.encrypted_json.pair_from_ed25519_secret_key" href="#substrateinterface.utils.encrypted_json.pair_from_ed25519_secret_key">pair_from_ed25519_secret_key</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

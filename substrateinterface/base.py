@@ -349,8 +349,21 @@ class Keypair:
         )
 
     @classmethod
-    def create_from_encrypted_json(cls, json_data: Union[str, dict], passphrase: Optional[str] = None,
+    def create_from_encrypted_json(cls, json_data: Union[str, dict], passphrase: str,
                                    ss58_format: int = None) -> 'Keypair':
+        """
+        Create a Keypair from a PolkadotJS format encrypted JSON file
+
+        Parameters
+        ----------
+        json_data: Dict or JSON string containing PolkadotJS export format
+        passphrase: Used to encrypt the keypair
+        ss58_format: Which network ID to use to format the SS58 address (42 for testnet)
+
+        Returns
+        -------
+        Keypair
+        """
 
         if type(json_data) is str:
             json_data = json.loads(json_data)
@@ -368,8 +381,19 @@ class Keypair:
 
         return cls.create_from_private_key(private_key, public_key, ss58_format=ss58_format, crypto_type=crypto_type)
 
-    def export_to_encrypted_json(self, passphrase: Optional[str] = None, name: str = None) -> dict:
+    def export_to_encrypted_json(self, passphrase: str, name: str = None) -> dict:
+        """
+        Export Keypair to PolkadotJS format encrypted JSON file
 
+        Parameters
+        ----------
+        passphrase: Used to encrypt the keypair
+        name: Display name of Keypair used
+
+        Returns
+        -------
+        dict
+        """
         if not name:
             name = self.ss58_address
 

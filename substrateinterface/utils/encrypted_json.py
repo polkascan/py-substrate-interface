@@ -23,7 +23,19 @@ SCRYPT_P = 1
 SCRYPT_R = 8
 
 
-def decode_pair_from_encrypted_json(json_data: Union[str, dict], passphrase: Optional[str] = None) -> tuple:
+def decode_pair_from_encrypted_json(json_data: Union[str, dict], passphrase: str) -> tuple:
+    """
+    Decodes encrypted PKCS#8 message from PolkadotJS JSON format
+
+    Parameters
+    ----------
+    json_data
+    passphrase
+
+    Returns
+    -------
+    tuple containing private and public key
+    """
     if type(json_data) is str:
         json_data = json.loads(json_data)
 
@@ -33,33 +45,28 @@ def decode_pair_from_encrypted_json(json_data: Union[str, dict], passphrase: Opt
 
     encrypted = base64.b64decode(json_data['encoded'])
 
-    if passphrase:
+    if 'scrypt' in json_data['encoding']['type']:
+        salt = encrypted[0:32]
+        n = int.from_bytes(encrypted[32:36], byteorder='little')
+        p = int.from_bytes(encrypted[36:40], byteorder='little')
+        r = int.from_bytes(encrypted[40:44], byteorder='little')
 
-        if 'scrypt' in json_data['encoding']['type']:
-            salt = encrypted[0:32]
-            n = int.from_bytes(encrypted[32:36], byteorder='little')
-            p = int.from_bytes(encrypted[36:40], byteorder='little')
-            r = int.from_bytes(encrypted[40:44], byteorder='little')
+        password = scrypt(passphrase.encode(), salt, n=n, r=r, p=p, dklen=32, maxmem=2 ** 26)
+        encrypted = encrypted[SCRYPT_LENGTH:]
 
-            password = scrypt(passphrase.encode(), salt, n=n, r=r, p=p, dklen=32, maxmem=2 ** 26)
-            encrypted = encrypted[SCRYPT_LENGTH:]
-
-        else:
-            password = passphrase.encode().rjust(32, b'\x00')
-
-        if "xsalsa20-poly1305" not in json_data['encoding']['type']:
-            raise ValueError("Unsupported encoding type")
-
-        nonce = encrypted[0:NONCE_LENGTH]
-        message = encrypted[NONCE_LENGTH:]
-
-        secret_box = SecretBox(key=password)
-        decrypted = secret_box.decrypt(message, nonce)
     else:
-        decrypted = encrypted
+        password = passphrase.encode().rjust(32, b'\x00')
+
+    if "xsalsa20-poly1305" not in json_data['encoding']['type']:
+        raise ValueError("Unsupported encoding type")
+
+    nonce = encrypted[0:NONCE_LENGTH]
+    message = encrypted[NONCE_LENGTH:]
+
+    secret_box = SecretBox(key=password)
+    decrypted = secret_box.decrypt(message, nonce)
 
     # Decode PKCS8 message
-
     secret_key, public_key = decode_pkcs8(decrypted)
 
     if 'sr25519' in json_data['encoding']['content']:
@@ -99,18 +106,30 @@ def encode_pkcs8(public_key: bytes, private_key: bytes) -> bytes:
     return PKCS8_HEADER + private_key + PKCS8_DIVIDER + public_key
 
 
-def encode_pair(public_key: bytes, private_key: bytes, passphrase: Optional[str] = None) -> bytes:
+def encode_pair(public_key: bytes, private_key: bytes, passphrase: str) -> bytes:
+    """
+    Encode a public/private pair to PKCS#8 format, encrypted with provided passphrase
+
+    Parameters
+    ----------
+    public_key: 32 bytes public key
+    private_key: 64 bytes private key
+    passphrase: passphrase to encrypt the PKCS#8 message
+
+    Returns
+    -------
+    (Encrypted) PKCS#8 message bytes
+    """
     message = encode_pkcs8(public_key, private_key)
 
-    if passphrase:
-        salt = urandom(SALT_LENGTH)
-        password = scrypt(passphrase.encode(), salt, n=SCRYPT_N, r=SCRYPT_R, p=SCRYPT_P, dklen=32, maxmem=2 ** 26)
 
-        secret_box = SecretBox(key=password)
-        message = secret_box.encrypt(message)
+    salt = urandom(SALT_LENGTH)
+    password = scrypt(passphrase.encode(), salt, n=SCRYPT_N, r=SCRYPT_R, p=SCRYPT_P, dklen=32, maxmem=2 ** 26)
 
-        scrypt_params = SCRYPT_N.to_bytes(4, 'little') + SCRYPT_P.to_bytes(4, 'little') + SCRYPT_R.to_bytes(4, 'little')
+    secret_box = SecretBox(key=password)
+    message = secret_box.encrypt(message)
 
-        return salt + scrypt_params + message.nonce + message.ciphertext
+    scrypt_params = SCRYPT_N.to_bytes(4, 'little') + SCRYPT_P.to_bytes(4, 'little') + SCRYPT_R.to_bytes(4, 'little')
 
-    return message
+    return salt + scrypt_params + message.nonce + message.ciphertext
+
