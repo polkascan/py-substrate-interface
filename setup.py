@@ -123,7 +123,7 @@ setup(
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
 
         # Indicate who your project is intended for
         'Intended Audience :: Developers',
@@ -141,6 +141,7 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
     ],
 
     # This field adds keywords for your project which will appear on the
@@ -189,7 +190,7 @@ setup(
         'pycryptodome>=3.11.0,<4',
         'PyNaCl>=1.0.1,<2',
         'scalecodec>=1.0.46,<2',
-        'py-sr25519-bindings>=0.1.4,<1',
+        'py-sr25519-bindings>=0.2.0,<1',
         'py-ed25519-zebra-bindings>=1.0,<2',
         'py-bip39-bindings>=0.1.9,<1'
     ],

@@ -35,6 +35,7 @@ management and versioning of types.
   * [Keypair creation and signing](#keypair-creation-and-signing)
   * [Creating keypairs with soft and hard key derivation paths](#creating-keypairs-with-soft-and-hard-key-derivation-paths)
   * [Creating ECDSA keypairs with BIP44 derivation paths](#creating-ecdsa-keypairs-with-bip44-derivation-paths)
+  * [Create Keypair from PolkadotJS JSON format](#create-keypair-from-polkadotjs-json-format)
   * [Verify generated signature with public address](#verify-generated-signature-with-public-address)
   * [Getting estimate of network fees for extrinsic in advance](#getting-estimate-of-network-fees-for-extrinsic-in-advance)
   * [Offline signing of extrinsics](#offline-signing-of-extrinsics)
@@ -648,6 +649,14 @@ keypair = Keypair.create_from_uri('//Alice')
 ```python
 mnemonic = Keypair.generate_mnemonic()
 keypair = Keypair.create_from_uri(f"{mnemonic}/m/44'/60'/0'/0/0", crypto_type=KeypairType.ECDSA)
+```
+
+### Create Keypair from PolkadotJS JSON format
+
+```python
+with open('5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY.json', 'r') as fp:
+    json_data = fp.read()
+    keypair = Keypair.create_from_encrypted_json(json_data, passphrase="test", ss58_format=42)
 ```
 
 ### Verify generated signature with public address

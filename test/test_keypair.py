@@ -13,7 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import os
 import unittest
 
 from substrateinterface.constants import DEV_PHRASE
@@ -21,7 +21,6 @@ from substrateinterface.key import extract_derive_path
 from substrateinterface.exceptions import ConfigurationError
 from scalecodec.base import ScaleBytes
 from substrateinterface import Keypair, KeypairType, MnemonicLanguageCode
-from bip39 import bip39_validate
 
 
 class KeyPairTestCase(unittest.TestCase):
@@ -374,6 +373,44 @@ class KeyPairTestCase(unittest.TestCase):
         mnemonic_path = "nation armure tympan devancer temporel capsule ogive médecin acheter narquois abrasif brasier//0"
         keypair = Keypair.create_from_uri(mnemonic_path, language_code=MnemonicLanguageCode.FRENCH)
         self.assertNotEqual(keypair, None)
+
+    def test_create_from_encrypted_json(self):
+
+        keypair_alice = Keypair.create_from_uri('//Alice')
+
+        json_file = os.path.join(os.path.dirname(__file__), 'fixtures', 'polkadotjs_encrypted.json')
+        with open(json_file, 'r') as fp:
+            json_data = fp.read()
+            keypair = Keypair.create_from_encrypted_json(json_data, "test", ss58_format=42)
+
+            self.assertEqual(keypair_alice.ss58_address, keypair.ss58_address)
+            self.assertEqual(keypair_alice.public_key, keypair.public_key)
+            self.assertEqual(keypair_alice.private_key, keypair.private_key)
+
+            signature = keypair.sign("Test123")
+            self.assertTrue(keypair.verify("Test123", signature))
+
+    def test_create_from_encrypted_json_ed25519(self):
+        json_file = os.path.join(os.path.dirname(__file__), 'fixtures', 'polkadotjs_encrypted_ed25519.json')
+        with open(json_file, 'r') as fp:
+            json_data = fp.read()
+            keypair = Keypair.create_from_encrypted_json(json_data, "test", ss58_format=42)
+            self.assertEqual('5FxjTxVWebYJeoPZ9H6XHkYVxvS5j7MN5jpJwWq7F9Pidz3K', keypair.ss58_address)
+
+            signature = keypair.sign("Test123")
+            self.assertTrue(keypair.verify("Test123", signature))
+
+    def test_export_keypair_to_json(self):
+        keypair = Keypair.create_from_uri('//Alice')
+        json_data = keypair.export_to_encrypted_json(passphrase="test", name="Alice")
+
+        self.assertEqual(json_data['address'], keypair.ss58_address)
+        self.assertEqual(json_data['meta']['name'], "Alice")
+
+        keypair_json = Keypair.create_from_encrypted_json(json_data, "test", ss58_format=42)
+
+        self.assertEqual(keypair_json.public_key, keypair.public_key)
+        self.assertEqual(keypair_json.private_key, keypair.private_key)
 
 
 if __name__ == '__main__':

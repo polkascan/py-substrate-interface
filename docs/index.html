@@ -1442,32 +1442,32 @@ parsed and the used types are extracted, composed and added to the type registry
 
     def __convert_to_latest_metadata(self):
 
+        # Determine version
         if &#39;metadataVersion&#39; in self.metadata_dict:
-            # Convert legacy format as V0
-            self.metadata_dict[&#39;V0&#39;] = {
-                &#39;spec&#39;: self.metadata_dict.get(&#39;spec&#39;),
-                &#39;storage&#39;: self.metadata_dict.get(&#39;storage&#39;),
-                &#39;types&#39;: self.metadata_dict.get(&#39;types&#39;),
-            }
-            self.metadata_version = &#39;V0&#39;
+            self.metadata_version = 0
         elif &#39;V1&#39; in self.metadata_dict:
-            self.metadata_version = &#39;V1&#39;
+            self.metadata_version = 1
         elif &#39;V2&#39; in self.metadata_dict:
-            self.metadata_version = &#39;V2&#39;
+            self.metadata_version = 2
         elif &#39;V3&#39; in self.metadata_dict:
-            self.metadata_version = &#39;V3&#39;
-        else:
+            self.metadata_version = 3
+        elif &#39;version&#39; in self.metadata_dict:
+            self.metadata_version = int(self.metadata_dict[&#39;version&#39;])
+
+        if self.metadata_version is None or self.metadata_version &gt; 4:
             raise ContractMetadataParseException(&#34;Unsupported metadata version&#34;)
 
-        self.metadata_dict[&#39;spec&#39;] = self.metadata_dict[self.metadata_version][&#39;spec&#39;]
-        self.metadata_dict[&#39;storage&#39;] = self.metadata_dict[self.metadata_version][&#39;storage&#39;]
-        self.metadata_dict[&#39;types&#39;] = self.metadata_dict[self.metadata_version][&#39;types&#39;]
-        del self.metadata_dict[self.metadata_version]
+        if 1 &lt;= self.metadata_version &lt;= 3:
+            version_key = f&#34;V{self.metadata_version}&#34;
+            self.metadata_dict[&#39;spec&#39;] = self.metadata_dict[version_key][&#39;spec&#39;]
+            self.metadata_dict[&#39;storage&#39;] = self.metadata_dict[version_key][&#39;storage&#39;]
+            self.metadata_dict[&#39;types&#39;] = self.metadata_dict[version_key][&#39;types&#39;]
+            del self.metadata_dict[version_key]
 
         # Version converters
 
         # V1 -&gt; V2: name becomes label; no longer array
-        if self.metadata_version &lt;= &#39;V1&#39;:
+        if self.metadata_version &lt;= 1:
             def replace_name_with_label(obj):
                 if &#39;name&#39; in obj:
                     if type(obj[&#39;name&#39;]) is list:
@@ -1486,7 +1486,7 @@ parsed and the used types are extracted, composed and added to the type registry
                     replace_name_with_label(c)
 
         # V2 -&gt; V3: new payable flags for constructors: default to true
-        if self.metadata_version &lt;= &#39;V2&#39;:
+        if self.metadata_version &lt;= 2:
             for idx, c in enumerate(self.metadata_dict[&#39;spec&#39;][&#39;constructors&#39;]):
                 c[&#34;payable&#34;] = True
 
@@ -1517,7 +1517,7 @@ parsed and the used types are extracted, composed and added to the type registry
 
         self.type_string_prefix = f&#34;ink::{self.metadata_dict[&#39;source&#39;][&#39;hash&#39;]}&#34;
 
-        if self.metadata_version == &#39;V0&#39;:
+        if self.metadata_version == 0:
 
             for idx, metadata_type in enumerate(self.metadata_dict[&#39;types&#39;]):
 
@@ -1582,14 +1582,14 @@ parsed and the used types are extracted, composed and added to the type registry
         str
         &#34;&#34;&#34;
 
-        if self.metadata_version &gt;= &#39;V1&#39;:
+        if self.metadata_version &gt;= 1:
 
             if type_id &gt; len(self.metadata_dict[&#39;types&#39;]):
                 raise ValueError(f&#39;type_id {type_id} not found in metadata&#39;)
 
             return f&#39;{self.type_string_prefix}::{type_id}&#39;
 
-        if self.metadata_version == &#39;V0&#39;:
+        if self.metadata_version == 0:
             # Legacy type parsing
 
             # Check if already processed
@@ -2000,14 +2000,14 @@ produces a type string that can be used in the scope of the <code>RuntimeConfigu
     str
     &#34;&#34;&#34;
 
-    if self.metadata_version &gt;= &#39;V1&#39;:
+    if self.metadata_version &gt;= 1:
 
         if type_id &gt; len(self.metadata_dict[&#39;types&#39;]):
             raise ValueError(f&#39;type_id {type_id} not found in metadata&#39;)
 
         return f&#39;{self.type_string_prefix}::{type_id}&#39;
 
-    if self.metadata_version == &#39;V0&#39;:
+    if self.metadata_version == 0:
         # Legacy type parsing
 
         # Check if already processed
@@ -2291,6 +2291,15 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
 
             self.__total_fee_amount = 0
 
+            # Process fees
+            has_transaction_fee_paid_event = False
+
+            for event in self.triggered_events:
+                if event.value[&#39;module_id&#39;] == &#39;TransactionPayment&#39; and event.value[&#39;event_id&#39;] == &#39;TransactionFeePaid&#39;:
+                    self.__total_fee_amount = event.value[&#39;attributes&#39;][1]
+                    has_transaction_fee_paid_event = True
+
+            # Process other events
             for event in self.triggered_events:
                 # Check events
 
@@ -2346,14 +2355,17 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
                                     &#39;docs&#39;: &#39;Unspecified error occurred&#39;
                                 }
 
-                    elif event.value[&#39;module_id&#39;] == &#39;Treasury&#39; and event.value[&#39;event_id&#39;] == &#39;Deposit&#39;:
-                        self.__total_fee_amount += event.value[&#39;attributes&#39;]
+                    elif not has_transaction_fee_paid_event:
 
-                    elif event.value[&#39;module_id&#39;] == &#39;Balances&#39; and event.value[&#39;event_id&#39;] == &#39;Deposit&#39;:
-                        if type(event.value[&#39;attributes&#39;]) is tuple:
-                            self.__total_fee_amount += event.value[&#39;attributes&#39;][1]
-                        else:
-                            self.__total_fee_amount += event.value[&#39;attributes&#39;][&#39;amount&#39;]
+                        if event.value[&#39;module_id&#39;] == &#39;Treasury&#39; and event.value[&#39;event_id&#39;] == &#39;Deposit&#39;:
+                            self.__total_fee_amount += event.value[&#39;attributes&#39;]
+
+                        elif event.value[&#39;module_id&#39;] == &#39;Balances&#39; and event.value[&#39;event_id&#39;] == &#39;Deposit&#39;:
+                            if type(event.value[&#39;attributes&#39;]) is tuple:
+                                self.__total_fee_amount += event.value[&#39;attributes&#39;][1]
+                            else:
+                                self.__total_fee_amount += event.value[&#39;attributes&#39;][&#39;amount&#39;]
+
                 else:
 
                     if event.event_module.name == &#39;System&#39; and event.event.name == &#39;ExtrinsicSuccess&#39;:
@@ -2379,7 +2391,7 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
 
                                     module_error = self.substrate.metadata_decoder.get_module_error(
                                         module_index=param[&#39;value&#39;][&#39;Module&#39;][&#39;index&#39;],
-                                        error_index=param[&#39;value&#39;][&#39;Module&#39;][&#39;error&#39;]
+                                        error_index=error_index
                                     )
                                     self.__error_message = {
                                         &#39;type&#39;: &#39;Module&#39;,
@@ -2448,13 +2460,13 @@ when retrieving triggered events or determine if extrinsic was succesfull</p>
         return self.__error_message
 
     @property
-    def weight(self) -&gt; int:
+    def weight(self) -&gt; Union[int, dict]:
         &#34;&#34;&#34;
         Contains the actual weight when executing this extrinsic
 
         Returns
         -------
-        int
+        int (WeightV1) or dict (WeightV2)
         &#34;&#34;&#34;
         if self.__weight is None:
             self.process_events()
@@ -2736,12 +2748,12 @@ def triggered_events(self) -&gt; list:
     return self.__triggered_events</code></pre>
 </details>
 </dd>
-<dt id="substrateinterface.ExtrinsicReceipt.weight"><code class="name">var <span class="ident">weight</span> : int</code></dt>
+<dt id="substrateinterface.ExtrinsicReceipt.weight"><code class="name">var <span class="ident">weight</span> : Union[int, dict]</code></dt>
 <dd>
 <div class="desc"><p>Contains the actual weight when executing this extrinsic</p>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>int</code></dt>
+<dt><code>int (WeightV1)</code> or <code>dict (WeightV2)</code></dt>
 <dd>&nbsp;</dd>
 </dl></div>
 <details class="source">
@@ -2749,13 +2761,13 @@ def triggered_events(self) -&gt; list:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def weight(self) -&gt; int:
+def weight(self) -&gt; Union[int, dict]:
     &#34;&#34;&#34;
     Contains the actual weight when executing this extrinsic
 
     Returns
     -------
-    int
+    int (WeightV1) or dict (WeightV2)
     &#34;&#34;&#34;
     if self.__weight is None:
         self.process_events()
@@ -2826,6 +2838,15 @@ Returns</p>
 
         self.__total_fee_amount = 0
 
+        # Process fees
+        has_transaction_fee_paid_event = False
+
+        for event in self.triggered_events:
+            if event.value[&#39;module_id&#39;] == &#39;TransactionPayment&#39; and event.value[&#39;event_id&#39;] == &#39;TransactionFeePaid&#39;:
+                self.__total_fee_amount = event.value[&#39;attributes&#39;][1]
+                has_transaction_fee_paid_event = True
+
+        # Process other events
         for event in self.triggered_events:
             # Check events
 
@@ -2881,14 +2902,17 @@ Returns</p>
                                 &#39;docs&#39;: &#39;Unspecified error occurred&#39;
                             }
 
-                elif event.value[&#39;module_id&#39;] == &#39;Treasury&#39; and event.value[&#39;event_id&#39;] == &#39;Deposit&#39;:
-                    self.__total_fee_amount += event.value[&#39;attributes&#39;]
+                elif not has_transaction_fee_paid_event:
 
-                elif event.value[&#39;module_id&#39;] == &#39;Balances&#39; and event.value[&#39;event_id&#39;] == &#39;Deposit&#39;:
-                    if type(event.value[&#39;attributes&#39;]) is tuple:
-                        self.__total_fee_amount += event.value[&#39;attributes&#39;][1]
-                    else:
-                        self.__total_fee_amount += event.value[&#39;attributes&#39;][&#39;amount&#39;]
+                    if event.value[&#39;module_id&#39;] == &#39;Treasury&#39; and event.value[&#39;event_id&#39;] == &#39;Deposit&#39;:
+                        self.__total_fee_amount += event.value[&#39;attributes&#39;]
+
+                    elif event.value[&#39;module_id&#39;] == &#39;Balances&#39; and event.value[&#39;event_id&#39;] == &#39;Deposit&#39;:
+                        if type(event.value[&#39;attributes&#39;]) is tuple:
+                            self.__total_fee_amount += event.value[&#39;attributes&#39;][1]
+                        else:
+                            self.__total_fee_amount += event.value[&#39;attributes&#39;][&#39;amount&#39;]
+
             else:
 
                 if event.event_module.name == &#39;System&#39; and event.event.name == &#39;ExtrinsicSuccess&#39;:
@@ -2914,7 +2938,7 @@ Returns</p>
 
                                 module_error = self.substrate.metadata_decoder.get_module_error(
                                     module_index=param[&#39;value&#39;][&#39;Module&#39;][&#39;index&#39;],
-                                    error_index=param[&#39;value&#39;][&#39;Module&#39;][&#39;error&#39;]
+                                    error_index=error_index
                                 )
                                 self.__error_message = {
                                     &#39;type&#39;: &#39;Module&#39;,
@@ -2983,7 +3007,7 @@ Returns</p>
 </dd>
 <dt id="substrateinterface.Keypair"><code class="flex name class">
 <span>class <span class="ident">Keypair</span></span>
-<span>(</span><span>ss58_address: str = None, public_key: Union[bytes, str] = None, private_key: Union[bytes, str] = None, ss58_format: int = None, seed_hex: str = None, crypto_type: int = 1)</span>
+<span>(</span><span>ss58_address: str = None, public_key: Union[bytes, str] = None, private_key: Union[bytes, str] = None, ss58_format: int = None, seed_hex: Union[bytes, str] = None, crypto_type: int = 1)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Allows generation of Keypairs from a variety of input combination, such as a public/private key combination,
@@ -3010,7 +3034,7 @@ mnemonic or URI containing soft and hard derivation paths. With these Keypairs d
 <pre><code class="python">class Keypair:
 
     def __init__(self, ss58_address: str = None, public_key: Union[bytes, str] = None,
-                 private_key: Union[bytes, str] = None, ss58_format: int = None, seed_hex: str = None,
+                 private_key: Union[bytes, str] = None, ss58_format: int = None, seed_hex: Union[str, bytes] = None,
                  crypto_type: int = KeypairType.SR25519):
         &#34;&#34;&#34;
         Allows generation of Keypairs from a variety of input combination, such as a public/private key combination,
@@ -3038,8 +3062,11 @@ mnemonic or URI containing soft and hard derivation paths. With these Keypairs d
             if type(private_key) is str:
                 private_key = bytes.fromhex(private_key.replace(&#39;0x&#39;, &#39;&#39;))
 
-            if self.crypto_type == KeypairType.SR25519 and len(private_key) != 64:
-                raise ValueError(&#39;Secret key should be 64 bytes long&#39;)
+            if self.crypto_type == KeypairType.SR25519:
+                if len(private_key) != 64:
+                    raise ValueError(&#39;Secret key should be 64 bytes long&#39;)
+                if not public_key:
+                    public_key = sr25519.public_from_secret_key(private_key)
 
             if self.crypto_type == KeypairType.ECDSA:
                 private_key_obj = PrivateKey(private_key)
@@ -3144,7 +3171,7 @@ mnemonic or URI containing soft and hard derivation paths. With these Keypairs d
 
     @classmethod
     def create_from_seed(
-            cls, seed_hex: str, ss58_format: Optional[int] = 42, crypto_type=KeypairType.SR25519
+            cls, seed_hex: Union[bytes, str], ss58_format: Optional[int] = 42, crypto_type=KeypairType.SR25519
     ) -&gt; &#39;Keypair&#39;:
         &#34;&#34;&#34;
         Create a Keypair for given seed
@@ -3160,17 +3187,17 @@ mnemonic or URI containing soft and hard derivation paths. With these Keypairs d
         Keypair
         &#34;&#34;&#34;
 
+        if type(seed_hex) is str:
+            seed_hex = bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;))
+
         if crypto_type == KeypairType.SR25519:
-            public_key, private_key = sr25519.pair_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
+            public_key, private_key = sr25519.pair_from_seed(seed_hex)
         elif crypto_type == KeypairType.ED25519:
-            private_key, public_key = ed25519_zebra.ed_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
+            private_key, public_key = ed25519_zebra.ed_from_seed(seed_hex)
         else:
             raise ValueError(&#39;crypto_type &#34;{}&#34; not supported&#39;.format(crypto_type))
 
-        public_key = public_key.hex()
-        private_key = private_key.hex()
-
-        ss58_address = ss58_encode(f&#39;0x{public_key}&#39;, ss58_format)
+        ss58_address = ss58_encode(public_key, ss58_format)
 
         return cls(
             ss58_address=ss58_address, public_key=public_key, private_key=private_key,
@@ -3278,6 +3305,75 @@ mnemonic or URI containing soft and hard derivation paths. With these Keypairs d
             ss58_address=ss58_address, public_key=public_key, private_key=private_key,
             ss58_format=ss58_format, crypto_type=crypto_type
         )
+
+    @classmethod
+    def create_from_encrypted_json(cls, json_data: Union[str, dict], passphrase: str,
+                                   ss58_format: int = None) -&gt; &#39;Keypair&#39;:
+        &#34;&#34;&#34;
+        Create a Keypair from a PolkadotJS format encrypted JSON file
+
+        Parameters
+        ----------
+        json_data: Dict or JSON string containing PolkadotJS export format
+        passphrase: Used to encrypt the keypair
+        ss58_format: Which network ID to use to format the SS58 address (42 for testnet)
+
+        Returns
+        -------
+        Keypair
+        &#34;&#34;&#34;
+
+        if type(json_data) is str:
+            json_data = json.loads(json_data)
+
+        private_key, public_key = decode_pair_from_encrypted_json(json_data, passphrase)
+
+        if &#39;sr25519&#39; in json_data[&#39;encoding&#39;][&#39;content&#39;]:
+            crypto_type = KeypairType.SR25519
+        elif &#39;ed25519&#39; in json_data[&#39;encoding&#39;][&#39;content&#39;]:
+            crypto_type = KeypairType.ED25519
+            # Strip the nonce part of the private key
+            private_key = private_key[0:32]
+        else:
+            raise NotImplementedError(&#34;Unknown KeypairType found in JSON&#34;)
+
+        return cls.create_from_private_key(private_key, public_key, ss58_format=ss58_format, crypto_type=crypto_type)
+
+    def export_to_encrypted_json(self, passphrase: str, name: str = None) -&gt; dict:
+        &#34;&#34;&#34;
+        Export Keypair to PolkadotJS format encrypted JSON file
+
+        Parameters
+        ----------
+        passphrase: Used to encrypt the keypair
+        name: Display name of Keypair used
+
+        Returns
+        -------
+        dict
+        &#34;&#34;&#34;
+        if not name:
+            name = self.ss58_address
+
+        if self.crypto_type != KeypairType.SR25519:
+            raise NotImplementedError(f&#34;Cannot create JSON for crypto_type &#39;{self.crypto_type}&#39;&#34;)
+
+        # Secret key from PolkadotJS is an Ed25519 expanded secret key, so has to be converted
+        # https://github.com/polkadot-js/wasm/blob/master/packages/wasm-crypto/src/rs/sr25519.rs#L125
+        converted_private_key = sr25519.convert_secret_key_to_ed25519(self.private_key)
+
+        encoded = encode_pair(self.public_key, converted_private_key, passphrase)
+
+        json_data = {
+            &#34;encoded&#34;: b64encode(encoded).decode(),
+            &#34;encoding&#34;: {&#34;content&#34;: [&#34;pkcs8&#34;, &#34;sr25519&#34;], &#34;type&#34;: [&#34;scrypt&#34;, &#34;xsalsa20-poly1305&#34;], &#34;version&#34;: &#34;3&#34;},
+            &#34;address&#34;: self.ss58_address,
+            &#34;meta&#34;: {
+                &#34;name&#34;: name, &#34;tags&#34;: [], &#34;whenCreated&#34;: int(time.time())
+            }
+        }
+
+        return json_data
 
     def sign(self, data: Union[ScaleBytes, bytes, str]) -&gt; bytes:
         &#34;&#34;&#34;
@@ -3421,6 +3517,63 @@ mnemonic or URI containing soft and hard derivation paths. With these Keypairs d
 </details>
 <h3>Static methods</h3>
 <dl>
+<dt id="substrateinterface.Keypair.create_from_encrypted_json"><code class="name flex">
+<span>def <span class="ident">create_from_encrypted_json</span></span>(<span>json_data: Union[str, dict], passphrase: str, ss58_format: int = None) ‑> <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a Keypair from a PolkadotJS format encrypted JSON file</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>json_data</code></strong> :&ensp;<code>Dict</code> or <code>JSON string containing PolkadotJS export format</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>passphrase</code></strong> :&ensp;<code>Used to encrypt the keypair</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>ss58_format</code></strong> :&ensp;<code>Which network ID to use to format the SS58 address (42 for testnet)</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code><a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a></code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def create_from_encrypted_json(cls, json_data: Union[str, dict], passphrase: str,
+                               ss58_format: int = None) -&gt; &#39;Keypair&#39;:
+    &#34;&#34;&#34;
+    Create a Keypair from a PolkadotJS format encrypted JSON file
+
+    Parameters
+    ----------
+    json_data: Dict or JSON string containing PolkadotJS export format
+    passphrase: Used to encrypt the keypair
+    ss58_format: Which network ID to use to format the SS58 address (42 for testnet)
+
+    Returns
+    -------
+    Keypair
+    &#34;&#34;&#34;
+
+    if type(json_data) is str:
+        json_data = json.loads(json_data)
+
+    private_key, public_key = decode_pair_from_encrypted_json(json_data, passphrase)
+
+    if &#39;sr25519&#39; in json_data[&#39;encoding&#39;][&#39;content&#39;]:
+        crypto_type = KeypairType.SR25519
+    elif &#39;ed25519&#39; in json_data[&#39;encoding&#39;][&#39;content&#39;]:
+        crypto_type = KeypairType.ED25519
+        # Strip the nonce part of the private key
+        private_key = private_key[0:32]
+    else:
+        raise NotImplementedError(&#34;Unknown KeypairType found in JSON&#34;)
+
+    return cls.create_from_private_key(private_key, public_key, ss58_format=ss58_format, crypto_type=crypto_type)</code></pre>
+</details>
+</dd>
 <dt id="substrateinterface.Keypair.create_from_mnemonic"><code class="name flex">
 <span>def <span class="ident">create_from_mnemonic</span></span>(<span>mnemonic: str, ss58_format=42, crypto_type=1, language_code: str = 'en') ‑> <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a></span>
 </code></dt>
@@ -3540,7 +3693,7 @@ def create_from_private_key(
 </details>
 </dd>
 <dt id="substrateinterface.Keypair.create_from_seed"><code class="name flex">
-<span>def <span class="ident">create_from_seed</span></span>(<span>seed_hex: str, ss58_format: Optional[int] = 42, crypto_type=1) ‑> <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a></span>
+<span>def <span class="ident">create_from_seed</span></span>(<span>seed_hex: Union[bytes, str], ss58_format: Optional[int] = 42, crypto_type=1) ‑> <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create a Keypair for given seed</p>
@@ -3564,7 +3717,7 @@ def create_from_private_key(
 </summary>
 <pre><code class="python">@classmethod
 def create_from_seed(
-        cls, seed_hex: str, ss58_format: Optional[int] = 42, crypto_type=KeypairType.SR25519
+        cls, seed_hex: Union[bytes, str], ss58_format: Optional[int] = 42, crypto_type=KeypairType.SR25519
 ) -&gt; &#39;Keypair&#39;:
     &#34;&#34;&#34;
     Create a Keypair for given seed
@@ -3580,17 +3733,17 @@ def create_from_seed(
     Keypair
     &#34;&#34;&#34;
 
+    if type(seed_hex) is str:
+        seed_hex = bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;))
+
     if crypto_type == KeypairType.SR25519:
-        public_key, private_key = sr25519.pair_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
+        public_key, private_key = sr25519.pair_from_seed(seed_hex)
     elif crypto_type == KeypairType.ED25519:
-        private_key, public_key = ed25519_zebra.ed_from_seed(bytes.fromhex(seed_hex.replace(&#39;0x&#39;, &#39;&#39;)))
+        private_key, public_key = ed25519_zebra.ed_from_seed(seed_hex)
     else:
         raise ValueError(&#39;crypto_type &#34;{}&#34; not supported&#39;.format(crypto_type))
 
-    public_key = public_key.hex()
-    private_key = private_key.hex()
-
-    ss58_address = ss58_encode(f&#39;0x{public_key}&#39;, ss58_format)
+    ss58_address = ss58_encode(public_key, ss58_format)
 
     return cls(
         ss58_address=ss58_address, public_key=public_key, private_key=private_key,
@@ -3826,7 +3979,7 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
 </details>
 </dd>
 <dt id="substrateinterface.Keypair.encrypt_message"><code class="name flex">
-<span>def <span class="ident">encrypt_message</span></span>(<span>self, message: Union[bytes, str], recipient_public_key: bytes, nonce: bytes = b&#x27;\xeaN&lt;\xfd\x11\xeb\xdc?\xf2L\x8cb(\x9e\x9bdD\t\xde\x0b#\xb0\xa7\xb4&#x27;) ‑> bytes</span>
+<span>def <span class="ident">encrypt_message</span></span>(<span>self, message: Union[bytes, str], recipient_public_key: bytes, nonce: bytes = b'X/\xd9\xf8\xe9\xccu|0R\xc5{\xcc\xc25|ES\x19\x86\xbd\x88j\xac') ‑> bytes</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Encrypts message with for specified recipient</p>
@@ -3875,6 +4028,64 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
     sender = nacl.public.PrivateKey(private_key)
     box = nacl.public.Box(sender, recipient)
     return box.encrypt(message if isinstance(message, bytes) else message.encode(&#34;utf-8&#34;), nonce)</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.Keypair.export_to_encrypted_json"><code class="name flex">
+<span>def <span class="ident">export_to_encrypted_json</span></span>(<span>self, passphrase: str, name: str = None) ‑> dict</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Export Keypair to PolkadotJS format encrypted JSON file</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>passphrase</code></strong> :&ensp;<code>Used to encrypt the keypair</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>name</code></strong> :&ensp;<code>Display name</code> of <code><a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a> used</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def export_to_encrypted_json(self, passphrase: str, name: str = None) -&gt; dict:
+    &#34;&#34;&#34;
+    Export Keypair to PolkadotJS format encrypted JSON file
+
+    Parameters
+    ----------
+    passphrase: Used to encrypt the keypair
+    name: Display name of Keypair used
+
+    Returns
+    -------
+    dict
+    &#34;&#34;&#34;
+    if not name:
+        name = self.ss58_address
+
+    if self.crypto_type != KeypairType.SR25519:
+        raise NotImplementedError(f&#34;Cannot create JSON for crypto_type &#39;{self.crypto_type}&#39;&#34;)
+
+    # Secret key from PolkadotJS is an Ed25519 expanded secret key, so has to be converted
+    # https://github.com/polkadot-js/wasm/blob/master/packages/wasm-crypto/src/rs/sr25519.rs#L125
+    converted_private_key = sr25519.convert_secret_key_to_ed25519(self.private_key)
+
+    encoded = encode_pair(self.public_key, converted_private_key, passphrase)
+
+    json_data = {
+        &#34;encoded&#34;: b64encode(encoded).decode(),
+        &#34;encoding&#34;: {&#34;content&#34;: [&#34;pkcs8&#34;, &#34;sr25519&#34;], &#34;type&#34;: [&#34;scrypt&#34;, &#34;xsalsa20-poly1305&#34;], &#34;version&#34;: &#34;3&#34;},
+        &#34;address&#34;: self.ss58_address,
+        &#34;meta&#34;: {
+            &#34;name&#34;: name, &#34;tags&#34;: [], &#34;whenCreated&#34;: int(time.time())
+        }
+    }
+
+    return json_data</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.Keypair.sign"><code class="name flex">
@@ -5224,7 +5435,7 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
 
     def compose_call(self, call_module: str, call_function: str, call_params: dict = None, block_hash: str = None):
         &#34;&#34;&#34;
-        Composes a call payload which can be used as an unsigned extrinsic or a proposal.
+        Composes a call payload which can be used in an extrinsic.
 
         Parameters
         ----------
@@ -5518,8 +5729,9 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
         return multi_sig_account
 
     def create_multisig_extrinsic(self, call: GenericCall, keypair: Keypair, multisig_account: MultiAccountId,
-                                  max_weight: Optional[int] = None, era: dict = None, nonce: int = None, tip: int = 0,
-                                  tip_asset_id: int = None, signature: Union[bytes, str] = None) -&gt; GenericExtrinsic:
+                                  max_weight: Optional[Union[dict, int]] = None, era: dict = None, nonce: int = None,
+                                  tip: int = 0, tip_asset_id: int = None, signature: Union[bytes, str] = None
+                                  ) -&gt; GenericExtrinsic:
         &#34;&#34;&#34;
         Create a Multisig extrinsic that will be signed by one of the signatories. Checks on-chain if the threshold
         of the multisig account is reached and try to execute the call accordingly.
@@ -5543,10 +5755,7 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
         if max_weight is None:
             payment_info = self.get_payment_info(call, keypair)
             # Check type of weight as per https://github.com/paritytech/substrate/pull/12138
-            if type(payment_info[&#34;weight&#34;]) is dict:
-                max_weight = payment_info[&#34;weight&#34;][&#34;ref_time&#34;]
-            else:
-                max_weight = payment_info[&#34;weight&#34;]
+            max_weight = payment_info[&#34;weight&#34;]
 
         # Check if call has existing approvals
         multisig_details = self.query(&#34;Multisig&#34;, &#34;Multisigs&#34;, [multisig_account.value, call.call_hash])
@@ -5661,7 +5870,7 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
         -------
         Dict with payment info
 
-        E.g. `{&#39;class&#39;: &#39;normal&#39;, &#39;partialFee&#39;: 151000000, &#39;weight&#39;: 217238000}`
+        E.g. `{&#39;class&#39;: &#39;normal&#39;, &#39;partialFee&#39;: 151000000, &#39;weight&#39;: {&#39;ref_time&#39;: 143322000}}`
 
         &#34;&#34;&#34;
 
@@ -6238,20 +6447,36 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
                         if include_author and &#39;PreRuntime&#39; in log_digest.value:
 
                             if self.implements_scaleinfo():
-                                if log_digest.value[&#39;PreRuntime&#39;][0] == f&#34;0x{b&#39;BABE&#39;.hex()}&#34;:
+
+                                engine = bytes(log_digest[1][0])
+                                # Retrieve validator set
+                                validator_set = self.query(&#34;Session&#34;, &#34;Validators&#34;, block_hash=block_hash)
+
+                                if engine == b&#39;BABE&#39;:
                                     babe_predigest = self.runtime_config.create_scale_object(
                                         type_string=&#39;RawBabePreDigest&#39;,
-                                        data=ScaleBytes(log_digest.value[&#39;PreRuntime&#39;][1])
+                                        data=ScaleBytes(bytes(log_digest[1][1]))
                                     )
 
                                     babe_predigest.decode()
 
-                                    validator_set = self.query(&#34;Session&#34;, &#34;Validators&#34;, block_hash=block_hash)
                                     rank_validator = babe_predigest[1].value[&#39;authority_index&#39;]
 
                                     block_author = validator_set[rank_validator]
                                     block_data[&#39;author&#39;] = block_author.value
 
+                                elif engine == b&#39;aura&#39;:
+                                    aura_predigest = self.runtime_config.create_scale_object(
+                                        type_string=&#39;RawAuraPreDigest&#39;,
+                                        data=ScaleBytes(bytes(log_digest[1][1]))
+                                    )
+
+                                    aura_predigest.decode()
+
+                                    rank_validator = aura_predigest.value[&#39;slot_number&#39;] % len(validator_set)
+
+                                    block_author = validator_set[rank_validator]
+                                    block_data[&#39;author&#39;] = block_author.value
                                 else:
                                     raise NotImplementedError(
                                         f&#34;Cannot extract author for engine {log_digest.value[&#39;PreRuntime&#39;][0]}&#34;
@@ -7031,7 +7256,7 @@ def version(self):
 <span>def <span class="ident">compose_call</span></span>(<span>self, call_module: str, call_function: str, call_params: dict = None, block_hash: str = None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Composes a call payload which can be used as an unsigned extrinsic or a proposal.</p>
+<div class="desc"><p>Composes a call payload which can be used in an extrinsic.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>call_module</code></strong> :&ensp;<code>Name</code> of <code>the runtime module e.g. Balances</code></dt>
@@ -7054,7 +7279,7 @@ def version(self):
 </summary>
 <pre><code class="python">def compose_call(self, call_module: str, call_function: str, call_params: dict = None, block_hash: str = None):
     &#34;&#34;&#34;
-    Composes a call payload which can be used as an unsigned extrinsic or a proposal.
+    Composes a call payload which can be used in an extrinsic.
 
     Parameters
     ----------
@@ -7127,7 +7352,7 @@ def version(self):
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.create_multisig_extrinsic"><code class="name flex">
-<span>def <span class="ident">create_multisig_extrinsic</span></span>(<span>self, call: scalecodec.types.GenericCall, keypair: <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a>, multisig_account: scalecodec.types.MultiAccountId, max_weight: Optional[int] = None, era: dict = None, nonce: int = None, tip: int = 0, tip_asset_id: int = None, signature: Union[bytes, str] = None) ‑> scalecodec.types.GenericExtrinsic</span>
+<span>def <span class="ident">create_multisig_extrinsic</span></span>(<span>self, call: scalecodec.types.GenericCall, keypair: <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a>, multisig_account: scalecodec.types.MultiAccountId, max_weight: Union[dict, int, None] = None, era: dict = None, nonce: int = None, tip: int = 0, tip_asset_id: int = None, signature: Union[bytes, str] = None) ‑> scalecodec.types.GenericExtrinsic</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Create a Multisig extrinsic that will be signed by one of the signatories. Checks on-chain if the threshold
@@ -7163,8 +7388,9 @@ of the multisig account is reached and try to execute the call accordingly.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def create_multisig_extrinsic(self, call: GenericCall, keypair: Keypair, multisig_account: MultiAccountId,
-                              max_weight: Optional[int] = None, era: dict = None, nonce: int = None, tip: int = 0,
-                              tip_asset_id: int = None, signature: Union[bytes, str] = None) -&gt; GenericExtrinsic:
+                              max_weight: Optional[Union[dict, int]] = None, era: dict = None, nonce: int = None,
+                              tip: int = 0, tip_asset_id: int = None, signature: Union[bytes, str] = None
+                              ) -&gt; GenericExtrinsic:
     &#34;&#34;&#34;
     Create a Multisig extrinsic that will be signed by one of the signatories. Checks on-chain if the threshold
     of the multisig account is reached and try to execute the call accordingly.
@@ -7188,10 +7414,7 @@ of the multisig account is reached and try to execute the call accordingly.</p>
     if max_weight is None:
         payment_info = self.get_payment_info(call, keypair)
         # Check type of weight as per https://github.com/paritytech/substrate/pull/12138
-        if type(payment_info[&#34;weight&#34;]) is dict:
-            max_weight = payment_info[&#34;weight&#34;][&#34;ref_time&#34;]
-        else:
-            max_weight = payment_info[&#34;weight&#34;]
+        max_weight = payment_info[&#34;weight&#34;]
 
     # Check if call has existing approvals
     multisig_details = self.query(&#34;Multisig&#34;, &#34;Multisigs&#34;, [multisig_account.value, call.call_hash])
@@ -8961,7 +9184,7 @@ omitted)</p>
 <dt><code>Dict with payment info</code></dt>
 <dd>&nbsp;</dd>
 </dl>
-<p>E.g. <code>{'class': 'normal', 'partialFee': 151000000, 'weight': 217238000}</code></p></div>
+<p>E.g. <code>{'class': 'normal', 'partialFee': 151000000, 'weight': {'ref_time': 143322000}}</code></p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -8979,7 +9202,7 @@ omitted)</p>
     -------
     Dict with payment info
 
-    E.g. `{&#39;class&#39;: &#39;normal&#39;, &#39;partialFee&#39;: 151000000, &#39;weight&#39;: 217238000}`
+    E.g. `{&#39;class&#39;: &#39;normal&#39;, &#39;partialFee&#39;: 151000000, &#39;weight&#39;: {&#39;ref_time&#39;: 143322000}}`
 
     &#34;&#34;&#34;
 
@@ -10861,12 +11084,14 @@ result = substrate.subscribe_block_headers(subscription_handler, include_author=
 <li>
 <h4><code><a title="substrateinterface.Keypair" href="#substrateinterface.Keypair">Keypair</a></code></h4>
 <ul class="">
+<li><code><a title="substrateinterface.Keypair.create_from_encrypted_json" href="#substrateinterface.Keypair.create_from_encrypted_json">create_from_encrypted_json</a></code></li>
 <li><code><a title="substrateinterface.Keypair.create_from_mnemonic" href="#substrateinterface.Keypair.create_from_mnemonic">create_from_mnemonic</a></code></li>
 <li><code><a title="substrateinterface.Keypair.create_from_private_key" href="#substrateinterface.Keypair.create_from_private_key">create_from_private_key</a></code></li>
 <li><code><a title="substrateinterface.Keypair.create_from_seed" href="#substrateinterface.Keypair.create_from_seed">create_from_seed</a></code></li>
 <li><code><a title="substrateinterface.Keypair.create_from_uri" href="#substrateinterface.Keypair.create_from_uri">create_from_uri</a></code></li>
 <li><code><a title="substrateinterface.Keypair.decrypt_message" href="#substrateinterface.Keypair.decrypt_message">decrypt_message</a></code></li>
 <li><code><a title="substrateinterface.Keypair.encrypt_message" href="#substrateinterface.Keypair.encrypt_message">encrypt_message</a></code></li>
+<li><code><a title="substrateinterface.Keypair.export_to_encrypted_json" href="#substrateinterface.Keypair.export_to_encrypted_json">export_to_encrypted_json</a></code></li>
 <li><code><a title="substrateinterface.Keypair.generate_mnemonic" href="#substrateinterface.Keypair.generate_mnemonic">generate_mnemonic</a></code></li>
 <li><code><a title="substrateinterface.Keypair.sign" href="#substrateinterface.Keypair.sign">sign</a></code></li>
 <li><code><a title="substrateinterface.Keypair.validate_mnemonic" href="#substrateinterface.Keypair.validate_mnemonic">validate_mnemonic</a></code></li>
