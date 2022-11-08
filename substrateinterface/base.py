@@ -2305,8 +2305,8 @@ class SubstrateInterface:
         -------
 
         """
-        type_registry = self.get_type_registry(block_hash=block_hash)
-        return type_registry.get(type_string.lower())
+        scale_obj = self.create_scale_object(type_string, block_hash=block_hash)
+        return scale_obj.retrieve_type_decomposition()
 
     def get_metadata_modules(self, block_hash=None):
         """
@@ -3467,64 +3467,78 @@ class ExtrinsicReceipt:
 
             for event in self.triggered_events:
                 if event.value['module_id'] == 'TransactionPayment' and event.value['event_id'] == 'TransactionFeePaid':
-                    self.__total_fee_amount = event.value['attributes'][1]
+                    self.__total_fee_amount = event.value['attributes']['actual_fee']
                     has_transaction_fee_paid_event = True
 
             # Process other events
             for event in self.triggered_events:
-                # Check events
 
+                # Check events
                 if self.substrate.implements_scaleinfo():
+
                     if event.value['module_id'] == 'System' and event.value['event_id'] == 'ExtrinsicSuccess':
                         self.__is_success = True
                         self.__error_message = None
-                        self.__weight = event.value['attributes']['weight']
+
+                        if 'dispatch_info' in event.value['attributes']:
+                            self.__weight = event.value['attributes']['dispatch_info']['weight']
+                        else:
+                            # Backwards compatibility
+                            self.__weight = event.value['attributes']['weight']
 
                     elif event.value['module_id'] == 'System' and event.value['event_id'] == 'ExtrinsicFailed':
                         self.__is_success = False
-                        self.__weight = event.value['attributes'][1]['weight']
 
-                        for param in event.params:
-                            if 'Module' in param:
+                        if type(event.value['attributes']) is dict:
+                            dispatch_info = event.value['attributes']['dispatch_info']
+                            dispatch_error = event.value['attributes']['dispatch_error']
+                        else:
+                            # Backwards compatibility
+                            dispatch_info = event.value['attributes'][1]
+                            dispatch_error = event.value['attributes'][0]
 
-                                if type(param['Module']) is tuple:
-                                    module_index = param['Module'][0]
-                                    error_index = param['Module'][1]
-                                else:
-                                    module_index = param['Module']['index']
-                                    error_index = param['Module']['error']
+                        self.__weight = dispatch_info['weight']
 
-                                if type(error_index) is str:
-                                    # Actual error index is first u8 in new [u8; 4] format
-                                    error_index = int(error_index[2:4], 16)
+                        if 'Module' in dispatch_error:
 
-                                module_error = self.substrate.metadata_decoder.get_module_error(
-                                    module_index=module_index,
-                                    error_index=error_index
-                                )
-                                self.__error_message = {
-                                    'type': 'Module',
-                                    'name': module_error.name,
-                                    'docs': module_error.docs
-                                }
-                            elif 'BadOrigin' in param:
-                                self.__error_message = {
-                                    'type': 'System',
-                                    'name': 'BadOrigin',
-                                    'docs': 'Bad origin'
-                                }
-                            elif 'CannotLookup' in param:
-                                self.__error_message = {
-                                    'type': 'System',
-                                    'name': 'CannotLookup',
-                                    'docs': 'Cannot lookup'
-                                }
-                            elif 'Other' in param:
-                                self.__error_message = {
-                                    'type': 'System',
-                                    'name': 'Other',
-                                    'docs': 'Unspecified error occurred'
-                                }
+                            if type(dispatch_error['Module']) is tuple:
+                                module_index = dispatch_error['Module'][0]
+                                error_index = dispatch_error['Module'][1]
+                            else:
+                                module_index = dispatch_error['Module']['index']
+                                error_index = dispatch_error['Module']['error']
+
+                            if type(error_index) is str:
+                                # Actual error index is first u8 in new [u8; 4] format
+                                error_index = int(error_index[2:4], 16)
+
+                            module_error = self.substrate.metadata_decoder.get_module_error(
+                                module_index=module_index,
+                                error_index=error_index
+                            )
+                            self.__error_message = {
+                                'type': 'Module',
+                                'name': module_error.name,
+                                'docs': module_error.docs
+                            }
+                        elif 'BadOrigin' in dispatch_error:
+                            self.__error_message = {
+                                'type': 'System',
+                                'name': 'BadOrigin',
+                                'docs': 'Bad origin'
+                            }
+                        elif 'CannotLookup' in dispatch_error:
+                            self.__error_message = {
+                                'type': 'System',
+                                'name': 'CannotLookup',
+                                'docs': 'Cannot lookup'
+                            }
+                        elif 'Other' in dispatch_error:
+                            self.__error_message = {
+                                'type': 'System',
+                                'name': 'Other',
+                                'docs': 'Unspecified error occurred'
+                            }
 
                     elif not has_transaction_fee_paid_event:
 
