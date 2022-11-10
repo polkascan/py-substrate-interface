@@ -1986,7 +1986,6 @@ class SubstrateInterface:
         """
         if max_weight is None:
             payment_info = self.get_payment_info(call, keypair)
-            # Check type of weight as per https://github.com/paritytech/substrate/pull/12138
             max_weight = payment_info["weight"]
 
         # Check if call has existing approvals
@@ -2128,6 +2127,13 @@ class SubstrateInterface:
         # convert partialFee to int
         if 'result' in payment_info:
             payment_info['result']['partialFee'] = int(payment_info['result']['partialFee'])
+
+            if type(payment_info['result']['weight']) is int:
+                # Transform format to WeightV2 if applicable as per https://github.com/paritytech/substrate/pull/12633
+                weight_obj = self.runtime_config.create_scale_object("sp_weights::weight_v2::Weight")
+                if weight_obj is not None:
+                    payment_info['result']['weight'] = {'ref_time': payment_info['result']['weight']}
+
             return payment_info['result']
         else:
             raise SubstrateRequestException(payment_info['error']['message'])
