@@ -154,7 +154,7 @@ class AutodiscoverV14RuntimeTestCase(unittest.TestCase):
             os.path.join(module_path, 'fixtures', 'metadata_hex.json')
         )
         cls.runtime_config = RuntimeConfigurationObject(implements_scale_info=True)
-        cls.runtime_config.update_type_registry(load_type_registry_preset("metadata_types"))
+        cls.runtime_config.update_type_registry(load_type_registry_preset("core"))
 
         cls.metadata_obj = cls.runtime_config.create_scale_object(
             'MetadataVersioned', data=ScaleBytes(cls.metadata_fixture_dict['V14'])

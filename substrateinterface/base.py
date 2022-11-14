@@ -633,7 +633,7 @@ class SubstrateInterface:
             'cache-control': "no-cache"
         }
 
-        self.metadata_decoder = None
+        self.metadata = None
 
         self.runtime_version = None
         self.transaction_version = None
@@ -858,8 +858,8 @@ class SubstrateInterface:
             self.runtime_config.ss58_format = value
 
     def implements_scaleinfo(self) -> Optional[bool]:
-        if self.metadata_decoder:
-            return self.metadata_decoder.portable_registry is not None
+        if self.metadata:
+            return self.metadata.portable_registry is not None
 
     def get_chain_head(self):
         """
@@ -1206,17 +1206,17 @@ class SubstrateInterface:
         if self.runtime_version in self.metadata_cache:
             # Get metadata from cache
             self.debug_message('Retrieved metadata for {} from memory'.format(self.runtime_version))
-            self.metadata_decoder = self.metadata_cache[self.runtime_version]
+            self.metadata = self.metadata_cache[self.runtime_version]
         else:
-            self.metadata_decoder = self.get_block_metadata(block_hash=runtime_block_hash, decode=True)
+            self.metadata = self.get_block_metadata(block_hash=runtime_block_hash, decode=True)
             self.debug_message('Retrieved metadata for {} from Substrate node'.format(self.runtime_version))
 
             # Update metadata cache
-            self.metadata_cache[self.runtime_version] = self.metadata_decoder
+            self.metadata_cache[self.runtime_version] = self.metadata
 
             if self.cache_region:
                 self.debug_message('Stored metadata for {} in Redis'.format(self.runtime_version))
-                self.cache_region.set('METADATA_{}'.format(self.runtime_version), self.metadata_decoder)
+                self.cache_region.set('METADATA_{}'.format(self.runtime_version), self.metadata)
 
         # Update type registry
         self.reload_type_registry(
@@ -1227,7 +1227,7 @@ class SubstrateInterface:
         # Check if PortableRegistry is present in metadata (V14+), otherwise fall back on legacy type registry (<V14)
         if self.implements_scaleinfo():
             self.debug_message('Add PortableRegistry from metadata to type registry')
-            self.runtime_config.add_portable_registry(self.metadata_decoder)
+            self.runtime_config.add_portable_registry(self.metadata)
 
         # Set active runtime version
         self.runtime_config.set_active_spec_version_id(self.runtime_version)
@@ -1492,7 +1492,7 @@ class SubstrateInterface:
                         updated_obj = self.runtime_config.create_scale_object(
                             type_string=change_scale_type,
                             data=ScaleBytes(change_data),
-                            metadata=self.metadata_decoder
+                            metadata=self.metadata
                         )
                         updated_obj.decode()
                         updated_obj.meta_info = {'result_found': result_found}
@@ -1532,7 +1532,7 @@ class SubstrateInterface:
                     obj = self.runtime_config.create_scale_object(
                         type_string=value_scale_type,
                         data=ScaleBytes(query_value),
-                        metadata=self.metadata_decoder
+                        metadata=self.metadata
                     )
                     obj.decode()
                     obj.meta_info = {'result_found': response.get('result') is not None}
@@ -1618,7 +1618,7 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        return self.metadata_decoder
+        return self.metadata
 
     def get_runtime_metadata(self, block_hash=None):
         """
@@ -1661,7 +1661,7 @@ class SubstrateInterface:
         self.init_runtime(block_hash=block_hash)
 
         if 'metadata' not in kwargs:
-            kwargs['metadata'] = self.metadata_decoder
+            kwargs['metadata'] = self.metadata
 
         return self.runtime_config.create_scale_object(type_string, data=data, **kwargs)
 
@@ -1687,7 +1687,7 @@ class SubstrateInterface:
         self.init_runtime(block_hash=block_hash)
 
         call = self.runtime_config.create_scale_object(
-            type_string='Call', metadata=self.metadata_decoder
+            type_string='Call', metadata=self.metadata
         )
 
         call.encode({
@@ -1739,13 +1739,13 @@ class SubstrateInterface:
         signature_payload = self.runtime_config.create_scale_object('ExtrinsicPayloadValue')
 
         # Process signed extensions in metadata
-        if 'signed_extensions' in self.metadata_decoder[1][1]['extrinsic']:
+        if 'signed_extensions' in self.metadata[1][1]['extrinsic']:
 
             # Base signature payload
             signature_payload.type_mapping = [['call', 'CallBytes']]
 
             # Add signed extensions to payload
-            signed_extensions = self.metadata_decoder.get_signed_extensions()
+            signed_extensions = self.metadata.get_signed_extensions()
 
             if 'CheckMortality' in signed_extensions:
                 signature_payload.type_mapping.append(
@@ -1851,9 +1851,9 @@ class SubstrateInterface:
             raise TypeError("'call' must be of type Call")
 
         # Check if extrinsic version is supported
-        if self.metadata_decoder[1][1]['extrinsic']['version'] != 4:
+        if self.metadata[1][1]['extrinsic']['version'] != 4:
             raise NotImplementedError(
-                f"Extrinsic version {self.metadata_decoder[1][1]['extrinsic']['version']} not supported"
+                f"Extrinsic version {self.metadata[1][1]['extrinsic']['version']} not supported"
             )
 
         # Retrieve nonce
@@ -1893,7 +1893,7 @@ class SubstrateInterface:
             signature = keypair.sign(signature_payload)
 
         # Create extrinsic
-        extrinsic = self.runtime_config.create_scale_object(type_string='Extrinsic', metadata=self.metadata_decoder)
+        extrinsic = self.runtime_config.create_scale_object(type_string='Extrinsic', metadata=self.metadata)
 
         value = {
             'account_id': f'0x{keypair.public_key.hex()}',
@@ -1931,7 +1931,7 @@ class SubstrateInterface:
         self.init_runtime()
 
         # Create extrinsic
-        extrinsic = self.runtime_config.create_scale_object(type_string='Extrinsic', metadata=self.metadata_decoder)
+        extrinsic = self.runtime_config.create_scale_object(type_string='Extrinsic', metadata=self.metadata)
 
         extrinsic.encode({
             'call_function': call.value['call_function'],
@@ -2254,7 +2254,7 @@ class SubstrateInterface:
 
         if self.runtime_version not in self.type_registry_cache:
 
-            for module in self.metadata_decoder.pallets:
+            for module in self.metadata.pallets:
 
                 # Storage backwards compt check
                 if module.storage and isinstance(module.storage, list):
@@ -2306,7 +2306,7 @@ class SubstrateInterface:
 
         """
         scale_obj = self.create_scale_object(type_string, block_hash=block_hash)
-        return scale_obj.retrieve_type_decomposition()
+        return scale_obj.generate_type_decomposition()
 
     def get_metadata_modules(self, block_hash=None):
         """
@@ -2332,7 +2332,7 @@ class SubstrateInterface:
             'count_events': len(module.events or []),
             'count_constants': len(module.constants or []),
             'count_errors': len(module.errors or []),
-        } for idx, module in enumerate(self.metadata_decoder.pallets)]
+        } for idx, module in enumerate(self.metadata.pallets)]
 
     def get_metadata_module(self, name, block_hash=None):
         """
@@ -2349,7 +2349,7 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        return self.metadata_decoder.get_metadata_pallet(name)
+        return self.metadata.get_metadata_pallet(name)
 
     def get_metadata_call_functions(self, block_hash=None) -> list:
         """
@@ -2367,7 +2367,7 @@ class SubstrateInterface:
 
         call_list = []
 
-        for pallet in self.metadata_decoder.pallets:
+        for pallet in self.metadata.pallets:
             if pallet.calls:
                 for call in pallet.calls:
 
@@ -2396,7 +2396,7 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        for pallet in self.metadata_decoder.pallets:
+        for pallet in self.metadata.pallets:
             if pallet.name == module_name and pallet.calls:
                 for call in pallet.calls:
                     if call.name == call_function_name:
@@ -2419,7 +2419,7 @@ class SubstrateInterface:
 
         event_list = []
 
-        for event_index, (module, event) in self.metadata_decoder.event_index.items():
+        for event_index, (module, event) in self.metadata.event_index.items():
             event_list.append(
                 self.serialize_module_event(
                     module, event, self.runtime_version, event_index
@@ -2446,7 +2446,7 @@ class SubstrateInterface:
 
         self.init_runtime(block_hash=block_hash)
 
-        for pallet in self.metadata_decoder.pallets:
+        for pallet in self.metadata.pallets:
             if pallet.name == module_name and pallet.events:
                 for event in pallet.events:
                     if event.name == event_name:
@@ -2469,7 +2469,7 @@ class SubstrateInterface:
 
         constant_list = []
 
-        for module_idx, module in enumerate(self.metadata_decoder.pallets):
+        for module_idx, module in enumerate(self.metadata.pallets):
             for constant in module.constants or []:
                 constant_list.append(
                     self.serialize_constant(
@@ -2497,7 +2497,7 @@ class SubstrateInterface:
 
         self.init_runtime(block_hash=block_hash)
 
-        for module_idx, module in enumerate(self.metadata_decoder.pallets):
+        for module_idx, module in enumerate(self.metadata.pallets):
 
             if module_name == module.name and module.constants:
 
@@ -2545,7 +2545,7 @@ class SubstrateInterface:
 
         storage_list = []
 
-        for module_idx, module in enumerate(self.metadata_decoder.pallets):
+        for module_idx, module in enumerate(self.metadata.pallets):
             if module.storage:
                 for storage in module.storage:
                     storage_list.append(
@@ -2574,7 +2574,7 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        pallet = self.metadata_decoder.get_metadata_pallet(module_name)
+        pallet = self.metadata.get_metadata_pallet(module_name)
 
         if pallet:
             return pallet.get_storage_function(storage_name)
@@ -2595,7 +2595,7 @@ class SubstrateInterface:
 
         error_list = []
 
-        for module_idx, module in enumerate(self.metadata_decoder.pallets):
+        for module_idx, module in enumerate(self.metadata.pallets):
             if module.errors:
                 for error in module.errors:
                     error_list.append(
@@ -2622,7 +2622,7 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        for module_idx, module in enumerate(self.metadata_decoder.pallets):
+        for module_idx, module in enumerate(self.metadata.pallets):
             if module.name == module_name and module.errors:
                 for error in module.errors:
                     if error_name == error.name:
@@ -2651,7 +2651,7 @@ class SubstrateInterface:
                     for idx, extrinsic_data in enumerate(block_data['extrinsics']):
                         extrinsic_decoder = extrinsic_cls(
                             data=ScaleBytes(extrinsic_data),
-                            metadata=self.metadata_decoder,
+                            metadata=self.metadata,
                             runtime_config=self.runtime_config
                         )
                         try:
@@ -2993,7 +2993,7 @@ class SubstrateInterface:
         obj = self.runtime_config.create_scale_object(
             type_string=type_string,
             data=scale_bytes,
-            metadata=self.metadata_decoder
+            metadata=self.metadata
         )
 
         obj.decode()
@@ -3020,7 +3020,7 @@ class SubstrateInterface:
         self.init_runtime(block_hash=block_hash)
 
         obj = self.runtime_config.create_scale_object(
-            type_string=type_string, metadata=self.metadata_decoder
+            type_string=type_string, metadata=self.metadata
         )
         return obj.encode(value)
 
@@ -3115,7 +3115,7 @@ class SubstrateInterface:
             obj = self.runtime_config.create_scale_object(
                 type_string=value_scale_type,
                 data=ScaleBytes(query_value),
-                metadata=self.metadata_decoder
+                metadata=self.metadata
             )
             obj.decode()
             storage_dict["storage_default"] = obj.decode()
@@ -3267,7 +3267,7 @@ class SubstrateInterface:
         self.runtime_config.implements_scale_info = self.implements_scaleinfo()
 
         # Load metadata types in runtime configuration
-        self.runtime_config.update_type_registry(load_type_registry_preset(name="metadata_types"))
+        self.runtime_config.update_type_registry(load_type_registry_preset(name="core"))
         self.apply_type_registry_presets(use_remote_preset=use_remote_preset, auto_discover=auto_discover)
 
     def apply_type_registry_presets(self, use_remote_preset: bool = True, auto_discover: bool = True):
@@ -3298,10 +3298,10 @@ class SubstrateInterface:
             if self.implements_scaleinfo() is False:
                 # Only runtime with no embedded types in metadata need the default set of explicit defined types
                 self.runtime_config.update_type_registry(
-                    load_type_registry_preset("default", use_remote_preset=use_remote_preset)
+                    load_type_registry_preset("legacy", use_remote_preset=use_remote_preset)
                 )
 
-            if self.type_registry_preset != "default":
+            if self.type_registry_preset != "legacy":
                 self.runtime_config.update_type_registry(type_registry_preset_dict)
 
         if self.type_registry:
@@ -3512,7 +3512,7 @@ class ExtrinsicReceipt:
                                 # Actual error index is first u8 in new [u8; 4] format
                                 error_index = int(error_index[2:4], 16)
 
-                            module_error = self.substrate.metadata_decoder.get_module_error(
+                            module_error = self.substrate.metadata.get_module_error(
                                 module_index=module_index,
                                 error_index=error_index
                             )
@@ -3574,7 +3574,7 @@ class ExtrinsicReceipt:
                                     else:
                                         error_index = param['value']['Module']['error']
 
-                                    module_error = self.substrate.metadata_decoder.get_module_error(
+                                    module_error = self.substrate.metadata.get_module_error(
                                         module_index=param['value']['Module']['index'],
                                         error_index=error_index
                                     )
