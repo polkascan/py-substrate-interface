@@ -1454,7 +1454,7 @@ class SubstrateInterface:
         if raw_storage_key:
             storage_hash = f'0x{raw_storage_key.hex()}'
         else:
-            if len(params) != len(param_types):
+            if len(params) != len(param_types) and params is not None:
                 raise ValueError(f'Storage function requires {len(param_types)} parameters, {len(params)} given')
 
             # Encode parameters
