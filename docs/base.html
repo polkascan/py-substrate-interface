@@ -922,59 +922,6 @@ class SubstrateInterface:
 
             return response.get(&#39;result&#39;)
 
-    def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
-        &#34;&#34;&#34;
-        A pass-though to existing JSONRPC method `chain_getBlock`. For a decoded version see `get_block()`
-
-        Parameters
-        ----------
-        block_hash
-        block_id
-        metadata_decoder
-
-        Returns
-        -------
-
-        &#34;&#34;&#34;
-        warnings.warn(&#34;&#39;get_chain_block&#39; will be replaced by &#39;get_block&#39;&#34;, DeprecationWarning)
-
-        if block_id:
-            block_hash = self.get_block_hash(block_id)
-
-        response = self.rpc_request(&#34;chain_getBlock&#34;, [block_hash])
-
-        if &#39;error&#39; in response:
-            raise SubstrateRequestException(response[&#39;error&#39;][&#39;message&#39;])
-        else:
-            result = response.get(&#39;result&#39;)
-
-            if self.mock_extrinsics:
-                # Extend extrinsics with mock_extrinsics for e.g. performance tests
-                result[&#39;block&#39;][&#39;extrinsics&#39;].extend(self.mock_extrinsics)
-
-            # Decode extrinsics
-            if metadata_decoder:
-
-                result[&#39;block&#39;][&#39;header&#39;][&#39;number&#39;] = int(result[&#39;block&#39;][&#39;header&#39;][&#39;number&#39;], 16)
-
-                for idx, extrinsic_data in enumerate(result[&#39;block&#39;][&#39;extrinsics&#39;]):
-                    extrinsic_decoder = Extrinsic(
-                        data=ScaleBytes(extrinsic_data),
-                        metadata=metadata_decoder,
-                        runtime_config=self.runtime_config
-                    )
-                    extrinsic_decoder.decode()
-                    result[&#39;block&#39;][&#39;extrinsics&#39;][idx] = extrinsic_decoder.value
-
-                for idx, log_data in enumerate(result[&#39;block&#39;][&#39;header&#39;][&#34;digest&#34;][&#34;logs&#34;]):
-                    log_digest = self.runtime_config.create_scale_object(
-                        &#39;sp_runtime::generic::digest::DigestItem&#39;, ScaleBytes(log_data)
-                    )
-                    log_digest.decode()
-                    result[&#39;block&#39;][&#39;header&#39;][&#34;digest&#34;][&#34;logs&#34;][idx] = log_digest.value
-
-            return result
-
     def get_block_hash(self, block_id: int) -&gt; str:
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `chain_getBlockHash`
@@ -1604,15 +1551,6 @@ class SubstrateInterface:
             return obj
         else:
             return None
-
-    def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
-        &#34;&#34;&#34;
-        Warning: &#39;get_runtime_state&#39; will be replaced by &#39;query&#39;
-        &#34;&#34;&#34;
-        warnings.warn(&#34;&#39;get_runtime_state&#39; will be replaced by &#39;query&#39;&#34;, DeprecationWarning)
-
-        obj = self.query(module, storage_function, params=params, block_hash=block_hash)
-        return {&#39;result&#39;: obj.value if obj else None}
 
     def get_events(self, block_hash: str = None) -&gt; list:
         &#34;&#34;&#34;
@@ -2974,38 +2912,6 @@ class SubstrateInterface:
             block_hash=block_hash,
             extrinsic_hash=extrinsic_hash
         )
-
-    def get_runtime_block(self, block_hash: str = None, block_id: int = None, ignore_decoding_errors: bool = False,
-                          include_author: bool = False):
-        &#34;&#34;&#34;
-        Warning: &#39;get_runtime_block&#39; will be replaced by &#39;get_block&#39;
-
-        Parameters
-        ----------
-        block_hash
-        block_id
-        ignore_decoding_errors: When True no exception will be raised if decoding of extrinsics failes and add as `None` instead
-        include_author: Extract block author from validator set and include in result
-
-        Returns
-        -------
-
-        &#34;&#34;&#34;
-        warnings.warn(&#34;&#39;get_runtime_block&#39; will be replaced by &#39;get_block&#39;&#34;, DeprecationWarning)
-
-        if block_id is not None:
-            block_hash = self.get_block_hash(block_id)
-
-            if block_hash is None:
-                return
-
-        block = self.__get_block_handler(
-            block_hash=block_hash, ignore_decoding_errors=ignore_decoding_errors,
-            include_author=include_author, header_only=False
-        )
-
-        if block:
-            return {&#39;block&#39;: block}
 
     def decode_scale(self, type_string, scale_bytes, block_hash=None, return_scale_obj=False):
         &#34;&#34;&#34;
@@ -5690,7 +5596,7 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
 </details>
 </dd>
 <dt id="substrateinterface.base.Keypair.encrypt_message"><code class="name flex">
-<span>def <span class="ident">encrypt_message</span></span>(<span>self, message: Union[bytes, str], recipient_public_key: bytes, nonce: bytes = b'.\xd6\xa3\xa2\x01\xc9\xd8\xfe\x88\xbcE\xf4\xd8d\xba\xc0\xee\x8a\xd9K\x17f5\xbf') ‑> bytes</span>
+<span>def <span class="ident">encrypt_message</span></span>(<span>self, message: Union[bytes, str], recipient_public_key: bytes, nonce: bytes = b'^\xb5!\xb6F\x834b:\x15\xe2\x94vE\x1e\x08A\x00`\xc6P\x7f\xd8\xf5') ‑> bytes</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Encrypts message with for specified recipient</p>
@@ -6373,59 +6279,6 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
 
             return response.get(&#39;result&#39;)
 
-    def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
-        &#34;&#34;&#34;
-        A pass-though to existing JSONRPC method `chain_getBlock`. For a decoded version see `get_block()`
-
-        Parameters
-        ----------
-        block_hash
-        block_id
-        metadata_decoder
-
-        Returns
-        -------
-
-        &#34;&#34;&#34;
-        warnings.warn(&#34;&#39;get_chain_block&#39; will be replaced by &#39;get_block&#39;&#34;, DeprecationWarning)
-
-        if block_id:
-            block_hash = self.get_block_hash(block_id)
-
-        response = self.rpc_request(&#34;chain_getBlock&#34;, [block_hash])
-
-        if &#39;error&#39; in response:
-            raise SubstrateRequestException(response[&#39;error&#39;][&#39;message&#39;])
-        else:
-            result = response.get(&#39;result&#39;)
-
-            if self.mock_extrinsics:
-                # Extend extrinsics with mock_extrinsics for e.g. performance tests
-                result[&#39;block&#39;][&#39;extrinsics&#39;].extend(self.mock_extrinsics)
-
-            # Decode extrinsics
-            if metadata_decoder:
-
-                result[&#39;block&#39;][&#39;header&#39;][&#39;number&#39;] = int(result[&#39;block&#39;][&#39;header&#39;][&#39;number&#39;], 16)
-
-                for idx, extrinsic_data in enumerate(result[&#39;block&#39;][&#39;extrinsics&#39;]):
-                    extrinsic_decoder = Extrinsic(
-                        data=ScaleBytes(extrinsic_data),
-                        metadata=metadata_decoder,
-                        runtime_config=self.runtime_config
-                    )
-                    extrinsic_decoder.decode()
-                    result[&#39;block&#39;][&#39;extrinsics&#39;][idx] = extrinsic_decoder.value
-
-                for idx, log_data in enumerate(result[&#39;block&#39;][&#39;header&#39;][&#34;digest&#34;][&#34;logs&#34;]):
-                    log_digest = self.runtime_config.create_scale_object(
-                        &#39;sp_runtime::generic::digest::DigestItem&#39;, ScaleBytes(log_data)
-                    )
-                    log_digest.decode()
-                    result[&#39;block&#39;][&#39;header&#39;][&#34;digest&#34;][&#34;logs&#34;][idx] = log_digest.value
-
-            return result
-
     def get_block_hash(self, block_id: int) -&gt; str:
         &#34;&#34;&#34;
         A pass-though to existing JSONRPC method `chain_getBlockHash`
@@ -7055,15 +6908,6 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
             return obj
         else:
             return None
-
-    def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
-        &#34;&#34;&#34;
-        Warning: &#39;get_runtime_state&#39; will be replaced by &#39;query&#39;
-        &#34;&#34;&#34;
-        warnings.warn(&#34;&#39;get_runtime_state&#39; will be replaced by &#39;query&#39;&#34;, DeprecationWarning)
-
-        obj = self.query(module, storage_function, params=params, block_hash=block_hash)
-        return {&#39;result&#39;: obj.value if obj else None}
 
     def get_events(self, block_hash: str = None) -&gt; list:
         &#34;&#34;&#34;
@@ -8425,38 +8269,6 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
             block_hash=block_hash,
             extrinsic_hash=extrinsic_hash
         )
-
-    def get_runtime_block(self, block_hash: str = None, block_id: int = None, ignore_decoding_errors: bool = False,
-                          include_author: bool = False):
-        &#34;&#34;&#34;
-        Warning: &#39;get_runtime_block&#39; will be replaced by &#39;get_block&#39;
-
-        Parameters
-        ----------
-        block_hash
-        block_id
-        ignore_decoding_errors: When True no exception will be raised if decoding of extrinsics failes and add as `None` instead
-        include_author: Extract block author from validator set and include in result
-
-        Returns
-        -------
-
-        &#34;&#34;&#34;
-        warnings.warn(&#34;&#39;get_runtime_block&#39; will be replaced by &#39;get_block&#39;&#34;, DeprecationWarning)
-
-        if block_id is not None:
-            block_hash = self.get_block_hash(block_id)
-
-            if block_hash is None:
-                return
-
-        block = self.__get_block_handler(
-            block_hash=block_hash, ignore_decoding_errors=ignore_decoding_errors,
-            include_author=include_author, header_only=False
-        )
-
-        if block:
-            return {&#39;block&#39;: block}
 
     def decode_scale(self, type_string, scale_bytes, block_hash=None, return_scale_obj=False):
         &#34;&#34;&#34;
@@ -10091,79 +9903,6 @@ Parameters</p>
     return response.get(&#39;result&#39;)</code></pre>
 </details>
 </dd>
-<dt id="substrateinterface.base.SubstrateInterface.get_chain_block"><code class="name flex">
-<span>def <span class="ident">get_chain_block</span></span>(<span>self, block_hash=None, block_id=None, metadata_decoder=None)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>A pass-though to existing JSONRPC method <code>chain_getBlock</code>. For a decoded version see <code>get_block()</code></p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>block_hash</code></strong></dt>
-<dd>&nbsp;</dd>
-<dt><strong><code>block_id</code></strong></dt>
-<dd>&nbsp;</dd>
-<dt><strong><code>metadata_decoder</code></strong></dt>
-<dd>&nbsp;</dd>
-</dl>
-<h2 id="returns">Returns</h2></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
-    &#34;&#34;&#34;
-    A pass-though to existing JSONRPC method `chain_getBlock`. For a decoded version see `get_block()`
-
-    Parameters
-    ----------
-    block_hash
-    block_id
-    metadata_decoder
-
-    Returns
-    -------
-
-    &#34;&#34;&#34;
-    warnings.warn(&#34;&#39;get_chain_block&#39; will be replaced by &#39;get_block&#39;&#34;, DeprecationWarning)
-
-    if block_id:
-        block_hash = self.get_block_hash(block_id)
-
-    response = self.rpc_request(&#34;chain_getBlock&#34;, [block_hash])
-
-    if &#39;error&#39; in response:
-        raise SubstrateRequestException(response[&#39;error&#39;][&#39;message&#39;])
-    else:
-        result = response.get(&#39;result&#39;)
-
-        if self.mock_extrinsics:
-            # Extend extrinsics with mock_extrinsics for e.g. performance tests
-            result[&#39;block&#39;][&#39;extrinsics&#39;].extend(self.mock_extrinsics)
-
-        # Decode extrinsics
-        if metadata_decoder:
-
-            result[&#39;block&#39;][&#39;header&#39;][&#39;number&#39;] = int(result[&#39;block&#39;][&#39;header&#39;][&#39;number&#39;], 16)
-
-            for idx, extrinsic_data in enumerate(result[&#39;block&#39;][&#39;extrinsics&#39;]):
-                extrinsic_decoder = Extrinsic(
-                    data=ScaleBytes(extrinsic_data),
-                    metadata=metadata_decoder,
-                    runtime_config=self.runtime_config
-                )
-                extrinsic_decoder.decode()
-                result[&#39;block&#39;][&#39;extrinsics&#39;][idx] = extrinsic_decoder.value
-
-            for idx, log_data in enumerate(result[&#39;block&#39;][&#39;header&#39;][&#34;digest&#34;][&#34;logs&#34;]):
-                log_digest = self.runtime_config.create_scale_object(
-                    &#39;sp_runtime::generic::digest::DigestItem&#39;, ScaleBytes(log_data)
-                )
-                log_digest.decode()
-                result[&#39;block&#39;][&#39;header&#39;][&#34;digest&#34;][&#34;logs&#34;][idx] = log_digest.value
-
-        return result</code></pre>
-</details>
-</dd>
 <dt id="substrateinterface.base.SubstrateInterface.get_chain_finalised_head"><code class="name flex">
 <span>def <span class="ident">get_chain_finalised_head</span></span>(<span>self)</span>
 </code></dt>
@@ -10961,60 +10700,6 @@ omitted)</p>
         raise SubstrateRequestException(payment_info[&#39;error&#39;][&#39;message&#39;])</code></pre>
 </details>
 </dd>
-<dt id="substrateinterface.base.SubstrateInterface.get_runtime_block"><code class="name flex">
-<span>def <span class="ident">get_runtime_block</span></span>(<span>self, block_hash: str = None, block_id: int = None, ignore_decoding_errors: bool = False, include_author: bool = False)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Warning: 'get_runtime_block' will be replaced by 'get_block'</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>block_hash</code></strong></dt>
-<dd>&nbsp;</dd>
-<dt><strong><code>block_id</code></strong></dt>
-<dd>&nbsp;</dd>
-<dt><strong><code>ignore_decoding_errors</code></strong> :&ensp;<code>When True no exception will be raised if decoding</code> of <code>extrinsics failes and add as </code>None<code> instead</code></dt>
-<dd>&nbsp;</dd>
-<dt><strong><code>include_author</code></strong> :&ensp;<code>Extract block author from validator set and include in result</code></dt>
-<dd>&nbsp;</dd>
-</dl>
-<h2 id="returns">Returns</h2></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_runtime_block(self, block_hash: str = None, block_id: int = None, ignore_decoding_errors: bool = False,
-                      include_author: bool = False):
-    &#34;&#34;&#34;
-    Warning: &#39;get_runtime_block&#39; will be replaced by &#39;get_block&#39;
-
-    Parameters
-    ----------
-    block_hash
-    block_id
-    ignore_decoding_errors: When True no exception will be raised if decoding of extrinsics failes and add as `None` instead
-    include_author: Extract block author from validator set and include in result
-
-    Returns
-    -------
-
-    &#34;&#34;&#34;
-    warnings.warn(&#34;&#39;get_runtime_block&#39; will be replaced by &#39;get_block&#39;&#34;, DeprecationWarning)
-
-    if block_id is not None:
-        block_hash = self.get_block_hash(block_id)
-
-        if block_hash is None:
-            return
-
-    block = self.__get_block_handler(
-        block_hash=block_hash, ignore_decoding_errors=ignore_decoding_errors,
-        include_author=include_author, header_only=False
-    )
-
-    if block:
-        return {&#39;block&#39;: block}</code></pre>
-</details>
-</dd>
 <dt id="substrateinterface.base.SubstrateInterface.get_runtime_metadata"><code class="name flex">
 <span>def <span class="ident">get_runtime_metadata</span></span>(<span>self, block_hash=None)</span>
 </code></dt>
@@ -11056,25 +10741,6 @@ omitted)</p>
         response[&#39;result&#39;] = metadata_decoder.decode()
 
     return response</code></pre>
-</details>
-</dd>
-<dt id="substrateinterface.base.SubstrateInterface.get_runtime_state"><code class="name flex">
-<span>def <span class="ident">get_runtime_state</span></span>(<span>self, module, storage_function, params=None, block_hash=None)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Warning: 'get_runtime_state' will be replaced by 'query'</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
-    &#34;&#34;&#34;
-    Warning: &#39;get_runtime_state&#39; will be replaced by &#39;query&#39;
-    &#34;&#34;&#34;
-    warnings.warn(&#34;&#39;get_runtime_state&#39; will be replaced by &#39;query&#39;&#34;, DeprecationWarning)
-
-    obj = self.query(module, storage_function, params=params, block_hash=block_hash)
-    return {&#39;result&#39;: obj.value if obj else None}</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.base.SubstrateInterface.get_storage_by_key"><code class="name flex">
@@ -12828,7 +12494,6 @@ result = substrate.subscribe_block_headers(subscription_handler, include_author=
 <li><code><a title="substrateinterface.base.SubstrateInterface.get_block_metadata" href="#substrateinterface.base.SubstrateInterface.get_block_metadata">get_block_metadata</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.get_block_number" href="#substrateinterface.base.SubstrateInterface.get_block_number">get_block_number</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.get_block_runtime_version" href="#substrateinterface.base.SubstrateInterface.get_block_runtime_version">get_block_runtime_version</a></code></li>
-<li><code><a title="substrateinterface.base.SubstrateInterface.get_chain_block" href="#substrateinterface.base.SubstrateInterface.get_chain_block">get_chain_block</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.get_chain_finalised_head" href="#substrateinterface.base.SubstrateInterface.get_chain_finalised_head">get_chain_finalised_head</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.get_chain_head" href="#substrateinterface.base.SubstrateInterface.get_chain_head">get_chain_head</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.get_constant" href="#substrateinterface.base.SubstrateInterface.get_constant">get_constant</a></code></li>
@@ -12847,9 +12512,7 @@ result = substrate.subscribe_block_headers(subscription_handler, include_author=
 <li><code><a title="substrateinterface.base.SubstrateInterface.get_metadata_storage_function" href="#substrateinterface.base.SubstrateInterface.get_metadata_storage_function">get_metadata_storage_function</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.get_metadata_storage_functions" href="#substrateinterface.base.SubstrateInterface.get_metadata_storage_functions">get_metadata_storage_functions</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.get_payment_info" href="#substrateinterface.base.SubstrateInterface.get_payment_info">get_payment_info</a></code></li>
-<li><code><a title="substrateinterface.base.SubstrateInterface.get_runtime_block" href="#substrateinterface.base.SubstrateInterface.get_runtime_block">get_runtime_block</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.get_runtime_metadata" href="#substrateinterface.base.SubstrateInterface.get_runtime_metadata">get_runtime_metadata</a></code></li>
-<li><code><a title="substrateinterface.base.SubstrateInterface.get_runtime_state" href="#substrateinterface.base.SubstrateInterface.get_runtime_state">get_runtime_state</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.get_storage_by_key" href="#substrateinterface.base.SubstrateInterface.get_storage_by_key">get_storage_by_key</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.get_type_definition" href="#substrateinterface.base.SubstrateInterface.get_type_definition">get_type_definition</a></code></li>
 <li><code><a title="substrateinterface.base.SubstrateInterface.get_type_registry" href="#substrateinterface.base.SubstrateInterface.get_type_registry">get_type_registry</a></code></li>
