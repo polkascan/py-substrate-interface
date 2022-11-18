@@ -893,59 +893,6 @@ class SubstrateInterface:
 
             return response.get('result')
 
-    def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
-        """
-        A pass-though to existing JSONRPC method `chain_getBlock`. For a decoded version see `get_block()`
-
-        Parameters
-        ----------
-        block_hash
-        block_id
-        metadata_decoder
-
-        Returns
-        -------
-
-        """
-        warnings.warn("'get_chain_block' will be replaced by 'get_block'", DeprecationWarning)
-
-        if block_id:
-            block_hash = self.get_block_hash(block_id)
-
-        response = self.rpc_request("chain_getBlock", [block_hash])
-
-        if 'error' in response:
-            raise SubstrateRequestException(response['error']['message'])
-        else:
-            result = response.get('result')
-
-            if self.mock_extrinsics:
-                # Extend extrinsics with mock_extrinsics for e.g. performance tests
-                result['block']['extrinsics'].extend(self.mock_extrinsics)
-
-            # Decode extrinsics
-            if metadata_decoder:
-
-                result['block']['header']['number'] = int(result['block']['header']['number'], 16)
-
-                for idx, extrinsic_data in enumerate(result['block']['extrinsics']):
-                    extrinsic_decoder = Extrinsic(
-                        data=ScaleBytes(extrinsic_data),
-                        metadata=metadata_decoder,
-                        runtime_config=self.runtime_config
-                    )
-                    extrinsic_decoder.decode()
-                    result['block']['extrinsics'][idx] = extrinsic_decoder.value
-
-                for idx, log_data in enumerate(result['block']['header']["digest"]["logs"]):
-                    log_digest = self.runtime_config.create_scale_object(
-                        'sp_runtime::generic::digest::DigestItem', ScaleBytes(log_data)
-                    )
-                    log_digest.decode()
-                    result['block']['header']["digest"]["logs"][idx] = log_digest.value
-
-            return result
-
     def get_block_hash(self, block_id: int) -> str:
         """
         A pass-though to existing JSONRPC method `chain_getBlockHash`
@@ -1571,15 +1518,6 @@ class SubstrateInterface:
             return obj
         else:
             return None
-
-    def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
-        """
-        Warning: 'get_runtime_state' will be replaced by 'query'
-        """
-        warnings.warn("'get_runtime_state' will be replaced by 'query'", DeprecationWarning)
-
-        obj = self.query(module, storage_function, params=params, block_hash=block_hash)
-        return {'result': obj.value if obj else None}
 
     def get_events(self, block_hash: str = None) -> list:
         """
@@ -2941,38 +2879,6 @@ class SubstrateInterface:
             block_hash=block_hash,
             extrinsic_hash=extrinsic_hash
         )
-
-    def get_runtime_block(self, block_hash: str = None, block_id: int = None, ignore_decoding_errors: bool = False,
-                          include_author: bool = False):
-        """
-        Warning: 'get_runtime_block' will be replaced by 'get_block'
-
-        Parameters
-        ----------
-        block_hash
-        block_id
-        ignore_decoding_errors: When True no exception will be raised if decoding of extrinsics failes and add as `None` instead
-        include_author: Extract block author from validator set and include in result
-
-        Returns
-        -------
-
-        """
-        warnings.warn("'get_runtime_block' will be replaced by 'get_block'", DeprecationWarning)
-
-        if block_id is not None:
-            block_hash = self.get_block_hash(block_id)
-
-            if block_hash is None:
-                return
-
-        block = self.__get_block_handler(
-            block_hash=block_hash, ignore_decoding_errors=ignore_decoding_errors,
-            include_author=include_author, header_only=False
-        )
-
-        if block:
-            return {'block': block}
 
     def decode_scale(self, type_string, scale_bytes, block_hash=None, return_scale_obj=False):
         """
