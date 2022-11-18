@@ -283,6 +283,10 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
 
         self.assertFalse(result.is_success)
 
+    def test_check_extrinsic_receipt_failed_scaleinfo(self):
+        receipt = self.kusama_substrate.retrieve_extrinsic_by_identifier("15237367-80")
+        self.assertFalse(receipt.is_success)
+
     def test_check_extrinsic_failed_error_message(self):
         result = ExtrinsicReceipt(
             substrate=self.kusama_substrate,
