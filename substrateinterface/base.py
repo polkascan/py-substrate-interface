@@ -15,7 +15,6 @@
 # limitations under the License.
 
 import time
-import warnings
 from base64 import b64encode
 from hashlib import blake2b
 
@@ -34,7 +33,7 @@ from eth_keys.datatypes import PrivateKey
 from websocket import create_connection, WebSocketConnectionClosedException
 
 from scalecodec.base import ScaleDecoder, ScaleBytes, RuntimeConfigurationObject, ScaleType
-from scalecodec.types import GenericCall, GenericExtrinsic, Extrinsic, MultiAccountId
+from scalecodec.types import GenericCall, GenericExtrinsic, Extrinsic, MultiAccountId, GenericRuntimeCallDefinition
 from scalecodec.type_registry import load_type_registry_preset
 from scalecodec.updater import update_type_registries
 
@@ -45,7 +44,7 @@ from .utils.hasher import blake2_256, two_x64_concat, xxh128, blake2_128, blake2
 from .exceptions import SubstrateRequestException, ConfigurationError, StorageFunctionNotFound, BlockNotFound, \
     ExtrinsicNotFound
 from .constants import *
-from .utils.ss58 import ss58_decode, ss58_encode, is_valid_ss58_address
+from .utils.ss58 import ss58_decode, ss58_encode, is_valid_ss58_address, get_ss58_format
 
 from bip39 import bip39_to_mini_secret, bip39_generate, bip39_validate
 import sr25519
@@ -378,6 +377,9 @@ class Keypair:
             private_key = private_key[0:32]
         else:
             raise NotImplementedError("Unknown KeypairType found in JSON")
+
+        if ss58_format is None and 'address' in json_data:
+            ss58_format = get_ss58_format(json_data['address'])
 
         return cls.create_from_private_key(private_key, public_key, ss58_format=ss58_format, crypto_type=crypto_type)
 
@@ -1332,7 +1334,7 @@ class SubstrateInterface:
         )
 
     def query(self, module: str, storage_function: str, params: list = None, block_hash: str = None,
-              subscription_handler: callable = None, raw_storage_key: bytes = None) -> Optional[ScaleType]:
+              subscription_handler: callable = None, raw_storage_key: bytes = None) -> ScaleType:
         """
         Retrieves the storage entry for given module, function and optional parameters at given block hash.
 
@@ -1486,9 +1488,7 @@ class SubstrateInterface:
 
                     return obj
 
-        return None
-
-    def __query_well_known(self, name: str, block_hash: str) -> Optional[ScaleType]:
+    def __query_well_known(self, name: str, block_hash: str) -> ScaleType:
         """
         Query well-known storage keys as defined in Substrate
 
@@ -1517,7 +1517,52 @@ class SubstrateInterface:
             obj.meta_info = {'result_found': False}
             return obj
         else:
-            return None
+            raise ValueError("No value to decode")
+
+    def runtime_call(self, api: str, method: str, params: list = ()) -> ScaleType:
+        """
+        Calls a runtime API method
+
+        Parameters
+        ----------
+        api: Name of the runtime API e.g. 'TransactionPaymentApi'
+        method: Name of the method e.g. 'query_fee_details'
+        params: List of parameters needed to call the runtime API
+
+        Returns
+        -------
+        ScaleType
+        """
+        self.init_runtime()
+
+        try:
+            runtime_call_def = self.runtime_config.type_registry["runtime_api"][api]['methods'][method]
+            runtime_api_types = self.runtime_config.type_registry["runtime_api"][api].get("types", {})
+        except KeyError:
+            raise ValueError(f"Runtime API Call '{api}.{method}' not found in registry")
+
+        if len(params) != len(runtime_call_def['params']):
+            raise ValueError(
+                f"Number of parameter provided ({len(params)}) does not "
+                f"match definition {len(runtime_call_def['params'])}"
+            )
+
+        # Add runtime API types to registry
+        self.runtime_config.update_type_registry_types(runtime_api_types)
+
+        # Encode params
+        param_data = ScaleBytes(bytes())
+        for idx, param in enumerate(runtime_call_def['params']):
+            scale_obj = self.runtime_config.create_scale_object(param['type'])
+            param_data += scale_obj.encode(params[idx])
+
+        result_data = self.rpc_request("state_call", [f'{api}_{method}', str(param_data)])
+
+        # Decode result
+        result_obj = self.runtime_config.create_scale_object(runtime_call_def['type'])
+        result_obj.decode(ScaleBytes(result_data['result']))
+
+        return result_obj
 
     def get_events(self, block_hash: str = None) -> list:
         """
@@ -2574,6 +2619,54 @@ class SubstrateInterface:
                 for error in module.errors:
                     if error_name == error.name:
                         return error
+
+    def get_metadata_runtime_call_functions(self) -> list:
+        """
+        Get a list of available runtime API calls
+
+        Returns
+        -------
+        list
+        """
+        self.init_runtime()
+        call_functions = []
+
+        for api, methods in self.runtime_config.type_registry["runtime_api"].items():
+            for method in methods["methods"].keys():
+                call_functions.append(self.get_metadata_runtime_call_function(api, method))
+
+        return call_functions
+
+    def get_metadata_runtime_call_function(self, api: str, method: str) -> GenericRuntimeCallDefinition:
+        """
+        Get details of a runtime API call
+
+        Parameters
+        ----------
+        api: Name of the runtime API e.g. 'TransactionPaymentApi'
+        method: Name of the method e.g. 'query_fee_details'
+
+        Returns
+        -------
+        GenericRuntimeCallDefinition
+        """
+        self.init_runtime()
+
+        try:
+            runtime_call_def = self.runtime_config.type_registry["runtime_api"][api]['methods'][method]
+            runtime_call_def['api'] = api
+            runtime_call_def['method'] = method
+            runtime_api_types = self.runtime_config.type_registry["runtime_api"][api].get("types", {})
+        except KeyError:
+            raise ValueError(f"Runtime API Call '{api}.{method}' not found in registry")
+
+        # Add runtime API types to registry
+        self.runtime_config.update_type_registry_types(runtime_api_types)
+
+        runtime_call_def_obj = self.create_scale_object("RuntimeCallDefinition")
+        runtime_call_def_obj.encode(runtime_call_def)
+
+        return runtime_call_def_obj
 
     def __get_block_handler(self, block_hash: str, ignore_decoding_errors: bool = False, include_author: bool = False,
                             header_only: bool = False, finalized_only: bool = False,
