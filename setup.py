@@ -189,7 +189,7 @@ setup(
         'eth_utils>=1.3.0,<3',
         'pycryptodome>=3.11.0,<4',
         'PyNaCl>=1.0.1,<2',
-        'scalecodec>=1.1.0a,<1.2',
+        'scalecodec>=1.1.0,<1.2',
         'py-sr25519-bindings>=0.2.0,<1',
         'py-ed25519-zebra-bindings>=1.0,<2',
         'py-bip39-bindings>=0.1.9,<1'

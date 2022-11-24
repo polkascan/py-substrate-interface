@@ -3365,6 +3365,9 @@ mnemonic or URI containing soft and hard derivation paths. With these Keypairs d
         else:
             raise NotImplementedError(&#34;Unknown KeypairType found in JSON&#34;)
 
+        if ss58_format is None and &#39;address&#39; in json_data:
+            ss58_format = get_ss58_format(json_data[&#39;address&#39;])
+
         return cls.create_from_private_key(private_key, public_key, ss58_format=ss58_format, crypto_type=crypto_type)
 
     def export_to_encrypted_json(self, passphrase: str, name: str = None) -&gt; dict:
@@ -3598,6 +3601,9 @@ def create_from_encrypted_json(cls, json_data: Union[str, dict], passphrase: str
         private_key = private_key[0:32]
     else:
         raise NotImplementedError(&#34;Unknown KeypairType found in JSON&#34;)
+
+    if ss58_format is None and &#39;address&#39; in json_data:
+        ss58_format = get_ss58_format(json_data[&#39;address&#39;])
 
     return cls.create_from_private_key(private_key, public_key, ss58_format=ss58_format, crypto_type=crypto_type)</code></pre>
 </details>
@@ -4007,7 +4013,7 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
 </details>
 </dd>
 <dt id="substrateinterface.Keypair.encrypt_message"><code class="name flex">
-<span>def <span class="ident">encrypt_message</span></span>(<span>self, message: Union[bytes, str], recipient_public_key: bytes, nonce: bytes = b'^\xb5!\xb6F\x834b:\x15\xe2\x94vE\x1e\x08A\x00`\xc6P\x7f\xd8\xf5') ‑> bytes</span>
+<span>def <span class="ident">encrypt_message</span></span>(<span>self, message: Union[bytes, str], recipient_public_key: bytes, nonce: bytes = b'\x07\xb6\xc8\xf6\r:\xf9\x143a\xcc\xc3\xb5.\x87\xd0G\xab\x10e\xed\xef\x05s') ‑> bytes</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Encrypts message with for specified recipient</p>
@@ -5133,7 +5139,7 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
         )
 
     def query(self, module: str, storage_function: str, params: list = None, block_hash: str = None,
-              subscription_handler: callable = None, raw_storage_key: bytes = None) -&gt; Optional[ScaleType]:
+              subscription_handler: callable = None, raw_storage_key: bytes = None) -&gt; ScaleType:
         &#34;&#34;&#34;
         Retrieves the storage entry for given module, function and optional parameters at given block hash.
 
@@ -5287,9 +5293,7 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
 
                     return obj
 
-        return None
-
-    def __query_well_known(self, name: str, block_hash: str) -&gt; Optional[ScaleType]:
+    def __query_well_known(self, name: str, block_hash: str) -&gt; ScaleType:
         &#34;&#34;&#34;
         Query well-known storage keys as defined in Substrate
 
@@ -5318,7 +5322,52 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
             obj.meta_info = {&#39;result_found&#39;: False}
             return obj
         else:
-            return None
+            raise ValueError(&#34;No value to decode&#34;)
+
+    def runtime_call(self, api: str, method: str, params: list = ()) -&gt; ScaleType:
+        &#34;&#34;&#34;
+        Calls a runtime API method
+
+        Parameters
+        ----------
+        api: Name of the runtime API e.g. &#39;TransactionPaymentApi&#39;
+        method: Name of the method e.g. &#39;query_fee_details&#39;
+        params: List of parameters needed to call the runtime API
+
+        Returns
+        -------
+        ScaleType
+        &#34;&#34;&#34;
+        self.init_runtime()
+
+        try:
+            runtime_call_def = self.runtime_config.type_registry[&#34;runtime_api&#34;][api][&#39;methods&#39;][method]
+            runtime_api_types = self.runtime_config.type_registry[&#34;runtime_api&#34;][api].get(&#34;types&#34;, {})
+        except KeyError:
+            raise ValueError(f&#34;Runtime API Call &#39;{api}.{method}&#39; not found in registry&#34;)
+
+        if len(params) != len(runtime_call_def[&#39;params&#39;]):
+            raise ValueError(
+                f&#34;Number of parameter provided ({len(params)}) does not &#34;
+                f&#34;match definition {len(runtime_call_def[&#39;params&#39;])}&#34;
+            )
+
+        # Add runtime API types to registry
+        self.runtime_config.update_type_registry_types(runtime_api_types)
+
+        # Encode params
+        param_data = ScaleBytes(bytes())
+        for idx, param in enumerate(runtime_call_def[&#39;params&#39;]):
+            scale_obj = self.runtime_config.create_scale_object(param[&#39;type&#39;])
+            param_data += scale_obj.encode(params[idx])
+
+        result_data = self.rpc_request(&#34;state_call&#34;, [f&#39;{api}_{method}&#39;, str(param_data)])
+
+        # Decode result
+        result_obj = self.runtime_config.create_scale_object(runtime_call_def[&#39;type&#39;])
+        result_obj.decode(ScaleBytes(result_data[&#39;result&#39;]))
+
+        return result_obj
 
     def get_events(self, block_hash: str = None) -&gt; list:
         &#34;&#34;&#34;
@@ -6372,6 +6421,54 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
                 for error in module.errors:
                     if error_name == error.name:
                         return error
+
+    def get_metadata_runtime_call_functions(self) -&gt; list:
+        &#34;&#34;&#34;
+        Get a list of available runtime API calls
+
+        Returns
+        -------
+        list
+        &#34;&#34;&#34;
+        self.init_runtime()
+        call_functions = []
+
+        for api, methods in self.runtime_config.type_registry[&#34;runtime_api&#34;].items():
+            for method in methods[&#34;methods&#34;].keys():
+                call_functions.append(self.get_metadata_runtime_call_function(api, method))
+
+        return call_functions
+
+    def get_metadata_runtime_call_function(self, api: str, method: str) -&gt; GenericRuntimeCallDefinition:
+        &#34;&#34;&#34;
+        Get details of a runtime API call
+
+        Parameters
+        ----------
+        api: Name of the runtime API e.g. &#39;TransactionPaymentApi&#39;
+        method: Name of the method e.g. &#39;query_fee_details&#39;
+
+        Returns
+        -------
+        GenericRuntimeCallDefinition
+        &#34;&#34;&#34;
+        self.init_runtime()
+
+        try:
+            runtime_call_def = self.runtime_config.type_registry[&#34;runtime_api&#34;][api][&#39;methods&#39;][method]
+            runtime_call_def[&#39;api&#39;] = api
+            runtime_call_def[&#39;method&#39;] = method
+            runtime_api_types = self.runtime_config.type_registry[&#34;runtime_api&#34;][api].get(&#34;types&#34;, {})
+        except KeyError:
+            raise ValueError(f&#34;Runtime API Call &#39;{api}.{method}&#39; not found in registry&#34;)
+
+        # Add runtime API types to registry
+        self.runtime_config.update_type_registry_types(runtime_api_types)
+
+        runtime_call_def_obj = self.create_scale_object(&#34;RuntimeCallDefinition&#34;)
+        runtime_call_def_obj.encode(runtime_call_def)
+
+        return runtime_call_def_obj
 
     def __get_block_handler(self, block_hash: str, ignore_decoding_errors: bool = False, include_author: bool = False,
                             header_only: bool = False, finalized_only: bool = False,
@@ -8946,6 +9043,91 @@ Parameters</p>
     } for idx, module in enumerate(self.metadata.pallets)]</code></pre>
 </details>
 </dd>
+<dt id="substrateinterface.SubstrateInterface.get_metadata_runtime_call_function"><code class="name flex">
+<span>def <span class="ident">get_metadata_runtime_call_function</span></span>(<span>self, api: str, method: str) ‑> scalecodec.types.GenericRuntimeCallDefinition</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get details of a runtime API call</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>api</code></strong> :&ensp;<code>Name</code> of <code>the runtime API e.g. 'TransactionPaymentApi'</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>method</code></strong> :&ensp;<code>Name</code> of <code>the method e.g. 'query_fee_details'</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>GenericRuntimeCallDefinition</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_metadata_runtime_call_function(self, api: str, method: str) -&gt; GenericRuntimeCallDefinition:
+    &#34;&#34;&#34;
+    Get details of a runtime API call
+
+    Parameters
+    ----------
+    api: Name of the runtime API e.g. &#39;TransactionPaymentApi&#39;
+    method: Name of the method e.g. &#39;query_fee_details&#39;
+
+    Returns
+    -------
+    GenericRuntimeCallDefinition
+    &#34;&#34;&#34;
+    self.init_runtime()
+
+    try:
+        runtime_call_def = self.runtime_config.type_registry[&#34;runtime_api&#34;][api][&#39;methods&#39;][method]
+        runtime_call_def[&#39;api&#39;] = api
+        runtime_call_def[&#39;method&#39;] = method
+        runtime_api_types = self.runtime_config.type_registry[&#34;runtime_api&#34;][api].get(&#34;types&#34;, {})
+    except KeyError:
+        raise ValueError(f&#34;Runtime API Call &#39;{api}.{method}&#39; not found in registry&#34;)
+
+    # Add runtime API types to registry
+    self.runtime_config.update_type_registry_types(runtime_api_types)
+
+    runtime_call_def_obj = self.create_scale_object(&#34;RuntimeCallDefinition&#34;)
+    runtime_call_def_obj.encode(runtime_call_def)
+
+    return runtime_call_def_obj</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.get_metadata_runtime_call_functions"><code class="name flex">
+<span>def <span class="ident">get_metadata_runtime_call_functions</span></span>(<span>self) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get a list of available runtime API calls</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_metadata_runtime_call_functions(self) -&gt; list:
+    &#34;&#34;&#34;
+    Get a list of available runtime API calls
+
+    Returns
+    -------
+    list
+    &#34;&#34;&#34;
+    self.init_runtime()
+    call_functions = []
+
+    for api, methods in self.runtime_config.type_registry[&#34;runtime_api&#34;].items():
+        for method in methods[&#34;methods&#34;].keys():
+            call_functions.append(self.get_metadata_runtime_call_function(api, method))
+
+    return call_functions</code></pre>
+</details>
+</dd>
 <dt id="substrateinterface.SubstrateInterface.get_metadata_storage_function"><code class="name flex">
 <span>def <span class="ident">get_metadata_storage_function</span></span>(<span>self, module_name, storage_name, block_hash=None)</span>
 </code></dt>
@@ -9617,7 +9799,7 @@ In the future there could be support for caching backends like Redis to make thi
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.query"><code class="name flex">
-<span>def <span class="ident">query</span></span>(<span>self, module: str, storage_function: str, params: list = None, block_hash: str = None, subscription_handler: <built-in function callable> = None, raw_storage_key: bytes = None) ‑> Optional[scalecodec.base.ScaleType]</span>
+<span>def <span class="ident">query</span></span>(<span>self, module: str, storage_function: str, params: list = None, block_hash: str = None, subscription_handler: <built-in function callable> = None, raw_storage_key: bytes = None) ‑> scalecodec.base.ScaleType</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Retrieves the storage entry for given module, function and optional parameters at given block hash.</p>
@@ -9662,7 +9844,7 @@ handler doesn't return a value.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def query(self, module: str, storage_function: str, params: list = None, block_hash: str = None,
-          subscription_handler: callable = None, raw_storage_key: bytes = None) -&gt; Optional[ScaleType]:
+          subscription_handler: callable = None, raw_storage_key: bytes = None) -&gt; ScaleType:
     &#34;&#34;&#34;
     Retrieves the storage entry for given module, function and optional parameters at given block hash.
 
@@ -9814,9 +9996,7 @@ handler doesn't return a value.</p>
                 obj.decode()
                 obj.meta_info = {&#39;result_found&#39;: response.get(&#39;result&#39;) is not None}
 
-                return obj
-
-    return None</code></pre>
+                return obj</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.query_map"><code class="name flex">
@@ -10248,6 +10428,75 @@ use this method to perform the request.</p>
             raise SubstrateRequestException(json_body[&#39;error&#39;])
 
     return json_body</code></pre>
+</details>
+</dd>
+<dt id="substrateinterface.SubstrateInterface.runtime_call"><code class="name flex">
+<span>def <span class="ident">runtime_call</span></span>(<span>self, api: str, method: str, params: list = ()) ‑> scalecodec.base.ScaleType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Calls a runtime API method</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>api</code></strong> :&ensp;<code>Name</code> of <code>the runtime API e.g. 'TransactionPaymentApi'</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>method</code></strong> :&ensp;<code>Name</code> of <code>the method e.g. 'query_fee_details'</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>params</code></strong> :&ensp;<code>List</code> of <code>parameters needed to call the runtime API</code></dt>
+<dd>&nbsp;</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>ScaleType</code></dt>
+<dd>&nbsp;</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def runtime_call(self, api: str, method: str, params: list = ()) -&gt; ScaleType:
+    &#34;&#34;&#34;
+    Calls a runtime API method
+
+    Parameters
+    ----------
+    api: Name of the runtime API e.g. &#39;TransactionPaymentApi&#39;
+    method: Name of the method e.g. &#39;query_fee_details&#39;
+    params: List of parameters needed to call the runtime API
+
+    Returns
+    -------
+    ScaleType
+    &#34;&#34;&#34;
+    self.init_runtime()
+
+    try:
+        runtime_call_def = self.runtime_config.type_registry[&#34;runtime_api&#34;][api][&#39;methods&#39;][method]
+        runtime_api_types = self.runtime_config.type_registry[&#34;runtime_api&#34;][api].get(&#34;types&#34;, {})
+    except KeyError:
+        raise ValueError(f&#34;Runtime API Call &#39;{api}.{method}&#39; not found in registry&#34;)
+
+    if len(params) != len(runtime_call_def[&#39;params&#39;]):
+        raise ValueError(
+            f&#34;Number of parameter provided ({len(params)}) does not &#34;
+            f&#34;match definition {len(runtime_call_def[&#39;params&#39;])}&#34;
+        )
+
+    # Add runtime API types to registry
+    self.runtime_config.update_type_registry_types(runtime_api_types)
+
+    # Encode params
+    param_data = ScaleBytes(bytes())
+    for idx, param in enumerate(runtime_call_def[&#39;params&#39;]):
+        scale_obj = self.runtime_config.create_scale_object(param[&#39;type&#39;])
+        param_data += scale_obj.encode(params[idx])
+
+    result_data = self.rpc_request(&#34;state_call&#34;, [f&#39;{api}_{method}&#39;, str(param_data)])
+
+    # Decode result
+    result_obj = self.runtime_config.create_scale_object(runtime_call_def[&#39;type&#39;])
+    result_obj.decode(ScaleBytes(result_data[&#39;result&#39;]))
+
+    return result_obj</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.serialize_constant"><code class="name flex">
@@ -10969,6 +11218,8 @@ result = substrate.subscribe_block_headers(subscription_handler, include_author=
 <li><code><a title="substrateinterface.SubstrateInterface.get_metadata_events" href="#substrateinterface.SubstrateInterface.get_metadata_events">get_metadata_events</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_metadata_module" href="#substrateinterface.SubstrateInterface.get_metadata_module">get_metadata_module</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_metadata_modules" href="#substrateinterface.SubstrateInterface.get_metadata_modules">get_metadata_modules</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_metadata_runtime_call_function" href="#substrateinterface.SubstrateInterface.get_metadata_runtime_call_function">get_metadata_runtime_call_function</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.get_metadata_runtime_call_functions" href="#substrateinterface.SubstrateInterface.get_metadata_runtime_call_functions">get_metadata_runtime_call_functions</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_metadata_storage_function" href="#substrateinterface.SubstrateInterface.get_metadata_storage_function">get_metadata_storage_function</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_metadata_storage_functions" href="#substrateinterface.SubstrateInterface.get_metadata_storage_functions">get_metadata_storage_functions</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.get_payment_info" href="#substrateinterface.SubstrateInterface.get_payment_info">get_payment_info</a></code></li>
@@ -10988,6 +11239,7 @@ result = substrate.subscribe_block_headers(subscription_handler, include_author=
 <li><code><a title="substrateinterface.SubstrateInterface.retrieve_extrinsic_by_hash" href="#substrateinterface.SubstrateInterface.retrieve_extrinsic_by_hash">retrieve_extrinsic_by_hash</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.retrieve_extrinsic_by_identifier" href="#substrateinterface.SubstrateInterface.retrieve_extrinsic_by_identifier">retrieve_extrinsic_by_identifier</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.rpc_request" href="#substrateinterface.SubstrateInterface.rpc_request">rpc_request</a></code></li>
+<li><code><a title="substrateinterface.SubstrateInterface.runtime_call" href="#substrateinterface.SubstrateInterface.runtime_call">runtime_call</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.serialize_constant" href="#substrateinterface.SubstrateInterface.serialize_constant">serialize_constant</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.serialize_module_call" href="#substrateinterface.SubstrateInterface.serialize_module_call">serialize_module_call</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.serialize_module_error" href="#substrateinterface.SubstrateInterface.serialize_module_error">serialize_module_error</a></code></li>
