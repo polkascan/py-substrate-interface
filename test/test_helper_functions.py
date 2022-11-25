@@ -196,7 +196,6 @@ class TestHelperFunctions(unittest.TestCase):
         self.assertRaises(SubstrateRequestException, self.error_substrate.get_block_metadata, '0x')
         self.assertRaises(SubstrateRequestException, self.error_substrate.get_block_runtime_version, '0x')
         self.assertRaises(ValueError, self.error_substrate.query, 'System', 'Account', ['0x'])
-        self.assertRaises(SubstrateRequestException, self.error_substrate.get_runtime_metadata, '0x')
 
     def test_storage_function_param_info(self):
         storage_function = self.substrate.get_metadata_storage_function("System", "Account")
