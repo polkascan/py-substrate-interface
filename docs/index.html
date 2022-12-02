@@ -4013,7 +4013,7 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
 </details>
 </dd>
 <dt id="substrateinterface.Keypair.encrypt_message"><code class="name flex">
-<span>def <span class="ident">encrypt_message</span></span>(<span>self, message: Union[bytes, str], recipient_public_key: bytes, nonce: bytes = b'\x07\xb6\xc8\xf6\r:\xf9\x143a\xcc\xc3\xb5.\x87\xd0G\xab\x10e\xed\xef\x05s') ‑> bytes</span>
+<span>def <span class="ident">encrypt_message</span></span>(<span>self, message: Union[bytes, str], recipient_public_key: bytes, nonce: bytes = b'V\x16F\xe3\xa8\xd3\x0b\xd6\x97\xd7\x18\xfd\xcd|c \xae\xce\x12\x01\xdb\xf0\xc6\x1b') ‑> bytes</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Encrypts message with for specified recipient</p>
@@ -4443,16 +4443,14 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
         self.block_hash = None
         self.block_id = None
 
-        self.metadata_cache = {}
-        self.type_registry_cache = {}
+        self.__metadata_cache = {}
 
         self.debug = False
 
         self.config = {
             &#39;use_remote_preset&#39;: use_remote_preset,
             &#39;auto_discover&#39;: auto_discover,
-            &#39;auto_reconnect&#39;: auto_reconnect,
-            &#39;features_weight_v2&#39;: True
+            &#39;auto_reconnect&#39;: auto_reconnect
         }
 
         self.session = requests.Session()
@@ -4946,23 +4944,23 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
         self.runtime_version = runtime_info.get(&#34;specVersion&#34;)
         self.transaction_version = runtime_info.get(&#34;transactionVersion&#34;)
 
-        if self.runtime_version not in self.metadata_cache and self.cache_region:
+        if self.runtime_version not in self.__metadata_cache and self.cache_region:
             # Try to retrieve metadata from Dogpile cache
             cached_metadata = self.cache_region.get(&#39;METADATA_{}&#39;.format(self.runtime_version))
             if cached_metadata:
                 self.debug_message(&#39;Retrieved metadata for {} from Redis&#39;.format(self.runtime_version))
-                self.metadata_cache[self.runtime_version] = cached_metadata
+                self.__metadata_cache[self.runtime_version] = cached_metadata
 
-        if self.runtime_version in self.metadata_cache:
+        if self.runtime_version in self.__metadata_cache:
             # Get metadata from cache
             self.debug_message(&#39;Retrieved metadata for {} from memory&#39;.format(self.runtime_version))
-            self.metadata = self.metadata_cache[self.runtime_version]
+            self.metadata = self.__metadata_cache[self.runtime_version]
         else:
             self.metadata = self.get_block_metadata(block_hash=runtime_block_hash, decode=True)
             self.debug_message(&#39;Retrieved metadata for {} from Substrate node&#39;.format(self.runtime_version))
 
             # Update metadata cache
-            self.metadata_cache[self.runtime_version] = self.metadata
+            self.__metadata_cache[self.runtime_version] = self.metadata
 
             if self.cache_region:
                 self.debug_message(&#39;Stored metadata for {} in Redis&#39;.format(self.runtime_version))
@@ -4987,10 +4985,6 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
 
         if ss58_prefix_constant:
             self.ss58_format = ss58_prefix_constant.value
-
-        # Check features and set in local config
-        # WeightV2: TODO Runtime call to API_version
-        self.config[&#34;features_weight_v2&#34;] = True
 
     def query_map(self, module: str, storage_function: str, params: Optional[list] = None, block_hash: str = None,
                   max_results: int = None, start_key: str = None, page_size: int = 100,
@@ -5420,6 +5414,8 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
         -------
 
         &#34;&#34;&#34;
+        warnings.warn(&#34;get_runtime_metadata() will be removed in future releases&#34;, DeprecationWarning)
+
         params = None
         if block_hash:
             params = [block_hash]
@@ -5920,125 +5916,26 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
                 # Transform format to WeightV2 if applicable as per https://github.com/paritytech/substrate/pull/12633
                 weight_obj = self.runtime_config.create_scale_object(&#34;sp_weights::weight_v2::Weight&#34;)
                 if weight_obj is not None:
-                    payment_info[&#39;result&#39;][&#39;weight&#39;] = {&#39;ref_time&#39;: payment_info[&#39;result&#39;][&#39;weight&#39;]}
+                    payment_info[&#39;result&#39;][&#39;weight&#39;] = {
+                        &#39;ref_time&#39;: payment_info[&#39;result&#39;][&#39;weight&#39;],
+                        &#39;proof_size&#39;: 0
+                    }
 
             return payment_info[&#39;result&#39;]
         else:
             raise SubstrateRequestException(payment_info[&#39;error&#39;][&#39;message&#39;])
 
-    def process_metadata_typestring(self, type_string: str, parent_type_strings: list = None):
-        &#34;&#34;&#34;
-        Process how given type_string is decoded with active runtime and type registry
-
-        Parameters
-        ----------
-        type_string: RUST variable type, e.g. `Vec&lt;Address&gt;`
-        parent_type_strings: add a process trail of parent types to prevent recursion
-
-        Returns
-        -------
-
-        dict of properties for given type_string
-
-        E.g.
-
-        `{
-            &#34;type_string&#34;: &#34;Vec&lt;Address&gt;&#34;,
-            &#34;decoder_class&#34;: &#34;Vec&#34;,
-            &#34;is_primitive_runtime&#34;: false,
-            &#34;is_primitive_core&#34;: false,
-            &#34;spec_version&#34;: 1030
-        }`
-
-        &#34;&#34;&#34;
-        decoder_class_obj = None
-
-        type_info = {
-            &#34;type_string&#34;: type_string,
-            &#34;decoder_class&#34;: None,
-            &#34;is_primitive_runtime&#34;: None,
-            &#34;is_primitive_core&#34;: False,
-            &#34;spec_version&#34;: self.runtime_version
-        }
-
-        if self.runtime_version not in self.type_registry_cache:
-            self.type_registry_cache[self.runtime_version] = {}
-
-        # Check if already added
-        if type_string and type_string.lower() in self.type_registry_cache[self.runtime_version]:
-            return self.type_registry_cache[self.runtime_version][type_string.lower()][&#39;decoder_class&#39;]
-
-        if not parent_type_strings:
-            parent_type_strings = []
-
-        parent_type_strings.append(type_string)
-
-        # Try to get decoder class
-        decoder_class = self.runtime_config.get_decoder_class(type_string)
-
-        if not decoder_class:
-
-            # Not in type registry, try get hard coded decoder classes
-            try:
-                decoder_class_obj = self.runtime_config.create_scale_object(type_string=type_string)
-                decoder_class = decoder_class_obj.__class__
-            except NotImplementedError as e:
-                decoder_class = None
-
-        # Process classes that contain subtypes (e.g. Option&lt;ChangesTrieConfiguration&gt;)
-        if decoder_class_obj and decoder_class_obj.sub_type:
-            type_info[&#34;is_primitive_runtime&#34;] = False
-
-            # Try to split on &#39;,&#39; (e.g. ActiveRecovery&lt;BlockNumber, BalanceOf, AccountId&gt;)
-            if not re.search(&#39;[&lt;()&gt;]&#39;, decoder_class_obj.sub_type):
-                for element in decoder_class_obj.sub_type.split(&#39;,&#39;):
-                    if element not in [&#39;T&#39;, &#39;I&#39;] and element.strip() not in parent_type_strings:
-                        self.process_metadata_typestring(element.strip(), parent_type_strings=parent_type_strings)
-
-        # Process classes that contain type_mapping (e.g. Struct and Enum)
-        if decoder_class and hasattr(decoder_class, &#39;type_mapping&#39;) and decoder_class.type_mapping:
-
-            if type_string[0] == &#39;(&#39;:
-                type_info[&#34;is_primitive_runtime&#34;] = False
-
-            for data_type in decoder_class.type_mapping:
-                if data_type:
-                    if type(data_type) in [list, tuple]:
-                        data_type = data_type[1]
-
-                    if type(data_type) is not dict and data_type not in parent_type_strings:
-                        self.process_metadata_typestring(data_type, parent_type_strings=parent_type_strings)
-
-        # Try to get superclass as actual decoding class if not root level &#39;ScaleType&#39;
-        if decoder_class and len(decoder_class.__mro__) &gt; 1 and decoder_class.__mro__[1].__name__ != &#39;ScaleType&#39;:
-            decoder_class = decoder_class.__mro__[1]
-
-        if decoder_class:
-            type_info[&#39;decoder_class&#39;] = decoder_class.__name__
-
-            if type_info[&#34;is_primitive_runtime&#34;] is None:
-                type_info[&#34;is_primitive_runtime&#34;] = True
-
-            if type_info[&#34;is_primitive_runtime&#34;] and type_string.lower() in \
-                    (&#39;bool&#39;, &#39;u8&#39;, &#39;u16&#39;, &#39;u32&#39;, &#39;u64&#39;, &#39;u128&#39;, &#39;u256&#39;, &#39;i8&#39;, &#39;i16&#39;, &#39;i32&#39;, &#39;i64&#39;, &#39;i128&#39;,
-                    &#39;i256&#39;, &#39;h160&#39;, &#39;h256&#39;, &#39;h512&#39;, &#39;[u8; 4]&#39;, &#39;[u8; 4]&#39;, &#39;[u8; 8]&#39;, &#39;[u8; 16]&#39;, &#39;[u8; 32]&#39;, &#39;&amp;[u8]&#39;):
-                type_info[&#34;is_primitive_core&#34;] = True
-        else:
-            type_info[&#34;is_primitive_runtime&#34;] = None
-            type_info[&#34;is_primitive_core&#34;] = None
-
-        self.type_registry_cache[self.runtime_version][type_string.lower()] = type_info
-
-        return decoder_class
-
-    def get_type_registry(self, block_hash: str = None) -&gt; dict:
+    def get_type_registry(self, block_hash: str = None, max_recursion: int = 4) -&gt; dict:
         &#34;&#34;&#34;
         Generates an exhaustive list of which RUST types exist in the runtime specified at given block_hash (or
         chaintip if block_hash is omitted)
 
+        MetadataV14 or higher is required.
+
         Parameters
         ----------
         block_hash: Chaintip will be used if block_hash is omitted
+        max_recursion: Increasing recursion will provide more detail but also has impact on performance
 
         Returns
         -------
@@ -6046,53 +5943,32 @@ def validate_mnemonic(cls, mnemonic: str, language_code: str = MnemonicLanguageC
         &#34;&#34;&#34;
         self.init_runtime(block_hash=block_hash)
 
-        if self.runtime_version not in self.type_registry_cache:
+        if not self.implements_scaleinfo():
+            raise NotImplementedError(&#34;MetadataV14 or higher runtimes is required&#34;)
 
-            for module in self.metadata.pallets:
+        type_registry = {}
 
-                # Storage backwards compt check
-                if module.storage and isinstance(module.storage, list):
-                    storage_functions = module.storage
-                elif module.storage and isinstance(getattr(module.storage, &#39;value&#39;), dict):
-                    storage_functions = module.storage.items
-                else:
-                    storage_functions = []
+        for scale_info_type in self.metadata.portable_registry[&#39;types&#39;]:
 
-                if len(module.calls or []) &gt; 0:
-                    for idx, call in enumerate(module.calls):
-                        for arg in call.args:
-                            self.process_metadata_typestring(arg.type)
+            if &#39;path&#39; in scale_info_type.value[&#39;type&#39;] and len(scale_info_type.value[&#39;type&#39;][&#39;path&#39;]) &gt; 0:
+                type_string = &#39;::&#39;.join(scale_info_type.value[&#34;type&#34;][&#34;path&#34;])
+            else:
+                type_string = f&#39;scale_info::{scale_info_type.value[&#34;id&#34;]}&#39;
 
-                if len(module.events or []) &gt; 0:
-                    for event_index, event in enumerate(module.events):
+            scale_cls = self.runtime_config.get_decoder_class(type_string)
+            type_registry[type_string] = scale_cls.generate_type_decomposition(
+                max_recursion=max_recursion
+            )
 
-                        for arg_index, arg in enumerate(event.args):
-                            self.process_metadata_typestring(arg.type)
-
-                if len(storage_functions) &gt; 0:
-                    for idx, storage in enumerate(storage_functions):
-
-                        # Add type value
-                        self.process_metadata_typestring(storage.get_value_type_string())
-
-                        # Add type keys
-                        for type_key in storage.get_params_type_string():
-                            self.process_metadata_typestring(type_key)
-
-                if len(module.constants or []) &gt; 0:
-                    for idx, constant in enumerate(module.constants):
-                        # Check if types already registered in database
-                        self.process_metadata_typestring(constant.type)
-
-        return self.type_registry_cache[self.runtime_version]
+        return type_registry
 
     def get_type_definition(self, type_string: str, block_hash: str = None):
         &#34;&#34;&#34;
-        Retrieves decoding specifications of given type_string
+        Retrieves SCALE encoding specifications of given type_string
 
         Parameters
         ----------
-        type_string: RUST variable type, e.g. Vec&lt;Address&gt;
+        type_string: RUST variable type, e.g. Vec&lt;Address&gt; or scale_info::0
         block_hash
 
         Returns
@@ -9286,7 +9162,10 @@ omitted)</p>
             # Transform format to WeightV2 if applicable as per https://github.com/paritytech/substrate/pull/12633
             weight_obj = self.runtime_config.create_scale_object(&#34;sp_weights::weight_v2::Weight&#34;)
             if weight_obj is not None:
-                payment_info[&#39;result&#39;][&#39;weight&#39;] = {&#39;ref_time&#39;: payment_info[&#39;result&#39;][&#39;weight&#39;]}
+                payment_info[&#39;result&#39;][&#39;weight&#39;] = {
+                    &#39;ref_time&#39;: payment_info[&#39;result&#39;][&#39;weight&#39;],
+                    &#39;proof_size&#39;: 0
+                }
 
         return payment_info[&#39;result&#39;]
     else:
@@ -9320,6 +9199,8 @@ omitted)</p>
     -------
 
     &#34;&#34;&#34;
+    warnings.warn(&#34;get_runtime_metadata() will be removed in future releases&#34;, DeprecationWarning)
+
     params = None
     if block_hash:
         params = [block_hash]
@@ -9380,10 +9261,10 @@ omitted)</p>
 <span>def <span class="ident">get_type_definition</span></span>(<span>self, type_string: str, block_hash: str = None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Retrieves decoding specifications of given type_string</p>
+<div class="desc"><p>Retrieves SCALE encoding specifications of given type_string</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>type_string</code></strong> :&ensp;<code>RUST variable type, e.g. Vec&lt;Address&gt;</code></dt>
+<dt><strong><code>type_string</code></strong> :&ensp;<code>RUST variable type, e.g. Vec&lt;Address&gt;</code> or <code>scale_info::0</code></dt>
 <dd>&nbsp;</dd>
 <dt><strong><code>block_hash</code></strong></dt>
 <dd>&nbsp;</dd>
@@ -9395,11 +9276,11 @@ omitted)</p>
 </summary>
 <pre><code class="python">def get_type_definition(self, type_string: str, block_hash: str = None):
     &#34;&#34;&#34;
-    Retrieves decoding specifications of given type_string
+    Retrieves SCALE encoding specifications of given type_string
 
     Parameters
     ----------
-    type_string: RUST variable type, e.g. Vec&lt;Address&gt;
+    type_string: RUST variable type, e.g. Vec&lt;Address&gt; or scale_info::0
     block_hash
 
     Returns
@@ -9411,14 +9292,17 @@ omitted)</p>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.get_type_registry"><code class="name flex">
-<span>def <span class="ident">get_type_registry</span></span>(<span>self, block_hash: str = None) ‑> dict</span>
+<span>def <span class="ident">get_type_registry</span></span>(<span>self, block_hash: str = None, max_recursion: int = 4) ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Generates an exhaustive list of which RUST types exist in the runtime specified at given block_hash (or
 chaintip if block_hash is omitted)</p>
+<p>MetadataV14 or higher is required.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>block_hash</code></strong> :&ensp;<code>Chaintip will be used if block_hash is omitted</code></dt>
+<dd>&nbsp;</dd>
+<dt><strong><code>max_recursion</code></strong> :&ensp;<code>Increasing recursion will provide more detail but also has impact on performance</code></dt>
 <dd>&nbsp;</dd>
 </dl>
 <h2 id="returns">Returns</h2>
@@ -9430,14 +9314,17 @@ chaintip if block_hash is omitted)</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_type_registry(self, block_hash: str = None) -&gt; dict:
+<pre><code class="python">def get_type_registry(self, block_hash: str = None, max_recursion: int = 4) -&gt; dict:
     &#34;&#34;&#34;
     Generates an exhaustive list of which RUST types exist in the runtime specified at given block_hash (or
     chaintip if block_hash is omitted)
 
+    MetadataV14 or higher is required.
+
     Parameters
     ----------
     block_hash: Chaintip will be used if block_hash is omitted
+    max_recursion: Increasing recursion will provide more detail but also has impact on performance
 
     Returns
     -------
@@ -9445,45 +9332,24 @@ chaintip if block_hash is omitted)</p>
     &#34;&#34;&#34;
     self.init_runtime(block_hash=block_hash)
 
-    if self.runtime_version not in self.type_registry_cache:
+    if not self.implements_scaleinfo():
+        raise NotImplementedError(&#34;MetadataV14 or higher runtimes is required&#34;)
 
-        for module in self.metadata.pallets:
+    type_registry = {}
 
-            # Storage backwards compt check
-            if module.storage and isinstance(module.storage, list):
-                storage_functions = module.storage
-            elif module.storage and isinstance(getattr(module.storage, &#39;value&#39;), dict):
-                storage_functions = module.storage.items
-            else:
-                storage_functions = []
+    for scale_info_type in self.metadata.portable_registry[&#39;types&#39;]:
 
-            if len(module.calls or []) &gt; 0:
-                for idx, call in enumerate(module.calls):
-                    for arg in call.args:
-                        self.process_metadata_typestring(arg.type)
+        if &#39;path&#39; in scale_info_type.value[&#39;type&#39;] and len(scale_info_type.value[&#39;type&#39;][&#39;path&#39;]) &gt; 0:
+            type_string = &#39;::&#39;.join(scale_info_type.value[&#34;type&#34;][&#34;path&#34;])
+        else:
+            type_string = f&#39;scale_info::{scale_info_type.value[&#34;id&#34;]}&#39;
 
-            if len(module.events or []) &gt; 0:
-                for event_index, event in enumerate(module.events):
+        scale_cls = self.runtime_config.get_decoder_class(type_string)
+        type_registry[type_string] = scale_cls.generate_type_decomposition(
+            max_recursion=max_recursion
+        )
 
-                    for arg_index, arg in enumerate(event.args):
-                        self.process_metadata_typestring(arg.type)
-
-            if len(storage_functions) &gt; 0:
-                for idx, storage in enumerate(storage_functions):
-
-                    # Add type value
-                    self.process_metadata_typestring(storage.get_value_type_string())
-
-                    # Add type keys
-                    for type_key in storage.get_params_type_string():
-                        self.process_metadata_typestring(type_key)
-
-            if len(module.constants or []) &gt; 0:
-                for idx, constant in enumerate(module.constants):
-                    # Check if types already registered in database
-                    self.process_metadata_typestring(constant.type)
-
-    return self.type_registry_cache[self.runtime_version]</code></pre>
+    return type_registry</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.implements_scaleinfo"><code class="name flex">
@@ -9582,23 +9448,23 @@ In the future there could be support for caching backends like Redis to make thi
     self.runtime_version = runtime_info.get(&#34;specVersion&#34;)
     self.transaction_version = runtime_info.get(&#34;transactionVersion&#34;)
 
-    if self.runtime_version not in self.metadata_cache and self.cache_region:
+    if self.runtime_version not in self.__metadata_cache and self.cache_region:
         # Try to retrieve metadata from Dogpile cache
         cached_metadata = self.cache_region.get(&#39;METADATA_{}&#39;.format(self.runtime_version))
         if cached_metadata:
             self.debug_message(&#39;Retrieved metadata for {} from Redis&#39;.format(self.runtime_version))
-            self.metadata_cache[self.runtime_version] = cached_metadata
+            self.__metadata_cache[self.runtime_version] = cached_metadata
 
-    if self.runtime_version in self.metadata_cache:
+    if self.runtime_version in self.__metadata_cache:
         # Get metadata from cache
         self.debug_message(&#39;Retrieved metadata for {} from memory&#39;.format(self.runtime_version))
-        self.metadata = self.metadata_cache[self.runtime_version]
+        self.metadata = self.__metadata_cache[self.runtime_version]
     else:
         self.metadata = self.get_block_metadata(block_hash=runtime_block_hash, decode=True)
         self.debug_message(&#39;Retrieved metadata for {} from Substrate node&#39;.format(self.runtime_version))
 
         # Update metadata cache
-        self.metadata_cache[self.runtime_version] = self.metadata
+        self.__metadata_cache[self.runtime_version] = self.metadata
 
         if self.cache_region:
             self.debug_message(&#39;Stored metadata for {} in Redis&#39;.format(self.runtime_version))
@@ -9622,11 +9488,7 @@ In the future there could be support for caching backends like Redis to make thi
     ss58_prefix_constant = self.get_constant(&#34;System&#34;, &#34;SS58Prefix&#34;, block_hash=block_hash)
 
     if ss58_prefix_constant:
-        self.ss58_format = ss58_prefix_constant.value
-
-    # Check features and set in local config
-    # WeightV2: TODO Runtime call to API_version
-    self.config[&#34;features_weight_v2&#34;] = True</code></pre>
+        self.ss58_format = ss58_prefix_constant.value</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.is_valid_ss58_address"><code class="name flex">
@@ -9661,141 +9523,6 @@ In the future there could be support for caching backends like Redis to make thi
     bool
     &#34;&#34;&#34;
     return is_valid_ss58_address(value, valid_ss58_format=self.ss58_format)</code></pre>
-</details>
-</dd>
-<dt id="substrateinterface.SubstrateInterface.process_metadata_typestring"><code class="name flex">
-<span>def <span class="ident">process_metadata_typestring</span></span>(<span>self, type_string: str, parent_type_strings: list = None)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Process how given type_string is decoded with active runtime and type registry</p>
-<h2 id="parameters">Parameters</h2>
-<dl>
-<dt><strong><code>type_string</code></strong> :&ensp;<code>RUST variable type, e.g. </code>Vec<Address>``</dt>
-<dd>&nbsp;</dd>
-<dt><strong><code>parent_type_strings</code></strong> :&ensp;<code>add a process trail</code> of <code>parent types to prevent recursion</code></dt>
-<dd>&nbsp;</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>dict</code> of <code>properties for given type_string</code></dt>
-<dd>&nbsp;</dd>
-</dl>
-<p>E.g.</p>
-<p><code>{
-"type_string": "Vec&lt;Address&gt;",
-"decoder_class": "Vec",
-"is_primitive_runtime": false,
-"is_primitive_core": false,
-"spec_version": 1030
-}</code></p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def process_metadata_typestring(self, type_string: str, parent_type_strings: list = None):
-    &#34;&#34;&#34;
-    Process how given type_string is decoded with active runtime and type registry
-
-    Parameters
-    ----------
-    type_string: RUST variable type, e.g. `Vec&lt;Address&gt;`
-    parent_type_strings: add a process trail of parent types to prevent recursion
-
-    Returns
-    -------
-
-    dict of properties for given type_string
-
-    E.g.
-
-    `{
-        &#34;type_string&#34;: &#34;Vec&lt;Address&gt;&#34;,
-        &#34;decoder_class&#34;: &#34;Vec&#34;,
-        &#34;is_primitive_runtime&#34;: false,
-        &#34;is_primitive_core&#34;: false,
-        &#34;spec_version&#34;: 1030
-    }`
-
-    &#34;&#34;&#34;
-    decoder_class_obj = None
-
-    type_info = {
-        &#34;type_string&#34;: type_string,
-        &#34;decoder_class&#34;: None,
-        &#34;is_primitive_runtime&#34;: None,
-        &#34;is_primitive_core&#34;: False,
-        &#34;spec_version&#34;: self.runtime_version
-    }
-
-    if self.runtime_version not in self.type_registry_cache:
-        self.type_registry_cache[self.runtime_version] = {}
-
-    # Check if already added
-    if type_string and type_string.lower() in self.type_registry_cache[self.runtime_version]:
-        return self.type_registry_cache[self.runtime_version][type_string.lower()][&#39;decoder_class&#39;]
-
-    if not parent_type_strings:
-        parent_type_strings = []
-
-    parent_type_strings.append(type_string)
-
-    # Try to get decoder class
-    decoder_class = self.runtime_config.get_decoder_class(type_string)
-
-    if not decoder_class:
-
-        # Not in type registry, try get hard coded decoder classes
-        try:
-            decoder_class_obj = self.runtime_config.create_scale_object(type_string=type_string)
-            decoder_class = decoder_class_obj.__class__
-        except NotImplementedError as e:
-            decoder_class = None
-
-    # Process classes that contain subtypes (e.g. Option&lt;ChangesTrieConfiguration&gt;)
-    if decoder_class_obj and decoder_class_obj.sub_type:
-        type_info[&#34;is_primitive_runtime&#34;] = False
-
-        # Try to split on &#39;,&#39; (e.g. ActiveRecovery&lt;BlockNumber, BalanceOf, AccountId&gt;)
-        if not re.search(&#39;[&lt;()&gt;]&#39;, decoder_class_obj.sub_type):
-            for element in decoder_class_obj.sub_type.split(&#39;,&#39;):
-                if element not in [&#39;T&#39;, &#39;I&#39;] and element.strip() not in parent_type_strings:
-                    self.process_metadata_typestring(element.strip(), parent_type_strings=parent_type_strings)
-
-    # Process classes that contain type_mapping (e.g. Struct and Enum)
-    if decoder_class and hasattr(decoder_class, &#39;type_mapping&#39;) and decoder_class.type_mapping:
-
-        if type_string[0] == &#39;(&#39;:
-            type_info[&#34;is_primitive_runtime&#34;] = False
-
-        for data_type in decoder_class.type_mapping:
-            if data_type:
-                if type(data_type) in [list, tuple]:
-                    data_type = data_type[1]
-
-                if type(data_type) is not dict and data_type not in parent_type_strings:
-                    self.process_metadata_typestring(data_type, parent_type_strings=parent_type_strings)
-
-    # Try to get superclass as actual decoding class if not root level &#39;ScaleType&#39;
-    if decoder_class and len(decoder_class.__mro__) &gt; 1 and decoder_class.__mro__[1].__name__ != &#39;ScaleType&#39;:
-        decoder_class = decoder_class.__mro__[1]
-
-    if decoder_class:
-        type_info[&#39;decoder_class&#39;] = decoder_class.__name__
-
-        if type_info[&#34;is_primitive_runtime&#34;] is None:
-            type_info[&#34;is_primitive_runtime&#34;] = True
-
-        if type_info[&#34;is_primitive_runtime&#34;] and type_string.lower() in \
-                (&#39;bool&#39;, &#39;u8&#39;, &#39;u16&#39;, &#39;u32&#39;, &#39;u64&#39;, &#39;u128&#39;, &#39;u256&#39;, &#39;i8&#39;, &#39;i16&#39;, &#39;i32&#39;, &#39;i64&#39;, &#39;i128&#39;,
-                &#39;i256&#39;, &#39;h160&#39;, &#39;h256&#39;, &#39;h512&#39;, &#39;[u8; 4]&#39;, &#39;[u8; 4]&#39;, &#39;[u8; 8]&#39;, &#39;[u8; 16]&#39;, &#39;[u8; 32]&#39;, &#39;&amp;[u8]&#39;):
-            type_info[&#34;is_primitive_core&#34;] = True
-    else:
-        type_info[&#34;is_primitive_runtime&#34;] = None
-        type_info[&#34;is_primitive_core&#34;] = None
-
-    self.type_registry_cache[self.runtime_version][type_string.lower()] = type_info
-
-    return decoder_class</code></pre>
 </details>
 </dd>
 <dt id="substrateinterface.SubstrateInterface.query"><code class="name flex">
@@ -11231,7 +10958,6 @@ result = substrate.subscribe_block_headers(subscription_handler, include_author=
 <li><code><a title="substrateinterface.SubstrateInterface.init_runtime" href="#substrateinterface.SubstrateInterface.init_runtime">init_runtime</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.is_valid_ss58_address" href="#substrateinterface.SubstrateInterface.is_valid_ss58_address">is_valid_ss58_address</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.name" href="#substrateinterface.SubstrateInterface.name">name</a></code></li>
-<li><code><a title="substrateinterface.SubstrateInterface.process_metadata_typestring" href="#substrateinterface.SubstrateInterface.process_metadata_typestring">process_metadata_typestring</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.properties" href="#substrateinterface.SubstrateInterface.properties">properties</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.query" href="#substrateinterface.SubstrateInterface.query">query</a></code></li>
 <li><code><a title="substrateinterface.SubstrateInterface.query_map" href="#substrateinterface.SubstrateInterface.query_map">query_map</a></code></li>
