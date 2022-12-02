@@ -651,14 +651,18 @@ print(result)
 
 ```python
 def subscription_handler(obj, update_nr, subscription_id):
+    print(f"New block #{obj['header']['number']}")
 
-    print(f"New block #{obj['header']['number']} produced by {obj['author']}")
+    block = substrate.get_block(block_number=obj['header']['number'])
+
+    for idx, extrinsic in enumerate(block['extrinsics']):
+        print(f'# {idx}:  {extrinsic.value}')
 
     if update_nr > 10:
         return {'message': 'Subscription will cancel when a value is returned', 'updates_processed': update_nr}
 
 
-result = substrate.subscribe_block_headers(subscription_handler, include_author=True)
+result = substrate.subscribe_block_headers(subscription_handler)
 ```
 
 ## Cleanup and context manager
