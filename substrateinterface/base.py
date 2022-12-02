@@ -2113,12 +2113,15 @@ class SubstrateInterface:
 
             if type(payment_info['result']['weight']) is int:
                 # Transform format to WeightV2 if applicable as per https://github.com/paritytech/substrate/pull/12633
-                weight_obj = self.runtime_config.create_scale_object("sp_weights::weight_v2::Weight")
-                if weight_obj is not None:
-                    payment_info['result']['weight'] = {
-                        'ref_time': payment_info['result']['weight'],
-                        'proof_size': 0
-                    }
+                try:
+                    weight_obj = self.runtime_config.create_scale_object("sp_weights::weight_v2::Weight")
+                    if weight_obj is not None:
+                        payment_info['result']['weight'] = {
+                            'ref_time': payment_info['result']['weight'],
+                            'proof_size': 0
+                        }
+                except NotImplementedError:
+                    pass
 
             return payment_info['result']
         else:
