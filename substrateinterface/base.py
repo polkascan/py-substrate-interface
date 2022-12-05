@@ -645,8 +645,6 @@ class SubstrateInterface:
 
         self.__metadata_cache = {}
 
-        self.debug = False
-
         self.config = {
             'use_remote_preset': use_remote_preset,
             'auto_discover': auto_discover,
