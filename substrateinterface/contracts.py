@@ -704,7 +704,7 @@ class ContractCode:
 
                 if event.value['event']['event_id'] == 'Instantiated':
                     return ContractInstance(
-                        contract_address=event.value['event']['attributes'][1],
+                        contract_address=event.value['event']['attributes']['contract'],
                         metadata=self.metadata,
                         substrate=self.substrate
                     )
