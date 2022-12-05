@@ -485,7 +485,7 @@ class ContractExecutionReceipt(ExtrinsicReceipt):
                     if event.value['module_id'] == 'Contracts' and event.value['event_id'] == 'ContractEmitted':
                         # Create contract event
                         contract_event_obj = ContractEvent(
-                            data=ScaleBytes(event['event'][1][1][1].value_object),
+                            data=ScaleBytes(event['event'][1][1]['data'].value_object),
                             runtime_config=self.substrate.runtime_config,
                             contract_metadata=self.contract_metadata
                         )
