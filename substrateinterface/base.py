@@ -15,7 +15,6 @@
 # limitations under the License.
 
 import time
-import warnings
 from base64 import b64encode
 from hashlib import blake2b
 
@@ -34,7 +33,7 @@ from eth_keys.datatypes import PrivateKey
 from websocket import create_connection, WebSocketConnectionClosedException
 
 from scalecodec.base import ScaleDecoder, ScaleBytes, RuntimeConfigurationObject, ScaleType
-from scalecodec.types import GenericCall, GenericExtrinsic, Extrinsic, MultiAccountId
+from scalecodec.types import GenericCall, GenericExtrinsic, Extrinsic, MultiAccountId, GenericRuntimeCallDefinition
 from scalecodec.type_registry import load_type_registry_preset
 from scalecodec.updater import update_type_registries
 
@@ -45,7 +44,7 @@ from .utils.hasher import blake2_256, two_x64_concat, xxh128, blake2_128, blake2
 from .exceptions import SubstrateRequestException, ConfigurationError, StorageFunctionNotFound, BlockNotFound, \
     ExtrinsicNotFound
 from .constants import *
-from .utils.ss58 import ss58_decode, ss58_encode, is_valid_ss58_address
+from .utils.ss58 import ss58_decode, ss58_encode, is_valid_ss58_address, get_ss58_format
 
 from bip39 import bip39_to_mini_secret, bip39_generate, bip39_validate
 import sr25519
@@ -379,6 +378,9 @@ class Keypair:
         else:
             raise NotImplementedError("Unknown KeypairType found in JSON")
 
+        if ss58_format is None and 'address' in json_data:
+            ss58_format = get_ss58_format(json_data['address'])
+
         return cls.create_from_private_key(private_key, public_key, ss58_format=ss58_format, crypto_type=crypto_type)
 
     def export_to_encrypted_json(self, passphrase: str, name: str = None) -> dict:
@@ -633,7 +635,7 @@ class SubstrateInterface:
             'cache-control': "no-cache"
         }
 
-        self.metadata_decoder = None
+        self.metadata = None
 
         self.runtime_version = None
         self.transaction_version = None
@@ -641,10 +643,7 @@ class SubstrateInterface:
         self.block_hash = None
         self.block_id = None
 
-        self.metadata_cache = {}
-        self.type_registry_cache = {}
-
-        self.debug = False
+        self.__metadata_cache = {}
 
         self.config = {
             'use_remote_preset': use_remote_preset,
@@ -858,8 +857,8 @@ class SubstrateInterface:
             self.runtime_config.ss58_format = value
 
     def implements_scaleinfo(self) -> Optional[bool]:
-        if self.metadata_decoder:
-            return self.metadata_decoder.portable_registry is not None
+        if self.metadata:
+            return self.metadata.portable_registry is not None
 
     def get_chain_head(self):
         """
@@ -892,59 +891,6 @@ class SubstrateInterface:
                 raise SubstrateRequestException(response['error']['message'])
 
             return response.get('result')
-
-    def get_chain_block(self, block_hash=None, block_id=None, metadata_decoder=None):
-        """
-        A pass-though to existing JSONRPC method `chain_getBlock`. For a decoded version see `get_block()`
-
-        Parameters
-        ----------
-        block_hash
-        block_id
-        metadata_decoder
-
-        Returns
-        -------
-
-        """
-        warnings.warn("'get_chain_block' will be replaced by 'get_block'", DeprecationWarning)
-
-        if block_id:
-            block_hash = self.get_block_hash(block_id)
-
-        response = self.rpc_request("chain_getBlock", [block_hash])
-
-        if 'error' in response:
-            raise SubstrateRequestException(response['error']['message'])
-        else:
-            result = response.get('result')
-
-            if self.mock_extrinsics:
-                # Extend extrinsics with mock_extrinsics for e.g. performance tests
-                result['block']['extrinsics'].extend(self.mock_extrinsics)
-
-            # Decode extrinsics
-            if metadata_decoder:
-
-                result['block']['header']['number'] = int(result['block']['header']['number'], 16)
-
-                for idx, extrinsic_data in enumerate(result['block']['extrinsics']):
-                    extrinsic_decoder = Extrinsic(
-                        data=ScaleBytes(extrinsic_data),
-                        metadata=metadata_decoder,
-                        runtime_config=self.runtime_config
-                    )
-                    extrinsic_decoder.decode()
-                    result['block']['extrinsics'][idx] = extrinsic_decoder.value
-
-                for idx, log_data in enumerate(result['block']['header']["digest"]["logs"]):
-                    log_digest = self.runtime_config.create_scale_object(
-                        'sp_runtime::generic::digest::DigestItem', ScaleBytes(log_data)
-                    )
-                    log_digest.decode()
-                    result['block']['header']["digest"]["logs"][idx] = log_digest.value
-
-            return result
 
     def get_block_hash(self, block_id: int) -> str:
         """
@@ -1196,27 +1142,27 @@ class SubstrateInterface:
         self.runtime_version = runtime_info.get("specVersion")
         self.transaction_version = runtime_info.get("transactionVersion")
 
-        if self.runtime_version not in self.metadata_cache and self.cache_region:
+        if self.runtime_version not in self.__metadata_cache and self.cache_region:
             # Try to retrieve metadata from Dogpile cache
             cached_metadata = self.cache_region.get('METADATA_{}'.format(self.runtime_version))
             if cached_metadata:
                 self.debug_message('Retrieved metadata for {} from Redis'.format(self.runtime_version))
-                self.metadata_cache[self.runtime_version] = cached_metadata
+                self.__metadata_cache[self.runtime_version] = cached_metadata
 
-        if self.runtime_version in self.metadata_cache:
+        if self.runtime_version in self.__metadata_cache:
             # Get metadata from cache
             self.debug_message('Retrieved metadata for {} from memory'.format(self.runtime_version))
-            self.metadata_decoder = self.metadata_cache[self.runtime_version]
+            self.metadata = self.__metadata_cache[self.runtime_version]
         else:
-            self.metadata_decoder = self.get_block_metadata(block_hash=runtime_block_hash, decode=True)
+            self.metadata = self.get_block_metadata(block_hash=runtime_block_hash, decode=True)
             self.debug_message('Retrieved metadata for {} from Substrate node'.format(self.runtime_version))
 
             # Update metadata cache
-            self.metadata_cache[self.runtime_version] = self.metadata_decoder
+            self.__metadata_cache[self.runtime_version] = self.metadata
 
             if self.cache_region:
                 self.debug_message('Stored metadata for {} in Redis'.format(self.runtime_version))
-                self.cache_region.set('METADATA_{}'.format(self.runtime_version), self.metadata_decoder)
+                self.cache_region.set('METADATA_{}'.format(self.runtime_version), self.metadata)
 
         # Update type registry
         self.reload_type_registry(
@@ -1227,7 +1173,7 @@ class SubstrateInterface:
         # Check if PortableRegistry is present in metadata (V14+), otherwise fall back on legacy type registry (<V14)
         if self.implements_scaleinfo():
             self.debug_message('Add PortableRegistry from metadata to type registry')
-            self.runtime_config.add_portable_registry(self.metadata_decoder)
+            self.runtime_config.add_portable_registry(self.metadata)
 
         # Set active runtime version
         self.runtime_config.set_active_spec_version_id(self.runtime_version)
@@ -1385,7 +1331,7 @@ class SubstrateInterface:
         )
 
     def query(self, module: str, storage_function: str, params: list = None, block_hash: str = None,
-              subscription_handler: callable = None, raw_storage_key: bytes = None) -> Optional[ScaleType]:
+              subscription_handler: callable = None, raw_storage_key: bytes = None) -> ScaleType:
         """
         Retrieves the storage entry for given module, function and optional parameters at given block hash.
 
@@ -1492,7 +1438,7 @@ class SubstrateInterface:
                         updated_obj = self.runtime_config.create_scale_object(
                             type_string=change_scale_type,
                             data=ScaleBytes(change_data),
-                            metadata=self.metadata_decoder
+                            metadata=self.metadata
                         )
                         updated_obj.decode()
                         updated_obj.meta_info = {'result_found': result_found}
@@ -1532,16 +1478,14 @@ class SubstrateInterface:
                     obj = self.runtime_config.create_scale_object(
                         type_string=value_scale_type,
                         data=ScaleBytes(query_value),
-                        metadata=self.metadata_decoder
+                        metadata=self.metadata
                     )
                     obj.decode()
                     obj.meta_info = {'result_found': response.get('result') is not None}
 
                     return obj
 
-        return None
-
-    def __query_well_known(self, name: str, block_hash: str) -> Optional[ScaleType]:
+    def __query_well_known(self, name: str, block_hash: str) -> ScaleType:
         """
         Query well-known storage keys as defined in Substrate
 
@@ -1570,16 +1514,52 @@ class SubstrateInterface:
             obj.meta_info = {'result_found': False}
             return obj
         else:
-            return None
+            raise ValueError("No value to decode")
 
-    def get_runtime_state(self, module, storage_function, params=None, block_hash=None):
+    def runtime_call(self, api: str, method: str, params: list = ()) -> ScaleType:
         """
-        Warning: 'get_runtime_state' will be replaced by 'query'
-        """
-        warnings.warn("'get_runtime_state' will be replaced by 'query'", DeprecationWarning)
+        Calls a runtime API method
 
-        obj = self.query(module, storage_function, params=params, block_hash=block_hash)
-        return {'result': obj.value if obj else None}
+        Parameters
+        ----------
+        api: Name of the runtime API e.g. 'TransactionPaymentApi'
+        method: Name of the method e.g. 'query_fee_details'
+        params: List of parameters needed to call the runtime API
+
+        Returns
+        -------
+        ScaleType
+        """
+        self.init_runtime()
+
+        try:
+            runtime_call_def = self.runtime_config.type_registry["runtime_api"][api]['methods'][method]
+            runtime_api_types = self.runtime_config.type_registry["runtime_api"][api].get("types", {})
+        except KeyError:
+            raise ValueError(f"Runtime API Call '{api}.{method}' not found in registry")
+
+        if len(params) != len(runtime_call_def['params']):
+            raise ValueError(
+                f"Number of parameter provided ({len(params)}) does not "
+                f"match definition {len(runtime_call_def['params'])}"
+            )
+
+        # Add runtime API types to registry
+        self.runtime_config.update_type_registry_types(runtime_api_types)
+
+        # Encode params
+        param_data = ScaleBytes(bytes())
+        for idx, param in enumerate(runtime_call_def['params']):
+            scale_obj = self.runtime_config.create_scale_object(param['type'])
+            param_data += scale_obj.encode(params[idx])
+
+        result_data = self.rpc_request("state_call", [f'{api}_{method}', str(param_data)])
+
+        # Decode result
+        result_obj = self.runtime_config.create_scale_object(runtime_call_def['type'])
+        result_obj.decode(ScaleBytes(result_data['result']))
+
+        return result_obj
 
     def get_events(self, block_hash: str = None) -> list:
         """
@@ -1618,7 +1598,7 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        return self.metadata_decoder
+        return self.metadata
 
     def get_runtime_metadata(self, block_hash=None):
         """
@@ -1632,6 +1612,8 @@ class SubstrateInterface:
         -------
 
         """
+        warnings.warn("get_runtime_metadata() will be removed in future releases", DeprecationWarning)
+
         params = None
         if block_hash:
             params = [block_hash]
@@ -1661,7 +1643,7 @@ class SubstrateInterface:
         self.init_runtime(block_hash=block_hash)
 
         if 'metadata' not in kwargs:
-            kwargs['metadata'] = self.metadata_decoder
+            kwargs['metadata'] = self.metadata
 
         return self.runtime_config.create_scale_object(type_string, data=data, **kwargs)
 
@@ -1687,7 +1669,7 @@ class SubstrateInterface:
         self.init_runtime(block_hash=block_hash)
 
         call = self.runtime_config.create_scale_object(
-            type_string='Call', metadata=self.metadata_decoder
+            type_string='Call', metadata=self.metadata
         )
 
         call.encode({
@@ -1739,13 +1721,13 @@ class SubstrateInterface:
         signature_payload = self.runtime_config.create_scale_object('ExtrinsicPayloadValue')
 
         # Process signed extensions in metadata
-        if 'signed_extensions' in self.metadata_decoder[1][1]['extrinsic']:
+        if 'signed_extensions' in self.metadata[1][1]['extrinsic']:
 
             # Base signature payload
             signature_payload.type_mapping = [['call', 'CallBytes']]
 
             # Add signed extensions to payload
-            signed_extensions = self.metadata_decoder.get_signed_extensions()
+            signed_extensions = self.metadata.get_signed_extensions()
 
             if 'CheckMortality' in signed_extensions:
                 signature_payload.type_mapping.append(
@@ -1851,9 +1833,9 @@ class SubstrateInterface:
             raise TypeError("'call' must be of type Call")
 
         # Check if extrinsic version is supported
-        if self.metadata_decoder[1][1]['extrinsic']['version'] != 4:
+        if self.metadata[1][1]['extrinsic']['version'] != 4:
             raise NotImplementedError(
-                f"Extrinsic version {self.metadata_decoder[1][1]['extrinsic']['version']} not supported"
+                f"Extrinsic version {self.metadata[1][1]['extrinsic']['version']} not supported"
             )
 
         # Retrieve nonce
@@ -1893,7 +1875,7 @@ class SubstrateInterface:
             signature = keypair.sign(signature_payload)
 
         # Create extrinsic
-        extrinsic = self.runtime_config.create_scale_object(type_string='Extrinsic', metadata=self.metadata_decoder)
+        extrinsic = self.runtime_config.create_scale_object(type_string='Extrinsic', metadata=self.metadata)
 
         value = {
             'account_id': f'0x{keypair.public_key.hex()}',
@@ -1931,7 +1913,7 @@ class SubstrateInterface:
         self.init_runtime()
 
         # Create extrinsic
-        extrinsic = self.runtime_config.create_scale_object(type_string='Extrinsic', metadata=self.metadata_decoder)
+        extrinsic = self.runtime_config.create_scale_object(type_string='Extrinsic', metadata=self.metadata)
 
         extrinsic.encode({
             'call_function': call.value['call_function'],
@@ -1986,7 +1968,6 @@ class SubstrateInterface:
         """
         if max_weight is None:
             payment_info = self.get_payment_info(call, keypair)
-            # Check type of weight as per https://github.com/paritytech/substrate/pull/12138
             max_weight = payment_info["weight"]
 
         # Check if call has existing approvals
@@ -2128,123 +2109,34 @@ class SubstrateInterface:
         # convert partialFee to int
         if 'result' in payment_info:
             payment_info['result']['partialFee'] = int(payment_info['result']['partialFee'])
+
+            if type(payment_info['result']['weight']) is int:
+                # Transform format to WeightV2 if applicable as per https://github.com/paritytech/substrate/pull/12633
+                try:
+                    weight_obj = self.runtime_config.create_scale_object("sp_weights::weight_v2::Weight")
+                    if weight_obj is not None:
+                        payment_info['result']['weight'] = {
+                            'ref_time': payment_info['result']['weight'],
+                            'proof_size': 0
+                        }
+                except NotImplementedError:
+                    pass
+
             return payment_info['result']
         else:
             raise SubstrateRequestException(payment_info['error']['message'])
 
-    def process_metadata_typestring(self, type_string: str, parent_type_strings: list = None):
-        """
-        Process how given type_string is decoded with active runtime and type registry
-
-        Parameters
-        ----------
-        type_string: RUST variable type, e.g. `Vec<Address>`
-        parent_type_strings: add a process trail of parent types to prevent recursion
-
-        Returns
-        -------
-
-        dict of properties for given type_string
-
-        E.g.
-
-        `{
-            "type_string": "Vec<Address>",
-            "decoder_class": "Vec",
-            "is_primitive_runtime": false,
-            "is_primitive_core": false,
-            "spec_version": 1030
-        }`
-
-        """
-        decoder_class_obj = None
-
-        type_info = {
-            "type_string": type_string,
-            "decoder_class": None,
-            "is_primitive_runtime": None,
-            "is_primitive_core": False,
-            "spec_version": self.runtime_version
-        }
-
-        if self.runtime_version not in self.type_registry_cache:
-            self.type_registry_cache[self.runtime_version] = {}
-
-        # Check if already added
-        if type_string and type_string.lower() in self.type_registry_cache[self.runtime_version]:
-            return self.type_registry_cache[self.runtime_version][type_string.lower()]['decoder_class']
-
-        if not parent_type_strings:
-            parent_type_strings = []
-
-        parent_type_strings.append(type_string)
-
-        # Try to get decoder class
-        decoder_class = self.runtime_config.get_decoder_class(type_string)
-
-        if not decoder_class:
-
-            # Not in type registry, try get hard coded decoder classes
-            try:
-                decoder_class_obj = self.runtime_config.create_scale_object(type_string=type_string)
-                decoder_class = decoder_class_obj.__class__
-            except NotImplementedError as e:
-                decoder_class = None
-
-        # Process classes that contain subtypes (e.g. Option<ChangesTrieConfiguration>)
-        if decoder_class_obj and decoder_class_obj.sub_type:
-            type_info["is_primitive_runtime"] = False
-
-            # Try to split on ',' (e.g. ActiveRecovery<BlockNumber, BalanceOf, AccountId>)
-            if not re.search('[<()>]', decoder_class_obj.sub_type):
-                for element in decoder_class_obj.sub_type.split(','):
-                    if element not in ['T', 'I'] and element.strip() not in parent_type_strings:
-                        self.process_metadata_typestring(element.strip(), parent_type_strings=parent_type_strings)
-
-        # Process classes that contain type_mapping (e.g. Struct and Enum)
-        if decoder_class and hasattr(decoder_class, 'type_mapping') and decoder_class.type_mapping:
-
-            if type_string[0] == '(':
-                type_info["is_primitive_runtime"] = False
-
-            for data_type in decoder_class.type_mapping:
-                if data_type:
-                    if type(data_type) in [list, tuple]:
-                        data_type = data_type[1]
-
-                    if type(data_type) is not dict and data_type not in parent_type_strings:
-                        self.process_metadata_typestring(data_type, parent_type_strings=parent_type_strings)
-
-        # Try to get superclass as actual decoding class if not root level 'ScaleType'
-        if decoder_class and len(decoder_class.__mro__) > 1 and decoder_class.__mro__[1].__name__ != 'ScaleType':
-            decoder_class = decoder_class.__mro__[1]
-
-        if decoder_class:
-            type_info['decoder_class'] = decoder_class.__name__
-
-            if type_info["is_primitive_runtime"] is None:
-                type_info["is_primitive_runtime"] = True
-
-            if type_info["is_primitive_runtime"] and type_string.lower() in \
-                    ('bool', 'u8', 'u16', 'u32', 'u64', 'u128', 'u256', 'i8', 'i16', 'i32', 'i64', 'i128',
-                    'i256', 'h160', 'h256', 'h512', '[u8; 4]', '[u8; 4]', '[u8; 8]', '[u8; 16]', '[u8; 32]', '&[u8]'):
-                type_info["is_primitive_core"] = True
-        else:
-            type_info["is_primitive_runtime"] = None
-            type_info["is_primitive_core"] = None
-
-        self.type_registry_cache[self.runtime_version][type_string.lower()] = type_info
-
-        return decoder_class
-
-    def get_type_registry(self, block_hash: str = None) -> dict:
+    def get_type_registry(self, block_hash: str = None, max_recursion: int = 4) -> dict:
         """
         Generates an exhaustive list of which RUST types exist in the runtime specified at given block_hash (or
         chaintip if block_hash is omitted)
 
+        MetadataV14 or higher is required.
+
         Parameters
         ----------
         block_hash: Chaintip will be used if block_hash is omitted
+        max_recursion: Increasing recursion will provide more detail but also has impact on performance
 
         Returns
         -------
@@ -2252,61 +2144,40 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        if self.runtime_version not in self.type_registry_cache:
+        if not self.implements_scaleinfo():
+            raise NotImplementedError("MetadataV14 or higher runtimes is required")
 
-            for module in self.metadata_decoder.pallets:
+        type_registry = {}
 
-                # Storage backwards compt check
-                if module.storage and isinstance(module.storage, list):
-                    storage_functions = module.storage
-                elif module.storage and isinstance(getattr(module.storage, 'value'), dict):
-                    storage_functions = module.storage.items
-                else:
-                    storage_functions = []
+        for scale_info_type in self.metadata.portable_registry['types']:
 
-                if len(module.calls or []) > 0:
-                    for idx, call in enumerate(module.calls):
-                        for arg in call.args:
-                            self.process_metadata_typestring(arg.type)
+            if 'path' in scale_info_type.value['type'] and len(scale_info_type.value['type']['path']) > 0:
+                type_string = '::'.join(scale_info_type.value["type"]["path"])
+            else:
+                type_string = f'scale_info::{scale_info_type.value["id"]}'
 
-                if len(module.events or []) > 0:
-                    for event_index, event in enumerate(module.events):
+            scale_cls = self.runtime_config.get_decoder_class(type_string)
+            type_registry[type_string] = scale_cls.generate_type_decomposition(
+                max_recursion=max_recursion
+            )
 
-                        for arg_index, arg in enumerate(event.args):
-                            self.process_metadata_typestring(arg.type)
-
-                if len(storage_functions) > 0:
-                    for idx, storage in enumerate(storage_functions):
-
-                        # Add type value
-                        self.process_metadata_typestring(storage.get_value_type_string())
-
-                        # Add type keys
-                        for type_key in storage.get_params_type_string():
-                            self.process_metadata_typestring(type_key)
-
-                if len(module.constants or []) > 0:
-                    for idx, constant in enumerate(module.constants):
-                        # Check if types already registered in database
-                        self.process_metadata_typestring(constant.type)
-
-        return self.type_registry_cache[self.runtime_version]
+        return type_registry
 
     def get_type_definition(self, type_string: str, block_hash: str = None):
         """
-        Retrieves decoding specifications of given type_string
+        Retrieves SCALE encoding specifications of given type_string
 
         Parameters
         ----------
-        type_string: RUST variable type, e.g. Vec<Address>
+        type_string: RUST variable type, e.g. Vec<Address> or scale_info::0
         block_hash
 
         Returns
         -------
 
         """
-        type_registry = self.get_type_registry(block_hash=block_hash)
-        return type_registry.get(type_string.lower())
+        scale_obj = self.create_scale_object(type_string, block_hash=block_hash)
+        return scale_obj.generate_type_decomposition()
 
     def get_metadata_modules(self, block_hash=None):
         """
@@ -2332,7 +2203,7 @@ class SubstrateInterface:
             'count_events': len(module.events or []),
             'count_constants': len(module.constants or []),
             'count_errors': len(module.errors or []),
-        } for idx, module in enumerate(self.metadata_decoder.pallets)]
+        } for idx, module in enumerate(self.metadata.pallets)]
 
     def get_metadata_module(self, name, block_hash=None):
         """
@@ -2349,7 +2220,7 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        return self.metadata_decoder.get_metadata_pallet(name)
+        return self.metadata.get_metadata_pallet(name)
 
     def get_metadata_call_functions(self, block_hash=None) -> list:
         """
@@ -2367,7 +2238,7 @@ class SubstrateInterface:
 
         call_list = []
 
-        for pallet in self.metadata_decoder.pallets:
+        for pallet in self.metadata.pallets:
             if pallet.calls:
                 for call in pallet.calls:
 
@@ -2396,7 +2267,7 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        for pallet in self.metadata_decoder.pallets:
+        for pallet in self.metadata.pallets:
             if pallet.name == module_name and pallet.calls:
                 for call in pallet.calls:
                     if call.name == call_function_name:
@@ -2419,7 +2290,7 @@ class SubstrateInterface:
 
         event_list = []
 
-        for event_index, (module, event) in self.metadata_decoder.event_index.items():
+        for event_index, (module, event) in self.metadata.event_index.items():
             event_list.append(
                 self.serialize_module_event(
                     module, event, self.runtime_version, event_index
@@ -2446,7 +2317,7 @@ class SubstrateInterface:
 
         self.init_runtime(block_hash=block_hash)
 
-        for pallet in self.metadata_decoder.pallets:
+        for pallet in self.metadata.pallets:
             if pallet.name == module_name and pallet.events:
                 for event in pallet.events:
                     if event.name == event_name:
@@ -2469,7 +2340,7 @@ class SubstrateInterface:
 
         constant_list = []
 
-        for module_idx, module in enumerate(self.metadata_decoder.pallets):
+        for module_idx, module in enumerate(self.metadata.pallets):
             for constant in module.constants or []:
                 constant_list.append(
                     self.serialize_constant(
@@ -2497,7 +2368,7 @@ class SubstrateInterface:
 
         self.init_runtime(block_hash=block_hash)
 
-        for module_idx, module in enumerate(self.metadata_decoder.pallets):
+        for module_idx, module in enumerate(self.metadata.pallets):
 
             if module_name == module.name and module.constants:
 
@@ -2545,7 +2416,7 @@ class SubstrateInterface:
 
         storage_list = []
 
-        for module_idx, module in enumerate(self.metadata_decoder.pallets):
+        for module_idx, module in enumerate(self.metadata.pallets):
             if module.storage:
                 for storage in module.storage:
                     storage_list.append(
@@ -2574,7 +2445,7 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        pallet = self.metadata_decoder.get_metadata_pallet(module_name)
+        pallet = self.metadata.get_metadata_pallet(module_name)
 
         if pallet:
             return pallet.get_storage_function(storage_name)
@@ -2595,7 +2466,7 @@ class SubstrateInterface:
 
         error_list = []
 
-        for module_idx, module in enumerate(self.metadata_decoder.pallets):
+        for module_idx, module in enumerate(self.metadata.pallets):
             if module.errors:
                 for error in module.errors:
                     error_list.append(
@@ -2622,11 +2493,59 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        for module_idx, module in enumerate(self.metadata_decoder.pallets):
+        for module_idx, module in enumerate(self.metadata.pallets):
             if module.name == module_name and module.errors:
                 for error in module.errors:
                     if error_name == error.name:
                         return error
+
+    def get_metadata_runtime_call_functions(self) -> list:
+        """
+        Get a list of available runtime API calls
+
+        Returns
+        -------
+        list
+        """
+        self.init_runtime()
+        call_functions = []
+
+        for api, methods in self.runtime_config.type_registry["runtime_api"].items():
+            for method in methods["methods"].keys():
+                call_functions.append(self.get_metadata_runtime_call_function(api, method))
+
+        return call_functions
+
+    def get_metadata_runtime_call_function(self, api: str, method: str) -> GenericRuntimeCallDefinition:
+        """
+        Get details of a runtime API call
+
+        Parameters
+        ----------
+        api: Name of the runtime API e.g. 'TransactionPaymentApi'
+        method: Name of the method e.g. 'query_fee_details'
+
+        Returns
+        -------
+        GenericRuntimeCallDefinition
+        """
+        self.init_runtime()
+
+        try:
+            runtime_call_def = self.runtime_config.type_registry["runtime_api"][api]['methods'][method]
+            runtime_call_def['api'] = api
+            runtime_call_def['method'] = method
+            runtime_api_types = self.runtime_config.type_registry["runtime_api"][api].get("types", {})
+        except KeyError:
+            raise ValueError(f"Runtime API Call '{api}.{method}' not found in registry")
+
+        # Add runtime API types to registry
+        self.runtime_config.update_type_registry_types(runtime_api_types)
+
+        runtime_call_def_obj = self.create_scale_object("RuntimeCallDefinition")
+        runtime_call_def_obj.encode(runtime_call_def)
+
+        return runtime_call_def_obj
 
     def __get_block_handler(self, block_hash: str, ignore_decoding_errors: bool = False, include_author: bool = False,
                             header_only: bool = False, finalized_only: bool = False,
@@ -2651,7 +2570,7 @@ class SubstrateInterface:
                     for idx, extrinsic_data in enumerate(block_data['extrinsics']):
                         extrinsic_decoder = extrinsic_cls(
                             data=ScaleBytes(extrinsic_data),
-                            metadata=self.metadata_decoder,
+                            metadata=self.metadata,
                             runtime_config=self.runtime_config
                         )
                         try:
@@ -2936,38 +2855,6 @@ class SubstrateInterface:
             extrinsic_hash=extrinsic_hash
         )
 
-    def get_runtime_block(self, block_hash: str = None, block_id: int = None, ignore_decoding_errors: bool = False,
-                          include_author: bool = False):
-        """
-        Warning: 'get_runtime_block' will be replaced by 'get_block'
-
-        Parameters
-        ----------
-        block_hash
-        block_id
-        ignore_decoding_errors: When True no exception will be raised if decoding of extrinsics failes and add as `None` instead
-        include_author: Extract block author from validator set and include in result
-
-        Returns
-        -------
-
-        """
-        warnings.warn("'get_runtime_block' will be replaced by 'get_block'", DeprecationWarning)
-
-        if block_id is not None:
-            block_hash = self.get_block_hash(block_id)
-
-            if block_hash is None:
-                return
-
-        block = self.__get_block_handler(
-            block_hash=block_hash, ignore_decoding_errors=ignore_decoding_errors,
-            include_author=include_author, header_only=False
-        )
-
-        if block:
-            return {'block': block}
-
     def decode_scale(self, type_string, scale_bytes, block_hash=None, return_scale_obj=False):
         """
         Helper function to decode arbitrary SCALE-bytes (e.g. 0x02000000) according to given RUST type_string
@@ -2993,7 +2880,7 @@ class SubstrateInterface:
         obj = self.runtime_config.create_scale_object(
             type_string=type_string,
             data=scale_bytes,
-            metadata=self.metadata_decoder
+            metadata=self.metadata
         )
 
         obj.decode()
@@ -3020,7 +2907,7 @@ class SubstrateInterface:
         self.init_runtime(block_hash=block_hash)
 
         obj = self.runtime_config.create_scale_object(
-            type_string=type_string, metadata=self.metadata_decoder
+            type_string=type_string, metadata=self.metadata
         )
         return obj.encode(value)
 
@@ -3115,7 +3002,7 @@ class SubstrateInterface:
             obj = self.runtime_config.create_scale_object(
                 type_string=value_scale_type,
                 data=ScaleBytes(query_value),
-                metadata=self.metadata_decoder
+                metadata=self.metadata
             )
             obj.decode()
             storage_dict["storage_default"] = obj.decode()
@@ -3267,7 +3154,7 @@ class SubstrateInterface:
         self.runtime_config.implements_scale_info = self.implements_scaleinfo()
 
         # Load metadata types in runtime configuration
-        self.runtime_config.update_type_registry(load_type_registry_preset(name="metadata_types"))
+        self.runtime_config.update_type_registry(load_type_registry_preset(name="core"))
         self.apply_type_registry_presets(use_remote_preset=use_remote_preset, auto_discover=auto_discover)
 
     def apply_type_registry_presets(self, use_remote_preset: bool = True, auto_discover: bool = True):
@@ -3298,10 +3185,10 @@ class SubstrateInterface:
             if self.implements_scaleinfo() is False:
                 # Only runtime with no embedded types in metadata need the default set of explicit defined types
                 self.runtime_config.update_type_registry(
-                    load_type_registry_preset("default", use_remote_preset=use_remote_preset)
+                    load_type_registry_preset("legacy", use_remote_preset=use_remote_preset)
                 )
 
-            if self.type_registry_preset != "default":
+            if self.type_registry_preset != "legacy":
                 self.runtime_config.update_type_registry(type_registry_preset_dict)
 
         if self.type_registry:
@@ -3467,64 +3354,78 @@ class ExtrinsicReceipt:
 
             for event in self.triggered_events:
                 if event.value['module_id'] == 'TransactionPayment' and event.value['event_id'] == 'TransactionFeePaid':
-                    self.__total_fee_amount = event.value['attributes'][1]
+                    self.__total_fee_amount = event.value['attributes']['actual_fee']
                     has_transaction_fee_paid_event = True
 
             # Process other events
             for event in self.triggered_events:
-                # Check events
 
+                # Check events
                 if self.substrate.implements_scaleinfo():
+
                     if event.value['module_id'] == 'System' and event.value['event_id'] == 'ExtrinsicSuccess':
                         self.__is_success = True
                         self.__error_message = None
-                        self.__weight = event.value['attributes']['weight']
+
+                        if 'dispatch_info' in event.value['attributes']:
+                            self.__weight = event.value['attributes']['dispatch_info']['weight']
+                        else:
+                            # Backwards compatibility
+                            self.__weight = event.value['attributes']['weight']
 
                     elif event.value['module_id'] == 'System' and event.value['event_id'] == 'ExtrinsicFailed':
                         self.__is_success = False
-                        self.__weight = event.value['attributes'][1]['weight']
 
-                        for param in event.params:
-                            if 'Module' in param:
+                        if type(event.value['attributes']) is dict:
+                            dispatch_info = event.value['attributes']['dispatch_info']
+                            dispatch_error = event.value['attributes']['dispatch_error']
+                        else:
+                            # Backwards compatibility
+                            dispatch_info = event.value['attributes'][1]
+                            dispatch_error = event.value['attributes'][0]
 
-                                if type(param['Module']) is tuple:
-                                    module_index = param['Module'][0]
-                                    error_index = param['Module'][1]
-                                else:
-                                    module_index = param['Module']['index']
-                                    error_index = param['Module']['error']
+                        self.__weight = dispatch_info['weight']
 
-                                if type(error_index) is str:
-                                    # Actual error index is first u8 in new [u8; 4] format
-                                    error_index = int(error_index[2:4], 16)
+                        if 'Module' in dispatch_error:
 
-                                module_error = self.substrate.metadata_decoder.get_module_error(
-                                    module_index=module_index,
-                                    error_index=error_index
-                                )
-                                self.__error_message = {
-                                    'type': 'Module',
-                                    'name': module_error.name,
-                                    'docs': module_error.docs
-                                }
-                            elif 'BadOrigin' in param:
-                                self.__error_message = {
-                                    'type': 'System',
-                                    'name': 'BadOrigin',
-                                    'docs': 'Bad origin'
-                                }
-                            elif 'CannotLookup' in param:
-                                self.__error_message = {
-                                    'type': 'System',
-                                    'name': 'CannotLookup',
-                                    'docs': 'Cannot lookup'
-                                }
-                            elif 'Other' in param:
-                                self.__error_message = {
-                                    'type': 'System',
-                                    'name': 'Other',
-                                    'docs': 'Unspecified error occurred'
-                                }
+                            if type(dispatch_error['Module']) is tuple:
+                                module_index = dispatch_error['Module'][0]
+                                error_index = dispatch_error['Module'][1]
+                            else:
+                                module_index = dispatch_error['Module']['index']
+                                error_index = dispatch_error['Module']['error']
+
+                            if type(error_index) is str:
+                                # Actual error index is first u8 in new [u8; 4] format
+                                error_index = int(error_index[2:4], 16)
+
+                            module_error = self.substrate.metadata.get_module_error(
+                                module_index=module_index,
+                                error_index=error_index
+                            )
+                            self.__error_message = {
+                                'type': 'Module',
+                                'name': module_error.name,
+                                'docs': module_error.docs
+                            }
+                        elif 'BadOrigin' in dispatch_error:
+                            self.__error_message = {
+                                'type': 'System',
+                                'name': 'BadOrigin',
+                                'docs': 'Bad origin'
+                            }
+                        elif 'CannotLookup' in dispatch_error:
+                            self.__error_message = {
+                                'type': 'System',
+                                'name': 'CannotLookup',
+                                'docs': 'Cannot lookup'
+                            }
+                        elif 'Other' in dispatch_error:
+                            self.__error_message = {
+                                'type': 'System',
+                                'name': 'Other',
+                                'docs': 'Unspecified error occurred'
+                            }
 
                     elif not has_transaction_fee_paid_event:
 
@@ -3560,7 +3461,7 @@ class ExtrinsicReceipt:
                                     else:
                                         error_index = param['value']['Module']['error']
 
-                                    module_error = self.substrate.metadata_decoder.get_module_error(
+                                    module_error = self.substrate.metadata.get_module_error(
                                         module_index=param['value']['Module']['index'],
                                         error_index=error_index
                                     )

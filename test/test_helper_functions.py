@@ -104,13 +104,11 @@ class TestHelperFunctions(unittest.TestCase):
         self.assertEqual(scale_obj.decode(ScaleBytes("0x1054657374")), "Test")
 
     def test_get_type_definition(self):
-        self.assertDictEqual(self.substrate.get_type_definition('Bytes'), {
-            'decoder_class': 'Bytes',
-            'is_primitive_core': False,
-            'is_primitive_runtime': True,
-            'spec_version': 2023,
-            'type_string': 'Bytes'}
-        )
+        info = self.substrate.get_type_definition('MultiSignature')
+        self.assertDictEqual({'Ed25519': 'h512', 'Sr25519': 'h512', 'Ecdsa': '[u8; 65]'}, info)
+
+        info = self.substrate.get_type_definition('Balance')
+        self.assertEqual('u128', info)
 
     def test_get_metadata(self):
         metadata = self.substrate.get_metadata()
@@ -198,7 +196,6 @@ class TestHelperFunctions(unittest.TestCase):
         self.assertRaises(SubstrateRequestException, self.error_substrate.get_block_metadata, '0x')
         self.assertRaises(SubstrateRequestException, self.error_substrate.get_block_runtime_version, '0x')
         self.assertRaises(ValueError, self.error_substrate.query, 'System', 'Account', ['0x'])
-        self.assertRaises(SubstrateRequestException, self.error_substrate.get_runtime_metadata, '0x')
 
     def test_storage_function_param_info(self):
         storage_function = self.substrate.get_metadata_storage_function("System", "Account")
@@ -232,6 +229,7 @@ class TestHelperFunctionsV14(TestHelperFunctions):
         storage_function = self.substrate.get_metadata_storage_function("System", "Account")
         info = storage_function.get_param_info()
         self.assertEqual(1, len(info))
+        self.assertEqual('AccountId', info[0])
 
 
 class TestHelperFunctionsKarura(TestHelperFunctionsV14):
@@ -242,27 +240,20 @@ class TestHelperFunctionsKarura(TestHelperFunctionsV14):
         info = storage_function.get_param_info()
 
         self.assertEqual(1, len(info))
-        self.assertEqual('Token', info[0]['variant']['variants'][0]['name'])
-        self.assertEqual('ACA', info[0]['variant']['variants'][0]['value']['variant']['variants'][0]['name'])
+        self.assertEqual('ACA', info[0]['Token'][0])
 
         storage_function = self.substrate.get_metadata_storage_function("Rewards", "PoolInfos")
         info = storage_function.get_param_info()
 
         self.assertEqual(1, len(info))
-        self.assertEqual('Loans', info[0]['variant']['variants'][0]['name'])
-        self.assertEqual('Token', info[0]['variant']['variants'][0]['value']['variant']['variants'][0]['name'])
-        self.assertEqual('ACA', info[0]['variant']['variants'][0]['value']['variant']['variants'][0]['value']
-                                    ['variant']['variants'][0]['name'])
+        self.assertEqual('ACA', info[0]['Loans']['Token'][0])
 
         storage_function = self.substrate.get_metadata_storage_function("Dex", "TradingPairStatuses")
         info = storage_function.get_param_info()
 
         self.assertEqual(1, len(info))
-        self.assertEqual('Token', info[0]['composite']['fields'][0]['value']['variant']['variants'][0]['name'])
-
-    def test_get_type_definition(self):
-        # TODO refactor get_type_definition
-        pass
+        self.assertEqual(2, len(info[0]))
+        self.assertEqual('ACA', info[0][0]['Token'][0])
 
     def test_get_metadata_constant(self):
         constant = self.substrate.get_metadata_constant("System", "BlockHashCount")

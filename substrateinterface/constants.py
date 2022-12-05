@@ -24,7 +24,7 @@ WELL_KNOWN_STORAGE_KEYS = {
         "storage_key": "0x3a636f6465",
         "value_type_string": "RawBytes",
         "docs": "Wasm code of the runtime",
-        "default": None
+        "default": '0x'
     },
     "HeapPages": {
         "storage_key": "0x3a686561707061676573",
