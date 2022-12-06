@@ -3290,6 +3290,9 @@ class ExtrinsicReceipt:
                     extrinsic_hash=self.extrinsic_hash
                 )
 
+            if self.__extrinsic_idx >= len(extrinsics):
+                raise ExtrinsicNotFound()
+
             self.__extrinsic = extrinsics[self.__extrinsic_idx]
 
     @property
@@ -3430,13 +3433,18 @@ class ExtrinsicReceipt:
                     elif not has_transaction_fee_paid_event:
 
                         if event.value['module_id'] == 'Treasury' and event.value['event_id'] == 'Deposit':
-                            self.__total_fee_amount += event.value['attributes']
+                            if type(event.value['attributes']) is dict:
+                                self.__total_fee_amount += event.value['attributes']['value']
+                            else:
+                                # Backwards compatibility
+                                self.__total_fee_amount += event.value['attributes']
 
                         elif event.value['module_id'] == 'Balances' and event.value['event_id'] == 'Deposit':
-                            if type(event.value['attributes']) is tuple:
-                                self.__total_fee_amount += event.value['attributes'][1]
-                            else:
+                            if type(event.value['attributes']) is dict:
                                 self.__total_fee_amount += event.value['attributes']['amount']
+                            else:
+                                # Backwards compatibility
+                                self.__total_fee_amount += event.value['attributes'][1]
 
                 else:
 
