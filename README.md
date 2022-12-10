@@ -38,9 +38,7 @@ https://polkascan.github.io/py-substrate-interface/
 ## Initialization
 
 ```python
-substrate = SubstrateInterface(
-    url="ws://127.0.0.1:9944"
-)
+substrate = SubstrateInterface(url="ws://127.0.0.1:9944")
 ```
 
 After connecting certain properties like `ss58_format` will be determined automatically by querying the RPC node. At 
@@ -69,11 +67,7 @@ The runtime exposes several storage functions to query those storage items and a
 ### Example
 
 ```python
-result = substrate.query(
-    module='System',
-    storage_function='Account',
-    params=['F4xQKRUagnSGjFqafyhajLs94e7Vvzvr8ebwYJceKpr8R7T']
-)
+result = substrate.query('System', 'Account', ['F4xQKRUagnSGjFqafyhajLs94e7Vvzvr8ebwYJceKpr8R7T'])
 
 print(result.value['nonce']) #  7695
 print(result.value['data']['free']) # 635278638077956496
@@ -544,7 +538,7 @@ The `period` specifies the number of blocks the extrinsic is valid counted from 
 
 ### Deploy a contract 
 
-Tested on [canvas-node](https://github.com/paritytech/canvas-node) with the [Flipper contract from the tutorial](https://docs.substrate.io/tutorials/smart-contracts/prepare-your-first-contract/):
+Tested on [substrate-contracts-node](https://github.com/paritytech/substrate-contracts-node) with the [Flipper contract from the tutorial](https://docs.substrate.io/tutorials/smart-contracts/prepare-your-first-contract/):
 
 ```python
 substrate = SubstrateInterface(
@@ -563,7 +557,7 @@ code = ContractCode.create_from_contract_files(
 
 contract = code.deploy(
     keypair=keypair,
-    endowment=10 ** 15,
+    endowment=0,
     gas_limit=1000000000000,
     constructor="new",
     args={'init_value': True},
@@ -594,10 +588,10 @@ print('Current value of "get":', result.contract_result_data)
 ### Execute a contract call
 
 ```python
- # Do a gas estimation of the message
+# Do a gas estimation of the message
 gas_predit_result = contract.read(keypair, 'flip')
 
-print('Result of dry-run: ', gas_predit_result.contract_result_data)
+print('Result of dry-run: ', gas_predit_result.value)
 print('Gas estimate: ', gas_predit_result.gas_required)
 
 # Do the actual call
@@ -609,7 +603,7 @@ contract_receipt = contract.exec(keypair, 'flip', args={
 if contract_receipt.is_success:
     print(f'Events triggered in contract: {contract_receipt.contract_events}')
 else:
-    print(f'Call failed: {contract_receipt.error_message}')
+    print(f'Error message: {contract_receipt.error_message}')
 ```
 
 See complete [code example](https://github.com/polkascan/py-substrate-interface/blob/master/examples/create_and_exec_contract.py) for more details

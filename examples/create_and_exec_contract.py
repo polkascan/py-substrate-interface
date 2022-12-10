@@ -1,6 +1,6 @@
 # Python Substrate Interface Library
 #
-# Copyright 2018-2020 Stichting Polkascan (Polkascan Foundation).
+# Copyright 2018-2022 Stichting Polkascan (Polkascan Foundation).
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,18 +20,17 @@ from substrateinterface.contracts import ContractCode, ContractInstance
 from substrateinterface import SubstrateInterface, Keypair
 
 # # Enable for debugging purposes
-# import logging
-# logging.basicConfig(level=logging.DEBUG)
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 try:
     substrate = SubstrateInterface(
         url="ws://127.0.0.1:9944",
-        # url="wss://canvas-rpc.parity.io",
         type_registry_preset='canvas'
     )
 
     keypair = Keypair.create_from_uri('//Alice')
-    contract_address = "5FbuqfZwkNjadtaCfhAwMb5ZQ4Bi2iF5m4AnibhAR987Jra5"
+    contract_address = "5GhwarrVMH8kjb8XyW6zCfURHbHy3v84afzLbADyYYX6H2Kk"
 
     # Check if contract is on chain
     contract_info = substrate.query("Contracts", "ContractInfoOf", [contract_address])
@@ -59,7 +58,7 @@ try:
         print('Deploy contract...')
         contract = code.deploy(
             keypair=keypair,
-            endowment=10 ** 15,
+            endowment=0,
             gas_limit=1000000000000,
             constructor="new",
             args={'init_value': True},
@@ -75,10 +74,10 @@ try:
     # Do a gas estimation of the message
     gas_predit_result = contract.read(keypair, 'flip')
 
-    print('Result of dry-run: ', gas_predit_result.contract_result_data)
+    print('Result of dry-run: ', gas_predit_result.value)
     print('Gas estimate: ', gas_predit_result.gas_required)
 
-    # Do the actual transfer
+    # Do the actual call
     print('Executing contract call...')
     contract_receipt = contract.exec(keypair, 'flip', args={
 
@@ -89,12 +88,10 @@ try:
     else:
         print(f'Error message: {contract_receipt.error_message}')
 
-
     result = contract.read(keypair, 'get')
 
     print('Current value of "get":', result.contract_result_data)
 
 except ConnectionRefusedError:
     print("⚠️ Could not connect to (local) Canvas node, please read the instructions at "
-          "https://github.com/paritytech/canvas-node")
-    exit()
+          "https://github.com/paritytech/substrate-contracts-node")
