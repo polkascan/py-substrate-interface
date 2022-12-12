@@ -648,7 +648,8 @@ class SubstrateInterface:
         self.config = {
             'use_remote_preset': use_remote_preset,
             'auto_discover': auto_discover,
-            'auto_reconnect': auto_reconnect
+            'auto_reconnect': auto_reconnect,
+            'rpc_methods': None
         }
 
         self.session = requests.Session()
@@ -675,8 +676,25 @@ class SubstrateInterface:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-    def debug_message(self, message):
+    @staticmethod
+    def debug_message(message):
         logger.debug(message)
+
+    def supports_rpc_method(self, name: str) -> bool:
+        """
+        Check if substrate RPC supports given method
+        Parameters
+        ----------
+        name: name of method to check
+
+        Returns
+        -------
+        bool
+        """
+        if self.config.get('rpc_methods') is None:
+            self.config['rpc_methods'] = self.rpc_request("rpc_methods", [])['result']['methods']
+
+        return name in self.config['rpc_methods']
 
     def rpc_request(self, method, params, result_handler=None):
         """
@@ -1142,7 +1160,7 @@ class SubstrateInterface:
         self.runtime_version = runtime_info.get("specVersion")
         self.transaction_version = runtime_info.get("transactionVersion")
 
-        if self.runtime_version not in self.__metadata_cache and self.cache_region:
+        if self.cache_region and self.runtime_version not in self.__metadata_cache:
             # Try to retrieve metadata from Dogpile cache
             cached_metadata = self.cache_region.get('METADATA_{}'.format(self.runtime_version))
             if cached_metadata:
@@ -1183,6 +1201,15 @@ class SubstrateInterface:
 
         if ss58_prefix_constant:
             self.ss58_format = ss58_prefix_constant.value
+
+        # Set runtime compatibility flags
+        try:
+            _ = self.runtime_config.create_scale_object("sp_weights::weight_v2::Weight")
+            self.config['is_weight_v2'] = True
+            self.runtime_config.update_type_registry_types({'Weight': 'sp_weights::weight_v2::Weight'})
+        except NotImplementedError:
+            self.config['is_weight_v2'] = False
+            self.runtime_config.update_type_registry_types({'Weight': 'WeightV1'})
 
     def query_map(self, module: str, storage_function: str, params: Optional[list] = None, block_hash: str = None,
                   max_results: int = None, start_key: str = None, page_size: int = 100,
@@ -1516,7 +1543,7 @@ class SubstrateInterface:
         else:
             raise ValueError("No value to decode")
 
-    def runtime_call(self, api: str, method: str, params: list = ()) -> ScaleType:
+    def runtime_call(self, api: str, method: str, params: Union[list, dict] = None) -> ScaleType:
         """
         Calls a runtime API method
 
@@ -1532,13 +1559,18 @@ class SubstrateInterface:
         """
         self.init_runtime()
 
+        self.debug_message(f"Executing Runtime Call {api}.{method}")
+
+        if params is None:
+            params = {}
+
         try:
             runtime_call_def = self.runtime_config.type_registry["runtime_api"][api]['methods'][method]
             runtime_api_types = self.runtime_config.type_registry["runtime_api"][api].get("types", {})
         except KeyError:
             raise ValueError(f"Runtime API Call '{api}.{method}' not found in registry")
 
-        if len(params) != len(runtime_call_def['params']):
+        if type(params) is list and len(params) != len(runtime_call_def['params']):
             raise ValueError(
                 f"Number of parameter provided ({len(params)}) does not "
                 f"match definition {len(runtime_call_def['params'])}"
@@ -1551,8 +1583,15 @@ class SubstrateInterface:
         param_data = ScaleBytes(bytes())
         for idx, param in enumerate(runtime_call_def['params']):
             scale_obj = self.runtime_config.create_scale_object(param['type'])
-            param_data += scale_obj.encode(params[idx])
+            if type(params) is list:
+                param_data += scale_obj.encode(params[idx])
+            else:
+                if param['name'] not in params:
+                    raise ValueError(f"Runtime Call param '{param['name']}' is missing")
 
+                param_data += scale_obj.encode(params[param['name']])
+
+        # RPC request
         result_data = self.rpc_request("state_call", [f'{api}_{method}', str(param_data)])
 
         # Decode result
@@ -1692,7 +1731,11 @@ class SubstrateInterface:
         -------
         int
         """
-        response = self.rpc_request("system_accountNextIndex", [account_address])
+        if self.supports_rpc_method('state_call'):
+            nonce_obj = self.runtime_call("AccountNonceApi", "account_nonce", [account_address])
+            return nonce_obj.value
+        else:
+            response = self.rpc_request("system_accountNextIndex", [account_address])
         return response.get('result', 0)
 
     def generate_signature_payload(self, call: GenericCall, era=None, nonce: int = 0, tip: int = 0,
@@ -2104,27 +2147,36 @@ class SubstrateInterface:
             signature=signature
         )
 
-        payment_info = self.rpc_request('payment_queryInfo', [str(extrinsic.data)])
+        if self.supports_rpc_method('state_call'):
+            extrinsic_len = self.runtime_config.create_scale_object('u32')
+            extrinsic_len.encode(len(extrinsic.data))
 
-        # convert partialFee to int
-        if 'result' in payment_info:
-            payment_info['result']['partialFee'] = int(payment_info['result']['partialFee'])
+            result = self.runtime_call("TransactionPaymentApi", "query_info", [extrinsic, extrinsic_len])
 
-            if type(payment_info['result']['weight']) is int:
-                # Transform format to WeightV2 if applicable as per https://github.com/paritytech/substrate/pull/12633
-                try:
-                    weight_obj = self.runtime_config.create_scale_object("sp_weights::weight_v2::Weight")
-                    if weight_obj is not None:
-                        payment_info['result']['weight'] = {
-                            'ref_time': payment_info['result']['weight'],
-                            'proof_size': 0
-                        }
-                except NotImplementedError:
-                    pass
-
-            return payment_info['result']
+            return result.value
         else:
-            raise SubstrateRequestException(payment_info['error']['message'])
+            # Backwards compatibility; deprecated RPC method
+            payment_info = self.rpc_request('payment_queryInfo', [str(extrinsic.data)])
+
+            # convert partialFee to int
+            if 'result' in payment_info:
+                payment_info['result']['partialFee'] = int(payment_info['result']['partialFee'])
+
+                if type(payment_info['result']['weight']) is int:
+                    # Transform format to WeightV2 if applicable as per https://github.com/paritytech/substrate/pull/12633
+                    try:
+                        weight_obj = self.runtime_config.create_scale_object("sp_weights::weight_v2::Weight")
+                        if weight_obj is not None:
+                            payment_info['result']['weight'] = {
+                                'ref_time': payment_info['result']['weight'],
+                                'proof_size': 0
+                            }
+                    except NotImplementedError:
+                        pass
+
+                return payment_info['result']
+            else:
+                raise SubstrateRequestException(payment_info['error']['message'])
 
     def get_type_registry(self, block_hash: str = None, max_recursion: int = 4) -> dict:
         """
@@ -3290,6 +3342,9 @@ class ExtrinsicReceipt:
                     extrinsic_hash=self.extrinsic_hash
                 )
 
+            if self.__extrinsic_idx >= len(extrinsics):
+                raise ExtrinsicNotFound()
+
             self.__extrinsic = extrinsics[self.__extrinsic_idx]
 
     @property
@@ -3430,13 +3485,18 @@ class ExtrinsicReceipt:
                     elif not has_transaction_fee_paid_event:
 
                         if event.value['module_id'] == 'Treasury' and event.value['event_id'] == 'Deposit':
-                            self.__total_fee_amount += event.value['attributes']
+                            if type(event.value['attributes']) is dict:
+                                self.__total_fee_amount += event.value['attributes']['value']
+                            else:
+                                # Backwards compatibility
+                                self.__total_fee_amount += event.value['attributes']
 
                         elif event.value['module_id'] == 'Balances' and event.value['event_id'] == 'Deposit':
-                            if type(event.value['attributes']) is tuple:
-                                self.__total_fee_amount += event.value['attributes'][1]
-                            else:
+                            if type(event.value['attributes']) is dict:
                                 self.__total_fee_amount += event.value['attributes']['amount']
+                            else:
+                                # Backwards compatibility
+                                self.__total_fee_amount += event.value['attributes'][1]
 
                 else:
 

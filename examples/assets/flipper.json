@@ -1,8 +1,8 @@
 {
   "source": {
-    "hash": "0xfbc9c238f6b171238c82566eda2473a9873c154b9d4e80b3ba66865bc4d9da31",
-    "language": "ink! 3.0.0-rc8",
-    "compiler": "rustc 1.59.0-nightly"
+    "hash": "0x871cba462298c856adb8c2086731c7c12cddeba1f8572b90bd820bb6f8886280",
+    "language": "ink! 3.4.0",
+    "compiler": "rustc 1.67.0-nightly"
   },
   "contract": {
     "name": "flipper",
@@ -30,7 +30,7 @@
             "Constructor that initializes the `bool` value to the given `init_value`."
           ],
           "label": "new",
-          "payable": true,
+          "payable": false,
           "selector": "0x9bae9d5e"
         },
         {
@@ -51,8 +51,8 @@
           "args": [
             {
               "docs": [],
-              "indexed": true,
-              "label": "value",
+              "indexed": false,
+              "label": "new_value",
               "type": {
                 "displayName": [
                   "bool"

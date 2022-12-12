@@ -286,7 +286,10 @@ class ContractInstanceTestCase(unittest.TestCase):
         class MockedSubstrateInterface(SubstrateInterface):
 
             def rpc_request(self, method, params, result_handler=None):
-
+                if method == 'rpc_methods':
+                    response = super().rpc_request(method, params, result_handler)
+                    response['result']['methods'].remove('state_call')
+                    return response
                 if method == 'contracts_call':
                     return {
                         'jsonrpc': '2.0',
@@ -402,7 +405,12 @@ class FlipperInstanceTestCase(unittest.TestCase):
         class MockedSubstrateInterface(SubstrateInterface):
 
             def rpc_request(self, method, params, result_handler=None):
-
+                if method == 'state_call':
+                    return {
+                        'jsonrpc': '2.0',
+                        'result': '0x7ee58accd6100100070000c0ce020200100001000000000000000000000000000000000000000000000400',
+                        'id': 10
+                    }
                 if method == 'contracts_call':
                     return {
                         'jsonrpc': '2.0',
@@ -417,14 +425,14 @@ class FlipperInstanceTestCase(unittest.TestCase):
 
                 return super().rpc_request(method, params, result_handler)
 
-        cls.substrate = MockedSubstrateInterface(url=settings.KUSAMA_NODE_URL)
+        cls.substrate = MockedSubstrateInterface(url=settings.KUSAMA_NODE_URL, type_registry_preset='canvas')
         # cls.substrate = SubstrateInterface(url='ws://127.0.0.1:9944')
 
         cls.keypair = Keypair.create_from_uri('//Alice')
 
     def setUp(self) -> None:
         self.contract = ContractInstance.create_from_address(
-            contract_address="5DaohteAvvR9PZEhynqWvbFT8HEaHNuiiPTZV61VEUHnqsfU",
+            contract_address="5GhwarrVMH8kjb8XyW6zCfURHbHy3v84afzLbADyYYX6H2Kk",
             metadata_file=os.path.join(os.path.dirname(__file__), 'fixtures', 'flipper-v3.json'),
             substrate=self.substrate
         )
