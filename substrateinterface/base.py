@@ -1731,7 +1731,11 @@ class SubstrateInterface:
         -------
         int
         """
-        response = self.rpc_request("system_accountNextIndex", [account_address])
+        if self.supports_rpc_method('state_call'):
+            nonce_obj = self.runtime_call("AccountNonceApi", "account_nonce", [account_address])
+            return nonce_obj.value
+        else:
+            response = self.rpc_request("system_accountNextIndex", [account_address])
         return response.get('result', 0)
 
     def generate_signature_payload(self, call: GenericCall, era=None, nonce: int = 0, tip: int = 0,
@@ -2143,27 +2147,36 @@ class SubstrateInterface:
             signature=signature
         )
 
-        payment_info = self.rpc_request('payment_queryInfo', [str(extrinsic.data)])
+        if self.supports_rpc_method('state_call'):
+            extrinsic_len = self.runtime_config.create_scale_object('u32')
+            extrinsic_len.encode(len(extrinsic.data))
 
-        # convert partialFee to int
-        if 'result' in payment_info:
-            payment_info['result']['partialFee'] = int(payment_info['result']['partialFee'])
+            result = self.runtime_call("TransactionPaymentApi", "query_info", [extrinsic, extrinsic_len])
 
-            if type(payment_info['result']['weight']) is int:
-                # Transform format to WeightV2 if applicable as per https://github.com/paritytech/substrate/pull/12633
-                try:
-                    weight_obj = self.runtime_config.create_scale_object("sp_weights::weight_v2::Weight")
-                    if weight_obj is not None:
-                        payment_info['result']['weight'] = {
-                            'ref_time': payment_info['result']['weight'],
-                            'proof_size': 0
-                        }
-                except NotImplementedError:
-                    pass
-
-            return payment_info['result']
+            return result.value
         else:
-            raise SubstrateRequestException(payment_info['error']['message'])
+            # Backwards compatibility; deprecated RPC method
+            payment_info = self.rpc_request('payment_queryInfo', [str(extrinsic.data)])
+
+            # convert partialFee to int
+            if 'result' in payment_info:
+                payment_info['result']['partialFee'] = int(payment_info['result']['partialFee'])
+
+                if type(payment_info['result']['weight']) is int:
+                    # Transform format to WeightV2 if applicable as per https://github.com/paritytech/substrate/pull/12633
+                    try:
+                        weight_obj = self.runtime_config.create_scale_object("sp_weights::weight_v2::Weight")
+                        if weight_obj is not None:
+                            payment_info['result']['weight'] = {
+                                'ref_time': payment_info['result']['weight'],
+                                'proof_size': 0
+                            }
+                    except NotImplementedError:
+                        pass
+
+                return payment_info['result']
+            else:
+                raise SubstrateRequestException(payment_info['error']['message'])
 
     def get_type_registry(self, block_hash: str = None, max_recursion: int = 4) -> dict:
         """

@@ -777,10 +777,6 @@ class ContractInstance:
 
         input_data = self.metadata.generate_message_data(name=method, args=args)
 
-        # Check Weight format
-        # if self.substrate.config['is_weight_v2'] :
-        #     gas_limit = {'ref_time': gas_limit, 'proof_size': 100}
-
         if self.substrate.supports_rpc_method('state_call'):
             call_result = self.substrate.runtime_call("ContractsApi", "call", {
                 'dest': self.contract_address,
