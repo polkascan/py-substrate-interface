@@ -175,7 +175,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
             call_function='transfer',
             call_params={
                 'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
-                'value': 2 * 10 ** 3
+                'value': 2000
             }
         )
         payment_info = self.kusama_substrate.get_payment_info(call=call, keypair=keypair)
