@@ -1,6 +1,6 @@
 # Python Substrate Interface
 
-[![Build Status](https://img.shields.io/github/workflow/status/polkascan/py-substrate-interface/Run%20unit%20tests)](https://github.com/polkascan/py-substrate-interface/actions?query=workflow%3A%22Run+unit+tests%22)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/polkascan/py-substrate-interface/unittests.yml?branch=master)](https://github.com/polkascan/py-substrate-interface/actions?query=workflow%3A%22Run+unit+tests%22)
 [![Latest Version](https://img.shields.io/pypi/v/substrate-interface.svg)](https://pypi.org/project/substrate-interface/)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/substrate-interface.svg)](https://pypi.org/project/substrate-interface/)
 [![License](https://img.shields.io/pypi/l/substrate-interface.svg)](https://github.com/polkascan/py-substrate-interface/blob/master/LICENSE)
@@ -13,7 +13,7 @@ the Substrate runtime.
 
 ## Table of Contents
 * [Installation](#installation)
-* [API reference documentation](#api-reference-documentation)
+* [Documentation](#documentation)
 * [Initialization](#initialization) 
 * [SCALE](#scale)
 * [Query storage](#query-storage)
@@ -32,8 +32,10 @@ the Substrate runtime.
 pip install substrate-interface
 ```
 
-## API reference documentation
-https://polkascan.github.io/py-substrate-interface/
+## Documentation
+
+* [Function reference documentation](https://polkascan.github.io/py-substrate-interface/)
+* [PySubstrate metadata documentation for Polkadot and Kusama runtimes](https://polkascan.github.io/py-substrate-metadata-docs/)
 
 ## Initialization
 
