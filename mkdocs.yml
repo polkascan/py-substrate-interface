@@ -1,0 +1,15 @@
+site_name: Py-Substrate-Interface Docs
+
+theme:
+  name: "material"
+
+plugins:
+  - mkdocstrings
+  - search
+
+nav:
+  - Calculation Docs: index.md
+  - Tutorials: tutorials.md
+  - How-To Guides: how-to-guides.md
+  - Function Reference: reference.md
+  - Explanation: explanation.md

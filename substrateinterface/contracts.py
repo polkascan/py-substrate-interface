@@ -762,17 +762,15 @@ class ContractInstance:
         to predict gas limits and 'dry-run' the execution when a mutable message is used.
         This method does not submit an extrinsic.
 
-        Parameters
-        ----------
-        keypair
-        method: name of message to execute
-        args: arguments of message in {'name': value} format
-        value: value to send when executing the message
-        gas_limit:
+        Args:
+            keypair
+            method: name of message to execute
+            args: arguments of message in {'name': value} format
+            value: value to send when executing the message
+            gas_limit:
 
-        Returns
-        -------
-        GenericContractExecResult
+        Returns:
+            GenericContractExecResult
         """
 
         input_data = self.metadata.generate_message_data(name=method, args=args)
