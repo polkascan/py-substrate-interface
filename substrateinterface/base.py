@@ -743,9 +743,6 @@ class SubstrateInterface:
             subscription_id = None
 
             while json_body is None:
-
-                self.__rpc_message_queue.append(json.loads(self.websocket.recv()))
-
                 # Search for subscriptions
                 for message in self.__rpc_message_queue:
 
@@ -783,6 +780,10 @@ class SubstrateInterface:
                             json_body = callback_result
 
                         update_nr += 1
+
+                # Read one more message to queue
+                if json_body is None:
+                    self.__rpc_message_queue.append(json.loads(self.websocket.recv()))
 
         else:
 
