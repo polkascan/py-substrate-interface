@@ -583,13 +583,14 @@ class ContractCode:
 
         return cls(code_hash=code_hash, metadata=metadata, substrate=substrate)
 
-    def upload_wasm(self, keypair: Keypair) -> ExtrinsicReceipt:
+    def upload_wasm(self, keypair: Keypair, storage_deposit_limit: int = None) -> ExtrinsicReceipt:
         """
-        Created and submits an "Contracts.put_code" extrinsic containing the WASM binary
+        Created and submits an "Contracts.upload_code" extrinsic containing the WASM binary
 
         Parameters
         ----------
-        keypair
+        keypair: Keypair used to sign the extrinsic
+        storage_deposit_limit:T he maximum amount of balance that can be charged to pay for the storage consumed
 
         Returns
         -------
@@ -598,11 +599,21 @@ class ContractCode:
         if not self.wasm_bytes:
             raise ValueError("No WASM bytes to upload")
 
+        call_function = self.substrate.get_metadata_call_function('Contracts', 'upload_code')
+
+        if not call_function:
+            # Try to fall back on legacy `put_code`
+            call_function = self.substrate.get_metadata_call_function('Contracts', 'put_code')
+
+        if not call_function:
+            raise NotImplementedError("Couldn't find method in Contracts pallet to upload the WASM binary")
+
         call = self.substrate.compose_call(
-            call_module='Contracts',
-            call_function='put_code',
+            call_module="Contracts",
+            call_function=call_function.name,
             call_params={
-                'code': '0x{}'.format(self.wasm_bytes.hex())
+                'code': '0x{}'.format(self.wasm_bytes.hex()),
+                'storage_deposit_limit': storage_deposit_limit
             }
         )
 
