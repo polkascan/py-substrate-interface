@@ -66,7 +66,7 @@ class KeyPairTestCase(unittest.TestCase):
 
     def test_only_provide_ss58_address(self):
 
-        keypair = Keypair(ss58_address='16ADqpMa4yzfmWs3nuTSMhfZ2ckeGtvqhPWCNqECEGDcGgU2')
+        keypair = Keypair(ss58_address='16ADqpMa4yzfmWs3nuTSMhfZ2ckeGtvqhPWCNqECEGDcGgU2', ss58_format=0)
         self.assertEqual(keypair.public_key, bytes.fromhex('e4359ad3e2716c539a1d663ebd0a51bdc5c98a12e663bb4c4402db47828c9446'))
 
     def test_only_provide_public_key(self):

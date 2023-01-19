@@ -75,7 +75,7 @@ class MnemonicLanguageCode:
 class Keypair:
 
     def __init__(self, ss58_address: str = None, public_key: Union[bytes, str] = None,
-                 private_key: Union[bytes, str] = None, ss58_format: int = None, seed_hex: Union[str, bytes] = None,
+                 private_key: Union[bytes, str] = None, ss58_format: int = 42, seed_hex: Union[str, bytes] = None,
                  crypto_type: int = KeypairType.SR25519):
         """
         Allows generation of Keypairs from a variety of input combination, such as a public/private key combination,

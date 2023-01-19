@@ -168,7 +168,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
         self.assertEqual(str(extrinsic.data), '0x280402000ba09cc0317501')
 
     def test_payment_info(self):
-        keypair = Keypair(ss58_address="EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk")
+        keypair = Keypair(ss58_address="EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk", ss58_format=2)
 
         call = self.kusama_substrate.compose_call(
             call_module='Balances',
