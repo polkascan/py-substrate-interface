@@ -1934,7 +1934,7 @@ class SubstrateInterface:
 
         # Check if ExtrinsicSignature is MultiSignature, otherwise omit signature_version
         signature_cls = self.runtime_config.get_decoder_class("ExtrinsicSignature")
-        if type(signature_cls.type_mapping) is list:
+        if signature_cls is self.runtime_config.get_decoder_class('sp_runtime::MultiSignature'):
             value['signature_version'] = signature_version
 
         extrinsic.encode(value)
