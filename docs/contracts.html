@@ -513,7 +513,7 @@ class ContractExecutionReceipt(ExtrinsicReceipt):
                     if event.value[&#39;module_id&#39;] == &#39;Contracts&#39; and event.value[&#39;event_id&#39;] == &#39;ContractEmitted&#39;:
                         # Create contract event
                         contract_event_obj = ContractEvent(
-                            data=ScaleBytes(event[&#39;event&#39;][1][1][1].value_object),
+                            data=ScaleBytes(event[&#39;event&#39;][1][1][&#39;data&#39;].value_object),
                             runtime_config=self.substrate.runtime_config,
                             contract_metadata=self.contract_metadata
                         )
@@ -611,13 +611,14 @@ class ContractCode:
 
         return cls(code_hash=code_hash, metadata=metadata, substrate=substrate)
 
-    def upload_wasm(self, keypair: Keypair) -&gt; ExtrinsicReceipt:
+    def upload_wasm(self, keypair: Keypair, storage_deposit_limit: int = None) -&gt; ExtrinsicReceipt:
         &#34;&#34;&#34;
-        Created and submits an &#34;Contracts.put_code&#34; extrinsic containing the WASM binary
+        Created and submits an &#34;Contracts.upload_code&#34; extrinsic containing the WASM binary
 
         Parameters
         ----------
-        keypair
+        keypair: Keypair used to sign the extrinsic
+        storage_deposit_limit:T he maximum amount of balance that can be charged to pay for the storage consumed
 
         Returns
         -------
@@ -626,11 +627,21 @@ class ContractCode:
         if not self.wasm_bytes:
             raise ValueError(&#34;No WASM bytes to upload&#34;)
 
+        call_function = self.substrate.get_metadata_call_function(&#39;Contracts&#39;, &#39;upload_code&#39;)
+
+        if not call_function:
+            # Try to fall back on legacy `put_code`
+            call_function = self.substrate.get_metadata_call_function(&#39;Contracts&#39;, &#39;put_code&#39;)
+
+        if not call_function:
+            raise NotImplementedError(&#34;Couldn&#39;t find method in Contracts pallet to upload the WASM binary&#34;)
+
         call = self.substrate.compose_call(
-            call_module=&#39;Contracts&#39;,
-            call_function=&#39;put_code&#39;,
+            call_module=&#34;Contracts&#34;,
+            call_function=call_function.name,
             call_params={
-                &#39;code&#39;: &#39;0x{}&#39;.format(self.wasm_bytes.hex())
+                &#39;code&#39;: &#39;0x{}&#39;.format(self.wasm_bytes.hex()),
+                &#39;storage_deposit_limit&#39;: storage_deposit_limit
             }
         )
 
@@ -638,11 +649,11 @@ class ContractCode:
 
         return self.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
 
-    def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None,
+    def deploy(self, keypair: Keypair, endowment: int, gas_limit: int, constructor: str, args: dict = None,
                deployment_salt: str = None, upload_code: bool = False, storage_deposit_limit: int = None
                ) -&gt; &#34;ContractInstance&#34;:
         &#34;&#34;&#34;
-        Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
+        Deploys a new instance of the contract after it has been uploaded on-chain, with provided constructor and
         constructor arguments
 
         Parameters
@@ -667,10 +678,16 @@ class ContractCode:
         if upload_code is True:
 
             # Check metadata for available call functions
-            if self.substrate.get_metadata_call_function(&#39;Contracts&#39;, &#39;instantiate_with_code&#39;) is not None:
+            call_function = self.substrate.get_metadata_call_function(&#39;Contracts&#39;, &#39;instantiate_with_code&#39;)
+            if call_function is not None:
 
                 if not self.wasm_bytes:
                     raise ValueError(&#34;No WASM bytes to upload&#34;)
+
+                # Check gas_limit weight format
+                param_info = call_function.get_param_info()
+                if type(param_info[&#39;gas_limit&#39;]) is dict:
+                    gas_limit = {&#39;ref_time&#39;: gas_limit, &#39;proof_size&#39;: 0}
 
                 call = self.substrate.compose_call(
                     call_module=&#39;Contracts&#39;,
@@ -732,7 +749,7 @@ class ContractCode:
 
                 if event.value[&#39;event&#39;][&#39;event_id&#39;] == &#39;Instantiated&#39;:
                     return ContractInstance(
-                        contract_address=event.value[&#39;event&#39;][&#39;attributes&#39;][1],
+                        contract_address=event.value[&#39;event&#39;][&#39;attributes&#39;][&#39;contract&#39;],
                         metadata=self.metadata,
                         substrate=self.substrate
                     )
@@ -778,7 +795,7 @@ class ContractInstance:
         return cls(contract_address=contract_address, metadata=metadata, substrate=substrate)
 
     def read(self, keypair: Keypair, method: str, args: dict = None,
-             value: int = 0, gas_limit: int = 5000000000000) -&gt; GenericContractExecResult:
+             value: int = 0, gas_limit: int = None) -&gt; GenericContractExecResult:
         &#34;&#34;&#34;
         Used to execute non-mutable messages to for example read data from the contract using getters. Can also be used
         to predict gas limits and &#39;dry-run&#39; the execution when a mutable message is used.
@@ -799,74 +816,102 @@ class ContractInstance:
 
         input_data = self.metadata.generate_message_data(name=method, args=args)
 
-        response = self.substrate.rpc_request(method=&#39;contracts_call&#39;, params=[{
-            &#39;dest&#39;: self.contract_address,
-            &#39;gasLimit&#39;: gas_limit,
-            &#39;inputData&#39;: input_data.to_hex(),
-            &#39;origin&#39;: keypair.ss58_address,
-            &#39;value&#39;: value
-        }])
+        if self.substrate.supports_rpc_method(&#39;state_call&#39;):
+            call_result = self.substrate.runtime_call(&#34;ContractsApi&#34;, &#34;call&#34;, {
+                &#39;dest&#39;: self.contract_address,
+                &#39;gas_limit&#39;: gas_limit,
+                &#39;input_data&#39;: input_data.to_hex(),
+                &#39;origin&#39;: keypair.ss58_address,
+                &#39;value&#39;: value,
+                &#39;storage_deposit_limit&#39;: None
+            })
+            if &#39;Error&#39; in call_result[&#39;result&#39;]:
+                raise ContractReadFailedException(call_result.value[&#39;result&#39;][&#39;Error&#39;])
 
-        if &#39;result&#39; in response:
+            if &#39;Ok&#39; in call_result[&#39;result&#39;]:
 
-            self.substrate.init_runtime()
+                try:
+                    return_type_string = self.metadata.get_return_type_string_for_message(method)
+                    result_scale_obj = self.substrate.create_scale_object(return_type_string)
+                    result_scale_obj.decode(ScaleBytes(call_result[&#39;result&#39;][1][&#39;data&#39;].value_object))
+                    call_result.value_object[&#39;result&#39;].value_object[1].value_object[&#39;data&#39;] = result_scale_obj
+                    call_result.value[&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;] = result_scale_obj.value
 
-            return_type_string = self.metadata.get_return_type_string_for_message(method)
+                except NotImplementedError:
+                    pass
 
-            # Wrap the result in a ContractExecResult Enum because the exec will result in the same
-            ContractExecResult = self.substrate.runtime_config.get_decoder_class(&#39;ContractExecResult&#39;)
+            return call_result
 
-            contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
+        else:
+            # Deprecated RPC call
+            response = self.substrate.rpc_request(method=&#39;contracts_call&#39;, params=[{
+                &#39;dest&#39;: self.contract_address,
+                &#39;gasLimit&#39;: gas_limit,
+                &#39;inputData&#39;: input_data.to_hex(),
+                &#39;origin&#39;: keypair.ss58_address,
+                &#39;value&#39;: value
+            }])
 
-            if &#39;result&#39; in response[&#39;result&#39;]:
+            if &#39;result&#39; in response:
 
-                contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;gasConsumed&#39;]
-                contract_exec_result.gas_required = response[&#39;result&#39;][&#39;gasRequired&#39;]
+                self.substrate.init_runtime()
 
-                if &#39;Ok&#39; in response[&#39;result&#39;][&#39;result&#39;]:
+                return_type_string = self.metadata.get_return_type_string_for_message(method)
 
-                    contract_exec_result.flags = response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;flags&#39;]
+                # Wrap the result in a ContractExecResult Enum because the exec will result in the same
+                ContractExecResult = self.substrate.runtime_config.get_decoder_class(&#39;ContractExecResult&#39;)
+
+                contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
+
+                if &#39;result&#39; in response[&#39;result&#39;]:
+
+                    contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;gasConsumed&#39;]
+                    contract_exec_result.gas_required = response[&#39;result&#39;][&#39;gasRequired&#39;]
+
+                    if &#39;Ok&#39; in response[&#39;result&#39;][&#39;result&#39;]:
+
+                        contract_exec_result.flags = response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;flags&#39;]
+
+                        try:
+
+                            result_scale_obj = self.substrate.decode_scale(
+                                type_string=return_type_string,
+                                scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;]),
+                                return_scale_obj=True
+                            )
+
+                            response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;] = result_scale_obj.value
+                            contract_exec_result.contract_result_data = result_scale_obj
+                            contract_exec_result.value_object = result_scale_obj
+
+                        except NotImplementedError:
+                            pass
+
+                # Backwards compatibility
+                elif &#39;success&#39; in response[&#39;result&#39;]:
+
+                    contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;success&#39;][&#39;gas_consumed&#39;]
+                    contract_exec_result.flags = response[&#39;result&#39;][&#39;success&#39;][&#39;flags&#39;]
 
                     try:
 
                         result_scale_obj = self.substrate.decode_scale(
                             type_string=return_type_string,
-                            scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;]),
+                            scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;]),
                             return_scale_obj=True
                         )
 
-                        response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;] = result_scale_obj.value
+                        response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;] = result_scale_obj.value
                         contract_exec_result.contract_result_data = result_scale_obj
-                        contract_exec_result.value_object = result_scale_obj
 
                     except NotImplementedError:
                         pass
 
-            # Backwards compatibility
-            elif &#39;success&#39; in response[&#39;result&#39;]:
+                contract_exec_result.value = response[&#39;result&#39;]
 
-                contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;success&#39;][&#39;gas_consumed&#39;]
-                contract_exec_result.flags = response[&#39;result&#39;][&#39;success&#39;][&#39;flags&#39;]
+                return contract_exec_result
 
-                try:
-
-                    result_scale_obj = self.substrate.decode_scale(
-                        type_string=return_type_string,
-                        scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;]),
-                        return_scale_obj=True
-                    )
-
-                    response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;] = result_scale_obj.value
-                    contract_exec_result.contract_result_data = result_scale_obj
-
-                except NotImplementedError:
-                    pass
-
-            contract_exec_result.value = response[&#39;result&#39;]
-
-            return contract_exec_result
-
-        raise ContractReadFailedException(response)
+            raise ContractReadFailedException(response)
 
     def exec(self, keypair: Keypair, method: str, args: dict = None,
              value: int = 0, gas_limit: Optional[int] = None, storage_deposit_limit: int = None
@@ -1012,13 +1057,14 @@ the WASM bytes and metadata</p>
 
         return cls(code_hash=code_hash, metadata=metadata, substrate=substrate)
 
-    def upload_wasm(self, keypair: Keypair) -&gt; ExtrinsicReceipt:
+    def upload_wasm(self, keypair: Keypair, storage_deposit_limit: int = None) -&gt; ExtrinsicReceipt:
         &#34;&#34;&#34;
-        Created and submits an &#34;Contracts.put_code&#34; extrinsic containing the WASM binary
+        Created and submits an &#34;Contracts.upload_code&#34; extrinsic containing the WASM binary
 
         Parameters
         ----------
-        keypair
+        keypair: Keypair used to sign the extrinsic
+        storage_deposit_limit:T he maximum amount of balance that can be charged to pay for the storage consumed
 
         Returns
         -------
@@ -1027,11 +1073,21 @@ the WASM bytes and metadata</p>
         if not self.wasm_bytes:
             raise ValueError(&#34;No WASM bytes to upload&#34;)
 
+        call_function = self.substrate.get_metadata_call_function(&#39;Contracts&#39;, &#39;upload_code&#39;)
+
+        if not call_function:
+            # Try to fall back on legacy `put_code`
+            call_function = self.substrate.get_metadata_call_function(&#39;Contracts&#39;, &#39;put_code&#39;)
+
+        if not call_function:
+            raise NotImplementedError(&#34;Couldn&#39;t find method in Contracts pallet to upload the WASM binary&#34;)
+
         call = self.substrate.compose_call(
-            call_module=&#39;Contracts&#39;,
-            call_function=&#39;put_code&#39;,
+            call_module=&#34;Contracts&#34;,
+            call_function=call_function.name,
             call_params={
-                &#39;code&#39;: &#39;0x{}&#39;.format(self.wasm_bytes.hex())
+                &#39;code&#39;: &#39;0x{}&#39;.format(self.wasm_bytes.hex()),
+                &#39;storage_deposit_limit&#39;: storage_deposit_limit
             }
         )
 
@@ -1039,11 +1095,11 @@ the WASM bytes and metadata</p>
 
         return self.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
 
-    def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None,
+    def deploy(self, keypair: Keypair, endowment: int, gas_limit: int, constructor: str, args: dict = None,
                deployment_salt: str = None, upload_code: bool = False, storage_deposit_limit: int = None
                ) -&gt; &#34;ContractInstance&#34;:
         &#34;&#34;&#34;
-        Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
+        Deploys a new instance of the contract after it has been uploaded on-chain, with provided constructor and
         constructor arguments
 
         Parameters
@@ -1068,10 +1124,16 @@ the WASM bytes and metadata</p>
         if upload_code is True:
 
             # Check metadata for available call functions
-            if self.substrate.get_metadata_call_function(&#39;Contracts&#39;, &#39;instantiate_with_code&#39;) is not None:
+            call_function = self.substrate.get_metadata_call_function(&#39;Contracts&#39;, &#39;instantiate_with_code&#39;)
+            if call_function is not None:
 
                 if not self.wasm_bytes:
                     raise ValueError(&#34;No WASM bytes to upload&#34;)
+
+                # Check gas_limit weight format
+                param_info = call_function.get_param_info()
+                if type(param_info[&#39;gas_limit&#39;]) is dict:
+                    gas_limit = {&#39;ref_time&#39;: gas_limit, &#39;proof_size&#39;: 0}
 
                 call = self.substrate.compose_call(
                     call_module=&#39;Contracts&#39;,
@@ -1133,7 +1195,7 @@ the WASM bytes and metadata</p>
 
                 if event.value[&#39;event&#39;][&#39;event_id&#39;] == &#39;Instantiated&#39;:
                     return ContractInstance(
-                        contract_address=event.value[&#39;event&#39;][&#39;attributes&#39;][1],
+                        contract_address=event.value[&#39;event&#39;][&#39;attributes&#39;][&#39;contract&#39;],
                         metadata=self.metadata,
                         substrate=self.substrate
                     )
@@ -1250,10 +1312,10 @@ def create_from_contract_files(cls, wasm_file: str, metadata_file: str,
 <h3>Methods</h3>
 <dl>
 <dt id="substrateinterface.contracts.ContractCode.deploy"><code class="name flex">
-<span>def <span class="ident">deploy</span></span>(<span>self, keypair, endowment, gas_limit, constructor, args: dict = None, deployment_salt: str = None, upload_code: bool = False, storage_deposit_limit: int = None) ‑> <a title="substrateinterface.contracts.ContractInstance" href="#substrateinterface.contracts.ContractInstance">ContractInstance</a></span>
+<span>def <span class="ident">deploy</span></span>(<span>self, keypair: <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a>, endowment: int, gas_limit: int, constructor: str, args: dict = None, deployment_salt: str = None, upload_code: bool = False, storage_deposit_limit: int = None) ‑> <a title="substrateinterface.contracts.ContractInstance" href="#substrateinterface.contracts.ContractInstance">ContractInstance</a></span>
 </code></dt>
 <dd>
-<div class="desc"><p>Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
+<div class="desc"><p>Deploys a new instance of the contract after it has been uploaded on-chain, with provided constructor and
 constructor arguments</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
@@ -1281,11 +1343,11 @@ constructor arguments</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def deploy(self, keypair, endowment, gas_limit, constructor, args: dict = None,
+<pre><code class="python">def deploy(self, keypair: Keypair, endowment: int, gas_limit: int, constructor: str, args: dict = None,
            deployment_salt: str = None, upload_code: bool = False, storage_deposit_limit: int = None
            ) -&gt; &#34;ContractInstance&#34;:
     &#34;&#34;&#34;
-    Deploys a new instance of the contract after its been uploaded on-chain, with provided constructor and
+    Deploys a new instance of the contract after it has been uploaded on-chain, with provided constructor and
     constructor arguments
 
     Parameters
@@ -1310,10 +1372,16 @@ constructor arguments</p>
     if upload_code is True:
 
         # Check metadata for available call functions
-        if self.substrate.get_metadata_call_function(&#39;Contracts&#39;, &#39;instantiate_with_code&#39;) is not None:
+        call_function = self.substrate.get_metadata_call_function(&#39;Contracts&#39;, &#39;instantiate_with_code&#39;)
+        if call_function is not None:
 
             if not self.wasm_bytes:
                 raise ValueError(&#34;No WASM bytes to upload&#34;)
+
+            # Check gas_limit weight format
+            param_info = call_function.get_param_info()
+            if type(param_info[&#39;gas_limit&#39;]) is dict:
+                gas_limit = {&#39;ref_time&#39;: gas_limit, &#39;proof_size&#39;: 0}
 
             call = self.substrate.compose_call(
                 call_module=&#39;Contracts&#39;,
@@ -1375,7 +1443,7 @@ constructor arguments</p>
 
             if event.value[&#39;event&#39;][&#39;event_id&#39;] == &#39;Instantiated&#39;:
                 return ContractInstance(
-                    contract_address=event.value[&#39;event&#39;][&#39;attributes&#39;][1],
+                    contract_address=event.value[&#39;event&#39;][&#39;attributes&#39;][&#39;contract&#39;],
                     metadata=self.metadata,
                     substrate=self.substrate
                 )
@@ -1392,15 +1460,16 @@ constructor arguments</p>
 </details>
 </dd>
 <dt id="substrateinterface.contracts.ContractCode.upload_wasm"><code class="name flex">
-<span>def <span class="ident">upload_wasm</span></span>(<span>self, keypair: <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a>) ‑> <a title="substrateinterface.base.ExtrinsicReceipt" href="base.html#substrateinterface.base.ExtrinsicReceipt">ExtrinsicReceipt</a></span>
+<span>def <span class="ident">upload_wasm</span></span>(<span>self, keypair: <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a>, storage_deposit_limit: int = None) ‑> <a title="substrateinterface.base.ExtrinsicReceipt" href="base.html#substrateinterface.base.ExtrinsicReceipt">ExtrinsicReceipt</a></span>
 </code></dt>
 <dd>
-<div class="desc"><p>Created and submits an "Contracts.put_code" extrinsic containing the WASM binary</p>
+<div class="desc"><p>Created and submits an "Contracts.upload_code" extrinsic containing the WASM binary</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>keypair</code></strong></dt>
+<dt><strong><code>keypair</code></strong> :&ensp;<code>Keypair used to sign the extrinsic</code></dt>
 <dd>&nbsp;</dd>
 </dl>
+<p>storage_deposit_limit:T he maximum amount of balance that can be charged to pay for the storage consumed</p>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>ExtrinsicReceipt</code></dt>
@@ -1410,13 +1479,14 @@ constructor arguments</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def upload_wasm(self, keypair: Keypair) -&gt; ExtrinsicReceipt:
+<pre><code class="python">def upload_wasm(self, keypair: Keypair, storage_deposit_limit: int = None) -&gt; ExtrinsicReceipt:
     &#34;&#34;&#34;
-    Created and submits an &#34;Contracts.put_code&#34; extrinsic containing the WASM binary
+    Created and submits an &#34;Contracts.upload_code&#34; extrinsic containing the WASM binary
 
     Parameters
     ----------
-    keypair
+    keypair: Keypair used to sign the extrinsic
+    storage_deposit_limit:T he maximum amount of balance that can be charged to pay for the storage consumed
 
     Returns
     -------
@@ -1425,11 +1495,21 @@ constructor arguments</p>
     if not self.wasm_bytes:
         raise ValueError(&#34;No WASM bytes to upload&#34;)
 
+    call_function = self.substrate.get_metadata_call_function(&#39;Contracts&#39;, &#39;upload_code&#39;)
+
+    if not call_function:
+        # Try to fall back on legacy `put_code`
+        call_function = self.substrate.get_metadata_call_function(&#39;Contracts&#39;, &#39;put_code&#39;)
+
+    if not call_function:
+        raise NotImplementedError(&#34;Couldn&#39;t find method in Contracts pallet to upload the WASM binary&#34;)
+
     call = self.substrate.compose_call(
-        call_module=&#39;Contracts&#39;,
-        call_function=&#39;put_code&#39;,
+        call_module=&#34;Contracts&#34;,
+        call_function=call_function.name,
         call_params={
-            &#39;code&#39;: &#39;0x{}&#39;.format(self.wasm_bytes.hex())
+            &#39;code&#39;: &#39;0x{}&#39;.format(self.wasm_bytes.hex()),
+            &#39;storage_deposit_limit&#39;: storage_deposit_limit
         }
     )
 
@@ -1622,7 +1702,7 @@ the generic "Contracts.ContractExecution" event that is triggered after a succes
                     if event.value[&#39;module_id&#39;] == &#39;Contracts&#39; and event.value[&#39;event_id&#39;] == &#39;ContractEmitted&#39;:
                         # Create contract event
                         contract_event_obj = ContractEvent(
-                            data=ScaleBytes(event[&#39;event&#39;][1][1][1].value_object),
+                            data=ScaleBytes(event[&#39;event&#39;][1][1][&#39;data&#39;].value_object),
                             runtime_config=self.substrate.runtime_config,
                             contract_metadata=self.contract_metadata
                         )
@@ -1748,7 +1828,7 @@ def contract_events(self):
                 if event.value[&#39;module_id&#39;] == &#39;Contracts&#39; and event.value[&#39;event_id&#39;] == &#39;ContractEmitted&#39;:
                     # Create contract event
                     contract_event_obj = ContractEvent(
-                        data=ScaleBytes(event[&#39;event&#39;][1][1][1].value_object),
+                        data=ScaleBytes(event[&#39;event&#39;][1][1][&#39;data&#39;].value_object),
                         runtime_config=self.substrate.runtime_config,
                         contract_metadata=self.contract_metadata
                     )
@@ -1830,7 +1910,7 @@ def contract_events(self):
         return cls(contract_address=contract_address, metadata=metadata, substrate=substrate)
 
     def read(self, keypair: Keypair, method: str, args: dict = None,
-             value: int = 0, gas_limit: int = 5000000000000) -&gt; GenericContractExecResult:
+             value: int = 0, gas_limit: int = None) -&gt; GenericContractExecResult:
         &#34;&#34;&#34;
         Used to execute non-mutable messages to for example read data from the contract using getters. Can also be used
         to predict gas limits and &#39;dry-run&#39; the execution when a mutable message is used.
@@ -1851,74 +1931,102 @@ def contract_events(self):
 
         input_data = self.metadata.generate_message_data(name=method, args=args)
 
-        response = self.substrate.rpc_request(method=&#39;contracts_call&#39;, params=[{
-            &#39;dest&#39;: self.contract_address,
-            &#39;gasLimit&#39;: gas_limit,
-            &#39;inputData&#39;: input_data.to_hex(),
-            &#39;origin&#39;: keypair.ss58_address,
-            &#39;value&#39;: value
-        }])
+        if self.substrate.supports_rpc_method(&#39;state_call&#39;):
+            call_result = self.substrate.runtime_call(&#34;ContractsApi&#34;, &#34;call&#34;, {
+                &#39;dest&#39;: self.contract_address,
+                &#39;gas_limit&#39;: gas_limit,
+                &#39;input_data&#39;: input_data.to_hex(),
+                &#39;origin&#39;: keypair.ss58_address,
+                &#39;value&#39;: value,
+                &#39;storage_deposit_limit&#39;: None
+            })
+            if &#39;Error&#39; in call_result[&#39;result&#39;]:
+                raise ContractReadFailedException(call_result.value[&#39;result&#39;][&#39;Error&#39;])
 
-        if &#39;result&#39; in response:
+            if &#39;Ok&#39; in call_result[&#39;result&#39;]:
 
-            self.substrate.init_runtime()
+                try:
+                    return_type_string = self.metadata.get_return_type_string_for_message(method)
+                    result_scale_obj = self.substrate.create_scale_object(return_type_string)
+                    result_scale_obj.decode(ScaleBytes(call_result[&#39;result&#39;][1][&#39;data&#39;].value_object))
+                    call_result.value_object[&#39;result&#39;].value_object[1].value_object[&#39;data&#39;] = result_scale_obj
+                    call_result.value[&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;] = result_scale_obj.value
 
-            return_type_string = self.metadata.get_return_type_string_for_message(method)
+                except NotImplementedError:
+                    pass
 
-            # Wrap the result in a ContractExecResult Enum because the exec will result in the same
-            ContractExecResult = self.substrate.runtime_config.get_decoder_class(&#39;ContractExecResult&#39;)
+            return call_result
 
-            contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
+        else:
+            # Deprecated RPC call
+            response = self.substrate.rpc_request(method=&#39;contracts_call&#39;, params=[{
+                &#39;dest&#39;: self.contract_address,
+                &#39;gasLimit&#39;: gas_limit,
+                &#39;inputData&#39;: input_data.to_hex(),
+                &#39;origin&#39;: keypair.ss58_address,
+                &#39;value&#39;: value
+            }])
 
-            if &#39;result&#39; in response[&#39;result&#39;]:
+            if &#39;result&#39; in response:
 
-                contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;gasConsumed&#39;]
-                contract_exec_result.gas_required = response[&#39;result&#39;][&#39;gasRequired&#39;]
+                self.substrate.init_runtime()
 
-                if &#39;Ok&#39; in response[&#39;result&#39;][&#39;result&#39;]:
+                return_type_string = self.metadata.get_return_type_string_for_message(method)
 
-                    contract_exec_result.flags = response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;flags&#39;]
+                # Wrap the result in a ContractExecResult Enum because the exec will result in the same
+                ContractExecResult = self.substrate.runtime_config.get_decoder_class(&#39;ContractExecResult&#39;)
+
+                contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
+
+                if &#39;result&#39; in response[&#39;result&#39;]:
+
+                    contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;gasConsumed&#39;]
+                    contract_exec_result.gas_required = response[&#39;result&#39;][&#39;gasRequired&#39;]
+
+                    if &#39;Ok&#39; in response[&#39;result&#39;][&#39;result&#39;]:
+
+                        contract_exec_result.flags = response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;flags&#39;]
+
+                        try:
+
+                            result_scale_obj = self.substrate.decode_scale(
+                                type_string=return_type_string,
+                                scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;]),
+                                return_scale_obj=True
+                            )
+
+                            response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;] = result_scale_obj.value
+                            contract_exec_result.contract_result_data = result_scale_obj
+                            contract_exec_result.value_object = result_scale_obj
+
+                        except NotImplementedError:
+                            pass
+
+                # Backwards compatibility
+                elif &#39;success&#39; in response[&#39;result&#39;]:
+
+                    contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;success&#39;][&#39;gas_consumed&#39;]
+                    contract_exec_result.flags = response[&#39;result&#39;][&#39;success&#39;][&#39;flags&#39;]
 
                     try:
 
                         result_scale_obj = self.substrate.decode_scale(
                             type_string=return_type_string,
-                            scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;]),
+                            scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;]),
                             return_scale_obj=True
                         )
 
-                        response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;] = result_scale_obj.value
+                        response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;] = result_scale_obj.value
                         contract_exec_result.contract_result_data = result_scale_obj
-                        contract_exec_result.value_object = result_scale_obj
 
                     except NotImplementedError:
                         pass
 
-            # Backwards compatibility
-            elif &#39;success&#39; in response[&#39;result&#39;]:
+                contract_exec_result.value = response[&#39;result&#39;]
 
-                contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;success&#39;][&#39;gas_consumed&#39;]
-                contract_exec_result.flags = response[&#39;result&#39;][&#39;success&#39;][&#39;flags&#39;]
+                return contract_exec_result
 
-                try:
-
-                    result_scale_obj = self.substrate.decode_scale(
-                        type_string=return_type_string,
-                        scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;]),
-                        return_scale_obj=True
-                    )
-
-                    response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;] = result_scale_obj.value
-                    contract_exec_result.contract_result_data = result_scale_obj
-
-                except NotImplementedError:
-                    pass
-
-            contract_exec_result.value = response[&#39;result&#39;]
-
-            return contract_exec_result
-
-        raise ContractReadFailedException(response)
+            raise ContractReadFailedException(response)
 
     def exec(self, keypair: Keypair, method: str, args: dict = None,
              value: int = 0, gas_limit: Optional[int] = None, storage_deposit_limit: int = None
@@ -2094,7 +2202,7 @@ def create_from_address(cls, contract_address: str, metadata_file: str,
 </details>
 </dd>
 <dt id="substrateinterface.contracts.ContractInstance.read"><code class="name flex">
-<span>def <span class="ident">read</span></span>(<span>self, keypair: <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a>, method: str, args: dict = None, value: int = 0, gas_limit: int = 5000000000000) ‑> scalecodec.types.GenericContractExecResult</span>
+<span>def <span class="ident">read</span></span>(<span>self, keypair: <a title="substrateinterface.base.Keypair" href="base.html#substrateinterface.base.Keypair">Keypair</a>, method: str, args: dict = None, value: int = 0, gas_limit: int = None) ‑> scalecodec.types.GenericContractExecResult</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Used to execute non-mutable messages to for example read data from the contract using getters. Can also be used
@@ -2122,7 +2230,7 @@ This method does not submit an extrinsic.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def read(self, keypair: Keypair, method: str, args: dict = None,
-         value: int = 0, gas_limit: int = 5000000000000) -&gt; GenericContractExecResult:
+         value: int = 0, gas_limit: int = None) -&gt; GenericContractExecResult:
     &#34;&#34;&#34;
     Used to execute non-mutable messages to for example read data from the contract using getters. Can also be used
     to predict gas limits and &#39;dry-run&#39; the execution when a mutable message is used.
@@ -2143,74 +2251,102 @@ This method does not submit an extrinsic.</p>
 
     input_data = self.metadata.generate_message_data(name=method, args=args)
 
-    response = self.substrate.rpc_request(method=&#39;contracts_call&#39;, params=[{
-        &#39;dest&#39;: self.contract_address,
-        &#39;gasLimit&#39;: gas_limit,
-        &#39;inputData&#39;: input_data.to_hex(),
-        &#39;origin&#39;: keypair.ss58_address,
-        &#39;value&#39;: value
-    }])
+    if self.substrate.supports_rpc_method(&#39;state_call&#39;):
+        call_result = self.substrate.runtime_call(&#34;ContractsApi&#34;, &#34;call&#34;, {
+            &#39;dest&#39;: self.contract_address,
+            &#39;gas_limit&#39;: gas_limit,
+            &#39;input_data&#39;: input_data.to_hex(),
+            &#39;origin&#39;: keypair.ss58_address,
+            &#39;value&#39;: value,
+            &#39;storage_deposit_limit&#39;: None
+        })
+        if &#39;Error&#39; in call_result[&#39;result&#39;]:
+            raise ContractReadFailedException(call_result.value[&#39;result&#39;][&#39;Error&#39;])
 
-    if &#39;result&#39; in response:
+        if &#39;Ok&#39; in call_result[&#39;result&#39;]:
 
-        self.substrate.init_runtime()
+            try:
+                return_type_string = self.metadata.get_return_type_string_for_message(method)
+                result_scale_obj = self.substrate.create_scale_object(return_type_string)
+                result_scale_obj.decode(ScaleBytes(call_result[&#39;result&#39;][1][&#39;data&#39;].value_object))
+                call_result.value_object[&#39;result&#39;].value_object[1].value_object[&#39;data&#39;] = result_scale_obj
+                call_result.value[&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;] = result_scale_obj.value
 
-        return_type_string = self.metadata.get_return_type_string_for_message(method)
+            except NotImplementedError:
+                pass
 
-        # Wrap the result in a ContractExecResult Enum because the exec will result in the same
-        ContractExecResult = self.substrate.runtime_config.get_decoder_class(&#39;ContractExecResult&#39;)
+        return call_result
 
-        contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
+    else:
+        # Deprecated RPC call
+        response = self.substrate.rpc_request(method=&#39;contracts_call&#39;, params=[{
+            &#39;dest&#39;: self.contract_address,
+            &#39;gasLimit&#39;: gas_limit,
+            &#39;inputData&#39;: input_data.to_hex(),
+            &#39;origin&#39;: keypair.ss58_address,
+            &#39;value&#39;: value
+        }])
 
-        if &#39;result&#39; in response[&#39;result&#39;]:
+        if &#39;result&#39; in response:
 
-            contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;gasConsumed&#39;]
-            contract_exec_result.gas_required = response[&#39;result&#39;][&#39;gasRequired&#39;]
+            self.substrate.init_runtime()
 
-            if &#39;Ok&#39; in response[&#39;result&#39;][&#39;result&#39;]:
+            return_type_string = self.metadata.get_return_type_string_for_message(method)
 
-                contract_exec_result.flags = response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;flags&#39;]
+            # Wrap the result in a ContractExecResult Enum because the exec will result in the same
+            ContractExecResult = self.substrate.runtime_config.get_decoder_class(&#39;ContractExecResult&#39;)
+
+            contract_exec_result = ContractExecResult(contract_result_scale_type=return_type_string)
+
+            if &#39;result&#39; in response[&#39;result&#39;]:
+
+                contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;gasConsumed&#39;]
+                contract_exec_result.gas_required = response[&#39;result&#39;][&#39;gasRequired&#39;]
+
+                if &#39;Ok&#39; in response[&#39;result&#39;][&#39;result&#39;]:
+
+                    contract_exec_result.flags = response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;flags&#39;]
+
+                    try:
+
+                        result_scale_obj = self.substrate.decode_scale(
+                            type_string=return_type_string,
+                            scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;]),
+                            return_scale_obj=True
+                        )
+
+                        response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;] = result_scale_obj.value
+                        contract_exec_result.contract_result_data = result_scale_obj
+                        contract_exec_result.value_object = result_scale_obj
+
+                    except NotImplementedError:
+                        pass
+
+            # Backwards compatibility
+            elif &#39;success&#39; in response[&#39;result&#39;]:
+
+                contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;success&#39;][&#39;gas_consumed&#39;]
+                contract_exec_result.flags = response[&#39;result&#39;][&#39;success&#39;][&#39;flags&#39;]
 
                 try:
 
                     result_scale_obj = self.substrate.decode_scale(
                         type_string=return_type_string,
-                        scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;]),
+                        scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;]),
                         return_scale_obj=True
                     )
 
-                    response[&#39;result&#39;][&#39;result&#39;][&#39;Ok&#39;][&#39;data&#39;] = result_scale_obj.value
+                    response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;] = result_scale_obj.value
                     contract_exec_result.contract_result_data = result_scale_obj
-                    contract_exec_result.value_object = result_scale_obj
 
                 except NotImplementedError:
                     pass
 
-        # Backwards compatibility
-        elif &#39;success&#39; in response[&#39;result&#39;]:
+            contract_exec_result.value = response[&#39;result&#39;]
 
-            contract_exec_result.gas_consumed = response[&#39;result&#39;][&#39;success&#39;][&#39;gas_consumed&#39;]
-            contract_exec_result.flags = response[&#39;result&#39;][&#39;success&#39;][&#39;flags&#39;]
+            return contract_exec_result
 
-            try:
-
-                result_scale_obj = self.substrate.decode_scale(
-                    type_string=return_type_string,
-                    scale_bytes=ScaleBytes(response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;]),
-                    return_scale_obj=True
-                )
-
-                response[&#39;result&#39;][&#39;success&#39;][&#39;data&#39;] = result_scale_obj.value
-                contract_exec_result.contract_result_data = result_scale_obj
-
-            except NotImplementedError:
-                pass
-
-        contract_exec_result.value = response[&#39;result&#39;]
-
-        return contract_exec_result
-
-    raise ContractReadFailedException(response)</code></pre>
+        raise ContractReadFailedException(response)</code></pre>
 </details>
 </dd>
 </dl>
