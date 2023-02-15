@@ -1543,6 +1543,28 @@ class SubstrateInterface:
         else:
             raise ValueError("No value to decode")
 
+    def retrieve_pending_extrinsics(self) -> list:
+        """
+        Retrieves and decodes pending extrinsics from the node's transaction pool
+
+        Returns
+        -------
+        list of extrinsics
+        """
+
+        self.init_runtime()
+
+        result_data = self.rpc_request("author_pendingExtrinsics", [])
+
+        extrinsics = []
+
+        for extrinsic_data in result_data['result']:
+            extrinsic = self.runtime_config.create_scale_object('Extrinsic', metadata=self.metadata)
+            extrinsic.decode(ScaleBytes(extrinsic_data))
+            extrinsics.append(extrinsic)
+
+        return extrinsics
+
     def runtime_call(self, api: str, method: str, params: Union[list, dict] = None) -> ScaleType:
         """
         Calls a runtime API method
@@ -1934,7 +1956,7 @@ class SubstrateInterface:
 
         # Check if ExtrinsicSignature is MultiSignature, otherwise omit signature_version
         signature_cls = self.runtime_config.get_decoder_class("ExtrinsicSignature")
-        if type(signature_cls.type_mapping) is list:
+        if signature_cls is self.runtime_config.get_decoder_class('sp_runtime::MultiSignature'):
             value['signature_version'] = signature_version
 
         extrinsic.encode(value)

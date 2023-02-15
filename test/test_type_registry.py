@@ -19,7 +19,7 @@ import unittest
 from scalecodec.base import ScaleBytes, RuntimeConfigurationObject
 from scalecodec.type_registry import load_type_registry_file, load_type_registry_preset
 
-from substrateinterface import SubstrateInterface
+from substrateinterface import SubstrateInterface, Keypair, KeypairType
 from test import settings
 
 
@@ -183,6 +183,49 @@ class AutodiscoverV14RuntimeTestCase(unittest.TestCase):
     def test_type_reg_preset_applied(self):
         self.substrate.init_runtime()
         self.assertIsNotNone(self.substrate.runtime_config.get_decoder_class('SpecificTestType'))
+
+
+class AutodetectAddressTypeTestCase(unittest.TestCase):
+
+    def test_default_substrate_address(self):
+        substrate = SubstrateInterface(
+            url=settings.POLKADOT_NODE_URL, auto_discover=False
+        )
+
+        keypair_alice = Keypair.create_from_uri('//Alice', ss58_format=substrate.ss58_format)
+
+        call = substrate.compose_call(
+            call_module='Balances',
+            call_function='transfer',
+            call_params={
+                'dest': keypair_alice.ss58_address,
+                'value': 2000
+            }
+        )
+
+        extrinsic = substrate.create_signed_extrinsic(call, keypair_alice)
+
+        self.assertEqual(extrinsic.value['address'], f'0x{keypair_alice.public_key.hex()}')
+
+    def test_eth_address(self):
+        substrate = SubstrateInterface(
+            url=settings.MOONBEAM_NODE_URL, auto_discover=False
+        )
+
+        keypair_alice = Keypair.create_from_mnemonic(Keypair.generate_mnemonic(), crypto_type=KeypairType.ECDSA)
+
+        call = substrate.compose_call(
+            call_module='Balances',
+            call_function='transfer',
+            call_params={
+                'dest': keypair_alice.ss58_address,
+                'value': 2000
+            }
+        )
+
+        extrinsic = substrate.create_signed_extrinsic(call, keypair_alice)
+
+        self.assertEqual(extrinsic.value['address'], f'0x{keypair_alice.public_key.hex()}')
 
 
 if __name__ == '__main__':
