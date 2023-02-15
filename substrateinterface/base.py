@@ -1543,6 +1543,77 @@ class SubstrateInterface:
         else:
             raise ValueError("No value to decode")
 
+    def rpc_call(self, module: str, method: str, params: list = None) -> ScaleType:
+        """
+        Calls a RPC method and SCALE decode the result
+
+        Parameters
+        ----------
+        module: Name of the module e.g. 'author'
+        method: Name of the method e.g. 'pendingExtrinsics'
+        params: List of parameters needed for the RPC call
+
+        Returns
+        -------
+        ScaleType
+        """
+
+        block_hash = self.get_chain_head()
+
+        self.init_runtime(block_hash=block_hash)
+
+        self.debug_message(f"Executing RPC Call {module}.{method}")
+
+        if params is None:
+            params = []
+
+        try:
+            rpc_call_def = self.runtime_config.type_registry["rpc_calls"][module][method]
+        except KeyError:
+            raise ValueError(f"RPC Call '{module}.{method}' not found in registry")
+
+        if type(params) is list and len(params) != len(rpc_call_def['params']):
+            raise ValueError(
+                f"Number of parameter provided ({len(params)}) does not "
+                f"match definition {len(rpc_call_def['params'])}"
+            )
+
+        # # Add runtime API types to registry
+        # self.runtime_config.update_type_registry_types(runtime_api_types)
+
+        # Encode params
+        # param_data = ScaleBytes(bytes())
+        # for idx, param in enumerate(rpc_call_def['params']):
+        #     scale_obj = self.runtime_config.create_scale_object(param['type'])
+        #     if type(params) is list:
+        #         param_data += scale_obj.encode(params[idx])
+        #     else:
+        #         if param['name'] not in params:
+        #             raise ValueError(f"Runtime Call param '{param['name']}' is missing")
+        #
+        #         param_data += scale_obj.encode(params[param['name']])
+
+        # RPC request
+        result_data = self.rpc_request(f'{module}_{method}', params)
+
+        if type(result_data['result']) is list:
+            result_obj = self.runtime_config.create_scale_object(rpc_call_def['type'], metadata=self.metadata)
+
+            if result_obj.sub_type == 'Extrinsic':
+                for idx, extrinsic_data in enumerate(result_data['result']):
+                    extrinsic = self.runtime_config.create_scale_object('Extrinsic', metadata=self.metadata)
+                    extrinsic.decode(ScaleBytes(extrinsic_data))
+                    result_data['result'][idx] = extrinsic
+
+            result_obj.encode(result_data['result'])
+        else:
+            # Decode result
+            result_obj = self.runtime_config.create_scale_object(rpc_call_def['type'], metadata=self.metadata)
+
+        result_obj.decode(ScaleBytes(result_data['result']))
+
+        return result_obj
+
     def runtime_call(self, api: str, method: str, params: Union[list, dict] = None) -> ScaleType:
         """
         Calls a runtime API method
