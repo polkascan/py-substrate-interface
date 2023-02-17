@@ -1,6 +1,6 @@
 # Python Substrate Interface Library
 #
-# Copyright 2018-2022 Stichting Polkascan (Polkascan Foundation).
+# Copyright 2018-2023 Stichting Polkascan (Polkascan Foundation).
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
