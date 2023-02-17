@@ -11,15 +11,15 @@ This library specializes in interfacing with a [Substrate](https://substrate.io/
 SCALE encoding/decoding and providing additional convenience methods to deal with the features and metadata of 
 the Substrate runtime.
 
-## Installation
-```bash
-pip install substrate-interface
-```
-
 ## Documentation
 
 * [Library documentation](https://polkascan.github.io/py-substrate-interface/)
 * [Metadata documentation for Polkadot and Kusama ecosystem runtimes](https://polkascan.github.io/py-substrate-metadata-docs/)
+
+## Installation
+```bash
+pip install substrate-interface
+```
 
 ## Initialization
 
