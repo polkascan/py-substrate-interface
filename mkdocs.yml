@@ -1,15 +1,75 @@
 site_name: Py-Substrate-Interface Docs
+repo_url: https://github.com/polkascan/py-substrate-interface
+edit_uri: edit/main/docs/
+site_description: Python library to interface with Substrate
 
 theme:
   name: "material"
+  logo: https://avatars.githubusercontent.com/u/43450475
+  features:
+    # - announce.dismiss
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    # - content.tabs.link
+    - content.tooltips
+    # - header.autohide
+    - navigation.expand
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.prune
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+    - toc.integrate
 
 plugins:
-  - mkdocstrings
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+#            docstring_section_style: list
+            members_order: source
+            show_root_heading: false
+            show_source: false
+            show_signature_annotations: true
+            docstring_style: numpy
+            heading_level: 2
+
+  - autorefs
   - search
 
+extra:
+  social:
+  - icon: fontawesome/brands/github
+    link: https://github.com/polkascan/py-substrate-interface
+  - icon: fontawesome/brands/twitter
+    link: https://twitter.com/polkascan
+
 nav:
-  - Calculation Docs: index.md
-  - Tutorials: tutorials.md
-  - How-To Guides: how-to-guides.md
+  - Overview: index.md
+  - Getting started: getting-started.md
+  - Usage: usage.md
   - Function Reference: reference.md
-  - Explanation: explanation.md
+  - Examples: examples.md
+  - Metadata docs: https://polkascan.github.io/py-substrate-metadata-docs/
+
+
+markdown_extensions:
+  - toc:
+      permalink: true
+      toc_depth: 4
+  - pymdownx.highlight:
+      linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+

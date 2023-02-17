@@ -15,10 +15,11 @@
 # limitations under the License.
 
 from substrateinterface import SubstrateInterface, Keypair
-from substrateinterface.exceptions import SubstrateRequestException
+
 
 # import logging
 # logging.basicConfig(level=logging.DEBUG)
+
 
 substrate = SubstrateInterface(
     url="ws://127.0.0.1:9944"
@@ -35,28 +36,7 @@ call = substrate.compose_call(
     }
 )
 
-extrinsic = substrate.create_signed_extrinsic(
-    call=call,
-    keypair=keypair,
-    era={'period': 64}
-)
+# Get payment info
+payment_info = substrate.get_payment_info(call=call, keypair=keypair)
 
-try:
-    receipt = substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
-
-    print('Extrinsic "{}" included in block "{}"'.format(
-        receipt.extrinsic_hash, receipt.block_hash
-    ))
-
-    if receipt.is_success:
-
-        print('✅ Success, triggered events:')
-        for event in receipt.triggered_events:
-            print(f'* {event.value}')
-
-    else:
-        print('⚠️ Extrinsic Failed: ', receipt.error_message)
-
-
-except SubstrateRequestException as e:
-    print("Failed to send: {}".format(e))
+print("Payment info: ", payment_info)

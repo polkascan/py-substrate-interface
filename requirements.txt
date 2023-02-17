@@ -18,5 +18,6 @@ py-bip39-bindings>=0.1.9,<1
 
 mkdocs
 mkdocs-material
+mkdocs-autorefs
 mkdocstrings
 mkdocstrings[python]
