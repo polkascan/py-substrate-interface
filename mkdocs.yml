@@ -1,6 +1,6 @@
 site_name: Py-Substrate-Interface Docs
 repo_url: https://github.com/polkascan/py-substrate-interface
-edit_uri: edit/main/docs/
+edit_uri: edit/master/docs/
 site_description: Python library to interface with Substrate
 
 theme:
