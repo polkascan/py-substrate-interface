@@ -110,6 +110,14 @@ class QueryTestCase(unittest.TestCase):
         with self.assertRaises(StorageFunctionNotFound):
             self.kusama_substrate.query("Substrate", "Unknown")
 
+    def test_well_known_pallet_version(self):
+
+        sf = self.kusama_substrate.get_metadata_storage_function("System", "PalletVersion")
+        self.assertEqual(sf.value['name'], ':__STORAGE_VERSION__:')
+
+        result = self.kusama_substrate.query("System", "PalletVersion")
+        self.assertGreaterEqual(result.value, 0)
+
 
 if __name__ == '__main__':
     unittest.main()
