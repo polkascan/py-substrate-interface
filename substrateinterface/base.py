@@ -1438,7 +1438,7 @@ class SubstrateInterface:
 
             storage_hash = self.generate_storage_hash(
                 storage_module=metadata_module.value['storage']['prefix'],
-                storage_function=storage_function,
+                storage_function=storage_item.value['name'],
                 params=params,
                 hashers=hashers
             )
