@@ -11,24 +11,24 @@
       
       
       
-        <link rel="prev" href="../getting-started/">
+        <link rel="prev" href="../keypair-creation-and-signing/">
       
       
-        <link rel="next" href="../reference/">
+        <link rel="next" href="../ink-contract-interfacing/">
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.12">
     
     
       
-        <title>Usage - Py-Substrate-Interface Docs</title>
+        <title>Creating extrinsics - Python Substrate Interface Docs</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.0d440cfe.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.0d440cfe.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.2505c338.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.2505c338.min.css">
       
       
 
@@ -44,9 +44,9 @@
       
     
     
-      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -71,7 +71,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#query-storage" class="md-skip">
+        <a href="#creating-extrinsics" class="md-skip">
           Skip to content
         </a>
       
@@ -87,7 +87,7 @@
 
 <header class="md-header md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="Py-Substrate-Interface Docs" class="md-header__button md-logo" aria-label="Py-Substrate-Interface Docs" data-md-component="logo">
+    <a href="../.." title="Python Substrate Interface Docs" class="md-header__button md-logo" aria-label="Python Substrate Interface Docs" data-md-component="logo">
       
   <img src="https://avatars.githubusercontent.com/u/43450475" alt="logo">
 
@@ -99,13 +99,13 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            Py-Substrate-Interface Docs
+            Python Substrate Interface Docs
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Usage
+              Creating extrinsics
             
           </span>
         </div>
@@ -180,7 +180,7 @@
 
 
   <li class="md-tabs__item">
-    <a href=".." class="md-tabs__link">
+    <a href="../.." class="md-tabs__link">
       Overview
     </a>
   </li>
@@ -191,11 +191,15 @@
   
 
 
-  <li class="md-tabs__item">
-    <a href="../getting-started/" class="md-tabs__link">
-      Getting started
-    </a>
-  </li>
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../getting-started/installation/" class="md-tabs__link">
+        Getting started
+      </a>
+    </li>
+  
 
       
         
@@ -205,11 +209,31 @@
   
 
 
-  <li class="md-tabs__item">
-    <a href="./" class="md-tabs__link md-tabs__link--active">
-      Usage
-    </a>
-  </li>
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../query-storage/" class="md-tabs__link md-tabs__link--active">
+        Usage
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../reference/base/" class="md-tabs__link">
+        Function Reference
+      </a>
+    </li>
+  
 
       
         
@@ -218,19 +242,7 @@
 
 
   <li class="md-tabs__item">
-    <a href="../reference/" class="md-tabs__link">
-      Function Reference
-    </a>
-  </li>
-
-      
-        
-  
-  
-
-
-  <li class="md-tabs__item">
-    <a href="../examples/" class="md-tabs__link">
+    <a href="../../examples/" class="md-tabs__link">
       Examples
     </a>
   </li>
@@ -273,16 +285,14 @@
   
 
 
-  
-
-<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="Py-Substrate-Interface Docs" class="md-nav__button md-logo" aria-label="Py-Substrate-Interface Docs" data-md-component="logo">
+    <a href="../.." title="Python Substrate Interface Docs" class="md-nav__button md-logo" aria-label="Python Substrate Interface Docs" data-md-component="logo">
       
   <img src="https://avatars.githubusercontent.com/u/43450475" alt="logo">
 
     </a>
-    Py-Substrate-Interface Docs
+    Python Substrate Interface Docs
   </label>
   
     <div class="md-nav__source">
@@ -307,7 +317,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         Overview
       </a>
     </li>
@@ -321,10 +331,66 @@
   
   
   
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+        
+      
+      <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          Getting started
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Getting started
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
     <li class="md-nav__item">
-      <a href="../getting-started/" class="md-nav__link">
-        Getting started
+      <a href="../../getting-started/installation/" class="md-nav__link">
+        Installation
       </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/common-concepts/" class="md-nav__link">
+        Common concepts
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
     </li>
   
 
@@ -338,19 +404,124 @@
     
   
   
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          Usage
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Usage
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../query-storage/" class="md-nav__link">
+        Query storage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../using-scaletype-objects/" class="md-nav__link">
+        Using ScaleType objects
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../call-runtime-apis/" class="md-nav__link">
+        Call runtime APIs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../keypair-creation-and-signing/" class="md-nav__link">
+        Keypair creation and signing
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
     <li class="md-nav__item md-nav__item--active">
       
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          Usage
+          Creating extrinsics
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
-        Usage
+        Creating extrinsics
       </a>
       
         
@@ -358,6 +529,8 @@
 <nav class="md-nav md-nav--secondary" aria-label="Table of contents">
   
   
+  
+    
   
   
     <label class="md-nav__title" for="__toc">
@@ -367,281 +540,36 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#query-storage" class="md-nav__link">
-    Query storage
-  </a>
-  
-    <nav class="md-nav" aria-label="Query storage">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
-    Example
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#state-at-a-specific-block-hash" class="md-nav__link">
-    State at a specific block hash
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#type-decomposition-information" class="md-nav__link">
-    Type decomposition information
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#query-a-mapped-storage-function" class="md-nav__link">
-    Query a mapped storage function
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#using-scaletype-objects" class="md-nav__link">
-    Using ScaleType objects
-  </a>
-  
-    <nav class="md-nav" aria-label="Using ScaleType objects">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#shorthand-lookup-of-nested-types" class="md-nav__link">
-    Shorthand lookup of nested types
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#serializable" class="md-nav__link">
-    Serializable
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#comparing-values-with-scaletype-objects" class="md-nav__link">
-    Comparing values with ScaleType objects
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#call-runtime-apis" class="md-nav__link">
-    Call runtime APIs
-  </a>
-  
-    <nav class="md-nav" aria-label="Call runtime APIs">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#example_1" class="md-nav__link">
-    Example
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#list-of-available-runtime-apis-and-methods" class="md-nav__link">
-    List of available runtime APIs and methods
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#get-param-type-decomposition" class="md-nav__link">
-    Get param type decomposition
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#keypair-creation-and-signing" class="md-nav__link">
-    Keypair creation and signing
-  </a>
-  
-    <nav class="md-nav" aria-label="Keypair creation and signing">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#creating-keypairs-with-soft-and-hard-key-derivation-paths" class="md-nav__link">
-    Creating keypairs with soft and hard key derivation paths
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#creating-ecdsa-keypairs-with-bip44-derivation-paths" class="md-nav__link">
-    Creating ECDSA keypairs with BIP44 derivation paths
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#create-keypair-from-polkadotjs-json-format" class="md-nav__link">
-    Create Keypair from PolkadotJS JSON format
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#verify-generated-signature-with-public-address" class="md-nav__link">
-    Verify generated signature with public address
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#offline-signing-of-extrinsics" class="md-nav__link">
-    Offline signing of extrinsics
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#creating-extrinsics" class="md-nav__link">
-    Creating extrinsics
-  </a>
-  
-    <nav class="md-nav" aria-label="Creating extrinsics">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#extrinsic-receipts" class="md-nav__link">
     Extrinsic Receipts
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#multisig-extrinsics" class="md-nav__link">
     Multisig extrinsics
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#type-decomposition-of-call-params" class="md-nav__link">
     Type decomposition of call params
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#estimate-of-network-fees" class="md-nav__link">
     Estimate of network fees
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
+      
+        <li class="md-nav__item">
   <a href="#mortal-extrinsics" class="md-nav__link">
     Mortal extrinsics
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#ink-contract-interfacing" class="md-nav__link">
-    ink! contract interfacing
-  </a>
-  
-    <nav class="md-nav" aria-label="ink! contract interfacing">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#deploy-a-contract" class="md-nav__link">
-    Deploy a contract
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#work-with-an-existing-instance" class="md-nav__link">
-    Work with an existing instance:
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#read-data-from-a-contract" class="md-nav__link">
-    Read data from a contract:
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#execute-a-contract-call" class="md-nav__link">
-    Execute a contract call
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#subscriptions" class="md-nav__link">
-    Subscriptions
-  </a>
-  
-    <nav class="md-nav" aria-label="Subscriptions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#storage-subscriptions" class="md-nav__link">
-    Storage subscriptions
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#subscribe-to-new-block-headers" class="md-nav__link">
-    Subscribe to new block headers
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cleanup-and-context-manager" class="md-nav__link">
-    Cleanup and context manager
   </a>
   
 </li>
@@ -653,6 +581,55 @@
     </li>
   
 
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ink-contract-interfacing/" class="md-nav__link">
+        ink! contract interfacing
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../subscriptions/" class="md-nav__link">
+        Subscriptions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cleanup-and-context-manager/" class="md-nav__link">
+        Cleanup and context manager
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
     
       
       
@@ -661,10 +638,66 @@
   
   
   
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+        
+      
+      <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          Function Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Function Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
     <li class="md-nav__item">
-      <a href="../reference/" class="md-nav__link">
-        Function Reference
+      <a href="../../reference/base/" class="md-nav__link">
+        Base
       </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/contracts/" class="md-nav__link">
+        Contracts
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
     </li>
   
 
@@ -677,7 +710,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/" class="md-nav__link">
+      <a href="../../examples/" class="md-nav__link">
         Examples
       </a>
     </li>
@@ -706,6 +739,67 @@
               </div>
             
             
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#extrinsic-receipts" class="md-nav__link">
+    Extrinsic Receipts
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multisig-extrinsics" class="md-nav__link">
+    Multisig extrinsics
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#type-decomposition-of-call-params" class="md-nav__link">
+    Type decomposition of call params
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#estimate-of-network-fees" class="md-nav__link">
+    Estimate of network fees
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mortal-extrinsics" class="md-nav__link">
+    Mortal extrinsics
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
           
           
             <div class="md-content" data-md-component="content">
@@ -714,7 +808,7 @@
                   
 
   
-    <a href="https://github.com/polkascan/py-substrate-interface/edit/master/docs/usage.md" title="Edit this page" class="md-content__button md-icon">
+    <a href="https://github.com/polkascan/py-substrate-interface/edit/master/docs/usage/creating-extrinsics.md" title="Edit this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4v-2m10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1 2.1 2.1Z"/></svg>
     </a>
@@ -723,7 +817,7 @@
     
       
     
-    <a href="https://github.com/polkascan/py-substrate-interface/raw/master/docs/usage.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/polkascan/py-substrate-interface/raw/master/docs/usage/creating-extrinsics.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.15 8.15 0 0 1-1.23-2Z"/></svg>
     </a>
@@ -731,336 +825,7 @@
 
 
 
-  <h1>Usage</h1>
-
-<h2 id="query-storage">Query storage<a class="headerlink" href="#query-storage" title="Permanent link">&para;</a></h2>
-<p>In Substrate, any pallet can introduce new storage items that will become part of the blockchain state. These storage 
-items can be simple single values, or more complex storage maps.</p>
-<p>The runtime exposes several storage functions to query those storage items and are provided in the metadata 
-(see <code>substrate.get_metadata_storage_function()</code>).</p>
-<h3 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h3>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s1">&#39;System&#39;</span><span class="p">,</span> <span class="s1">&#39;Account&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;F4xQKRUagnSGjFqafyhajLs94e7Vvzvr8ebwYJceKpr8R7T&#39;</span><span class="p">])</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s1">&#39;nonce&#39;</span><span class="p">])</span> <span class="c1">#  7695</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;free&#39;</span><span class="p">])</span> <span class="c1"># 635278638077956496</span>
-</code></pre></div></td></tr></table></div>
-<h3 id="state-at-a-specific-block-hash">State at a specific block hash<a class="headerlink" href="#state-at-a-specific-block-hash" title="Permanent link">&para;</a></h3>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span>
-<span class="normal">5</span>
-<span class="normal">6</span>
-<span class="normal">7</span>
-<span class="normal">8</span>
-<span class="normal">9</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">account_info</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
-    <span class="n">module</span><span class="o">=</span><span class="s1">&#39;System&#39;</span><span class="p">,</span>
-    <span class="n">storage_function</span><span class="o">=</span><span class="s1">&#39;Account&#39;</span><span class="p">,</span>
-    <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;F4xQKRUagnSGjFqafyhajLs94e7Vvzvr8ebwYJceKpr8R7T&#39;</span><span class="p">],</span>
-    <span class="n">block_hash</span><span class="o">=</span><span class="s1">&#39;0x176e064454388fd78941a0bace38db424e71db9d5d5ed0272ead7003a02234fa&#39;</span>
-<span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">account_info</span><span class="p">[</span><span class="s1">&#39;nonce&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="c1">#  7673</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">account_info</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;free&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="c1"># 637747267365404068</span>
-</code></pre></div></td></tr></table></div>
-<h3 id="type-decomposition-information">Type decomposition information<a class="headerlink" href="#type-decomposition-information" title="Permanent link">&para;</a></h3>
-<p>Some storage functions need parameters and some of those parameter types can be quite complex to compose.</p>
-<p>To retrieve more information how to format those storage function parameters, the helper function <code>get_param_info()</code> is available:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
-<span class="normal"> 2</span>
-<span class="normal"> 3</span>
-<span class="normal"> 4</span>
-<span class="normal"> 5</span>
-<span class="normal"> 6</span>
-<span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">storage_function</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">get_metadata_storage_function</span><span class="p">(</span><span class="s2">&quot;Tokens&quot;</span><span class="p">,</span> <span class="s2">&quot;TotalIssuance&quot;</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">storage_function</span><span class="o">.</span><span class="n">get_param_info</span><span class="p">())</span>
-<span class="c1"># [{</span>
-<span class="c1">#   &#39;Token&#39;: (&#39;ACA&#39;, &#39;AUSD&#39;, &#39;DOT&#39;, &#39;LDOT&#39;, &#39;RENBTC&#39;, &#39;CASH&#39;, &#39;KAR&#39;, &#39;KUSD&#39;, &#39;KSM&#39;, &#39;LKSM&#39;, &#39;TAI&#39;, &#39;BNC&#39;, &#39;VSKSM&#39;, &#39;PHA&#39;, &#39;KINT&#39;, &#39;KBTC&#39;), </span>
-<span class="c1">#   &#39;DexShare&#39;: ({&#39;Token&#39;: (&#39;ACA&#39;, &#39;AUSD&#39;, &#39;DOT&#39;, &#39;LDOT&#39;, &#39;RENBTC&#39;, &#39;CASH&#39;, &#39;KAR&#39;, &#39;KUSD&#39;, &#39;KSM&#39;, &#39;LKSM&#39;, &#39;TAI&#39;, &#39;BNC&#39;, &#39;VSKSM&#39;, &#39;PHA&#39;, &#39;KINT&#39;, &#39;KBTC&#39;), &#39;Erc20&#39;: &#39;[u8; 20]&#39;, &#39;LiquidCrowdloan&#39;: &#39;u32&#39;, &#39;ForeignAsset&#39;: &#39;u16&#39;}, {&#39;Token&#39;: (&#39;ACA&#39;, &#39;AUSD&#39;, &#39;DOT&#39;, &#39;LDOT&#39;, &#39;RENBTC&#39;, &#39;CASH&#39;, &#39;KAR&#39;, &#39;KUSD&#39;, &#39;KSM&#39;, &#39;LKSM&#39;, &#39;TAI&#39;, &#39;BNC&#39;, &#39;VSKSM&#39;, &#39;PHA&#39;, &#39;KINT&#39;, &#39;KBTC&#39;), &#39;Erc20&#39;: &#39;[u8; 20]&#39;, &#39;LiquidCrowdloan&#39;: &#39;u32&#39;, &#39;ForeignAsset&#39;: &#39;u16&#39;}), </span>
-<span class="c1">#   &#39;Erc20&#39;: &#39;[u8; 20]&#39;, </span>
-<span class="c1">#   &#39;StableAssetPoolToken&#39;: &#39;u32&#39;, </span>
-<span class="c1">#   &#39;LiquidCrowdloan&#39;: &#39;u32&#39;, </span>
-<span class="c1">#   &#39;ForeignAsset&#39;: &#39;u16&#39;</span>
-<span class="c1"># }]</span>
-</code></pre></div></td></tr></table></div>
-<h3 id="query-a-mapped-storage-function">Query a mapped storage function<a class="headerlink" href="#query-a-mapped-storage-function" title="Permanent link">&para;</a></h3>
-<p>Mapped storage functions can be iterated over all key/value pairs, for these type of storage functions <code>query_map()</code> 
-can be used.</p>
-<p>The result is a <code>QueryMapResult</code> object, which is an iterator:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span>
-<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Retrieve the first 199 System.Account entries</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">query_map</span><span class="p">(</span><span class="s1">&#39;System&#39;</span><span class="p">,</span> <span class="s1">&#39;Account&#39;</span><span class="p">,</span> <span class="n">max_results</span><span class="o">=</span><span class="mi">199</span><span class="p">)</span>
-
-<span class="k">for</span> <span class="n">account</span><span class="p">,</span> <span class="n">account_info</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Free balance of account &#39;</span><span class="si">{</span><span class="n">account</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">account_info</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;free&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-<p>These results are transparently retrieved in batches capped by the <code>page_size</code> kwarg, currently the 
-maximum <code>page_size</code> restricted by the RPC node is 1000    </p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span>
-<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Retrieve all System.Account entries in batches of 200 (automatically appended by `QueryMapResult` iterator)</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">query_map</span><span class="p">(</span><span class="s1">&#39;System&#39;</span><span class="p">,</span> <span class="s1">&#39;Account&#39;</span><span class="p">,</span> <span class="n">page_size</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">max_results</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
-
-<span class="k">for</span> <span class="n">account</span><span class="p">,</span> <span class="n">account_info</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Free balance of account &#39;</span><span class="si">{</span><span class="n">account</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">account_info</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;free&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-<p>Querying a <code>DoubleMap</code> storage function:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span>
-<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">era_stakers</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">query_map</span><span class="p">(</span>
-    <span class="n">module</span><span class="o">=</span><span class="s1">&#39;Staking&#39;</span><span class="p">,</span>
-    <span class="n">storage_function</span><span class="o">=</span><span class="s1">&#39;ErasStakers&#39;</span><span class="p">,</span>
-    <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="mi">2100</span><span class="p">]</span>
-<span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-<h2 id="using-scaletype-objects">Using ScaleType objects<a class="headerlink" href="#using-scaletype-objects" title="Permanent link">&para;</a></h2>
-<p>The result of the previous storage query example is a <code>ScaleType</code> object, more specific a <code>Struct</code>. </p>
-<p>The nested object structure of this <code>account_info</code> object is as follows:
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code>account_info = &lt;AccountInfo(value={&#39;nonce&#39;: &lt;U32(value=5)&gt;, &#39;consumers&#39;: &lt;U32(value=0)&gt;, &#39;providers&#39;: &lt;U32(value=1)&gt;, &#39;sufficients&#39;: &lt;U32(value=0)&gt;, &#39;data&#39;: &lt;AccountData(value={&#39;free&#39;: 1152921503981846391, &#39;reserved&#39;: 0, &#39;misc_frozen&#39;: 0, &#39;fee_frozen&#39;: 0})&gt;})&gt;
-</code></pre></div></td></tr></table></div></p>
-<p>Every <code>ScaleType</code> have the following characteristics:</p>
-<h3 id="shorthand-lookup-of-nested-types">Shorthand lookup of nested types<a class="headerlink" href="#shorthand-lookup-of-nested-types" title="Permanent link">&para;</a></h3>
-<p>Inside the <code>AccountInfo</code> struct there are several <code>U32</code> objects that represents for example a nonce or the amount of provider, 
-also another struct object <code>AccountData</code> which contains more nested types. </p>
-<p>To access these nested structures you can access those formally using:</p>
-<p><code>account_info.value_object['data'].value_object['free']</code></p>
-<p>As a convenient shorthand you can also use:</p>
-<p><code>account_info['data']['free']</code></p>
-<p><code>ScaleType</code> objects can also be automatically converted to an iterable, so if the object
-is for example the <code>others</code> in the result Struct of <code>Staking.eraStakers</code> can be iterated via:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">for</span> <span class="n">other_info</span> <span class="ow">in</span> <span class="n">era_stakers</span><span class="p">[</span><span class="s1">&#39;others&#39;</span><span class="p">]:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">other_info</span><span class="p">[</span><span class="s1">&#39;who&#39;</span><span class="p">],</span> <span class="n">other_info</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">])</span>
-</code></pre></div></td></tr></table></div>
-<h3 id="serializable">Serializable<a class="headerlink" href="#serializable" title="Permanent link">&para;</a></h3>
-<p>Each <code>ScaleType</code> holds a complete serialized version of itself in the <code>account_info.serialize()</code> property, so it can easily store or used to create JSON strings.</p>
-<p>So the whole result of <code>account_info.serialize()</code> will be a <code>dict</code> containing the following:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
-<span class="normal"> 2</span>
-<span class="normal"> 3</span>
-<span class="normal"> 4</span>
-<span class="normal"> 5</span>
-<span class="normal"> 6</span>
-<span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span>
-<span class="normal">12</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;nonce&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;consumers&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;providers&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;sufficients&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;free&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1152921503981846391</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;reserved&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;misc_frozen&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;fee_frozen&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div></td></tr></table></div>
-<h3 id="comparing-values-with-scaletype-objects">Comparing values with <code>ScaleType</code> objects<a class="headerlink" href="#comparing-values-with-scaletype-objects" title="Permanent link">&para;</a></h3>
-<p>It is possible to compare ScaleType objects directly to Python primitives, internally the serialized <code>value</code> attribute
-is compared:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">metadata_obj</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;extrinsic&#39;</span><span class="p">][</span><span class="s1">&#39;version&#39;</span><span class="p">]</span> <span class="c1"># &#39;&lt;U8(value=4)&gt;&#39;</span>
-<span class="n">metadata_obj</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;extrinsic&#39;</span><span class="p">][</span><span class="s1">&#39;version&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">4</span> <span class="c1"># True</span>
-</code></pre></div></td></tr></table></div>
-<h2 id="call-runtime-apis">Call runtime APIs<a class="headerlink" href="#call-runtime-apis" title="Permanent link">&para;</a></h2>
-<p>Each Substrate node contains a runtime. The runtime contains the business logic of the chain. It defines what 
-transactions are valid and invalid and determines how the chain's state changes in response to transactions. </p>
-<p>A Runtime API facilitates this kind of communication between the outer node and the runtime. 
-<a href="https://substrate.recipes/runtime-api.html">More information about Runtime APIs</a></p>
-<h3 id="example_1">Example<a class="headerlink" href="#example_1" title="Permanent link">&para;</a></h3>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">runtime_call</span><span class="p">(</span><span class="s2">&quot;AccountNonceApi&quot;</span><span class="p">,</span> <span class="s2">&quot;account_nonce&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY&quot;</span><span class="p">])</span>
-<span class="c1"># &lt;U32(value=2)&gt;</span>
-</code></pre></div></td></tr></table></div>
-<h3 id="list-of-available-runtime-apis-and-methods">List of available runtime APIs and methods<a class="headerlink" href="#list-of-available-runtime-apis-and-methods" title="Permanent link">&para;</a></h3>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span>
-<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">runtime_calls</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">get_metadata_runtime_call_functions</span><span class="p">()</span>
-<span class="c1">#[</span>
-<span class="c1">#    &lt;RuntimeCallDefinition(value={&#39;description&#39;: &#39;The API to query account nonce (aka transaction index)&#39;, &#39;params&#39;: [{&#39;name&#39;: &#39;account_id&#39;, &#39;type&#39;: &#39;AccountId&#39;}], &#39;type&#39;: &#39;Index&#39;, &#39;api&#39;: &#39;AccountNonceApi&#39;, &#39;method&#39;: &#39;account_nonce&#39;})&gt;</span>
-<span class="c1">#    ...</span>
-<span class="c1">#]</span>
-</code></pre></div></td></tr></table></div>
-<h3 id="get-param-type-decomposition">Get param type decomposition<a class="headerlink" href="#get-param-type-decomposition" title="Permanent link">&para;</a></h3>
-<p>A helper function to compose the parameters for this runtime API call</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">runtime_call</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">get_metadata_runtime_call_function</span><span class="p">(</span><span class="s2">&quot;ContractsApi&quot;</span><span class="p">,</span> <span class="s2">&quot;call&quot;</span><span class="p">)</span>
-<span class="n">param_info</span> <span class="o">=</span> <span class="n">runtime_call</span><span class="o">.</span><span class="n">get_param_info</span><span class="p">()</span>
-<span class="c1"># [&#39;AccountId&#39;, &#39;AccountId&#39;, &#39;u128&#39;, &#39;u64&#39;, (None, &#39;u128&#39;), &#39;Bytes&#39;]</span>
-</code></pre></div></td></tr></table></div>
-<h2 id="keypair-creation-and-signing">Keypair creation and signing<a class="headerlink" href="#keypair-creation-and-signing" title="Permanent link">&para;</a></h2>
-<p>Keypairs are used to sign transactions and encrypt/decrypt messages. They consist of a public/private key and can be 
-generated in several ways like by a BIP39 mnemonic:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span>
-<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">mnemonic</span> <span class="o">=</span> <span class="n">Keypair</span><span class="o">.</span><span class="n">generate_mnemonic</span><span class="p">()</span>
-<span class="n">keypair</span> <span class="o">=</span> <span class="n">Keypair</span><span class="o">.</span><span class="n">create_from_mnemonic</span><span class="p">(</span><span class="n">mnemonic</span><span class="p">)</span>
-<span class="n">signature</span> <span class="o">=</span> <span class="n">keypair</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="s2">&quot;Test123&quot;</span><span class="p">)</span>
-<span class="k">if</span> <span class="n">keypair</span><span class="o">.</span><span class="n">verify</span><span class="p">(</span><span class="s2">&quot;Test123&quot;</span><span class="p">,</span> <span class="n">signature</span><span class="p">):</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Verified&#39;</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-<p>By default, a keypair is using <a href="https://research.web3.foundation/en/latest/polkadot/keys/1-accounts-more.html">SR25519</a> 
-cryptography, alternatively ED25519 and ECDSA (for Ethereum-style addresses) can be explicitly specified:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">keypair</span> <span class="o">=</span> <span class="n">Keypair</span><span class="o">.</span><span class="n">create_from_mnemonic</span><span class="p">(</span><span class="n">mnemonic</span><span class="p">,</span> <span class="n">crypto_type</span><span class="o">=</span><span class="n">KeypairType</span><span class="o">.</span><span class="n">ECDSA</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">keypair</span><span class="o">.</span><span class="n">ss58_address</span><span class="p">)</span>
-<span class="c1"># &#39;0x6741864968e8b87c6e32e19cde88A11a3Cc636E9&#39;</span>
-</code></pre></div></td></tr></table></div>
-<h3 id="creating-keypairs-with-soft-and-hard-key-derivation-paths">Creating keypairs with soft and hard key derivation paths<a class="headerlink" href="#creating-keypairs-with-soft-and-hard-key-derivation-paths" title="Permanent link">&para;</a></h3>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">mnemonic</span> <span class="o">=</span> <span class="n">Keypair</span><span class="o">.</span><span class="n">generate_mnemonic</span><span class="p">()</span>
-<span class="n">keypair</span> <span class="o">=</span> <span class="n">Keypair</span><span class="o">.</span><span class="n">create_from_uri</span><span class="p">(</span><span class="n">mnemonic</span> <span class="o">+</span> <span class="s1">&#39;//hard/soft&#39;</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-<p>By omitting the mnemonic the default development mnemonic is used: </p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">keypair</span> <span class="o">=</span> <span class="n">Keypair</span><span class="o">.</span><span class="n">create_from_uri</span><span class="p">(</span><span class="s1">&#39;//Alice&#39;</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-<h3 id="creating-ecdsa-keypairs-with-bip44-derivation-paths">Creating ECDSA keypairs with BIP44 derivation paths<a class="headerlink" href="#creating-ecdsa-keypairs-with-bip44-derivation-paths" title="Permanent link">&para;</a></h3>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">mnemonic</span> <span class="o">=</span> <span class="n">Keypair</span><span class="o">.</span><span class="n">generate_mnemonic</span><span class="p">()</span>
-<span class="n">keypair</span> <span class="o">=</span> <span class="n">Keypair</span><span class="o">.</span><span class="n">create_from_uri</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mnemonic</span><span class="si">}</span><span class="s2">/m/44&#39;/60&#39;/0&#39;/0/0&quot;</span><span class="p">,</span> <span class="n">crypto_type</span><span class="o">=</span><span class="n">KeypairType</span><span class="o">.</span><span class="n">ECDSA</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-<h3 id="create-keypair-from-polkadotjs-json-format">Create Keypair from PolkadotJS JSON format<a class="headerlink" href="#create-keypair-from-polkadotjs-json-format" title="Permanent link">&para;</a></h3>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY.json&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
-    <span class="n">json_data</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-    <span class="n">keypair</span> <span class="o">=</span> <span class="n">Keypair</span><span class="o">.</span><span class="n">create_from_encrypted_json</span><span class="p">(</span><span class="n">json_data</span><span class="p">,</span> <span class="n">passphrase</span><span class="o">=</span><span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="n">ss58_format</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-<h3 id="verify-generated-signature-with-public-address">Verify generated signature with public address<a class="headerlink" href="#verify-generated-signature-with-public-address" title="Permanent link">&para;</a></h3>
-<p><em>Example: Substrate style addresses</em>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span>
-<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">keypair</span> <span class="o">=</span> <span class="n">Keypair</span><span class="o">.</span><span class="n">create_from_uri</span><span class="p">(</span><span class="s2">&quot;//Alice&quot;</span><span class="p">,</span> <span class="n">crypto_type</span><span class="o">=</span><span class="n">KeypairType</span><span class="o">.</span><span class="n">SR25519</span><span class="p">)</span>
-<span class="n">signature</span> <span class="o">=</span> <span class="n">keypair</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="s1">&#39;test&#39;</span><span class="p">)</span>
-
-<span class="n">keypair_public</span> <span class="o">=</span> <span class="n">Keypair</span><span class="p">(</span><span class="n">ss58_address</span><span class="o">=</span><span class="s1">&#39;5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY&#39;</span><span class="p">,</span> <span class="n">crypto_type</span><span class="o">=</span><span class="n">KeypairType</span><span class="o">.</span><span class="n">SR25519</span><span class="p">)</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">keypair_public</span><span class="o">.</span><span class="n">verify</span><span class="p">(</span><span class="s1">&#39;test&#39;</span><span class="p">,</span> <span class="n">signature</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div></p>
-<p><em>Example: Ethereum style addresses</em>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span>
-<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">keypair</span> <span class="o">=</span> <span class="n">Keypair</span><span class="o">.</span><span class="n">create_from_uri</span><span class="p">(</span><span class="s2">&quot;/m/44&#39;/60/0&#39;/0&quot;</span><span class="p">,</span> <span class="n">crypto_type</span><span class="o">=</span><span class="n">KeypairType</span><span class="o">.</span><span class="n">ECDSA</span><span class="p">)</span>
-<span class="n">signature</span> <span class="o">=</span> <span class="n">keypair</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="s1">&#39;test&#39;</span><span class="p">)</span>
-
-<span class="n">keypair_public</span> <span class="o">=</span> <span class="n">Keypair</span><span class="p">(</span><span class="n">public_key</span><span class="o">=</span><span class="s1">&#39;0x5e20a619338338772e97aa444e001043da96a43b&#39;</span><span class="p">,</span> <span class="n">crypto_type</span><span class="o">=</span><span class="n">KeypairType</span><span class="o">.</span><span class="n">ECDSA</span><span class="p">)</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">keypair_public</span><span class="o">.</span><span class="n">verify</span><span class="p">(</span><span class="s1">&#39;test&#39;</span><span class="p">,</span> <span class="n">signature</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div></p>
-<h3 id="offline-signing-of-extrinsics">Offline signing of extrinsics<a class="headerlink" href="#offline-signing-of-extrinsics" title="Permanent link">&para;</a></h3>
-<p>This example generates a signature payload which can be signed on another (offline) machine and later on sent to the 
-network with the generated signature.</p>
-<ol>
-<li>
-<p>Generate signature payload on online machine:
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
-<span class="normal"> 2</span>
-<span class="normal"> 3</span>
-<span class="normal"> 4</span>
-<span class="normal"> 5</span>
-<span class="normal"> 6</span>
-<span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span>
-<span class="normal">12</span>
-<span class="normal">13</span>
-<span class="normal">14</span>
-<span class="normal">15</span>
-<span class="normal">16</span>
-<span class="normal">17</span>
-<span class="normal">18</span>
-<span class="normal">19</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">substrate</span> <span class="o">=</span> <span class="n">SubstrateInterface</span><span class="p">(</span>
-    <span class="n">url</span><span class="o">=</span><span class="s2">&quot;ws://127.0.0.1:9944&quot;</span><span class="p">,</span>
-    <span class="n">ss58_format</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
-    <span class="n">type_registry_preset</span><span class="o">=</span><span class="s1">&#39;substrate-node-template&#39;</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="n">call</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">compose_call</span><span class="p">(</span>
-    <span class="n">call_module</span><span class="o">=</span><span class="s1">&#39;Balances&#39;</span><span class="p">,</span>
-    <span class="n">call_function</span><span class="o">=</span><span class="s1">&#39;transfer&#39;</span><span class="p">,</span>
-    <span class="n">call_params</span><span class="o">=</span><span class="p">{</span>
-        <span class="s1">&#39;dest&#39;</span><span class="p">:</span> <span class="s1">&#39;5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">2</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="mi">8</span>
-    <span class="p">}</span>
-<span class="p">)</span>
-
-<span class="n">era</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;period&#39;</span><span class="p">:</span> <span class="mi">64</span><span class="p">,</span> <span class="s1">&#39;current&#39;</span><span class="p">:</span> <span class="mi">22719</span><span class="p">}</span>
-<span class="n">nonce</span> <span class="o">=</span> <span class="mi">0</span>
-
-<span class="n">signature_payload</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">generate_signature_payload</span><span class="p">(</span><span class="n">call</span><span class="o">=</span><span class="n">call</span><span class="p">,</span> <span class="n">era</span><span class="o">=</span><span class="n">era</span><span class="p">,</span> <span class="n">nonce</span><span class="o">=</span><span class="n">nonce</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div></p>
-</li>
-<li>
-<p>Then on another (offline) machine generate the signature with given <code>signature_payload</code>:</p>
-</li>
-</ol>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">keypair</span> <span class="o">=</span> <span class="n">Keypair</span><span class="o">.</span><span class="n">create_from_mnemonic</span><span class="p">(</span><span class="s2">&quot;nature exchange gasp toy result bacon coin broccoli rule oyster believe lyrics&quot;</span><span class="p">)</span>
-<span class="n">signature</span> <span class="o">=</span> <span class="n">keypair</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">signature_payload</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-<ol>
-<li>Finally on the online machine send the extrinsic with generated signature:</li>
-</ol>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
-<span class="normal"> 2</span>
-<span class="normal"> 3</span>
-<span class="normal"> 4</span>
-<span class="normal"> 5</span>
-<span class="normal"> 6</span>
-<span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span>
-<span class="normal">12</span>
-<span class="normal">13</span>
-<span class="normal">14</span>
-<span class="normal">15</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">keypair</span> <span class="o">=</span> <span class="n">Keypair</span><span class="p">(</span><span class="n">ss58_address</span><span class="o">=</span><span class="s2">&quot;5EChUec3ZQhUvY1g52ZbfBVkqjUY9Kcr6mcEvQMbmd38shQL&quot;</span><span class="p">)</span>
-
-<span class="n">extrinsic</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">create_signed_extrinsic</span><span class="p">(</span>
-    <span class="n">call</span><span class="o">=</span><span class="n">call</span><span class="p">,</span>
-    <span class="n">keypair</span><span class="o">=</span><span class="n">keypair</span><span class="p">,</span>
-    <span class="n">era</span><span class="o">=</span><span class="n">era</span><span class="p">,</span>
-    <span class="n">nonce</span><span class="o">=</span><span class="n">nonce</span><span class="p">,</span>
-    <span class="n">signature</span><span class="o">=</span><span class="n">signature</span>
-<span class="p">)</span>
-
-<span class="n">result</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">submit_extrinsic</span><span class="p">(</span>
-    <span class="n">extrinsic</span><span class="o">=</span><span class="n">extrinsic</span>
-<span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">extrinsic_hash</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-<h2 id="creating-extrinsics">Creating extrinsics<a class="headerlink" href="#creating-extrinsics" title="Permanent link">&para;</a></h2>
+<h1 id="creating-extrinsics">Creating extrinsics<a class="headerlink" href="#creating-extrinsics" title="Permanent link">&para;</a></h1>
 <p>In Substrate, transactions are often more broadly referred to as (signed) extrinsics. The term extrinsic is generally 
 used to mean any information that originates outside of the runtime. An extrinsic is basically a vehicle that carries
 the intention to execute a function call in the runtime, along with proof of the account that wants to execute it. </p>
@@ -1102,7 +867,7 @@ the intention to execute a function call in the runtime, along with proof of the
 <p>The <code>wait_for_inclusion</code> keyword argument used in the example above will block giving the result until it gets 
 confirmation from the node that the extrinsic is succesfully included in a block. The <code>wait_for_finalization</code> keyword
 will wait until extrinsic is finalized. Note this feature is only available for websocket connections.</p>
-<h3 id="extrinsic-receipts">Extrinsic Receipts<a class="headerlink" href="#extrinsic-receipts" title="Permanent link">&para;</a></h3>
+<h2 id="extrinsic-receipts">Extrinsic Receipts<a class="headerlink" href="#extrinsic-receipts" title="Permanent link">&para;</a></h2>
 <p>The <code>substrate.submit_extrinsic()</code> example above returns an <code>ExtrinsicReceipt</code> object, which contains information about the on-chain 
 execution of the extrinsic. Because the <code>block_hash</code> is necessary to retrieve the triggered events from storage, most
 information is only available when <code>wait_for_inclusion=True</code> or <code>wait_for_finalization=True</code> is used when submitting
@@ -1141,7 +906,7 @@ an extrinsic. </p>
 <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">receipt</span><span class="o">.</span><span class="n">triggered_events</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;* </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
-<h3 id="multisig-extrinsics">Multisig extrinsics<a class="headerlink" href="#multisig-extrinsics" title="Permanent link">&para;</a></h3>
+<h2 id="multisig-extrinsics">Multisig extrinsics<a class="headerlink" href="#multisig-extrinsics" title="Permanent link">&para;</a></h2>
 <p>Substrate has the functionality for multi-signature dispatch, allowing multiple signed origins (accounts) to coordinate 
 and dispatch a call, derivable deterministically from the set of account IDs and the threshold number of accounts from 
 the set that must approve it.</p>
@@ -1219,7 +984,7 @@ the set that must approve it.</p>
 </code></pre></div></td></tr></table></div>
 <p>The call will be executed when the second and final multisig extrinsic is submitted, condition and state of the multig 
 will be checked on-chain during processing of the multisig extrinsic.</p>
-<h3 id="type-decomposition-of-call-params">Type decomposition of call params<a class="headerlink" href="#type-decomposition-of-call-params" title="Permanent link">&para;</a></h3>
+<h2 id="type-decomposition-of-call-params">Type decomposition of call params<a class="headerlink" href="#type-decomposition-of-call-params" title="Permanent link">&para;</a></h2>
 <p>The structure of certain call parameters can be quite complex, then the <code>get_param_info()</code> function of the call function object
 can provide more insight how to construct those parameters:</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
@@ -1260,204 +1025,18 @@ can provide more insight how to construct those parameters:</p>
 <span class="c1">#   &#39;dest_weight&#39;: &#39;u64&#39;</span>
 <span class="c1">#}</span>
 </code></pre></div></td></tr></table></div>
-<h3 id="estimate-of-network-fees">Estimate of network fees<a class="headerlink" href="#estimate-of-network-fees" title="Permanent link">&para;</a></h3>
+<h2 id="estimate-of-network-fees">Estimate of network fees<a class="headerlink" href="#estimate-of-network-fees" title="Permanent link">&para;</a></h2>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
 <span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">payment_info</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">get_payment_info</span><span class="p">(</span><span class="n">call</span><span class="o">=</span><span class="n">call</span><span class="p">,</span> <span class="n">keypair</span><span class="o">=</span><span class="n">keypair</span><span class="p">)</span>
 <span class="c1"># {&#39;class&#39;: &#39;normal&#39;, &#39;partialFee&#39;: 2499999066, &#39;weight&#39;: 216625000}</span>
 </code></pre></div></td></tr></table></div>
-<h3 id="mortal-extrinsics">Mortal extrinsics<a class="headerlink" href="#mortal-extrinsics" title="Permanent link">&para;</a></h3>
+<h2 id="mortal-extrinsics">Mortal extrinsics<a class="headerlink" href="#mortal-extrinsics" title="Permanent link">&para;</a></h2>
 <p>By default, <em>immortal</em> extrinsics are created, which means they have an indefinite lifetime for being included in a 
 block. However, it is recommended to use specify an expiry window, so you know after a certain amount of time if the 
 extrinsic is not included in a block, it will be invalidated.</p>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">extrinsic</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">create_signed_extrinsic</span><span class="p">(</span><span class="n">call</span><span class="o">=</span><span class="n">call</span><span class="p">,</span> <span class="n">keypair</span><span class="o">=</span><span class="n">keypair</span><span class="p">,</span> <span class="n">era</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;period&#39;</span><span class="p">:</span> <span class="mi">64</span><span class="p">})</span>
 </code></pre></div></td></tr></table></div>
 <p>The <code>period</code> specifies the number of blocks the extrinsic is valid counted from current head.</p>
-<h2 id="ink-contract-interfacing">ink! contract interfacing<a class="headerlink" href="#ink-contract-interfacing" title="Permanent link">&para;</a></h2>
-<h3 id="deploy-a-contract">Deploy a contract<a class="headerlink" href="#deploy-a-contract" title="Permanent link">&para;</a></h3>
-<p>Tested on <a href="https://github.com/paritytech/substrate-contracts-node">substrate-contracts-node</a> with the <a href="https://docs.substrate.io/tutorials/smart-contracts/prepare-your-first-contract/">Flipper contract from the tutorial</a>:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
-<span class="normal"> 2</span>
-<span class="normal"> 3</span>
-<span class="normal"> 4</span>
-<span class="normal"> 5</span>
-<span class="normal"> 6</span>
-<span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span>
-<span class="normal">12</span>
-<span class="normal">13</span>
-<span class="normal">14</span>
-<span class="normal">15</span>
-<span class="normal">16</span>
-<span class="normal">17</span>
-<span class="normal">18</span>
-<span class="normal">19</span>
-<span class="normal">20</span>
-<span class="normal">21</span>
-<span class="normal">22</span>
-<span class="normal">23</span>
-<span class="normal">24</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">substrate</span> <span class="o">=</span> <span class="n">SubstrateInterface</span><span class="p">(</span>
-    <span class="n">url</span><span class="o">=</span><span class="s2">&quot;ws://127.0.0.1:9944&quot;</span><span class="p">,</span>
-    <span class="n">type_registry_preset</span><span class="o">=</span><span class="s1">&#39;canvas&#39;</span>
-<span class="p">)</span>
-
-<span class="n">keypair</span> <span class="o">=</span> <span class="n">Keypair</span><span class="o">.</span><span class="n">create_from_uri</span><span class="p">(</span><span class="s1">&#39;//Alice&#39;</span><span class="p">)</span>
-
-<span class="c1"># Deploy contract</span>
-<span class="n">code</span> <span class="o">=</span> <span class="n">ContractCode</span><span class="o">.</span><span class="n">create_from_contract_files</span><span class="p">(</span>
-    <span class="n">metadata_file</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s1">&#39;assets&#39;</span><span class="p">,</span> <span class="s1">&#39;flipper.json&#39;</span><span class="p">),</span>
-    <span class="n">wasm_file</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s1">&#39;assets&#39;</span><span class="p">,</span> <span class="s1">&#39;flipper.wasm&#39;</span><span class="p">),</span>
-    <span class="n">substrate</span><span class="o">=</span><span class="n">substrate</span>
-<span class="p">)</span>
-
-<span class="n">contract</span> <span class="o">=</span> <span class="n">code</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
-    <span class="n">keypair</span><span class="o">=</span><span class="n">keypair</span><span class="p">,</span>
-    <span class="n">endowment</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-    <span class="n">gas_limit</span><span class="o">=</span><span class="mi">1000000000000</span><span class="p">,</span>
-    <span class="n">constructor</span><span class="o">=</span><span class="s2">&quot;new&quot;</span><span class="p">,</span>
-    <span class="n">args</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;init_value&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
-    <span class="n">upload_code</span><span class="o">=</span><span class="kc">True</span>
-<span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;✅ Deployed @ </span><span class="si">{</span><span class="n">contract</span><span class="o">.</span><span class="n">contract_address</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-<h3 id="work-with-an-existing-instance">Work with an existing instance:<a class="headerlink" href="#work-with-an-existing-instance" title="Permanent link">&para;</a></h3>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span>
-<span class="normal">5</span>
-<span class="normal">6</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Create contract instance from deterministic address</span>
-<span class="n">contract</span> <span class="o">=</span> <span class="n">ContractInstance</span><span class="o">.</span><span class="n">create_from_address</span><span class="p">(</span>
-    <span class="n">contract_address</span><span class="o">=</span><span class="n">contract_address</span><span class="p">,</span>
-    <span class="n">metadata_file</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s1">&#39;assets&#39;</span><span class="p">,</span> <span class="s1">&#39;flipper.json&#39;</span><span class="p">),</span>
-    <span class="n">substrate</span><span class="o">=</span><span class="n">substrate</span>
-<span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-<h3 id="read-data-from-a-contract">Read data from a contract:<a class="headerlink" href="#read-data-from-a-contract" title="Permanent link">&para;</a></h3>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">contract</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">keypair</span><span class="p">,</span> <span class="s1">&#39;get&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Current value of &quot;get&quot;:&#39;</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">contract_result_data</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-<h3 id="execute-a-contract-call">Execute a contract call<a class="headerlink" href="#execute-a-contract-call" title="Permanent link">&para;</a></h3>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
-<span class="normal"> 2</span>
-<span class="normal"> 3</span>
-<span class="normal"> 4</span>
-<span class="normal"> 5</span>
-<span class="normal"> 6</span>
-<span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span>
-<span class="normal">12</span>
-<span class="normal">13</span>
-<span class="normal">14</span>
-<span class="normal">15</span>
-<span class="normal">16</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># Do a gas estimation of the message</span>
-<span class="n">gas_predit_result</span> <span class="o">=</span> <span class="n">contract</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">keypair</span><span class="p">,</span> <span class="s1">&#39;flip&#39;</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Result of dry-run: &#39;</span><span class="p">,</span> <span class="n">gas_predit_result</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Gas estimate: &#39;</span><span class="p">,</span> <span class="n">gas_predit_result</span><span class="o">.</span><span class="n">gas_required</span><span class="p">)</span>
-
-<span class="c1"># Do the actual call</span>
-<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Executing contract call...&#39;</span><span class="p">)</span>
-<span class="n">contract_receipt</span> <span class="o">=</span> <span class="n">contract</span><span class="o">.</span><span class="n">exec</span><span class="p">(</span><span class="n">keypair</span><span class="p">,</span> <span class="s1">&#39;flip&#39;</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">{</span>
-
-<span class="p">},</span> <span class="n">gas_limit</span><span class="o">=</span><span class="n">gas_predit_result</span><span class="o">.</span><span class="n">gas_required</span><span class="p">)</span>
-
-<span class="k">if</span> <span class="n">contract_receipt</span><span class="o">.</span><span class="n">is_success</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Events triggered in contract: </span><span class="si">{</span><span class="n">contract_receipt</span><span class="o">.</span><span class="n">contract_events</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-<span class="k">else</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Error message: </span><span class="si">{</span><span class="n">contract_receipt</span><span class="o">.</span><span class="n">error_message</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-<p>See complete <a href="https://github.com/polkascan/py-substrate-interface/blob/master/examples/create_and_exec_contract.py">code example</a> for more details</p>
-<h2 id="subscriptions">Subscriptions<a class="headerlink" href="#subscriptions" title="Permanent link">&para;</a></h2>
-<p>It is possible to create subscriptions for certain data to get updates pushed as they happen. These subscriptions are 
-blocking until the subscription is closed.</p>
-<h3 id="storage-subscriptions">Storage subscriptions<a class="headerlink" href="#storage-subscriptions" title="Permanent link">&para;</a></h3>
-<p>When a callable is passed as kwarg <code>subscription_handler</code> in the <code>query()</code> function, there will be a subscription 
-created for given storage query. Updates will be pushed to the callable and will block execution until a final value 
-is returned. This value will be returned as a result of the query and finally automatically unsubscribed from further 
-updates.</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
-<span class="normal"> 2</span>
-<span class="normal"> 3</span>
-<span class="normal"> 4</span>
-<span class="normal"> 5</span>
-<span class="normal"> 6</span>
-<span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span>
-<span class="normal">12</span>
-<span class="normal">13</span>
-<span class="normal">14</span>
-<span class="normal">15</span>
-<span class="normal">16</span>
-<span class="normal">17</span>
-<span class="normal">18</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">subscription_handler</span><span class="p">(</span><span class="n">account_info_obj</span><span class="p">,</span> <span class="n">update_nr</span><span class="p">,</span> <span class="n">subscription_id</span><span class="p">):</span>
-
-    <span class="k">if</span> <span class="n">update_nr</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Initial account data:&#39;</span><span class="p">,</span> <span class="n">account_info_obj</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">update_nr</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="c1"># Do something with the update</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Account data changed:&#39;</span><span class="p">,</span> <span class="n">account_info_obj</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-
-    <span class="c1"># The execution will block until an arbitrary value is returned, which will be the result of the `query`</span>
-    <span class="k">if</span> <span class="n">update_nr</span> <span class="o">&gt;</span> <span class="mi">5</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">account_info_obj</span>
-
-
-<span class="n">result</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">&quot;System&quot;</span><span class="p">,</span> <span class="s2">&quot;Account&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY&quot;</span><span class="p">],</span>
-                         <span class="n">subscription_handler</span><span class="o">=</span><span class="n">subscription_handler</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-<h3 id="subscribe-to-new-block-headers">Subscribe to new block headers<a class="headerlink" href="#subscribe-to-new-block-headers" title="Permanent link">&para;</a></h3>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
-<span class="normal"> 2</span>
-<span class="normal"> 3</span>
-<span class="normal"> 4</span>
-<span class="normal"> 5</span>
-<span class="normal"> 6</span>
-<span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span>
-<span class="normal">12</span>
-<span class="normal">13</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">subscription_handler</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">update_nr</span><span class="p">,</span> <span class="n">subscription_id</span><span class="p">):</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;New block #</span><span class="si">{</span><span class="n">obj</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">][</span><span class="s1">&#39;number&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-    <span class="n">block</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">get_block</span><span class="p">(</span><span class="n">block_number</span><span class="o">=</span><span class="n">obj</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">][</span><span class="s1">&#39;number&#39;</span><span class="p">])</span>
-
-    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">extrinsic</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">block</span><span class="p">[</span><span class="s1">&#39;extrinsics&#39;</span><span class="p">]):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;# </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s1">:  </span><span class="si">{</span><span class="n">extrinsic</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">update_nr</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;message&#39;</span><span class="p">:</span> <span class="s1">&#39;Subscription will cancel when a value is returned&#39;</span><span class="p">,</span> <span class="s1">&#39;updates_processed&#39;</span><span class="p">:</span> <span class="n">update_nr</span><span class="p">}</span>
-
-
-<span class="n">result</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">subscribe_block_headers</span><span class="p">(</span><span class="n">subscription_handler</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-<h2 id="cleanup-and-context-manager">Cleanup and context manager<a class="headerlink" href="#cleanup-and-context-manager" title="Permanent link">&para;</a></h2>
-<p>At the end of the lifecycle of a <code>SubstrateInterface</code> instance, calling the <code>close()</code> method will do all the necessary 
-cleanup, like closing the websocket connection.</p>
-<p>When using the context manager this will be done automatically:</p>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">with</span> <span class="n">SubstrateInterface</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s2">&quot;wss://rpc.polkadot.io&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">substrate</span><span class="p">:</span>
-    <span class="n">events</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">&quot;System&quot;</span><span class="p">,</span> <span class="s2">&quot;Events&quot;</span><span class="p">)</span>
-
-<span class="c1"># connection is now closed</span>
-</code></pre></div></td></tr></table></div>
 
 
 
@@ -1484,7 +1063,7 @@ cleanup, like closing the websocket connection.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../getting-started/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Getting started" rel="prev">
+          <a href="../keypair-creation-and-signing/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Keypair creation and signing" rel="prev">
             <div class="md-footer__button md-icon">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
             </div>
@@ -1493,20 +1072,20 @@ cleanup, like closing the websocket connection.</p>
                 <span class="md-footer__direction">
                   Previous
                 </span>
-                Getting started
+                Keypair creation and signing
               </div>
             </div>
           </a>
         
         
           
-          <a href="../reference/" class="md-footer__link md-footer__link--next" aria-label="Next: Function Reference" rel="next">
+          <a href="../ink-contract-interfacing/" class="md-footer__link md-footer__link--next" aria-label="Next: ink! contract interfacing" rel="next">
             <div class="md-footer__title">
               <div class="md-ellipsis">
                 <span class="md-footer__direction">
                   Next
                 </span>
-                Function Reference
+                ink! contract interfacing
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -1538,7 +1117,7 @@ cleanup, like closing the websocket connection.</p>
       
       
     
-    <a href="https://github.com/polkascan/py-substrate-interface" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+    <a href="https://github.com/polkascan" target="_blank" rel="noopener" title="github.com" class="md-social__link">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
     </a>
   
@@ -1564,10 +1143,10 @@ cleanup, like closing the websocket connection.</p>
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "navigation.expand", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.prune", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow", "toc.integrate"], "search": "../assets/javascripts/workers/search.db81ec45.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "navigation.expand", "navigation.footer", "navigation.indexes", "navigation.instant", "navigation.prune", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.db81ec45.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.4b2c34cd.min.js"></script>
+      <script src="../../assets/javascripts/bundle.4b2c34cd.min.js"></script>
       
     
   </body>
