@@ -1,4 +1,4 @@
-site_name: Py-Substrate-Interface Docs
+site_name: Python Substrate Interface Docs
 repo_url: https://github.com/polkascan/py-substrate-interface
 edit_uri: edit/master/docs/
 site_description: Python library to interface with Substrate
@@ -29,7 +29,7 @@ theme:
     - search.share
     - search.suggest
     - toc.follow
-    - toc.integrate
+#    - toc.integrate
 
 plugins:
   - mkdocstrings:
@@ -50,15 +50,27 @@ plugins:
 extra:
   social:
   - icon: fontawesome/brands/github
-    link: https://github.com/polkascan/py-substrate-interface
+    link: https://github.com/polkascan
   - icon: fontawesome/brands/twitter
     link: https://twitter.com/polkascan
 
 nav:
   - Overview: index.md
-  - Getting started: getting-started.md
-  - Usage: usage.md
-  - Function Reference: reference.md
+  - Getting started:
+    - getting-started/installation.md
+    - getting-started/common-concepts.md
+  - Usage:
+    - usage/query-storage.md
+    - usage/using-scaletype-objects.md
+    - usage/call-runtime-apis.md
+    - usage/keypair-creation-and-signing.md
+    - usage/creating-extrinsics.md
+    - usage/ink-contract-interfacing.md
+    - usage/subscriptions.md
+    - usage/cleanup-and-context-manager.md
+  - Function Reference:
+    - reference/base.md
+    - reference/contracts.md
   - Examples: examples.md
   - Metadata docs: https://polkascan.github.io/py-substrate-metadata-docs/
 

@@ -2,13 +2,13 @@
 This library specializes in interfacing with a [Substrate](https://substrate.io) node; querying storage, composing extrinsics, [SCALE](getting-started.md#scale) encoding/decoding and providing additional convenience methods to deal with the features and metadata of the Substrate runtime.
 
 ## Getting started
-About [installation, initialization](getting-started.md) and useful background information.
+About [installation, initialization](/getting-started/installation/) and useful background information.
 
 ## Usage
-[Overview of available functionality](usage.md) and how to use it. 
+[Overview of available functionality](/usage/query-storage) and how to use it. 
 
 ## Function Reference
-[Extensive reference](reference.md) of functions and classes in the library.
+[Extensive reference](/reference/base) of functions and classes in the library.
 
 ## Examples
 [Various code snippets](examples.md) for common use-cases.
