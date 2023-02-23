@@ -21,7 +21,7 @@ from scalecodec import GenericExtrinsic
 from scalecodec.type_registry import load_type_registry_file, load_type_registry_preset
 from substrateinterface.exceptions import SubstrateRequestException
 from scalecodec.base import ScaleBytes
-from substrateinterface import SubstrateInterface
+from substrateinterface import SubstrateInterface, Keypair
 from test.settings import POLKADOT_NODE_URL
 
 
@@ -301,6 +301,39 @@ class TestRPCHelperFunctions(unittest.TestCase):
         self.assertEqual(len(pending_extrinsics), 2)
         self.assertIsInstance(pending_extrinsics[0], GenericExtrinsic)
         self.assertIsInstance(pending_extrinsics[1], GenericExtrinsic)
+
+
+class SS58HelperTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.keypair = Keypair.create_from_uri('//Alice')
+
+        cls.substrate = SubstrateInterface(url=POLKADOT_NODE_URL)
+
+    def test_ss58_decode(self):
+
+        public_key = self.substrate.ss58_decode("15oF4uVJwmo4TdGW7VfQxNLavjCXviqxT9S1MgbjMNHr6Sp5")
+
+        self.assertEqual("d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d", public_key)
+
+    def test_ss58_encode(self):
+        ss58_address = self.substrate.ss58_encode("d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d")
+        self.assertEqual("15oF4uVJwmo4TdGW7VfQxNLavjCXviqxT9S1MgbjMNHr6Sp5", ss58_address)
+
+        ss58_address = self.substrate.ss58_encode("0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d")
+        self.assertEqual("15oF4uVJwmo4TdGW7VfQxNLavjCXviqxT9S1MgbjMNHr6Sp5", ss58_address)
+
+        ss58_address = self.substrate.ss58_encode(
+            bytes.fromhex("d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d")
+        )
+        self.assertEqual("15oF4uVJwmo4TdGW7VfQxNLavjCXviqxT9S1MgbjMNHr6Sp5", ss58_address)
+
+    def test_ss58_encode_custom_format(self):
+        ss58_address = self.substrate.ss58_encode(
+            "0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d", ss58_format=2
+        )
+        self.assertEqual("HNZata7iMYWmk5RvZRTiAsSDhV8366zq2YGb3tLH5Upf74F", ss58_address)
 
 
 if __name__ == '__main__':
