@@ -1846,8 +1846,8 @@ class SubstrateInterface:
 
         if include_call_length:
 
-            length_obj = self.runtime_config.get_decoder_class('Bytes')
-            call_data = str(length_obj().encode(str(call.data)))
+            length_obj = self.runtime_config.create_scale_object('Bytes')
+            call_data = str(length_obj.encode(str(call.data)))
 
         else:
             call_data = str(call.data)
@@ -1956,7 +1956,7 @@ class SubstrateInterface:
 
         # Check if ExtrinsicSignature is MultiSignature, otherwise omit signature_version
         signature_cls = self.runtime_config.get_decoder_class("ExtrinsicSignature")
-        if signature_cls is self.runtime_config.get_decoder_class('sp_runtime::MultiSignature'):
+        if issubclass(signature_cls, self.runtime_config.get_decoder_class('Enum')):
             value['signature_version'] = signature_version
 
         extrinsic.encode(value)
