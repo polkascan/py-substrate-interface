@@ -307,3 +307,30 @@ result = substrate.query("System", "Account", ["5GrwvaEF5zXb26Fz9rcQpDWS57CtERHp
 
 print(result)
 ```
+
+## Subscribe to multiple storage keys 
+
+```python
+from substrateinterface import SubstrateInterface
+
+
+def subscription_handler(storage_key, updated_obj, update_nr, subscription_id):
+    print(f"Update for {storage_key.params[0]}: {updated_obj.value}")
+
+
+substrate = SubstrateInterface(url="ws://127.0.0.1:9944")
+
+# Accounts to track
+storage_keys = [
+    substrate.create_storage_key(
+        "System", "Account", ["5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"]
+    ),
+    substrate.create_storage_key(
+        "System", "Account", ["5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"]
+    )
+]
+
+result = substrate.subscribe_storage(
+    storage_keys=storage_keys, subscription_handler=subscription_handler
+)
+```

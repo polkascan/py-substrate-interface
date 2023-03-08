@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import time
+import warnings
 from base64 import b64encode
 from hashlib import blake2b
 
@@ -27,7 +28,7 @@ import secrets
 import nacl.bindings
 import nacl.public
 import requests
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 from eth_keys.datatypes import PrivateKey
 from websocket import create_connection, WebSocketConnectionClosedException
@@ -38,6 +39,7 @@ from scalecodec.type_registry import load_type_registry_preset
 from scalecodec.updater import update_type_registries
 
 from .key import extract_derive_path
+from .storage import StorageKey
 from .utils.ecdsa_helpers import mnemonic_to_ecdsa_private_key, ecdsa_verify, ecdsa_sign
 from .utils.encrypted_json import decode_pair_from_encrypted_json, encode_pair
 from .utils.hasher import blake2_256, two_x64_concat, xxh128, blake2_128, blake2_128_concat, identity
@@ -982,7 +984,7 @@ class SubstrateInterface:
 
         return response
 
-    def get_storage_by_key(self, block_hash, storage_key):
+    def get_storage_by_key(self, block_hash: str, storage_key: str):
         """
         A pass-though to existing JSONRPC method `state_getStorageAt`
 
@@ -1038,55 +1040,16 @@ class SubstrateInterface:
         -------
         str Hexstring respresentation of the storage key
         """
+        warnings.warn("Use StorageKey.generate() instead", DeprecationWarning)
 
-        storage_hash = xxh128(storage_module.encode()) + xxh128(storage_function.encode())
+        storage_key = StorageKey.create_from_storage_function(
+            storage_module, storage_function, params, runtime_config=self.runtime_config, metadata=self.metadata
+        )
 
-        if params:
-
-            for idx, param in enumerate(params):
-                # Get hasher assiociated with param
-                try:
-                    param_hasher = hashers[idx]
-                except IndexError:
-                    raise ValueError(f'No hasher found for param #{idx + 1}')
-
-                params_key = bytes()
-
-                # Convert param to bytes
-                if type(param) is str:
-                    params_key += binascii.unhexlify(param)
-                elif type(param) is ScaleBytes:
-                    params_key += param.data
-                elif isinstance(param, ScaleDecoder):
-                    params_key += param.data.data
-
-                if not param_hasher:
-                    param_hasher = 'Twox128'
-
-                if param_hasher == 'Blake2_256':
-                    storage_hash += blake2_256(params_key)
-
-                elif param_hasher == 'Blake2_128':
-                    storage_hash += blake2_128(params_key)
-
-                elif param_hasher == 'Blake2_128Concat':
-                    storage_hash += blake2_128_concat(params_key)
-
-                elif param_hasher == 'Twox128':
-                    storage_hash += xxh128(params_key)
-
-                elif param_hasher == 'Twox64Concat':
-                    storage_hash += two_x64_concat(params_key)
-
-                elif param_hasher == 'Identity':
-                    storage_hash += identity(params_key)
-
-                else:
-                    raise ValueError('Unknown storage hasher "{}"'.format(param_hasher))
-
-        return '0x{}'.format(storage_hash)
+        return '0x{}'.format(storage_key.data.hex())
 
     def convert_storage_parameter(self, scale_type, value):
+        warnings.warn("Use StorageKey.generate() instead", DeprecationWarning)
 
         if type(value) is bytes:
             value = f'0x{value.hex()}'
@@ -1252,12 +1215,15 @@ class SubstrateInterface:
 
         self.init_runtime(block_hash=block_hash)
 
-        # Retrieve storage module and function from metadata
-        storage_module = self.get_metadata_module(module, block_hash=block_hash)
-        storage_item = self.get_metadata_storage_function(module, storage_function, block_hash=block_hash)
+        metadata_pallet = self.metadata.get_metadata_pallet(module)
 
-        if not storage_module or not storage_item:
-            raise StorageFunctionNotFound('Storage function "{}.{}" not found'.format(module, storage_function))
+        if not metadata_pallet:
+            raise StorageFunctionNotFound(f'Pallet "{module}" not found')
+
+        storage_item = metadata_pallet.get_storage_function(storage_function)
+
+        if not metadata_pallet or not storage_item:
+            raise StorageFunctionNotFound(f'Storage function "{module}.{storage_function}" not found')
 
         value_type = storage_item.get_value_type_string()
         param_types = storage_item.get_params_type_string()
@@ -1270,20 +1236,11 @@ class SubstrateInterface:
         if len(params) != len(param_types) - 1:
             raise ValueError(f'Storage function map requires {len(param_types) -1} parameters, {len(params)} given')
 
-        # Encode parameters
-        for idx, param in enumerate(params):
-            if type(param) is not ScaleBytes:
-                param = self.convert_storage_parameter(param_types[idx], param)
-                param_obj = self.runtime_config.create_scale_object(type_string=param_types[idx])
-                params[idx] = param_obj.encode(param)
-
         # Generate storage key prefix
-        prefix = self.generate_storage_hash(
-            storage_module=storage_module.value['storage']['prefix'],
-            storage_function=storage_item.value['name'],
-            params=params,
-            hashers=key_hashers
+        storage_key = StorageKey.create_from_storage_function(
+            module, storage_function, params, runtime_config=self.runtime_config, metadata=self.metadata
         )
+        prefix = storage_key.to_hex()
 
         if not start_key:
             start_key = prefix
@@ -1413,78 +1370,45 @@ class SubstrateInterface:
             return self.__query_well_known(storage_function, block_hash)
 
         # Search storage call in metadata
-        metadata_module = self.get_metadata_module(module, block_hash=block_hash)
-        storage_item = self.get_metadata_storage_function(module, storage_function, block_hash=block_hash)
+        metadata_pallet = self.metadata.get_metadata_pallet(module)
 
-        if not metadata_module or not storage_item:
-            raise StorageFunctionNotFound('Storage function "{}.{}" not found'.format(module, storage_function))
+        if not metadata_pallet:
+            raise StorageFunctionNotFound(f'Pallet "{module}" not found')
 
-        # Process specific type of storage function
-        value_scale_type = storage_item.get_value_type_string()
+        storage_item = metadata_pallet.get_storage_function(storage_function)
+
+        if not metadata_pallet or not storage_item:
+            raise StorageFunctionNotFound(f'Storage function "{module}.{storage_function}" not found')
+
+        # SCALE type string of value
         param_types = storage_item.get_params_type_string()
-        hashers = storage_item.get_param_hashers()
+        value_scale_type = storage_item.get_value_type_string()
+
+        if len(params) != len(param_types):
+            raise ValueError(f'Storage function requires {len(param_types)} parameters, {len(params)} given')
 
         if raw_storage_key:
-            storage_hash = f'0x{raw_storage_key.hex()}'
-        else:
-            if len(params) != len(param_types):
-                raise ValueError(f'Storage function requires {len(param_types)} parameters, {len(params)} given')
-
-            # Encode parameters
-            for idx, param in enumerate(params):
-                param = self.convert_storage_parameter(param_types[idx], param)
-                param_obj = self.runtime_config.create_scale_object(type_string=param_types[idx])
-                params[idx] = param_obj.encode(param)
-
-            storage_hash = self.generate_storage_hash(
-                storage_module=metadata_module.value['storage']['prefix'],
-                storage_function=storage_item.value['name'],
-                params=params,
-                hashers=hashers
+            storage_key = StorageKey.create_from_data(
+                data=raw_storage_key, pallet=module, storage_function=storage_function,
+                value_scale_type=value_scale_type, metadata=self.metadata, runtime_config=self.runtime_config
             )
+        else:
 
-        def result_handler(message, update_nr, subscription_id):
-            if value_scale_type:
-
-                for change_storage_key, change_data in message['params']['result']['changes']:
-                    if change_storage_key == storage_hash:
-                        result_found = False
-
-                        if change_data is not None:
-                            change_scale_type = value_scale_type
-                            result_found = True
-                        elif storage_item.value['modifier'] == 'Default':
-                            # Fallback to default value of storage function if no result
-                            change_scale_type = value_scale_type
-                            change_data = storage_item.value_object['default'].value_object
-                        else:
-                            # No result is interpreted as an Option<...> result
-                            change_scale_type = f'Option<{value_scale_type}>'
-                            change_data = storage_item.value_object['default'].value_object
-
-                        updated_obj = self.runtime_config.create_scale_object(
-                            type_string=change_scale_type,
-                            data=ScaleBytes(change_data),
-                            metadata=self.metadata
-                        )
-                        updated_obj.decode()
-                        updated_obj.meta_info = {'result_found': result_found}
-
-                        subscription_result = subscription_handler(updated_obj, update_nr, subscription_id)
-
-                        if subscription_result is not None:
-                            # Handler returned end result: unsubscribe from further updates
-                            self.rpc_request("state_unsubscribeStorage", [subscription_id])
-
-                        return subscription_result
+            storage_key = StorageKey.create_from_storage_function(
+                module, storage_function, params, runtime_config=self.runtime_config, metadata=self.metadata
+            )
 
         if callable(subscription_handler):
 
-            return self.rpc_request("state_subscribeStorage", [[storage_hash]], result_handler=result_handler)
+            # Wrap subscription handler to discard storage key arg
+            def result_handler(storage_key, updated_obj, update_nr, subscription_id):
+                return subscription_handler(updated_obj, update_nr, subscription_id)
+
+            return self.subscribe_storage([storage_key], result_handler)
 
         else:
 
-            response = self.rpc_request("state_getStorageAt", [storage_hash, block_hash])
+            response = self.rpc_request("state_getStorageAt", [storage_key.to_hex(), block_hash])
 
             if 'error' in response:
                 raise SubstrateRequestException(response['error']['message'])
@@ -1542,6 +1466,97 @@ class SubstrateInterface:
             return obj
         else:
             raise ValueError("No value to decode")
+
+    def create_storage_key(self, pallet: str, storage_function: str, params: Optional[list] = None):
+
+        self.init_runtime()
+
+        return StorageKey.create_from_storage_function(
+            pallet, storage_function, params, runtime_config=self.runtime_config, metadata=self.metadata
+        )
+
+    def subscribe_storage(self, storage_keys: List[StorageKey], subscription_handler: callable):
+        """
+
+        Subscribe to provided storage_keys and keep tracking until `subscription_handler` returns a value
+
+        Example of a StorageKey:
+        ```
+        StorageKey.create_from_storage_function(
+            "System", "Account", ["5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"]
+        )
+        ```
+
+        Example of a subscription handler:
+        ```
+        def subscription_handler(storage_key, obj, update_nr, subscription_id):
+
+            if update_nr == 0:
+                print('Initial data:', storage_key, obj.value)
+
+            if update_nr > 0:
+                # Do something with the update
+                print('data changed:', storage_key, obj.value)
+
+            # The execution will block until an arbitrary value is returned, which will be the result of the function
+            if update_nr > 1:
+                return obj
+        ```
+
+        Parameters
+        ----------
+        storage_keys: StorageKey list of storage keys to subscribe to
+        subscription_handler: callable to handle value changes of subscription
+
+        Returns
+        -------
+
+        """
+        self.init_runtime()
+
+        def result_handler(message, update_nr, subscription_id):
+            # Process changes
+            for change_storage_key, change_data in message['params']['result']['changes']:
+                # Check for target storage key
+                for storage_key in storage_keys:
+                    if change_storage_key == storage_key.to_hex():
+                        result_found = False
+
+                        if change_data is not None:
+                            change_scale_type = storage_key.value_scale_type
+                            result_found = True
+                        elif storage_key.metadata_storage_function.value['modifier'] == 'Default':
+                            # Fallback to default value of storage function if no result
+                            change_scale_type = storage_key.value_scale_type
+                            change_data = storage_key.metadata_storage_function.value_object['default'].value_object
+                        else:
+                            # No result is interpreted as an Option<...> result
+                            change_scale_type = f'Option<{storage_key.value_scale_type}>'
+                            change_data = storage_key.metadata_storage_function.value_object['default'].value_object
+
+                        # Decode SCALE result data
+                        updated_obj = self.runtime_config.create_scale_object(
+                            type_string=change_scale_type,
+                            data=ScaleBytes(change_data),
+                            metadata=self.metadata
+                        )
+                        updated_obj.decode()
+                        updated_obj.meta_info = {'result_found': result_found}
+
+                        subscription_result = subscription_handler(storage_key, updated_obj, update_nr, subscription_id)
+
+                        if subscription_result is not None:
+                            # Handler returned end result: unsubscribe from further updates
+                            self.rpc_request("state_unsubscribeStorage", [subscription_id])
+
+                            return subscription_result
+
+        if not callable(subscription_handler):
+            raise ValueError('Provided "subscription_handler" is not callable')
+
+        return self.rpc_request(
+            "state_subscribeStorage", [[s.to_hex() for s in storage_keys]], result_handler=result_handler
+        )
 
     def retrieve_pending_extrinsics(self) -> list:
         """

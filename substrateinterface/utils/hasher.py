@@ -33,7 +33,7 @@ def blake2_256(data):
     -------
 
     """
-    return blake2b(data, digest_size=32).digest().hex()
+    return blake2b(data, digest_size=32).digest()
 
 
 def blake2_128(data):
@@ -48,7 +48,7 @@ def blake2_128(data):
     -------
 
     """
-    return blake2b(data, digest_size=16).digest().hex()
+    return blake2b(data, digest_size=16).digest()
 
 
 def blake2_128_concat(data):
@@ -64,7 +64,7 @@ def blake2_128_concat(data):
     -------
 
     """
-    return "{}{}".format(blake2b(data, digest_size=16).digest().hex(), data.hex())
+    return blake2b(data, digest_size=16).digest() + data
 
 
 def xxh128(data):
@@ -85,7 +85,7 @@ def xxh128(data):
     storage_key2 = bytearray(xxhash.xxh64(data, seed=1).digest())
     storage_key2.reverse()
 
-    return "{}{}".format(storage_key1.hex(), storage_key2.hex())
+    return storage_key1 + storage_key2
 
 
 def two_x64_concat(data):
@@ -104,15 +104,15 @@ def two_x64_concat(data):
     storage_key = bytearray(xxhash.xxh64(data, seed=0).digest())
     storage_key.reverse()
 
-    return "{}{}".format(storage_key.hex(), data.hex())
+    return storage_key + data
 
 
 def xxh64(data):
     storage_key = bytearray(xxhash.xxh64(data, seed=0).digest())
     storage_key.reverse()
 
-    return "{}".format(storage_key.hex())
+    return storage_key
 
 
 def identity(data):
-    return data.hex()
+    return data

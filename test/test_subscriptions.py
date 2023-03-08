@@ -25,7 +25,8 @@ class SubscriptionsTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.substrate = SubstrateInterface(
-            url=settings.POLKADOT_NODE_URL
+            # url=settings.POLKADOT_NODE_URL
+            url='ws://127.0.0.1:9944'
         )
 
     def test_query_subscription(self):
@@ -35,6 +36,27 @@ class SubscriptionsTestCase(unittest.TestCase):
             return {'update_nr': update_nr, 'subscription_id': subscription_id}
 
         result = self.substrate.query("System", "Events", [], subscription_handler=subscription_handler)
+
+        self.assertEqual(result['update_nr'], 0)
+        self.assertIsNotNone(result['subscription_id'])
+
+    def test_subscribe_storage_multi(self):
+
+        def subscription_handler(storage_key, updated_obj, update_nr, subscription_id):
+            return {'update_nr': update_nr, 'subscription_id': subscription_id}
+
+        storage_keys = [
+            self.substrate.create_storage_key(
+                "System", "Account", ["5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"]
+            ),
+            self.substrate.create_storage_key(
+                "System", "Account", ["5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"]
+            )
+        ]
+
+        result = self.substrate.subscribe_storage(
+            storage_keys=storage_keys, subscription_handler=subscription_handler
+        )
 
         self.assertEqual(result['update_nr'], 0)
         self.assertIsNotNone(result['subscription_id'])

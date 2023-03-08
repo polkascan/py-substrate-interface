@@ -70,7 +70,11 @@ class QueryTestCase(unittest.TestCase):
         with self.assertRaises(StorageFunctionNotFound) as cm:
             self.kusama_substrate.query("Unknown", "StorageFunction")
 
-        self.assertEqual('Storage function "Unknown.StorageFunction" not found', str(cm.exception))
+        self.assertEqual('Pallet "Unknown" not found', str(cm.exception))
+
+    def test_missing_params(self):
+        with self.assertRaises(ValueError) as cm:
+            self.kusama_substrate.query("System", "Account")
 
     def test_modifier_default_result(self):
         result = self.kusama_substrate.query(

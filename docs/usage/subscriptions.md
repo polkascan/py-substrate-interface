@@ -31,6 +31,34 @@ result = substrate.query("System", "Account", ["5GNJqTPyNqANBkUVMN1LPPrxXnFouWXo
 print(result)
 ```
 
+## Subscribe to multiple storage keys 
+
+To subscribe to multiple storage keys at once, the function `subscribe_storage()` provides the most efficient method.
+This will track changes for multiple state entries (storage keys) in just one RPC call to the Substrate node.
+
+Same as for `query()`, updates will be pushed to the `subscription_handler` callable and will block execution until 
+a final value is returned. This value will be returned as a result of subscription and finally automatically
+unsubscribed from further updates.
+
+```python
+def subscription_handler(storage_key, updated_obj, update_nr, subscription_id):
+    print(f"Update for {storage_key.params[0]}: {updated_obj.value}")
+
+# Accounts to track
+storage_keys = [
+    substrate.create_storage_key(
+        "System", "Account", ["5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"]
+    ),
+    substrate.create_storage_key(
+        "System", "Account", ["5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"]
+    )
+]
+
+result = substrate.subscribe_storage(
+    storage_keys=storage_keys, subscription_handler=subscription_handler
+)
+```
+
 ## Subscribe to new block headers
 
 ```python
