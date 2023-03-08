@@ -25,8 +25,7 @@ class SubscriptionsTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.substrate = SubstrateInterface(
-            # url=settings.POLKADOT_NODE_URL
-            url='ws://127.0.0.1:9944'
+            url=settings.POLKADOT_NODE_URL
         )
 
     def test_query_subscription(self):
