@@ -162,20 +162,19 @@ class StorageKey:
 
         hashers = self.metadata_storage_function.get_param_hashers()
 
-        # Encode parameters
-        self.params_encoded = []
-        for idx, param in enumerate(self.params):
-            if type(param) is ScaleBytes:
-                # Already encoded
-                self.params_encoded.append(param)
-            else:
-                param = self.convert_storage_parameter(param_types[idx], param)
-                param_obj = self.runtime_config.create_scale_object(type_string=param_types[idx])
-                self.params_encoded.append(param_obj.encode(param))
-
         storage_hash = xxh128(metadata_pallet.value['storage']['prefix'].encode()) + xxh128(self.storage_function.encode())
 
-        if self.params_encoded:
+        # Encode parameters
+        self.params_encoded = []
+        if self.params:
+            for idx, param in enumerate(self.params):
+                if type(param) is ScaleBytes:
+                    # Already encoded
+                    self.params_encoded.append(param)
+                else:
+                    param = self.convert_storage_parameter(param_types[idx], param)
+                    param_obj = self.runtime_config.create_scale_object(type_string=param_types[idx])
+                    self.params_encoded.append(param_obj.encode(param))
 
             for idx, param in enumerate(self.params_encoded):
                 # Get hasher assiociated with param
