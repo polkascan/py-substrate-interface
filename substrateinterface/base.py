@@ -2985,19 +2985,26 @@ class SubstrateInterface:
         )
         return obj.encode(value)
 
-    def ss58_encode(self, public_key: Union[str, bytes]) -> str:
+    def ss58_encode(self, public_key: Union[str, bytes], ss58_format: int = None) -> str:
         """
-        Helper function to encode a public key to SS58 address
+        Helper function to encode a public key to SS58 address.
+
+        If no target `ss58_format` is provided, it will default to the ss58 format of the network it's connected to.
 
         Parameters
         ----------
-        public_key
+        public_key: 32 bytes or hex-string. e.g. 0x6e39f36c370dd51d9a7594846914035de7ea8de466778ea4be6c036df8151f29
+        ss58_format: target networkID to format the address for, defaults to the network it's connected to
 
         Returns
         -------
         str containing the SS58 address
         """
-        return ss58_encode(public_key, ss58_format=self.ss58_format)
+
+        if ss58_format is None:
+            ss58_format = self.ss58_format
+
+        return ss58_encode(public_key, ss58_format=ss58_format)
 
     def ss58_decode(self, ss58_address: str) -> str:
         """
