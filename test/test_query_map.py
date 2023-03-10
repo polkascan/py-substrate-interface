@@ -155,7 +155,7 @@ class QueryMapTestCase(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             self.kusama_substrate.query_map("Unknown", "StorageFunction")
 
-        self.assertEqual('Storage function "Unknown.StorageFunction" not found', str(cm.exception))
+        self.assertEqual('Pallet "Unknown" not found', str(cm.exception))
 
     def test_non_map_function_query_map(self):
         with self.assertRaises(ValueError) as cm:
