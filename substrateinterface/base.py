@@ -49,6 +49,22 @@ __all__ = ['SubstrateInterface', 'ExtrinsicReceipt', 'logger']
 logger = logging.getLogger(__name__)
 
 
+def list_remove_iter(xs: list):
+    removed = False
+    def remove():
+        nonlocal removed
+        removed = True
+
+    i = 0
+    while i < len(xs):
+        removed = False
+        yield xs[i], remove
+        if removed:
+            xs.pop(i)
+        else:
+            i += 1
+
+
 class SubstrateInterface:
 
     def __init__(self, url=None, websocket=None, ss58_format=None, type_registry=None, type_registry_preset=None,
@@ -261,16 +277,13 @@ class SubstrateInterface:
             subscription_id = None
 
             while json_body is None:
-
-                self.__rpc_message_queue.append(json.loads(self.websocket.recv()))
-
                 # Search for subscriptions
-                for message in self.__rpc_message_queue:
+                for message, remove_message in list_remove_iter(self.__rpc_message_queue):
 
                     # Check if result message is matching request ID
                     if 'id' in message and message['id'] == request_id:
 
-                        self.__rpc_message_queue.remove(message)
+                        remove_message()
 
                         # Check if response has error
                         if 'error' in message:
@@ -287,11 +300,11 @@ class SubstrateInterface:
                             json_body = message
 
                 # Process subscription updates
-                for message in self.__rpc_message_queue:
+                for message, remove_message in list_remove_iter(self.__rpc_message_queue):
                     # Check if message is meant for this subscription
                     if 'params' in message and message['params']['subscription'] == subscription_id:
 
-                        self.__rpc_message_queue.remove(message)
+                        remove_message()
 
                         self.debug_message(f"Websocket result [{subscription_id} #{update_nr}]: {message}")
 
@@ -301,6 +314,10 @@ class SubstrateInterface:
                             json_body = callback_result
 
                         update_nr += 1
+
+                # Read one more message to queue
+                if json_body is None:
+                    self.__rpc_message_queue.append(json.loads(self.websocket.recv()))
 
         else:
 

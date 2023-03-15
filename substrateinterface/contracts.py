@@ -647,19 +647,22 @@ class ContractCode:
         # Lookup constructor
         data = self.metadata.generate_constructor_data(name=constructor, args=args)
 
+        # Check metadata for available call functions
+        call_function = self.substrate.get_metadata_call_function('Contracts', 'instantiate_with_code')
+        if call_function is not None:
+
+            # Check gas_limit weight format
+            param_info = call_function.get_param_info()
+            if type(param_info['gas_limit']) is dict:
+                gas_limit = {'ref_time': gas_limit, 'proof_size': 0}
+
+
         if upload_code is True:
 
-            # Check metadata for available call functions
-            call_function = self.substrate.get_metadata_call_function('Contracts', 'instantiate_with_code')
             if call_function is not None:
 
                 if not self.wasm_bytes:
                     raise ValueError("No WASM bytes to upload")
-
-                # Check gas_limit weight format
-                param_info = call_function.get_param_info()
-                if type(param_info['gas_limit']) is dict:
-                    gas_limit = {'ref_time': gas_limit, 'proof_size': 0}
 
                 call = self.substrate.compose_call(
                     call_module='Contracts',
