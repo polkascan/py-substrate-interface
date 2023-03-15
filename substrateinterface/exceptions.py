@@ -53,3 +53,7 @@ class BlockNotFound(Exception):
 
 class ExtrinsicNotFound(Exception):
     pass
+
+
+class ExtensionCallNotFound(AttributeError):
+    pass

@@ -1,4 +1,10 @@
 # ink! contract interfacing
+ink! is a programming language for smart contracts; blockchains built with the Substrate framework can choose from a 
+number of smart contract languages which one(s) they want to support. ink! is one of them. It is an opinionated 
+language that we have built by extending the popular Rust programming language with functionality needed to make 
+it smart contract compatible.
+
+[More information about ink!](https://use.ink/)
 
 ## Deploy a contract 
 
