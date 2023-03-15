@@ -16,8 +16,8 @@
 
 from typing import Callable
 
-from substrateinterface.extensions import Extension
-from substrateinterface.exceptions import ExtensionCallNotFound
+from .extensions import Extension
+from .exceptions import ExtensionCallNotFound
 
 __all__ = ['ExtensionInterface']
 
