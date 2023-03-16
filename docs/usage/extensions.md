@@ -60,5 +60,3 @@ block_number = substrate.extensions.search_block_number(block_datetime=block_dat
 ## Third party extensions 
 
 * `PolkascanSearchExtension` - _Work in progress_
-
-```
