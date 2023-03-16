@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import unittest
 
@@ -34,12 +34,12 @@ class ExtensionsTestCase(unittest.TestCase):
         cls.substrate.register_extension(SubstrateNodeSearchExtension(max_block_range=100))
 
     def test_search_block_number(self):
-        block_datetime = datetime(2020, 7, 12, 0, 0, 0)
+        block_datetime = datetime(2020, 7, 12, 0, 0, 0, tzinfo=timezone.utc)
 
         block_number = self.substrate.extensions.search_block_number(block_datetime=block_datetime)
 
-        self.assertGreaterEqual(block_number, 664000)
-        self.assertLessEqual(block_number, 665000)
+        self.assertGreaterEqual(block_number, 665270)
+        self.assertLessEqual(block_number, 665280)
 
     def test_unsupported_extension_call(self):
         with self.assertRaises(ExtensionCallNotFound):
