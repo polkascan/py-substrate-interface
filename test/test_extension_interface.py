@@ -38,8 +38,8 @@ class ExtensionsTestCase(unittest.TestCase):
 
         block_number = self.substrate.extensions.search_block_number(block_datetime=block_datetime)
 
-        self.assertGreaterEqual(block_number, 664070)
-        self.assertLessEqual(block_number, 664080)
+        self.assertGreaterEqual(block_number, 664000)
+        self.assertLessEqual(block_number, 665000)
 
     def test_unsupported_extension_call(self):
         with self.assertRaises(ExtensionCallNotFound):

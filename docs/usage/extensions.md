@@ -40,6 +40,14 @@ substrate.register_extension(SubstrateNodeSearchExtension(max_block_range=100))
 # Returns all `Balances.Transfer` events from the last 30 blocks
 events = substrate.extensions.filter_events(pallet_name="Balances", event_name="Transfer", block_start=-30)
 ```
+
+#### filter_extrinsics
+
+```python
+# All Timestamp extrinsics in block range #3 until #6
+extrinsics = substrate.extensions.filter_extrinsics(pallet_name="Timestamp", block_start=3, block_end=6)
+```
+
 #### search_block_number
 
 ```python
@@ -51,6 +59,6 @@ block_number = substrate.extensions.search_block_number(block_datetime=block_dat
 
 ## Third party extensions 
 
-`PolkascanSearchExtension` WIP
+* `PolkascanSearchExtension` - _Work in progress_
 
 ```
