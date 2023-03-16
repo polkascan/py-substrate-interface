@@ -15,7 +15,7 @@
     
     
       
-        <title>Contracts - Python Substrate Interface Docs</title>
+        <title>Keypair - Python Substrate Interface Docs</title>
       
     
     
@@ -66,7 +66,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#substrateinterface.contracts" class="md-skip">
+        <a href="#substrateinterface.keypair" class="md-skip">
           Skip to content
         </a>
       
@@ -100,7 +100,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Contracts
+              Keypair
             
           </span>
         </div>
@@ -629,20 +629,6 @@
               
   
   
-  
-    <li class="md-nav__item">
-      <a href="../keypair/" class="md-nav__link">
-        Keypair
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
     
   
   
@@ -653,12 +639,12 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          Contracts
+          Keypair
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
-        Contracts
+        Keypair
       </a>
       
         
@@ -675,187 +661,121 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#substrateinterface.contracts" class="md-nav__link">
-    substrateinterface.contracts
+  <a href="#substrateinterface.keypair" class="md-nav__link">
+    substrateinterface.keypair
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractMetadata" class="md-nav__link">
-    ContractMetadata
+  <a href="#substrateinterface.keypair.KeypairType" class="md-nav__link">
+    KeypairType
   </a>
   
-    <nav class="md-nav" aria-label="ContractMetadata">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#substrateinterface.keypair.MnemonicLanguageCode" class="md-nav__link">
+    MnemonicLanguageCode
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#substrateinterface.keypair.Keypair" class="md-nav__link">
+    Keypair
+  </a>
+  
+    <nav class="md-nav" aria-label="Keypair">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractMetadata.__init__" class="md-nav__link">
+  <a href="#substrateinterface.keypair.Keypair.__init__" class="md-nav__link">
     __init__()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractMetadata.create_from_file" class="md-nav__link">
-    create_from_file()
+  <a href="#substrateinterface.keypair.Keypair.generate_mnemonic" class="md-nav__link">
+    generate_mnemonic()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractMetadata.generate_constructor_data" class="md-nav__link">
-    generate_constructor_data()
+  <a href="#substrateinterface.keypair.Keypair.validate_mnemonic" class="md-nav__link">
+    validate_mnemonic()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractMetadata.get_type_string_for_metadata_type" class="md-nav__link">
-    get_type_string_for_metadata_type()
+  <a href="#substrateinterface.keypair.Keypair.create_from_mnemonic" class="md-nav__link">
+    create_from_mnemonic()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractMetadata.generate_message_data" class="md-nav__link">
-    generate_message_data()
+  <a href="#substrateinterface.keypair.Keypair.create_from_seed" class="md-nav__link">
+    create_from_seed()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractMetadata.get_event_data" class="md-nav__link">
-    get_event_data()
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractEvent" class="md-nav__link">
-    ContractEvent
-  </a>
-  
-    <nav class="md-nav" aria-label="ContractEvent">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractEvent.__init__" class="md-nav__link">
-    __init__()
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractExecutionReceipt" class="md-nav__link">
-    ContractExecutionReceipt
-  </a>
-  
-    <nav class="md-nav" aria-label="ContractExecutionReceipt">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractExecutionReceipt.__init__" class="md-nav__link">
-    __init__()
+  <a href="#substrateinterface.keypair.Keypair.create_from_uri" class="md-nav__link">
+    create_from_uri()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractExecutionReceipt.create_from_extrinsic_receipt" class="md-nav__link">
-    create_from_extrinsic_receipt()
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractCode" class="md-nav__link">
-    ContractCode
-  </a>
-  
-    <nav class="md-nav" aria-label="ContractCode">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractCode.__init__" class="md-nav__link">
-    __init__()
+  <a href="#substrateinterface.keypair.Keypair.create_from_private_key" class="md-nav__link">
+    create_from_private_key()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractCode.create_from_contract_files" class="md-nav__link">
-    create_from_contract_files()
+  <a href="#substrateinterface.keypair.Keypair.create_from_encrypted_json" class="md-nav__link">
+    create_from_encrypted_json()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractCode.create_from_code_hash" class="md-nav__link">
-    create_from_code_hash()
+  <a href="#substrateinterface.keypair.Keypair.export_to_encrypted_json" class="md-nav__link">
+    export_to_encrypted_json()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractCode.upload_wasm" class="md-nav__link">
-    upload_wasm()
+  <a href="#substrateinterface.keypair.Keypair.sign" class="md-nav__link">
+    sign()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractCode.deploy" class="md-nav__link">
-    deploy()
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractInstance" class="md-nav__link">
-    ContractInstance
-  </a>
-  
-    <nav class="md-nav" aria-label="ContractInstance">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractInstance.create_from_address" class="md-nav__link">
-    create_from_address()
+  <a href="#substrateinterface.keypair.Keypair.verify" class="md-nav__link">
+    verify()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractInstance.read" class="md-nav__link">
-    read()
+  <a href="#substrateinterface.keypair.Keypair.encrypt_message" class="md-nav__link">
+    encrypt_message()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractInstance.exec" class="md-nav__link">
-    exec()
+  <a href="#substrateinterface.keypair.Keypair.decrypt_message" class="md-nav__link">
+    decrypt_message()
   </a>
   
 </li>
@@ -869,6 +789,20 @@
   
 </nav>
       
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contracts/" class="md-nav__link">
+        Contracts
+      </a>
     </li>
   
 
@@ -977,187 +911,121 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#substrateinterface.contracts" class="md-nav__link">
-    substrateinterface.contracts
+  <a href="#substrateinterface.keypair" class="md-nav__link">
+    substrateinterface.keypair
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractMetadata" class="md-nav__link">
-    ContractMetadata
+  <a href="#substrateinterface.keypair.KeypairType" class="md-nav__link">
+    KeypairType
   </a>
   
-    <nav class="md-nav" aria-label="ContractMetadata">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#substrateinterface.keypair.MnemonicLanguageCode" class="md-nav__link">
+    MnemonicLanguageCode
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#substrateinterface.keypair.Keypair" class="md-nav__link">
+    Keypair
+  </a>
+  
+    <nav class="md-nav" aria-label="Keypair">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractMetadata.__init__" class="md-nav__link">
+  <a href="#substrateinterface.keypair.Keypair.__init__" class="md-nav__link">
     __init__()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractMetadata.create_from_file" class="md-nav__link">
-    create_from_file()
+  <a href="#substrateinterface.keypair.Keypair.generate_mnemonic" class="md-nav__link">
+    generate_mnemonic()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractMetadata.generate_constructor_data" class="md-nav__link">
-    generate_constructor_data()
+  <a href="#substrateinterface.keypair.Keypair.validate_mnemonic" class="md-nav__link">
+    validate_mnemonic()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractMetadata.get_type_string_for_metadata_type" class="md-nav__link">
-    get_type_string_for_metadata_type()
+  <a href="#substrateinterface.keypair.Keypair.create_from_mnemonic" class="md-nav__link">
+    create_from_mnemonic()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractMetadata.generate_message_data" class="md-nav__link">
-    generate_message_data()
+  <a href="#substrateinterface.keypair.Keypair.create_from_seed" class="md-nav__link">
+    create_from_seed()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractMetadata.get_event_data" class="md-nav__link">
-    get_event_data()
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractEvent" class="md-nav__link">
-    ContractEvent
-  </a>
-  
-    <nav class="md-nav" aria-label="ContractEvent">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractEvent.__init__" class="md-nav__link">
-    __init__()
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractExecutionReceipt" class="md-nav__link">
-    ContractExecutionReceipt
-  </a>
-  
-    <nav class="md-nav" aria-label="ContractExecutionReceipt">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractExecutionReceipt.__init__" class="md-nav__link">
-    __init__()
+  <a href="#substrateinterface.keypair.Keypair.create_from_uri" class="md-nav__link">
+    create_from_uri()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractExecutionReceipt.create_from_extrinsic_receipt" class="md-nav__link">
-    create_from_extrinsic_receipt()
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractCode" class="md-nav__link">
-    ContractCode
-  </a>
-  
-    <nav class="md-nav" aria-label="ContractCode">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractCode.__init__" class="md-nav__link">
-    __init__()
+  <a href="#substrateinterface.keypair.Keypair.create_from_private_key" class="md-nav__link">
+    create_from_private_key()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractCode.create_from_contract_files" class="md-nav__link">
-    create_from_contract_files()
+  <a href="#substrateinterface.keypair.Keypair.create_from_encrypted_json" class="md-nav__link">
+    create_from_encrypted_json()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractCode.create_from_code_hash" class="md-nav__link">
-    create_from_code_hash()
+  <a href="#substrateinterface.keypair.Keypair.export_to_encrypted_json" class="md-nav__link">
+    export_to_encrypted_json()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractCode.upload_wasm" class="md-nav__link">
-    upload_wasm()
+  <a href="#substrateinterface.keypair.Keypair.sign" class="md-nav__link">
+    sign()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractCode.deploy" class="md-nav__link">
-    deploy()
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractInstance" class="md-nav__link">
-    ContractInstance
-  </a>
-  
-    <nav class="md-nav" aria-label="ContractInstance">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractInstance.create_from_address" class="md-nav__link">
-    create_from_address()
+  <a href="#substrateinterface.keypair.Keypair.verify" class="md-nav__link">
+    verify()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractInstance.read" class="md-nav__link">
-    read()
+  <a href="#substrateinterface.keypair.Keypair.encrypt_message" class="md-nav__link">
+    encrypt_message()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#substrateinterface.contracts.ContractInstance.exec" class="md-nav__link">
-    exec()
+  <a href="#substrateinterface.keypair.Keypair.decrypt_message" class="md-nav__link">
+    decrypt_message()
   </a>
   
 </li>
@@ -1181,18 +1049,18 @@
                 
                   
 
-  <a href="https://github.com/polkascan/py-substrate-interface/edit/master/docs/reference/contracts.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/polkascan/py-substrate-interface/edit/master/docs/reference/keypair.md" title="Edit this page" class="md-content__button md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
-  <h1>Contracts</h1>
+  <h1>Keypair</h1>
 
 <div class="doc doc-object doc-module">
 
 
-<a id="substrateinterface.contracts"></a>
+<a id="substrateinterface.keypair"></a>
   <div class="doc doc-contents first">
 
   
@@ -1210,15 +1078,22 @@
 
 
 
-<h2 id="substrateinterface.contracts.ContractMetadata" class="doc doc-heading">
-        <code>ContractMetadata</code>
+<h2 id="substrateinterface.keypair.KeypairType" class="doc doc-heading">
+        <code>KeypairType</code>
 
 
-<a href="#substrateinterface.contracts.ContractMetadata" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#substrateinterface.keypair.KeypairType" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
   <div class="doc doc-contents ">
 
+  
+      <p>Type of cryptography, used in <code>Keypair</code> instance to encrypt and sign data</p>
+<ul>
+<li>ED25519 = 0</li>
+<li>SR25519 = 1</li>
+<li>ECDSA = 2</li>
+</ul>
 
 
 
@@ -1233,377 +1108,6 @@
 
 
 
-
-<div class="doc doc-object doc-function">
-
-
-
-<h3 id="substrateinterface.contracts.ContractMetadata.__init__" class="doc doc-heading">
-<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="n">metadata_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">substrate</span><span class="p">:</span> <span class="n">SubstrateInterface</span><span class="p">)</span></code>
-
-<a href="#substrateinterface.contracts.ContractMetadata.__init__" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-  <div class="doc doc-contents ">
-  
-      <p>Class using the generated metadata.json file to represent the metadata of a contract. The metadata_dict is
-parsed and the used types are extracted, composed and added to the type registry of the runtime</p>
-
-  <p><strong>Parameters:</strong></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Description</th>
-        <th>Default</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-          <td><code>metadata_dict</code></td>
-          <td>
-                <code>dict</code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-        <tr>
-          <td><code>substrate</code></td>
-          <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.base.SubstrateInterface" href="../base/#substrateinterface.base.SubstrateInterface">SubstrateInterface</a></code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-    </tbody>
-  </table>
-
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-
-<h3 id="substrateinterface.contracts.ContractMetadata.create_from_file" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">create_from_file</span><span class="p">(</span><span class="n">metadata_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">substrate</span><span class="p">:</span> <span class="n">SubstrateInterface</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ContractMetadata</span></code>
-  
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
-  </span>
-
-<a href="#substrateinterface.contracts.ContractMetadata.create_from_file" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-  <div class="doc doc-contents ">
-  
-      <p>Create a new ContractMetadata object using the provided metadata_file, usually generated by the command
-"cargo +nightly contract generate-metadata" in an ink! project</p>
-
-  <p><strong>Parameters:</strong></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Description</th>
-        <th>Default</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-          <td><code>metadata_file</code></td>
-          <td>
-                <code>str</code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-        <tr>
-          <td><code>substrate</code></td>
-          <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.base.SubstrateInterface" href="../base/#substrateinterface.base.SubstrateInterface">SubstrateInterface</a></code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-    </tbody>
-  </table>
-
-  <p><strong>Returns:</strong></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-          <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.contracts.ContractMetadata" href="#substrateinterface.contracts.ContractMetadata">ContractMetadata</a></code>
-          </td>
-          <td></td>
-        </tr>
-    </tbody>
-  </table>
-
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-
-<h3 id="substrateinterface.contracts.ContractMetadata.generate_constructor_data" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">generate_constructor_data</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScaleBytes</span></code>
-
-<a href="#substrateinterface.contracts.ContractMetadata.generate_constructor_data" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-  <div class="doc doc-contents ">
-  
-      <p>Compose the data field used in the "Contracts.instantiate" call, finding the selectors and encoded the args
-of given constructor</p>
-
-  <p><strong>Parameters:</strong></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Description</th>
-        <th>Default</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-          <td><code>name</code></td>
-          <td>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-        <tr>
-          <td><code>args</code></td>
-          <td>
-                <code>dict</code>
-          </td>
-          <td></td>
-          <td>
-                <code>None</code>
-          </td>
-        </tr>
-    </tbody>
-  </table>
-
-  <p><strong>Returns:</strong></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-          <td>
-                <code><span title="scalecodec.base.ScaleBytes">ScaleBytes</span></code>
-          </td>
-          <td></td>
-        </tr>
-    </tbody>
-  </table>
-
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-
-<h3 id="substrateinterface.contracts.ContractMetadata.get_type_string_for_metadata_type" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">get_type_string_for_metadata_type</span><span class="p">(</span><span class="n">type_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span></code>
-
-<a href="#substrateinterface.contracts.ContractMetadata.get_type_string_for_metadata_type" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-  <div class="doc doc-contents ">
-  
-      <p>Adds a type included in the metadata (represented by an index in the type list) to the type registry and
-produces a type string that can be used in the scope of the <code>RuntimeConfigurationObject</code>.</p>
-
-  <p><strong>Parameters:</strong></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Description</th>
-        <th>Default</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-          <td><code>type_id</code></td>
-          <td>
-                <code>int</code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-    </tbody>
-  </table>
-
-  <p><strong>Returns:</strong></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-          <td>
-                <code>str</code>
-          </td>
-          <td></td>
-        </tr>
-    </tbody>
-  </table>
-
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-
-<h3 id="substrateinterface.contracts.ContractMetadata.generate_message_data" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">generate_message_data</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScaleBytes</span></code>
-
-<a href="#substrateinterface.contracts.ContractMetadata.generate_message_data" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-  <div class="doc doc-contents ">
-  
-      <p>Compose the data field used in the "Contracts.call" call, finding the selector and encoded the args
-of provided message name</p>
-
-  <p><strong>Parameters:</strong></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Description</th>
-        <th>Default</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-          <td><code>name</code></td>
-          <td>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-        <tr>
-          <td><code>args</code></td>
-          <td>
-                <code>dict</code>
-          </td>
-          <td></td>
-          <td>
-                <code>None</code>
-          </td>
-        </tr>
-    </tbody>
-  </table>
-
-  <p><strong>Returns:</strong></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-          <td>
-                <code><span title="scalecodec.base.ScaleBytes">ScaleBytes</span></code>
-          </td>
-          <td></td>
-        </tr>
-    </tbody>
-  </table>
-
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-
-<h3 id="substrateinterface.contracts.ContractMetadata.get_event_data" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">get_event_data</span><span class="p">(</span><span class="n">event_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span></code>
-
-<a href="#substrateinterface.contracts.ContractMetadata.get_event_data" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-  <div class="doc doc-contents ">
-  
-      <p>Looks up the event data for given 0-based event_id</p>
-
-  <p><strong>Parameters:</strong></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Description</th>
-        <th>Default</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-          <td><code>event_id</code></td>
-          <td>
-                <code>int</code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-    </tbody>
-  </table>
-
-  </div>
-
-</div>
 
 
 
@@ -1617,17 +1121,27 @@ of provided message name</p>
 
 
 
-<h2 id="substrateinterface.contracts.ContractEvent" class="doc doc-heading">
-        <code>ContractEvent</code>
+<h2 id="substrateinterface.keypair.MnemonicLanguageCode" class="doc doc-heading">
+        <code>MnemonicLanguageCode</code>
 
 
-<a href="#substrateinterface.contracts.ContractEvent" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#substrateinterface.keypair.MnemonicLanguageCode" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
   <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><span title="scalecodec.base.ScaleType">ScaleType</span></code></p>
 
+  
+      <p>Available language codes to generate mnemonics</p>
+<ul>
+<li>ENGLISH = 'en'</li>
+<li>CHINESE_SIMPLIFIED = 'zh-hans'</li>
+<li>CHINESE_TRADITIONAL = 'zh-hant'</li>
+<li>FRENCH = 'fr'</li>
+<li>ITALIAN = 'it'</li>
+<li>JAPANESE = 'ja'</li>
+<li>KOREAN = 'ko'</li>
+<li>SPANISH = 'es'</li>
+</ul>
 
 
 
@@ -1642,25 +1156,6 @@ of provided message name</p>
 
 
 
-
-<div class="doc doc-object doc-function">
-
-
-
-<h3 id="substrateinterface.contracts.ContractEvent.__init__" class="doc doc-heading">
-<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">contract_metadata</span><span class="p">:</span> <span class="n">ContractMetadata</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
-
-<a href="#substrateinterface.contracts.ContractEvent.__init__" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-  <div class="doc doc-contents ">
-  
-      <p>ScaleType class containing information about a specific Contract Event, it decodes the "data" field in
-the generic "Contracts.ContractExecution" event that is triggered after a successfull "Contracts.call" call.</p>
-
-  </div>
-
-</div>
 
 
 
@@ -1674,175 +1169,11 @@ the generic "Contracts.ContractExecution" event that is triggered after a succes
 
 
 
-<h2 id="substrateinterface.contracts.ContractExecutionReceipt" class="doc doc-heading">
-        <code>ContractExecutionReceipt</code>
+<h2 id="substrateinterface.keypair.Keypair" class="doc doc-heading">
+        <code>Keypair</code>
 
 
-<a href="#substrateinterface.contracts.ContractExecutionReceipt" class="headerlink" title="Permanent link">&para;</a></h2>
-
-
-  <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><a class="autorefs autorefs-internal" title="substrateinterface.base.ExtrinsicReceipt" href="../base/#substrateinterface.base.ExtrinsicReceipt">ExtrinsicReceipt</a></code></p>
-
-
-
-
-  
-
-  <div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-<div class="doc doc-object doc-function">
-
-
-
-<h3 id="substrateinterface.contracts.ContractExecutionReceipt.__init__" class="doc doc-heading">
-<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
-
-<a href="#substrateinterface.contracts.ContractExecutionReceipt.__init__" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-  <div class="doc doc-contents ">
-  
-      <p>Object extending the <code>ExtrinsicReceipt</code> containing more information about the result after submitting a
-"Contracts.call" extrinsic.</p>
-
-  <p><strong>Parameters:</strong></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Description</th>
-        <th>Default</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-          <td><code>args</code></td>
-          <td>
-          </td>
-          <td></td>
-          <td>
-                <code>()</code>
-          </td>
-        </tr>
-        <tr>
-          <td><code>kwargs</code></td>
-          <td>
-          </td>
-          <td></td>
-          <td>
-                <code>{}</code>
-          </td>
-        </tr>
-    </tbody>
-  </table>
-
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-
-<h3 id="substrateinterface.contracts.ContractExecutionReceipt.create_from_extrinsic_receipt" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">create_from_extrinsic_receipt</span><span class="p">(</span><span class="n">receipt</span><span class="p">:</span> <span class="n">ExtrinsicReceipt</span><span class="p">,</span> <span class="n">contract_metadata</span><span class="p">:</span> <span class="n">ContractMetadata</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ContractExecutionReceipt</span></code>
-  
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
-  </span>
-
-<a href="#substrateinterface.contracts.ContractExecutionReceipt.create_from_extrinsic_receipt" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-  <div class="doc doc-contents ">
-  
-      <p>Promotes a ExtrinsicReceipt object to a ContractExecutionReceipt. It uses the provided ContractMetadata to
-decode "ContractExecution" events</p>
-
-  <p><strong>Parameters:</strong></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Description</th>
-        <th>Default</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-          <td><code>receipt</code></td>
-          <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.base.ExtrinsicReceipt" href="../base/#substrateinterface.base.ExtrinsicReceipt">ExtrinsicReceipt</a></code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-        <tr>
-          <td><code>contract_metadata</code></td>
-          <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.contracts.ContractMetadata" href="#substrateinterface.contracts.ContractMetadata">ContractMetadata</a></code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-    </tbody>
-  </table>
-
-  <p><strong>Returns:</strong></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-          <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.contracts.ContractExecutionReceipt" href="#substrateinterface.contracts.ContractExecutionReceipt">ContractExecutionReceipt</a></code>
-          </td>
-          <td></td>
-        </tr>
-    </tbody>
-  </table>
-
-  </div>
-
-</div>
-
-
-
-  </div>
-
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-class">
-
-
-
-<h2 id="substrateinterface.contracts.ContractCode" class="doc doc-heading">
-        <code>ContractCode</code>
-
-
-<a href="#substrateinterface.contracts.ContractCode" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#substrateinterface.keypair.Keypair" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
   <div class="doc doc-contents ">
@@ -1866,16 +1197,16 @@ decode "ContractExecution" events</p>
 
 
 
-<h3 id="substrateinterface.contracts.ContractCode.__init__" class="doc doc-heading">
-<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="n">code_hash</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">ContractMetadata</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">wasm_bytes</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">substrate</span><span class="p">:</span> <span class="n">SubstrateInterface</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span></code>
+<h3 id="substrateinterface.keypair.Keypair.__init__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="n">ss58_address</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">public_key</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">private_key</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ss58_format</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">seed_hex</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">crypto_type</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">KeypairType</span><span class="o">.</span><span class="n">SR25519</span><span class="p">)</span></code>
 
-<a href="#substrateinterface.contracts.ContractCode.__init__" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#substrateinterface.keypair.Keypair.__init__" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
   <div class="doc doc-contents ">
   
-      <p>Object representing the blueprint of the contract, combining either the code hash and metadata of a contract, or
-the WASM bytes and metadata</p>
+      <p>Allows generation of Keypairs from a variety of input combination, such as a public/private key combination,
+mnemonic or URI containing soft and hard derivation paths. With these Keypairs data can be signed and verified</p>
 
   <p><strong>Parameters:</strong></p>
   <table>
@@ -1889,9 +1220,9 @@ the WASM bytes and metadata</p>
     </thead>
     <tbody>
         <tr>
-          <td><code>code_hash</code></td>
+          <td><code>ss58_address</code></td>
           <td>
-                <code>bytes</code>
+                <code>str</code>
           </td>
           <td></td>
           <td>
@@ -1899,9 +1230,9 @@ the WASM bytes and metadata</p>
           </td>
         </tr>
         <tr>
-          <td><code>metadata</code></td>
+          <td><code>public_key</code></td>
           <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.contracts.ContractMetadata" href="#substrateinterface.contracts.ContractMetadata">ContractMetadata</a></code>
+                <code><span title="typing.Union">Union</span>[bytes, str]</code>
           </td>
           <td></td>
           <td>
@@ -1909,9 +1240,9 @@ the WASM bytes and metadata</p>
           </td>
         </tr>
         <tr>
-          <td><code>wasm_bytes</code></td>
+          <td><code>private_key</code></td>
           <td>
-                <code>bytes</code>
+                <code><span title="typing.Union">Union</span>[bytes, str]</code>
           </td>
           <td></td>
           <td>
@@ -1919,13 +1250,33 @@ the WASM bytes and metadata</p>
           </td>
         </tr>
         <tr>
-          <td><code>substrate</code></td>
+          <td><code>ss58_format</code></td>
           <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.base.SubstrateInterface" href="../base/#substrateinterface.base.SubstrateInterface">SubstrateInterface</a></code>
+                <code>int</code>
           </td>
           <td></td>
           <td>
                 <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>seed_hex</code></td>
+          <td>
+                <code><span title="typing.Union">Union</span>[str, bytes]</code>
+          </td>
+          <td></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>crypto_type</code></td>
+          <td>
+                <code>int</code>
+          </td>
+          <td></td>
+          <td>
+                <code>KeypairType.SR25519</code>
           </td>
         </tr>
     </tbody>
@@ -1939,20 +1290,19 @@ the WASM bytes and metadata</p>
 
 
 
-<h3 id="substrateinterface.contracts.ContractCode.create_from_contract_files" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">create_from_contract_files</span><span class="p">(</span><span class="n">wasm_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">metadata_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">substrate</span><span class="p">:</span> <span class="n">SubstrateInterface</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ContractCode</span></code>
+<h3 id="substrateinterface.keypair.Keypair.generate_mnemonic" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">generate_mnemonic</span><span class="p">(</span><span class="n">words</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span> <span class="n">language_code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">MnemonicLanguageCode</span><span class="o">.</span><span class="n">ENGLISH</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span></code>
   
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
   </span>
 
-<a href="#substrateinterface.contracts.ContractCode.create_from_contract_files" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#substrateinterface.keypair.Keypair.generate_mnemonic" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
   <div class="doc doc-contents ">
   
-      <p>Create a ContractCode providing paths for the WASM binary file and metadata JSON file generated by the
-ink! project</p>
+      <p>Generates a new seed phrase with given amount of words (default 12)</p>
 
   <p><strong>Parameters:</strong></p>
   <table>
@@ -1966,33 +1316,23 @@ ink! project</p>
     </thead>
     <tbody>
         <tr>
-          <td><code>wasm_file</code></td>
+          <td><code>words</code></td>
+          <td>
+                <code>int</code>
+          </td>
+          <td></td>
+          <td>
+                <code>12</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>language_code</code></td>
           <td>
                 <code>str</code>
           </td>
           <td></td>
           <td>
-              <em>required</em>
-          </td>
-        </tr>
-        <tr>
-          <td><code>metadata_file</code></td>
-          <td>
-                <code>str</code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-        <tr>
-          <td><code>substrate</code></td>
-          <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.base.SubstrateInterface" href="../base/#substrateinterface.base.SubstrateInterface">SubstrateInterface</a></code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
+                <code>MnemonicLanguageCode.ENGLISH</code>
           </td>
         </tr>
     </tbody>
@@ -2002,14 +1342,14 @@ ink! project</p>
   <table>
     <thead>
       <tr>
-        <th>Type</th>
+<th>Name</th>        <th>Type</th>
         <th>Description</th>
       </tr>
     </thead>
     <tbody>
         <tr>
-          <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.contracts.ContractCode" href="#substrateinterface.contracts.ContractCode">ContractCode</a></code>
+<td><code>str</code></td>          <td>
+                <code>Seed phrase</code>
           </td>
           <td></td>
         </tr>
@@ -2024,19 +1364,19 @@ ink! project</p>
 
 
 
-<h3 id="substrateinterface.contracts.ContractCode.create_from_code_hash" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">create_from_code_hash</span><span class="p">(</span><span class="n">code_hash</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">metadata_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">substrate</span><span class="p">:</span> <span class="n">SubstrateInterface</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ContractCode</span></code>
+<h3 id="substrateinterface.keypair.Keypair.validate_mnemonic" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">validate_mnemonic</span><span class="p">(</span><span class="n">mnemonic</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">language_code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">MnemonicLanguageCode</span><span class="o">.</span><span class="n">ENGLISH</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span></code>
   
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
   </span>
 
-<a href="#substrateinterface.contracts.ContractCode.create_from_code_hash" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#substrateinterface.keypair.Keypair.validate_mnemonic" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
   <div class="doc doc-contents ">
   
-      <p>Create a ContractCode providing an existing contract code hash and a path to the metadata JSON file</p>
+      <p>Verify if specified mnemonic is valid</p>
 
   <p><strong>Parameters:</strong></p>
   <table>
@@ -2050,17 +1390,7 @@ ink! project</p>
     </thead>
     <tbody>
         <tr>
-          <td><code>code_hash</code></td>
-          <td>
-                <code>bytes</code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-        <tr>
-          <td><code>metadata_file</code></td>
+          <td><code>mnemonic</code></td>
           <td>
                 <code>str</code>
           </td>
@@ -2070,13 +1400,13 @@ ink! project</p>
           </td>
         </tr>
         <tr>
-          <td><code>substrate</code></td>
+          <td><code>language_code</code></td>
           <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.base.SubstrateInterface" href="../base/#substrateinterface.base.SubstrateInterface">SubstrateInterface</a></code>
+                <code>str</code>
           </td>
           <td></td>
           <td>
-              <em>required</em>
+                <code>MnemonicLanguageCode.ENGLISH</code>
           </td>
         </tr>
     </tbody>
@@ -2092,211 +1422,10 @@ ink! project</p>
     </thead>
     <tbody>
         <tr>
-          <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.contracts.ContractCode" href="#substrateinterface.contracts.ContractCode">ContractCode</a></code>
-          </td>
-          <td></td>
-        </tr>
-    </tbody>
-  </table>
-
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-
-<h3 id="substrateinterface.contracts.ContractCode.upload_wasm" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">upload_wasm</span><span class="p">(</span><span class="n">keypair</span><span class="p">:</span> <span class="n">Keypair</span><span class="p">,</span> <span class="n">storage_deposit_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExtrinsicReceipt</span></code>
-
-<a href="#substrateinterface.contracts.ContractCode.upload_wasm" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-  <div class="doc doc-contents ">
-  
-      <p>Created and submits an "Contracts.upload_code" extrinsic containing the WASM binary</p>
-
-  <p><strong>Parameters:</strong></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Description</th>
-        <th>Default</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-          <td><code>keypair</code></td>
-          <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.base.Keypair" href="../keypair/#substrateinterface.keypair.Keypair">Keypair</a></code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-        <tr>
-          <td><code>storage_deposit_limit</code></td>
-          <td>
-                <code>int</code>
-          </td>
-          <td></td>
-          <td>
-                <code>None</code>
-          </td>
-        </tr>
-    </tbody>
-  </table>
-
-  <p><strong>Returns:</strong></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-          <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.base.ExtrinsicReceipt" href="../base/#substrateinterface.base.ExtrinsicReceipt">ExtrinsicReceipt</a></code>
-          </td>
-          <td></td>
-        </tr>
-    </tbody>
-  </table>
-
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-
-<h3 id="substrateinterface.contracts.ContractCode.deploy" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">deploy</span><span class="p">(</span><span class="n">keypair</span><span class="p">:</span> <span class="n">Keypair</span><span class="p">,</span> <span class="n">endowment</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">gas_limit</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">constructor</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">deployment_salt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">upload_code</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">storage_deposit_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ContractInstance</span></code>
-
-<a href="#substrateinterface.contracts.ContractCode.deploy" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-  <div class="doc doc-contents ">
-  
-      <p>Deploys a new instance of the contract after it has been uploaded on-chain, with provided constructor and
-constructor arguments</p>
-
-  <p><strong>Parameters:</strong></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Description</th>
-        <th>Default</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-          <td><code>keypair</code></td>
-          <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.base.Keypair" href="../keypair/#substrateinterface.keypair.Keypair">Keypair</a></code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-        <tr>
-          <td><code>endowment</code></td>
-          <td>
-                <code>int</code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-        <tr>
-          <td><code>gas_limit</code></td>
-          <td>
-                <code>int</code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-        <tr>
-          <td><code>constructor</code></td>
-          <td>
-                <code>str</code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-        <tr>
-          <td><code>args</code></td>
-          <td>
-                <code>dict</code>
-          </td>
-          <td></td>
-          <td>
-                <code>None</code>
-          </td>
-        </tr>
-        <tr>
-          <td><code>deployment_salt</code></td>
-          <td>
-                <code>str</code>
-          </td>
-          <td></td>
-          <td>
-                <code>None</code>
-          </td>
-        </tr>
-        <tr>
-          <td><code>upload_code</code></td>
           <td>
                 <code>bool</code>
           </td>
           <td></td>
-          <td>
-                <code>False</code>
-          </td>
-        </tr>
-        <tr>
-          <td><code>storage_deposit_limit</code></td>
-          <td>
-                <code>int</code>
-          </td>
-          <td></td>
-          <td>
-                <code>None</code>
-          </td>
-        </tr>
-    </tbody>
-  </table>
-
-  <p><strong>Returns:</strong></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-          <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.contracts.ContractInstance" href="#substrateinterface.contracts.ContractInstance">ContractInstance</a></code>
-          </td>
-          <td></td>
         </tr>
     </tbody>
   </table>
@@ -2304,61 +1433,24 @@ constructor arguments</p>
   </div>
 
 </div>
-
-
-
-  </div>
-
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-class">
-
-
-
-<h2 id="substrateinterface.contracts.ContractInstance" class="doc doc-heading">
-        <code>ContractInstance</code>
-
-
-<a href="#substrateinterface.contracts.ContractInstance" class="headerlink" title="Permanent link">&para;</a></h2>
-
-
-  <div class="doc doc-contents ">
-
-
-
-
-  
-
-  <div class="doc doc-children">
-
-
-
-
-
-
-
-
 
 <div class="doc doc-object doc-function">
 
 
 
-<h3 id="substrateinterface.contracts.ContractInstance.create_from_address" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">create_from_address</span><span class="p">(</span><span class="n">contract_address</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">metadata_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">substrate</span><span class="p">:</span> <span class="n">SubstrateInterface</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ContractInstance</span></code>
+<h3 id="substrateinterface.keypair.Keypair.create_from_mnemonic" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">create_from_mnemonic</span><span class="p">(</span><span class="n">mnemonic</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ss58_format</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span> <span class="n">crypto_type</span> <span class="o">=</span> <span class="n">KeypairType</span><span class="o">.</span><span class="n">SR25519</span><span class="p">,</span> <span class="n">language_code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">MnemonicLanguageCode</span><span class="o">.</span><span class="n">ENGLISH</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Keypair</span></code>
   
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
   </span>
 
-<a href="#substrateinterface.contracts.ContractInstance.create_from_address" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#substrateinterface.keypair.Keypair.create_from_mnemonic" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
   <div class="doc doc-contents ">
   
-      <p>Create a ContractInstance object that already exists on-chain providing a SS58-address and the path to the
-metadata JSON of that contract</p>
+      <p>Create a Keypair for given memonic</p>
 
   <p><strong>Parameters:</strong></p>
   <table>
@@ -2372,7 +1464,7 @@ metadata JSON of that contract</p>
     </thead>
     <tbody>
         <tr>
-          <td><code>contract_address</code></td>
+          <td><code>mnemonic</code></td>
           <td>
                 <code>str</code>
           </td>
@@ -2382,23 +1474,31 @@ metadata JSON of that contract</p>
           </td>
         </tr>
         <tr>
-          <td><code>metadata_file</code></td>
+          <td><code>ss58_format</code></td>
+          <td>
+          </td>
+          <td></td>
+          <td>
+                <code>42</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>crypto_type</code></td>
+          <td>
+          </td>
+          <td></td>
+          <td>
+                <code>KeypairType.SR25519</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>language_code</code></td>
           <td>
                 <code>str</code>
           </td>
           <td></td>
           <td>
-              <em>required</em>
-          </td>
-        </tr>
-        <tr>
-          <td><code>substrate</code></td>
-          <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.base.SubstrateInterface" href="../base/#substrateinterface.base.SubstrateInterface">SubstrateInterface</a></code>
-          </td>
-          <td></td>
-          <td>
-                <code>None</code>
+                <code>MnemonicLanguageCode.ENGLISH</code>
           </td>
         </tr>
     </tbody>
@@ -2415,7 +1515,7 @@ metadata JSON of that contract</p>
     <tbody>
         <tr>
           <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.contracts.ContractInstance" href="#substrateinterface.contracts.ContractInstance">ContractInstance</a></code>
+                <code><a class="autorefs autorefs-internal" title="substrateinterface.keypair.Keypair" href="#substrateinterface.keypair.Keypair">Keypair</a></code>
           </td>
           <td></td>
         </tr>
@@ -2430,17 +1530,19 @@ metadata JSON of that contract</p>
 
 
 
-<h3 id="substrateinterface.contracts.ContractInstance.read" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">read</span><span class="p">(</span><span class="n">keypair</span><span class="p">:</span> <span class="n">Keypair</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">gas_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GenericContractExecResult</span></code>
+<h3 id="substrateinterface.keypair.Keypair.create_from_seed" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">create_from_seed</span><span class="p">(</span><span class="n">seed_hex</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">ss58_format</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span> <span class="n">crypto_type</span> <span class="o">=</span> <span class="n">KeypairType</span><span class="o">.</span><span class="n">SR25519</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Keypair</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
 
-<a href="#substrateinterface.contracts.ContractInstance.read" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#substrateinterface.keypair.Keypair.create_from_seed" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
   <div class="doc doc-contents ">
   
-      <p>Used to execute non-mutable messages to for example read data from the contract using getters. Can also be used
-to predict gas limits and 'dry-run' the execution when a mutable message is used.
-This method does not submit an extrinsic.</p>
+      <p>Create a Keypair for given seed</p>
 
   <p><strong>Parameters:</strong></p>
   <table>
@@ -2454,9 +1556,9 @@ This method does not submit an extrinsic.</p>
     </thead>
     <tbody>
         <tr>
-          <td><code>keypair</code></td>
+          <td><code>seed_hex</code></td>
           <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.base.Keypair" href="../keypair/#substrateinterface.keypair.Keypair">Keypair</a></code>
+                <code><span title="typing.Union">Union</span>[bytes, str]</code>
           </td>
           <td></td>
           <td>
@@ -2464,148 +1566,297 @@ This method does not submit an extrinsic.</p>
           </td>
         </tr>
         <tr>
-          <td><code>method</code></td>
-          <td>
-                <code>str</code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-        <tr>
-          <td><code>args</code></td>
-          <td>
-                <code>dict</code>
-          </td>
-          <td></td>
-          <td>
-                <code>None</code>
-          </td>
-        </tr>
-        <tr>
-          <td><code>value</code></td>
-          <td>
-                <code>int</code>
-          </td>
-          <td></td>
-          <td>
-                <code>0</code>
-          </td>
-        </tr>
-        <tr>
-          <td><code>gas_limit</code></td>
-          <td>
-                <code>int</code>
-          </td>
-          <td></td>
-          <td>
-                <code>None</code>
-          </td>
-        </tr>
-    </tbody>
-  </table>
-
-  <p><strong>Returns:</strong></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-          <td>
-                <code><span title="scalecodec.types.GenericContractExecResult">GenericContractExecResult</span></code>
-          </td>
-          <td></td>
-        </tr>
-    </tbody>
-  </table>
-
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-
-<h3 id="substrateinterface.contracts.ContractInstance.exec" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">exec</span><span class="p">(</span><span class="n">keypair</span><span class="p">:</span> <span class="n">Keypair</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">gas_limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">storage_deposit_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ContractExecutionReceipt</span></code>
-
-<a href="#substrateinterface.contracts.ContractInstance.exec" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-  <div class="doc doc-contents ">
-  
-      <p>Executes provided message by creating and submitting an extrinsic. To get a gas prediction or perform a
-'dry-run' of executing this message, see <code>ContractInstance.read</code>.</p>
-
-  <p><strong>Parameters:</strong></p>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Type</th>
-        <th>Description</th>
-        <th>Default</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-          <td><code>keypair</code></td>
-          <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.base.Keypair" href="../keypair/#substrateinterface.keypair.Keypair">Keypair</a></code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-        <tr>
-          <td><code>method</code></td>
-          <td>
-                <code>str</code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-        <tr>
-          <td><code>args</code></td>
-          <td>
-                <code>dict</code>
-          </td>
-          <td></td>
-          <td>
-                <code>None</code>
-          </td>
-        </tr>
-        <tr>
-          <td><code>value</code></td>
-          <td>
-                <code>int</code>
-          </td>
-          <td></td>
-          <td>
-                <code>0</code>
-          </td>
-        </tr>
-        <tr>
-          <td><code>gas_limit</code></td>
+          <td><code>ss58_format</code></td>
           <td>
                 <code><span title="typing.Optional">Optional</span>[int]</code>
           </td>
           <td></td>
           <td>
+                <code>42</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>crypto_type</code></td>
+          <td>
+          </td>
+          <td></td>
+          <td>
+                <code>KeypairType.SR25519</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="substrateinterface.keypair.Keypair" href="#substrateinterface.keypair.Keypair">Keypair</a></code>
+          </td>
+          <td></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h3 id="substrateinterface.keypair.Keypair.create_from_uri" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">create_from_uri</span><span class="p">(</span><span class="n">suri</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ss58_format</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span> <span class="n">crypto_type</span> <span class="o">=</span> <span class="n">KeypairType</span><span class="o">.</span><span class="n">SR25519</span><span class="p">,</span> <span class="n">language_code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">MnemonicLanguageCode</span><span class="o">.</span><span class="n">ENGLISH</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Keypair</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#substrateinterface.keypair.Keypair.create_from_uri" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Creates Keypair for specified suri in following format: <code>[mnemonic]/[soft-path]//[hard-path]</code></p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>suri</code></td>
+          <td>
+                <code>str</code>
+          </td>
+          <td></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>ss58_format</code></td>
+          <td>
+                <code><span title="typing.Optional">Optional</span>[int]</code>
+          </td>
+          <td></td>
+          <td>
+                <code>42</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>crypto_type</code></td>
+          <td>
+          </td>
+          <td></td>
+          <td>
+                <code>KeypairType.SR25519</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>language_code</code></td>
+          <td>
+                <code>str</code>
+          </td>
+          <td></td>
+          <td>
+                <code>MnemonicLanguageCode.ENGLISH</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="substrateinterface.keypair.Keypair" href="#substrateinterface.keypair.Keypair">Keypair</a></code>
+          </td>
+          <td></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h3 id="substrateinterface.keypair.Keypair.create_from_private_key" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">create_from_private_key</span><span class="p">(</span><span class="n">private_key</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">public_key</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ss58_address</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ss58_format</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">crypto_type</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">KeypairType</span><span class="o">.</span><span class="n">SR25519</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Keypair</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#substrateinterface.keypair.Keypair.create_from_private_key" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Creates Keypair for specified public/private keys</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>private_key</code></td>
+          <td>
+                <code><span title="typing.Union">Union</span>[bytes, str]</code>
+          </td>
+          <td></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>public_key</code></td>
+          <td>
+                <code><span title="typing.Union">Union</span>[bytes, str]</code>
+          </td>
+          <td></td>
+          <td>
                 <code>None</code>
           </td>
         </tr>
         <tr>
-          <td><code>storage_deposit_limit</code></td>
+          <td><code>ss58_address</code></td>
+          <td>
+                <code>str</code>
+          </td>
+          <td></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>ss58_format</code></td>
+          <td>
+                <code>int</code>
+          </td>
+          <td></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>crypto_type</code></td>
+          <td>
+                <code>int</code>
+          </td>
+          <td></td>
+          <td>
+                <code>KeypairType.SR25519</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="substrateinterface.keypair.Keypair" href="#substrateinterface.keypair.Keypair">Keypair</a></code>
+          </td>
+          <td></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h3 id="substrateinterface.keypair.Keypair.create_from_encrypted_json" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">create_from_encrypted_json</span><span class="p">(</span><span class="n">json_data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">],</span> <span class="n">passphrase</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ss58_format</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Keypair</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#substrateinterface.keypair.Keypair.create_from_encrypted_json" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Create a Keypair from a PolkadotJS format encrypted JSON file</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>json_data</code></td>
+          <td>
+                <code><span title="typing.Union">Union</span>[str, dict]</code>
+          </td>
+          <td></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>passphrase</code></td>
+          <td>
+                <code>str</code>
+          </td>
+          <td></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>ss58_format</code></td>
           <td>
                 <code>int</code>
           </td>
@@ -2628,7 +1879,357 @@ This method does not submit an extrinsic.</p>
     <tbody>
         <tr>
           <td>
-                <code><a class="autorefs autorefs-internal" title="substrateinterface.contracts.ContractExecutionReceipt" href="#substrateinterface.contracts.ContractExecutionReceipt">ContractExecutionReceipt</a></code>
+                <code><a class="autorefs autorefs-internal" title="substrateinterface.keypair.Keypair" href="#substrateinterface.keypair.Keypair">Keypair</a></code>
+          </td>
+          <td></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h3 id="substrateinterface.keypair.Keypair.export_to_encrypted_json" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">export_to_encrypted_json</span><span class="p">(</span><span class="n">passphrase</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span></code>
+
+<a href="#substrateinterface.keypair.Keypair.export_to_encrypted_json" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Export Keypair to PolkadotJS format encrypted JSON file</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>passphrase</code></td>
+          <td>
+                <code>str</code>
+          </td>
+          <td></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>name</code></td>
+          <td>
+                <code>str</code>
+          </td>
+          <td></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>dict</code>
+          </td>
+          <td></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h3 id="substrateinterface.keypair.Keypair.sign" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">sign</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ScaleBytes</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bytes</span></code>
+
+<a href="#substrateinterface.keypair.Keypair.sign" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Creates a signature for given data</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>data</code></td>
+          <td>
+                <code><span title="typing.Union">Union</span>[<span title="scalecodec.base.ScaleBytes">ScaleBytes</span>, bytes, str]</code>
+          </td>
+          <td></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>signature in bytes</code>
+          </td>
+          <td></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h3 id="substrateinterface.keypair.Keypair.verify" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">verify</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ScaleBytes</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">signature</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span></code>
+
+<a href="#substrateinterface.keypair.Keypair.verify" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Verifies data with specified signature</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>data</code></td>
+          <td>
+                <code><span title="typing.Union">Union</span>[<span title="scalecodec.base.ScaleBytes">ScaleBytes</span>, bytes, str]</code>
+          </td>
+          <td></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>signature</code></td>
+          <td>
+                <code><span title="typing.Union">Union</span>[bytes, str]</code>
+          </td>
+          <td></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>True if data is signed with this Keypair, otherwise False</code>
+          </td>
+          <td></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h3 id="substrateinterface.keypair.Keypair.encrypt_message" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">encrypt_message</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">recipient_public_key</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">nonce</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="n">secrets</span><span class="o">.</span><span class="n">token_bytes</span><span class="p">(</span><span class="mi">24</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="nb">bytes</span></code>
+
+<a href="#substrateinterface.keypair.Keypair.encrypt_message" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Encrypts message with for specified recipient</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>message</code></td>
+          <td>
+                <code><span title="typing.Union">Union</span>[bytes, str]</code>
+          </td>
+          <td></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>recipient_public_key</code></td>
+          <td>
+                <code>bytes</code>
+          </td>
+          <td></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>nonce</code></td>
+          <td>
+                <code>bytes</code>
+          </td>
+          <td></td>
+          <td>
+                <code>secrets.token_bytes(24)</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>Encrypted message</code>
+          </td>
+          <td></td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h3 id="substrateinterface.keypair.Keypair.decrypt_message" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">decrypt_message</span><span class="p">(</span><span class="n">encrypted_message_with_nonce</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">sender_public_key</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span></code>
+
+<a href="#substrateinterface.keypair.Keypair.decrypt_message" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Decrypts message from a specified sender</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>encrypted_message_with_nonce</code></td>
+          <td>
+                <code>bytes</code>
+          </td>
+          <td></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>sender_public_key</code></td>
+          <td>
+                <code>bytes</code>
+          </td>
+          <td></td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>Decrypted message</code>
           </td>
           <td></td>
         </tr>
@@ -2680,7 +2281,7 @@ This method does not submit an extrinsic.</p>
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../keypair/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Keypair" rel="prev">
+        <a href="../base/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Base" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -2689,20 +2290,20 @@ This method does not submit an extrinsic.</p>
               <span class="md-footer__direction">
                 Previous
               </span>
-              Keypair
+              Base
             </div>
           </div>
         </a>
       
       
         
-        <a href="../interfaces/" class="md-footer__link md-footer__link--next" aria-label="Next: Interfaces" rel="next">
+        <a href="../contracts/" class="md-footer__link md-footer__link--next" aria-label="Next: Contracts" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Interfaces
+              Contracts
             </div>
           </div>
           <div class="md-footer__button md-icon">
