@@ -63,14 +63,18 @@ nav:
     - usage/query-storage.md
     - usage/using-scaletype-objects.md
     - usage/subscriptions.md
-    - usage/call-runtime-apis.md
     - usage/keypair-creation-and-signing.md
     - usage/creating-extrinsics.md
+    - usage/call-runtime-apis.md
     - usage/ink-contract-interfacing.md
+    - usage/extensions.md
     - usage/cleanup-and-context-manager.md
   - Function Reference:
     - reference/base.md
+    - reference/keypair.md
     - reference/contracts.md
+    - reference/interfaces.md
+    - reference/extensions.md
     - reference/storage.md
   - Examples: examples.md
   - Metadata docs: https://polkascan.github.io/py-substrate-metadata-docs/
