@@ -53,13 +53,13 @@ class BlockTestCase(unittest.TestCase):
 
         def mocked_request(method, params, result_handler=None):
 
-            if method in ['chain_getBlockHash', 'chain_getHead', 'chain_getFinalisedHead']:
+            if method in ['chain_getBlockHash', 'chain_getHead', 'chain_getFinalisedHead', 'chain_getFinalizedHead']:
                 return {
                     "jsonrpc": "2.0",
                     "result": "0xec828914eca09331dad704404479e2899a971a9b5948345dc40abca4ac818f93",
                     "id": 1
                 }
-            elif method == 'chain_getRuntimeVersion':
+            elif method in ['chain_getRuntimeVersion', 'state_getRuntimeVersion']:
                 return {
                     "jsonrpc": "2.0",
                     "result": {"specVersion": 100, "transactionVersion": 1},
@@ -155,6 +155,12 @@ class BlockTestCase(unittest.TestCase):
                 return {
                     "jsonrpc": "2.0",
                     "result": True
+                }
+            elif method == 'rpc_methods':
+                return {
+                    "jsonrpc": "2.0",
+                    "result": {"methods": ['author_submitExtrinsic', 'author_submitAndWatchExtrinsic', 'author_unwatchExtrinsic', 'author_pendingExtrinsics', 'chain_getBlockHash', 'chain_getHeader', 'chain_getBlock', 'chain_getFinalizedHead', 'chain_subscribeNewHead', 'chain_subscribeFinalizedHeads', 'chain_unsubscribeNewHead', 'chain_subscribeNewHeads', 'chain_unsubscribeNewHeads', 'chain_unsubscribeFinalizedHeads', 'state_getRuntimeVersion', 'state_getMetadata', 'state_getStorage', 'state_getKeysPaged', 'state_queryStorageAt', 'state_call', 'state_subscribeRuntimeVersion', 'state_unsubscribeRuntimeVersion', 'state_subscribeStorage', 'state_unsubscribeStorage', 'system_localPeerId', 'system_nodeRoles', 'system_localListenAddresses', 'system_chain', 'system_properties', 'system_name', 'system_version', 'system_chainType', 'system_health', 'system_dryRun', 'system_accountNextIndex', 'payment_queryFeeDetails', 'payment_queryInfo', 'dev_newBlock', 'dev_setStorage', 'dev_timeTravel', 'dev_setHead', 'dev_dryRun', 'rpc_methods']},
+                    "id": 1
                 }
 
             raise ValueError(f"Unsupported mocked method {method}")

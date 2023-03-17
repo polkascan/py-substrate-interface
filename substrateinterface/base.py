@@ -226,7 +226,10 @@ class SubstrateInterface:
         bool
         """
         if self.config.get('rpc_methods') is None:
-            self.config['rpc_methods'] = self.rpc_request("rpc_methods", [])['result']['methods']
+            self.config['rpc_methods'] = []
+            result = self.rpc_request("rpc_methods", []).get('result')
+            if result:
+                self.config['rpc_methods'] = result.get('methods', [])
 
         return name in self.config['rpc_methods']
 
@@ -428,7 +431,10 @@ class SubstrateInterface:
         -------
 
         """
-        response = self.rpc_request("chain_getHead", [])
+        if self.supports_rpc_method("chain_getHead"):
+            response = self.rpc_request("chain_getHead", [])
+        else:
+            response = self.rpc_request("chain_getBlockHash", [])
 
         if response is not None:
             if 'error' in response:
@@ -438,13 +444,13 @@ class SubstrateInterface:
 
     def get_chain_finalised_head(self):
         """
-        A pass-though to existing JSONRPC method `chain_getFinalisedHead`
+        A pass-though to existing JSONRPC method `chain_getFinalizedHead`
 
         Returns
         -------
 
         """
-        response = self.rpc_request("chain_getFinalisedHead", [])
+        response = self.rpc_request("chain_getFinalizedHead", [])
 
         if response is not None:
             if 'error' in response:
@@ -452,7 +458,7 @@ class SubstrateInterface:
 
             return response.get('result')
 
-    def get_block_hash(self, block_id: int) -> str:
+    def get_block_hash(self, block_id: int = None) -> str:
         """
         A pass-though to existing JSONRPC method `chain_getBlockHash`
 
@@ -526,7 +532,7 @@ class SubstrateInterface:
 
     def get_storage_by_key(self, block_hash: str, storage_key: str):
         """
-        A pass-though to existing JSONRPC method `state_getStorageAt`
+        A pass-though to existing JSONRPC method `state_getStorage`
 
         Parameters
         ----------
@@ -538,7 +544,11 @@ class SubstrateInterface:
 
         """
 
-        response = self.rpc_request("state_getStorageAt", [storage_key, block_hash])
+        if self.supports_rpc_method('state_getStorageAt'):
+            response = self.rpc_request("state_getStorageAt", [storage_key, block_hash])
+        else:
+            response = self.rpc_request("state_getStorage", [storage_key, block_hash])
+
         if 'result' in response:
             return response.get('result')
         elif 'error' in response:
@@ -557,7 +567,10 @@ class SubstrateInterface:
         -------
 
         """
-        response = self.rpc_request("chain_getRuntimeVersion", [block_hash])
+        if self.supports_rpc_method("state_getRuntimeVersion"):
+            response = self.rpc_request("state_getRuntimeVersion", [block_hash])
+        else:
+            response = self.rpc_request("chain_getRuntimeVersion", [block_hash])
 
         if 'error' in response:
             raise SubstrateRequestException(response['error']['message'])
@@ -948,7 +961,10 @@ class SubstrateInterface:
 
         else:
 
-            response = self.rpc_request("state_getStorageAt", [storage_key.to_hex(), block_hash])
+            if self.supports_rpc_method('state_getStorageAt'):
+                response = self.rpc_request("state_getStorageAt", [storage_key.to_hex(), block_hash])
+            else:
+                response = self.rpc_request("state_getStorage", [storage_key.to_hex(), block_hash])
 
             if 'error' in response:
                 raise SubstrateRequestException(response['error']['message'])
@@ -1667,17 +1683,21 @@ class SubstrateInterface:
         def result_handler(message, update_nr, subscription_id):
             # Check if extrinsic is included and finalized
             if 'params' in message and type(message['params']['result']) is dict:
-                if 'finalized' in message['params']['result'] and wait_for_finalization:
+
+                # Convert result enum to lower for backwards compatibility
+                message_result = {k.lower(): v for k, v in message['params']['result'].items()}
+
+                if 'finalized' in message_result and wait_for_finalization:
                     self.rpc_request('author_unwatchExtrinsic', [subscription_id])
                     return {
-                        'block_hash': message['params']['result']['finalized'],
+                        'block_hash': message_result['finalized'],
                         'extrinsic_hash': '0x{}'.format(extrinsic.extrinsic_hash.hex()),
                         'finalized': True
                     }
-                elif 'inBlock' in message['params']['result'] and wait_for_inclusion and not wait_for_finalization:
+                elif 'inblock' in message_result and wait_for_inclusion and not wait_for_finalization:
                     self.rpc_request('author_unwatchExtrinsic', [subscription_id])
                     return {
-                        'block_hash': message['params']['result']['inBlock'],
+                        'block_hash': message_result['inblock'],
                         'extrinsic_hash': '0x{}'.format(extrinsic.extrinsic_hash.hex()),
                         'finalized': False
                     }
@@ -2211,7 +2231,9 @@ class SubstrateInterface:
                 if block_data_hash:
                     block_data['header']['hash'] = block_data_hash
 
-                block_data['header']['number'] = int(block_data['header']['number'], 16)
+                if type(block_data['header']['number']) is str:
+                    # Convert block number from hex (backwards compatibility)
+                    block_data['header']['number'] = int(block_data['header']['number'], 16)
 
                 extrinsic_cls = self.runtime_config.get_decoder_class('Extrinsic')
 
@@ -2232,72 +2254,73 @@ class SubstrateInterface:
                             block_data['extrinsics'][idx] = None
 
                 for idx, log_data in enumerate(block_data['header']["digest"]["logs"]):
+                    if type(log_data) is str:
+                        # Convert digest log from hex (backwards compatibility)
+                        try:
+                            log_digest_cls = self.runtime_config.get_decoder_class('sp_runtime::generic::digest::DigestItem')
 
-                    try:
-                        log_digest_cls = self.runtime_config.get_decoder_class('sp_runtime::generic::digest::DigestItem')
+                            if log_digest_cls is None:
+                                raise NotImplementedError("No decoding class found for 'DigestItem'")
 
-                        if log_digest_cls is None:
-                            raise NotImplementedError("No decoding class found for 'DigestItem'")
+                            log_digest = log_digest_cls(data=ScaleBytes(log_data))
+                            log_digest.decode()
 
-                        log_digest = log_digest_cls(data=ScaleBytes(log_data))
-                        log_digest.decode()
+                            block_data['header']["digest"]["logs"][idx] = log_digest
 
-                        block_data['header']["digest"]["logs"][idx] = log_digest
+                            if include_author and 'PreRuntime' in log_digest.value:
 
-                        if include_author and 'PreRuntime' in log_digest.value:
+                                if self.implements_scaleinfo():
 
-                            if self.implements_scaleinfo():
-
-                                engine = bytes(log_digest[1][0])
-                                # Retrieve validator set
-                                validator_set = self.query("Session", "Validators", block_hash=block_hash)
-
-                                if engine == b'BABE':
-                                    babe_predigest = self.runtime_config.create_scale_object(
-                                        type_string='RawBabePreDigest',
-                                        data=ScaleBytes(bytes(log_digest[1][1]))
-                                    )
-
-                                    babe_predigest.decode()
-
-                                    rank_validator = babe_predigest[1].value['authority_index']
-
-                                    block_author = validator_set[rank_validator]
-                                    block_data['author'] = block_author.value
-
-                                elif engine == b'aura':
-                                    aura_predigest = self.runtime_config.create_scale_object(
-                                        type_string='RawAuraPreDigest',
-                                        data=ScaleBytes(bytes(log_digest[1][1]))
-                                    )
-
-                                    aura_predigest.decode()
-
-                                    rank_validator = aura_predigest.value['slot_number'] % len(validator_set)
-
-                                    block_author = validator_set[rank_validator]
-                                    block_data['author'] = block_author.value
-                                else:
-                                    raise NotImplementedError(
-                                        f"Cannot extract author for engine {log_digest.value['PreRuntime'][0]}"
-                                    )
-                            else:
-
-                                if log_digest.value['PreRuntime']['engine'] == 'BABE':
+                                    engine = bytes(log_digest[1][0])
+                                    # Retrieve validator set
                                     validator_set = self.query("Session", "Validators", block_hash=block_hash)
-                                    rank_validator = log_digest.value['PreRuntime']['data']['authority_index']
 
-                                    block_author = validator_set.elements[rank_validator]
-                                    block_data['author'] = block_author.value
+                                    if engine == b'BABE':
+                                        babe_predigest = self.runtime_config.create_scale_object(
+                                            type_string='RawBabePreDigest',
+                                            data=ScaleBytes(bytes(log_digest[1][1]))
+                                        )
+
+                                        babe_predigest.decode()
+
+                                        rank_validator = babe_predigest[1].value['authority_index']
+
+                                        block_author = validator_set[rank_validator]
+                                        block_data['author'] = block_author.value
+
+                                    elif engine == b'aura':
+                                        aura_predigest = self.runtime_config.create_scale_object(
+                                            type_string='RawAuraPreDigest',
+                                            data=ScaleBytes(bytes(log_digest[1][1]))
+                                        )
+
+                                        aura_predigest.decode()
+
+                                        rank_validator = aura_predigest.value['slot_number'] % len(validator_set)
+
+                                        block_author = validator_set[rank_validator]
+                                        block_data['author'] = block_author.value
+                                    else:
+                                        raise NotImplementedError(
+                                            f"Cannot extract author for engine {log_digest.value['PreRuntime'][0]}"
+                                        )
                                 else:
-                                    raise NotImplementedError(
-                                        f"Cannot extract author for engine {log_digest.value['PreRuntime']['engine']}"
-                                    )
 
-                    except Exception:
-                        if not ignore_decoding_errors:
-                            raise
-                        block_data['header']["digest"]["logs"][idx] = None
+                                    if log_digest.value['PreRuntime']['engine'] == 'BABE':
+                                        validator_set = self.query("Session", "Validators", block_hash=block_hash)
+                                        rank_validator = log_digest.value['PreRuntime']['data']['authority_index']
+
+                                        block_author = validator_set.elements[rank_validator]
+                                        block_data['author'] = block_author.value
+                                    else:
+                                        raise NotImplementedError(
+                                            f"Cannot extract author for engine {log_digest.value['PreRuntime']['engine']}"
+                                        )
+
+                        except Exception:
+                            if not ignore_decoding_errors:
+                                raise
+                            block_data['header']["digest"]["logs"][idx] = None
 
             return block_data
 
