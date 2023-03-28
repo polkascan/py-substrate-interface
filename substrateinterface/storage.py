@@ -14,12 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import binascii
-from typing import Any
+from typing import Any, Optional
 
 from substrateinterface.exceptions import StorageFunctionNotFound
 
 from scalecodec import ScaleBytes, GenericMetadataVersioned, ss58_decode
-from scalecodec.base import ScaleDecoder, RuntimeConfigurationObject
+from scalecodec.base import ScaleDecoder, RuntimeConfigurationObject, ScaleType
 from .utils.hasher import blake2_256, two_x64_concat, xxh128, blake2_128, blake2_128_concat, identity
 
 
@@ -131,7 +131,8 @@ class StorageKey:
 
         Returns
         -------
-        str Hex string
+        str
+            Hex string
         """
         if self.data:
             return f'0x{self.data.hex()}'
@@ -220,6 +221,43 @@ class StorageKey:
         self.data = storage_hash
 
         return self.data
+
+    def decode_scale_value(self, data: Optional[ScaleBytes] = None) -> ScaleType:
+        """
+
+        Parameters
+        ----------
+        data
+
+        Returns
+        -------
+
+        """
+
+        result_found = False
+
+        if data is not None:
+            change_scale_type = self.value_scale_type
+            result_found = True
+        elif self.metadata_storage_function.value['modifier'] == 'Default':
+            # Fallback to default value of storage function if no result
+            change_scale_type = self.value_scale_type
+            data = ScaleBytes(self.metadata_storage_function.value_object['default'].value_object)
+        else:
+            # No result is interpreted as an Option<...> result
+            change_scale_type = f'Option<{self.value_scale_type}>'
+            data = ScaleBytes(self.metadata_storage_function.value_object['default'].value_object)
+
+        # Decode SCALE result data
+        updated_obj = self.runtime_config.create_scale_object(
+            type_string=change_scale_type,
+            data=data,
+            metadata=self.metadata
+        )
+        updated_obj.decode()
+        updated_obj.meta_info = {'result_found': result_found}
+
+        return updated_obj
 
     def __repr__(self):
         if self.pallet and self.storage_function:

@@ -867,6 +867,58 @@ class SubstrateInterface:
             ignore_decoding_errors=ignore_decoding_errors
         )
 
+    def query_multi(self, storage_keys: List[StorageKey], block_hash: Optional[str] = None) -> list:
+        """
+        Query multiple storage keys in one request.
+
+        Example:
+
+        ```
+        storage_keys = [
+            substrate.create_storage_key(
+                "System", "Account", ["F4xQKRUagnSGjFqafyhajLs94e7Vvzvr8ebwYJceKpr8R7T"]
+            ),
+            substrate.create_storage_key(
+                "System", "Account", ["GSEX8kR4Kz5UZGhvRUCJG93D5hhTAoVZ5tAe6Zne7V42DSi"]
+            )
+        ]
+
+        result = substrate.query_multi(storage_keys)
+        ```
+
+        Parameters
+        ----------
+        storage_keys: list of StorageKey objects
+        block_hash: Optional block_hash of state snapshot
+
+        Returns
+        -------
+        list of `(storage_key, scale_obj)` tuples
+        """
+
+        self.init_runtime(block_hash=block_hash)
+
+        # Retrieve corresponding value
+        response = self.rpc_request("state_queryStorageAt", [[s.to_hex() for s in storage_keys], block_hash])
+
+        if 'error' in response:
+            raise SubstrateRequestException(response['error']['message'])
+
+        result = []
+
+        storage_key_map = {s.to_hex(): s for s in storage_keys}
+
+        for result_group in response['result']:
+            for change_storage_key, change_data in result_group['changes']:
+                # Decode result for specified storage_key
+                storage_key = storage_key_map[change_storage_key]
+                if change_data is not None:
+                    change_data = ScaleBytes(change_data)
+
+                result.append((storage_key, storage_key.decode_scale_value(change_data)))
+
+        return result
+
     def query(self, module: str, storage_function: str, params: list = None, block_hash: str = None,
               subscription_handler: callable = None, raw_storage_key: bytes = None) -> ScaleType:
         """
@@ -1083,42 +1135,43 @@ class SubstrateInterface:
         """
         self.init_runtime()
 
+        storage_key_map = {s.to_hex(): s for s in storage_keys}
+
         def result_handler(message, update_nr, subscription_id):
             # Process changes
             for change_storage_key, change_data in message['params']['result']['changes']:
                 # Check for target storage key
-                for storage_key in storage_keys:
-                    if change_storage_key == storage_key.to_hex():
-                        result_found = False
+                storage_key = storage_key_map[change_storage_key]
+                result_found = False
 
-                        if change_data is not None:
-                            change_scale_type = storage_key.value_scale_type
-                            result_found = True
-                        elif storage_key.metadata_storage_function.value['modifier'] == 'Default':
-                            # Fallback to default value of storage function if no result
-                            change_scale_type = storage_key.value_scale_type
-                            change_data = storage_key.metadata_storage_function.value_object['default'].value_object
-                        else:
-                            # No result is interpreted as an Option<...> result
-                            change_scale_type = f'Option<{storage_key.value_scale_type}>'
-                            change_data = storage_key.metadata_storage_function.value_object['default'].value_object
+                if change_data is not None:
+                    change_scale_type = storage_key.value_scale_type
+                    result_found = True
+                elif storage_key.metadata_storage_function.value['modifier'] == 'Default':
+                    # Fallback to default value of storage function if no result
+                    change_scale_type = storage_key.value_scale_type
+                    change_data = storage_key.metadata_storage_function.value_object['default'].value_object
+                else:
+                    # No result is interpreted as an Option<...> result
+                    change_scale_type = f'Option<{storage_key.value_scale_type}>'
+                    change_data = storage_key.metadata_storage_function.value_object['default'].value_object
 
-                        # Decode SCALE result data
-                        updated_obj = self.runtime_config.create_scale_object(
-                            type_string=change_scale_type,
-                            data=ScaleBytes(change_data),
-                            metadata=self.metadata
-                        )
-                        updated_obj.decode()
-                        updated_obj.meta_info = {'result_found': result_found}
+                # Decode SCALE result data
+                updated_obj = self.runtime_config.create_scale_object(
+                    type_string=change_scale_type,
+                    data=ScaleBytes(change_data),
+                    metadata=self.metadata
+                )
+                updated_obj.decode()
+                updated_obj.meta_info = {'result_found': result_found}
 
-                        subscription_result = subscription_handler(storage_key, updated_obj, update_nr, subscription_id)
+                subscription_result = subscription_handler(storage_key, updated_obj, update_nr, subscription_id)
 
-                        if subscription_result is not None:
-                            # Handler returned end result: unsubscribe from further updates
-                            self.rpc_request("state_unsubscribeStorage", [subscription_id])
+                if subscription_result is not None:
+                    # Handler returned end result: unsubscribe from further updates
+                    self.rpc_request("state_unsubscribeStorage", [subscription_id])
 
-                            return subscription_result
+                    return subscription_result
 
         if not callable(subscription_handler):
             raise ValueError('Provided "subscription_handler" is not callable')
