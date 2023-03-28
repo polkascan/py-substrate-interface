@@ -49,6 +49,30 @@ print(storage_function.get_param_info())
 # }]
 ```
 
+## Querying multiple storage entries at once
+
+When a large amount of storage entries is requested, the most efficient way is to use the `query_multi()` function. 
+This will batch all the requested storage entries in one RPC request. 
+
+```python
+storage_keys = [
+    substrate.create_storage_key(
+        "System", "Account", ["F4xQKRUagnSGjFqafyhajLs94e7Vvzvr8ebwYJceKpr8R7T"]
+    ),
+    substrate.create_storage_key(
+        "System", "Account", ["GSEX8kR4Kz5UZGhvRUCJG93D5hhTAoVZ5tAe6Zne7V42DSi"]
+    ),
+    substrate.create_storage_key(
+        "Staking", "Bonded", ["GSEX8kR4Kz5UZGhvRUCJG93D5hhTAoVZ5tAe6Zne7V42DSi"]
+    )
+]
+
+result = substrate.query_multi(storage_keys)
+
+for storage_key, value_obj in result:
+    print(storage_key, value_obj)
+```
+
 ## Query a mapped storage function
 Mapped storage functions can be iterated over all key/value pairs, for these type of storage functions `query_map()` 
 can be used.

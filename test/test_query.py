@@ -122,6 +122,34 @@ class QueryTestCase(unittest.TestCase):
         result = self.kusama_substrate.query("System", "PalletVersion")
         self.assertGreaterEqual(result.value, 0)
 
+    def test_query_multi(self):
+
+        storage_keys = [
+            self.kusama_substrate.create_storage_key(
+                "System", "Account", ["F4xQKRUagnSGjFqafyhajLs94e7Vvzvr8ebwYJceKpr8R7T"]
+            ),
+            self.kusama_substrate.create_storage_key(
+                "System", "Account", ["GSEX8kR4Kz5UZGhvRUCJG93D5hhTAoVZ5tAe6Zne7V42DSi"]
+            ),
+            self.kusama_substrate.create_storage_key(
+                "Staking", "Bonded", ["GSEX8kR4Kz5UZGhvRUCJG93D5hhTAoVZ5tAe6Zne7V42DSi"]
+            )
+        ]
+
+        result = self.kusama_substrate.query_multi(storage_keys)
+
+        self.assertEqual(len(result), 3)
+        self.assertEqual(result[0][0].params[0], "F4xQKRUagnSGjFqafyhajLs94e7Vvzvr8ebwYJceKpr8R7T")
+        self.assertGreater(result[0][1].value['nonce'], 0)
+        self.assertEqual(result[1][1].value['nonce'], 0)
+
+    def test_storage_key_unknown(self):
+        with self.assertRaises(StorageFunctionNotFound):
+            self.kusama_substrate.create_storage_key("Unknown", "Unknown")
+
+        with self.assertRaises(StorageFunctionNotFound):
+            self.kusama_substrate.create_storage_key("System", "Unknown")
+
 
 if __name__ == '__main__':
     unittest.main()
