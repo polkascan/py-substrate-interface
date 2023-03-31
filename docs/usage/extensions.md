@@ -1,9 +1,10 @@
 # Extensions
 
-The extension framework is designed to enhance and improve search capabilities of the Substrate node. 
+The extension framework is designed to enhance and improve search capabilities on top of existing functionality provided 
+by the Substrate node. 
 It allows for the integration of third-party search indices, which can be easily interchanged with 
 other data sources that provide the same functionality, as long as they adhere to standardized naming conventions in
-the registry.
+the extension registry.
 
 ## Search extensions
 
