@@ -3,8 +3,8 @@
 In Substrate, any pallet can introduce new storage items that will become part of the blockchain state. These storage 
 items can be simple single values, or more complex storage maps.
 
-The runtime exposes several storage functions to query those storage items and are provided in the metadata 
-(see `substrate.get_metadata_storage_function()`).
+The runtime exposes several storage functions to query those storage items and are provided in the metadata. 
+See the [metadata documentation](https://polkascan.github.io/py-substrate-metadata-docs/) for more information of available storage functions for several Substrate runtimes.
 
 ## Example
 
