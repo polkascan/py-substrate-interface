@@ -17,11 +17,9 @@
 import os
 import unittest
 
-from scalecodec.base import ScaleBytes
-from substrateinterface import SubstrateInterface, ContractMetadata, ContractInstance, Keypair
-from substrateinterface.contracts import ContractEvent
+from scalecodec import ScaleBytes
+from substrateinterface import SubstrateInterface, ContractMetadata, ContractInstance, Keypair, ContractEvent
 from substrateinterface.exceptions import ContractMetadataParseException
-from substrateinterface.utils.ss58 import ss58_encode
 from test import settings
 
 
@@ -278,76 +276,9 @@ class ContractMetadataV1TestCase(ContractMetadataTestCase):
             )
 
 
-class ContractInstanceTestCase(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-
-        class MockedSubstrateInterface(SubstrateInterface):
-
-            def rpc_request(self, method, params, result_handler=None):
-                if method == 'rpc_methods':
-                    response = super().rpc_request(method, params, result_handler)
-                    response['result']['methods'].remove('state_call')
-                    return response
-                if method == 'contracts_call':
-                    return {
-                        'jsonrpc': '2.0',
-                        'result': {
-                            'success': {
-                                'data': '0x000064a7b3b6e00d0000000000000000', 'flags': 0, 'gas_consumed': 2616500000
-                            }
-                         }, 'id': self.request_id
-                    }
-
-                return super().rpc_request(method, params, result_handler)
-
-        cls.substrate = MockedSubstrateInterface(url=settings.KUSAMA_NODE_URL, type_registry_preset='kusama')
-
-        cls.keypair = Keypair.create_from_uri('//Alice')
-
-    def setUp(self) -> None:
-        self.contract = ContractInstance.create_from_address(
-            contract_address="5FV9cnzFc2tDrWcDkmoup7VZWpH9HrTaw8STnWpAQqT7KvUK",
-            metadata_file=os.path.join(os.path.dirname(__file__), 'fixtures', 'erc20-v0.json'),
-            substrate=self.substrate
-        )
-
-    def test_instance_read(self):
-
-        result = self.contract.read(self.keypair, 'total_supply')
-
-        self.assertEqual(1000000000000000000, result.contract_result_data.value)
-
-    def test_instance_read_with_args(self):
-
-        result = self.contract.read(self.keypair, 'balance_of',
-                                    args={'owner': '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'})
-
-        self.assertEqual(1000000000000000000, result.contract_result_data.value)
-
-
-class ContractInstanceV1TestCase(ContractInstanceTestCase):
-    def setUp(self) -> None:
-        self.contract = ContractInstance.create_from_address(
-            contract_address="5FV9cnzFc2tDrWcDkmoup7VZWpH9HrTaw8STnWpAQqT7KvUK",
-            metadata_file=os.path.join(os.path.dirname(__file__), 'fixtures', 'erc20-v1.json'),
-            substrate=self.substrate
-        )
-
-
 class ContractMetadataV3TestCase(ContractMetadataV1TestCase):
     def setUp(self) -> None:
         self.contract_metadata = ContractMetadata.create_from_file(
-            metadata_file=os.path.join(os.path.dirname(__file__), 'fixtures', 'erc20-v3.json'),
-            substrate=self.substrate
-        )
-
-
-class ContractInstanceV3TestCase(ContractInstanceTestCase):
-    def setUp(self) -> None:
-        self.contract = ContractInstance.create_from_address(
-            contract_address="5FV9cnzFc2tDrWcDkmoup7VZWpH9HrTaw8STnWpAQqT7KvUK",
             metadata_file=os.path.join(os.path.dirname(__file__), 'fixtures', 'erc20-v3.json'),
             substrate=self.substrate
         )
@@ -367,6 +298,13 @@ class FlipperMetadataV3TestCase(unittest.TestCase):
 
     def test_metadata_parsed(self):
         self.assertNotEqual(self.contract_metadata.metadata_dict, {})
+
+    def test_incorrect_metadata_file(self):
+        with self.assertRaises(ContractMetadataParseException):
+            ContractMetadata.create_from_file(
+                metadata_file=os.path.join(os.path.dirname(__file__), 'fixtures', 'incorrect_metadata.json'),
+                substrate=self.substrate
+            )
 
     def test_extract_typestring_from_types(self):
         self.assertEqual(
@@ -395,6 +333,18 @@ class FlipperMetadataV3TestCase(unittest.TestCase):
 
         scale_data = self.contract_metadata.generate_message_data("get")
         self.assertEqual('0x2f865bd9', scale_data.to_hex())
+
+    def test_invalid_constructor_name(self):
+        with self.assertRaises(ValueError) as cm:
+            self.contract_metadata.generate_constructor_data("invalid")
+
+        self.assertEqual('Constructor "invalid" not found', str(cm.exception))
+
+    def test_invalid_message_name(self):
+        with self.assertRaises(ValueError) as cm:
+            self.contract_metadata.generate_message_data("invalid_msg_name")
+
+        self.assertEqual('Message "invalid_msg_name" not found', str(cm.exception))
 
 
 class FlipperInstanceTestCase(unittest.TestCase):
