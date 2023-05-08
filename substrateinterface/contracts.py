@@ -621,7 +621,7 @@ class ContractCode:
 
         return self.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
 
-    def deploy(self, keypair: Keypair, endowment: int, gas_limit: dict, constructor: str, args: dict = None,
+    def deploy(self, keypair: Keypair, constructor: str, args: dict = None, value: int = 0, gas_limit: dict = None,
                deployment_salt: str = None, upload_code: bool = False, storage_deposit_limit: int = None
                ) -> "ContractInstance":
         """
@@ -631,10 +631,10 @@ class ContractCode:
         Parameters
         ----------
         keypair
-        endowment: Initial deposit (`value`) for the newly created contract address
-        gas_limit: Gas limit as WeightV2 type e.g. {'ref_time': 25990000000, 'proof_size': 11990383647911208550}
         constructor: name of the constructor to use, provided in the metadata
         args: arguments for the constructor
+        value: Value sent to created contract address
+        gas_limit: Gas limit as WeightV2 type. Will default to {'ref_time': 25990000000, 'proof_size': 11990383647911208550}.
         deployment_salt: optional string or hex-string that acts as a salt for this deployment
         upload_code: When True the WASM blob itself will be uploaded with the deploy, False if the WASM is already present on-chain
         storage_deposit_limit: The maximum amount of balance that can be charged to pay for the storage consumed.
@@ -647,6 +647,9 @@ class ContractCode:
         # Lookup constructor
         data = self.metadata.generate_constructor_data(name=constructor, args=args)
 
+        if gas_limit is None:
+            gas_limit = {'ref_time': 25990000000, 'proof_size': 11990383647911208550}
+
         if upload_code is True:
 
             if not self.wasm_bytes:
@@ -656,8 +659,7 @@ class ContractCode:
                 call_module='Contracts',
                 call_function='instantiate_with_code',
                 call_params={
-                    'endowment': endowment,  # deprecated
-                    'value': endowment,
+                    'value': value,
                     'gas_limit': gas_limit,
                     'storage_deposit_limit': storage_deposit_limit,
                     'code': '0x{}'.format(self.wasm_bytes.hex()),
@@ -671,8 +673,7 @@ class ContractCode:
                 call_module='Contracts',
                 call_function='instantiate',
                 call_params={
-                    'endowment': endowment,  # deprecated
-                    'value': endowment,
+                    'value': value,
                     'gas_limit': gas_limit,
                     'storage_deposit_limit': storage_deposit_limit,
                     'code_hash': f'0x{self.code_hash.hex()}',

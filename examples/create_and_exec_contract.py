@@ -57,12 +57,11 @@ try:
         print('Deploy contract...')
         contract = code.deploy(
             keypair=keypair,
-            endowment=0,
-            gas_limit={'ref_time': 25990000000, 'proof_size': 11990383647911208550},
             constructor="new",
             args={'init_value': True},
-            upload_code=True,
-            deployment_salt="test2"
+            value=0,
+            gas_limit={'ref_time': 25990000000, 'proof_size': 11990383647911208550},
+            upload_code=True
         )
 
         print(f'✅ Deployed @ {contract.contract_address}')
