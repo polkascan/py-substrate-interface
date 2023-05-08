@@ -2203,7 +2203,7 @@ ink! project</p>
 
 
 <h3 id="substrateinterface.contracts.ContractCode.deploy" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">deploy</span><span class="p">(</span><span class="n">keypair</span><span class="p">:</span> <span class="n">Keypair</span><span class="p">,</span> <span class="n">endowment</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">gas_limit</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">constructor</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">deployment_salt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">upload_code</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">storage_deposit_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ContractInstance</span></code>
+<code class="highlight language-python"><span class="n">deploy</span><span class="p">(</span><span class="n">keypair</span><span class="p">:</span> <span class="n">Keypair</span><span class="p">,</span> <span class="n">constructor</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">gas_limit</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">deployment_salt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">upload_code</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">storage_deposit_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ContractInstance</span></code>
 
 <a href="#substrateinterface.contracts.ContractCode.deploy" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -2235,26 +2235,6 @@ constructor arguments</p>
           </td>
         </tr>
         <tr>
-          <td><code>endowment</code></td>
-          <td>
-                <code>int</code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-        <tr>
-          <td><code>gas_limit</code></td>
-          <td>
-                <code>int</code>
-          </td>
-          <td></td>
-          <td>
-              <em>required</em>
-          </td>
-        </tr>
-        <tr>
           <td><code>constructor</code></td>
           <td>
                 <code>str</code>
@@ -2266,6 +2246,26 @@ constructor arguments</p>
         </tr>
         <tr>
           <td><code>args</code></td>
+          <td>
+                <code>dict</code>
+          </td>
+          <td></td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>value</code></td>
+          <td>
+                <code>int</code>
+          </td>
+          <td></td>
+          <td>
+                <code>0</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>gas_limit</code></td>
           <td>
                 <code>dict</code>
           </td>
@@ -2557,7 +2557,7 @@ This method does not submit an extrinsic.</p>
 
 
 <h3 id="substrateinterface.contracts.ContractInstance.exec" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">exec</span><span class="p">(</span><span class="n">keypair</span><span class="p">:</span> <span class="n">Keypair</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">gas_limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">storage_deposit_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ContractExecutionReceipt</span></code>
+<code class="highlight language-python"><span class="n">exec</span><span class="p">(</span><span class="n">keypair</span><span class="p">:</span> <span class="n">Keypair</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">gas_limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">storage_deposit_limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ContractExecutionReceipt</span></code>
 
 <a href="#substrateinterface.contracts.ContractInstance.exec" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -2621,7 +2621,7 @@ This method does not submit an extrinsic.</p>
         <tr>
           <td><code>gas_limit</code></td>
           <td>
-                <code><span title="typing.Optional">Optional</span>[int]</code>
+                <code><span title="typing.Optional">Optional</span>[dict]</code>
           </td>
           <td></td>
           <td>
