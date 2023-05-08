@@ -1296,15 +1296,13 @@
 <span class="normal">68</span>
 <span class="normal">69</span>
 <span class="normal">70</span>
-<span class="normal">71</span>
-<span class="normal">72</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">import</span> <span class="nn">os</span>
+<span class="normal">71</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">import</span> <span class="nn">os</span>
 
 <span class="kn">from</span> <span class="nn">substrateinterface.contracts</span> <span class="kn">import</span> <span class="n">ContractCode</span><span class="p">,</span> <span class="n">ContractInstance</span>
 <span class="kn">from</span> <span class="nn">substrateinterface</span> <span class="kn">import</span> <span class="n">SubstrateInterface</span><span class="p">,</span> <span class="n">Keypair</span>
 
 <span class="n">substrate</span> <span class="o">=</span> <span class="n">SubstrateInterface</span><span class="p">(</span>
-    <span class="n">url</span><span class="o">=</span><span class="s2">&quot;ws://127.0.0.1:9944&quot;</span><span class="p">,</span>
-    <span class="n">type_registry_preset</span><span class="o">=</span><span class="s1">&#39;canvas&#39;</span>
+    <span class="n">url</span><span class="o">=</span><span class="s2">&quot;ws://127.0.0.1:9944&quot;</span>
 <span class="p">)</span>
 
 <span class="n">keypair</span> <span class="o">=</span> <span class="n">Keypair</span><span class="o">.</span><span class="n">create_from_uri</span><span class="p">(</span><span class="s1">&#39;//Alice&#39;</span><span class="p">)</span>
@@ -1336,10 +1334,10 @@
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Deploy contract...&#39;</span><span class="p">)</span>
     <span class="n">contract</span> <span class="o">=</span> <span class="n">code</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span>
         <span class="n">keypair</span><span class="o">=</span><span class="n">keypair</span><span class="p">,</span>
-        <span class="n">endowment</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-        <span class="n">gas_limit</span><span class="o">=</span><span class="mi">1000000000000</span><span class="p">,</span>
         <span class="n">constructor</span><span class="o">=</span><span class="s2">&quot;new&quot;</span><span class="p">,</span>
         <span class="n">args</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;init_value&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+        <span class="n">value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">gas_limit</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;ref_time&#39;</span><span class="p">:</span> <span class="mi">25990000000</span><span class="p">,</span> <span class="s1">&#39;proof_size&#39;</span><span class="p">:</span> <span class="mi">11990383647911208550</span><span class="p">},</span>
         <span class="n">upload_code</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
 
