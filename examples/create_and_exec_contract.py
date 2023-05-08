@@ -25,8 +25,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 try:
     substrate = SubstrateInterface(
-        url="ws://127.0.0.1:9944",
-        type_registry_preset='canvas'
+        url="ws://127.0.0.1:9944"
     )
 
     keypair = Keypair.create_from_uri('//Alice')
@@ -58,10 +57,10 @@ try:
         print('Deploy contract...')
         contract = code.deploy(
             keypair=keypair,
-            endowment=0,
-            gas_limit=1000000000000,
             constructor="new",
             args={'init_value': True},
+            value=0,
+            gas_limit={'ref_time': 25990000000, 'proof_size': 11990383647911208550},
             upload_code=True
         )
 

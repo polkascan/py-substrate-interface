@@ -11,10 +11,12 @@ substrate = SubstrateInterface(url="wss://rpc.polkadot.io")
 substrate.register_extension(SubstrateNodeSearchExtension(max_block_range=100))
 
 # Search for block number corresponding a specific datetime
-block_datetime = datetime(2000, 7, 12, 0, 0, 0)
+block_datetime = datetime(2022, 1, 1, 0, 0, 0)
 block_number = substrate.extensions.search_block_number(block_datetime=block_datetime)
 print(f'Block number for {block_datetime}: #{block_number}')
 
+# account_info = substrate.runtime.
+# exit()
 
 # Returns all `Balances.Transfer` events from the last 30 blocks
 events = substrate.extensions.filter_events(pallet_name="Balances", event_name="Transfer", block_start=-30)
