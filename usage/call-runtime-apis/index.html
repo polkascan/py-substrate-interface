@@ -881,7 +881,7 @@
 <p>Each Substrate node contains a runtime. The runtime contains the business logic of the chain. It defines what 
 transactions are valid and invalid and determines how the chain's state changes in response to transactions. </p>
 <p>A Runtime API facilitates this kind of communication between the outer node and the runtime. 
-<a href="https://substrate.recipes/runtime-api.html">More information about Runtime APIs</a></p>
+<a href="https://docs.substrate.io/reference/runtime-apis/">More information about Runtime APIs</a></p>
 <h2 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
 <span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">runtime_call</span><span class="p">(</span><span class="s2">&quot;AccountNonceApi&quot;</span><span class="p">,</span> <span class="s2">&quot;account_nonce&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY&quot;</span><span class="p">])</span>
