@@ -4,7 +4,7 @@ Each Substrate node contains a runtime. The runtime contains the business logic 
 transactions are valid and invalid and determines how the chain's state changes in response to transactions. 
 
 A Runtime API facilitates this kind of communication between the outer node and the runtime. 
-[More information about Runtime APIs](https://substrate.recipes/runtime-api.html)
+[More information about Runtime APIs](https://docs.substrate.io/reference/runtime-apis/)
 
 ## Example
 ```python
