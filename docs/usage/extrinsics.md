@@ -1,4 +1,4 @@
-# Creating extrinsics
+# Extrinsics
 
 In Substrate, transactions are often more broadly referred to as (signed) extrinsics. The term extrinsic is generally 
 used to mean any information that originates outside of the runtime. An extrinsic is basically a vehicle that carries

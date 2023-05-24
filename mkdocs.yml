@@ -64,7 +64,7 @@ nav:
     - usage/using-scaletype-objects.md
     - usage/subscriptions.md
     - usage/keypair-creation-and-signing.md
-    - usage/creating-extrinsics.md
+    - usage/extrinsics.md
     - usage/call-runtime-apis.md
     - usage/ink-contract-interfacing.md
     - usage/extensions.md
