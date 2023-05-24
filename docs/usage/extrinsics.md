@@ -4,6 +4,8 @@ In Substrate, transactions are often more broadly referred to as (signed) extrin
 used to mean any information that originates outside of the runtime. An extrinsic is basically a vehicle that carries
 the intention to execute a function call in the runtime, along with proof of the account that wants to execute it.
 
+## Creating extrinsics
+
 See [the metadata documentation](https://polkascan.github.io/py-substrate-metadata-docs/) for more information how to compose specific calls for several Substrate runtimes.
 
 _Example:_
