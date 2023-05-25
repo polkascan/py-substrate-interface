@@ -789,7 +789,8 @@ class ContractInstance:
         return call_result
 
     def exec(self, keypair: Keypair, method: str, args: dict = None,
-             value: int = 0, gas_limit: Optional[dict] = None, storage_deposit_limit: int = None
+             value: int = 0, gas_limit: Optional[dict] = None, storage_deposit_limit: int = None,
+             wait_for_inclusion: bool = True, wait_for_finalization: bool = False
              ) -> ContractExecutionReceipt:
         """
         Executes provided message by creating and submitting an extrinsic. To get a gas prediction or perform a
@@ -803,6 +804,8 @@ class ContractInstance:
         value: value to send when executing the message
         gas_limit: dict repesentation of `WeightV2` type. When omited the gas limit will be calculated with a `read()`
         storage_deposit_limit: The maximum amount of balance that can be charged to pay for the storage consumed
+        wait_for_inclusion: wait until extrinsic is included in a block (only works for websocket connections)
+        wait_for_finalization: wait until extrinsic is finalized (only works for websocket connections)
 
         Returns
         -------
@@ -829,6 +832,8 @@ class ContractInstance:
 
         extrinsic = self.substrate.create_signed_extrinsic(call=call, keypair=keypair)
 
-        receipt = self.substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
+        receipt = self.substrate.submit_extrinsic(
+            extrinsic, wait_for_inclusion=wait_for_inclusion, wait_for_finalization=wait_for_finalization
+        )
 
         return ContractExecutionReceipt.create_from_extrinsic_receipt(receipt, self.metadata)
