@@ -77,6 +77,10 @@ nav:
     - reference/extensions.md
     - reference/storage.md
   - Examples: examples.md
+  - Extensions:
+      - extensions/index.md
+      - extensions/substrate-node-extension.md
+      - extensions/polkascan-extension.md
   - Metadata docs: https://polkascan.github.io/py-substrate-metadata-docs/
 
 
