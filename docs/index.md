@@ -14,6 +14,9 @@ About [installation, initialization](getting-started/installation/) and useful b
 ## Examples
 [Various code snippets](examples.md) for common use-cases.
 
+## Extensions
+Overview of available [extensions](/extensions/); adding or improving existing functionality.
+
 ## Metadata docs
 [Documentation of Substrate metadata](https://polkascan.github.io/py-substrate-metadata-docs/) for well known runtimes and how to use it with py-substrate-interface.
 
