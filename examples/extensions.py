@@ -1,14 +1,14 @@
 from datetime import datetime, timedelta
 
 from substrateinterface import SubstrateInterface
-from substrateinterface.extensions import SubstrateNodeSearchExtension
+from substrateinterface.extensions import SubstrateNodeExtension
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
 substrate = SubstrateInterface(url="wss://rpc.polkadot.io")
 
-substrate.register_extension(SubstrateNodeSearchExtension(max_block_range=100))
+substrate.register_extension(SubstrateNodeExtension(max_block_range=100))
 
 # Search for block number corresponding a specific datetime
 block_datetime = datetime(2022, 1, 1, 0, 0, 0)

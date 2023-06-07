@@ -1,3 +1,3 @@
 # Extensions
 
-[Moved to extensions section](/extensions/)
+Moved to main section "Extensions" 

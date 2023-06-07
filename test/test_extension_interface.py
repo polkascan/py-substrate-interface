@@ -20,7 +20,7 @@ import unittest
 
 from substrateinterface import SubstrateInterface
 from substrateinterface.exceptions import ExtensionCallNotFound
-from substrateinterface.extensions import SubstrateNodeSearchExtension
+from substrateinterface.extensions import SubstrateNodeExtension
 from test import settings
 
 
@@ -31,7 +31,7 @@ class ExtensionsTestCase(unittest.TestCase):
         cls.substrate = SubstrateInterface(
             url=settings.POLKADOT_NODE_URL
         )
-        cls.substrate.register_extension(SubstrateNodeSearchExtension(max_block_range=100))
+        cls.substrate.register_extension(SubstrateNodeExtension(max_block_range=100))
 
     def test_search_block_number(self):
         block_datetime = datetime(2020, 7, 12, 0, 0, 0, tzinfo=timezone.utc)
@@ -40,6 +40,10 @@ class ExtensionsTestCase(unittest.TestCase):
 
         self.assertGreaterEqual(block_number, 665270)
         self.assertLessEqual(block_number, 665280)
+
+    def test_search_block_timestamp(self):
+        block_timestamp = self.substrate.extensions.get_block_timestamp(1000)
+        self.assertEqual(1590513426, block_timestamp)
 
     def test_unsupported_extension_call(self):
         with self.assertRaises(ExtensionCallNotFound):

@@ -1,4 +1,4 @@
-# PolkascanSearchExtension
+# PolkascanExtension
 
 This extension enables indexes provided by [Polkascan Explorer API](https://github.com/polkascan/explorer#explorer-api-component).
 
@@ -13,11 +13,11 @@ pip install substrate-interface-polkascan
 
 ```python
 from substrateinterface import SubstrateInterface 
-from substrateinterface_polkascan.extensions import PolkascanSearchExtension
+from substrateinterface_polkascan.extensions import PolkascanExtension
 
 substrate = SubstrateInterface(url="ws://127.0.0.1:9944")
 
-substrate.register_extension(PolkascanSearchExtension(url='http://127.0.0.1:8000/graphql/'))
+substrate.register_extension(PolkascanExtension(url='http://127.0.0.1:8000/graphql/'))
 ```
 
 ## Implemented extension calls

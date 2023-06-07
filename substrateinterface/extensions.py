@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 import math
 from datetime import datetime, timedelta
 
-__all__ = ['Extension', 'SearchExtension', 'SubstrateNodeSearchExtension']
+__all__ = ['Extension', 'SearchExtension', 'SubstrateNodeExtension']
 
 if TYPE_CHECKING:
     from .base import SubstrateInterface
@@ -135,7 +135,7 @@ class SearchExtension(Extension):
         raise NotImplementedError()
 
 
-class SubstrateNodeSearchExtension(SearchExtension):
+class SubstrateNodeExtension(SearchExtension):
     """
     Implementation of `SearchExtension` using only Substrate RPC methods. Could be significant inefficient.
     """
@@ -268,3 +268,8 @@ class SubstrateNodeSearchExtension(SearchExtension):
         self.debug_message(f"Accepted prediction #{predicted_block_number}")
 
         return predicted_block_number
+
+
+# Backwards compatibility
+class SubstrateNodeSearchExtension(SubstrateNodeExtension):
+    pass
