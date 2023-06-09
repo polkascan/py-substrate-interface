@@ -9,11 +9,11 @@ the extension registry.
 
 ## Available extensions
 
-| Name                                           | Maintained by        | Code                                                                              |
-|------------------------------------------------|----------------------|-----------------------------------------------------------------------------------|
+| Name                                                 | Maintained by        | Code                                                                              |
+|------------------------------------------------------|----------------------|-----------------------------------------------------------------------------------|
 | [SubstrateNodeExtension](./substrate-node-extension) | Polkascan Foundation | [Github](https://github.com/polkascan/py-substrate-interface)                     |
-| [PolkascanExtension](./polkascan-extension.md) | Polkascan Foundation | [Github](https://github.com/polkascan/py-substrate-interface-extension-polkascan) |
-
+| [PolkascanExtension](./polkascan-extension.md)       | Polkascan Foundation | [Github](https://github.com/polkascan/py-substrate-interface-extension-polkascan) |
+| [SubsquidExtension](./subsquid-extension.md)         | Polkascan Foundation | [Github](https://github.com/polkascan/py-substrate-interface-extension-subsquid)  |
 
 ## Available extension calls
 
