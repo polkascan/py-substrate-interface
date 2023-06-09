@@ -11,17 +11,15 @@
       
       
       
-        <link rel="prev" href="../extrinsics/">
+        <link rel="prev" href="../polkascan-extension/">
       
-      
-        <link rel="next" href="../ink-contract-interfacing/">
       
       <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.12">
     
     
       
-        <title>Call runtime APIs - Python Substrate Interface Docs</title>
+        <title>SubsquidExtension - Python Substrate Interface Docs</title>
       
     
     
@@ -71,7 +69,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#call-runtime-apis" class="md-skip">
+        <a href="#subsquidextension" class="md-skip">
           Skip to content
         </a>
       
@@ -105,7 +103,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Call runtime APIs
+              SubsquidExtension
             
           </span>
         </div>
@@ -205,15 +203,13 @@
         
   
   
-    
-  
 
 
   
   
   
     <li class="md-tabs__item">
-      <a href="../query-storage/" class="md-tabs__link md-tabs__link--active">
+      <a href="../../usage/query-storage/" class="md-tabs__link">
         Usage
       </a>
     </li>
@@ -251,13 +247,15 @@
         
   
   
+    
+  
 
 
   
   
   
     <li class="md-tabs__item">
-      <a href="../../extensions/" class="md-tabs__link">
+      <a href="../" class="md-tabs__link md-tabs__link--active">
         Extensions
       </a>
     </li>
@@ -417,16 +415,16 @@
 
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+      
+      <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
       
       
         
@@ -455,7 +453,7 @@
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
         <label class="md-nav__title" for="__nav_3">
           <span class="md-nav__icon md-icon"></span>
           Usage
@@ -468,7 +466,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../query-storage/" class="md-nav__link">
+      <a href="../../usage/query-storage/" class="md-nav__link">
         Query storage
       </a>
     </li>
@@ -482,7 +480,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../using-scaletype-objects/" class="md-nav__link">
+      <a href="../../usage/using-scaletype-objects/" class="md-nav__link">
         Using ScaleType objects
       </a>
     </li>
@@ -496,7 +494,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../subscriptions/" class="md-nav__link">
+      <a href="../../usage/subscriptions/" class="md-nav__link">
         Subscriptions
       </a>
     </li>
@@ -510,7 +508,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../keypair-creation-and-signing/" class="md-nav__link">
+      <a href="../../usage/keypair-creation-and-signing/" class="md-nav__link">
         Keypair creation and signing
       </a>
     </li>
@@ -524,7 +522,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../extrinsics/" class="md-nav__link">
+      <a href="../../usage/extrinsics/" class="md-nav__link">
         Extrinsics
       </a>
     </li>
@@ -536,66 +534,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          Call runtime APIs
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../usage/call-runtime-apis/" class="md-nav__link">
         Call runtime APIs
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
-    Example
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#list-of-available-runtime-apis-and-methods" class="md-nav__link">
-    List of available runtime APIs and methods
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#get-param-type-decomposition" class="md-nav__link">
-    Get param type decomposition
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -607,7 +550,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ink-contract-interfacing/" class="md-nav__link">
+      <a href="../../usage/ink-contract-interfacing/" class="md-nav__link">
         ink! contract interfacing
       </a>
     </li>
@@ -621,7 +564,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../extensions/" class="md-nav__link">
+      <a href="../../usage/extensions/" class="md-nav__link">
         Extensions
       </a>
     </li>
@@ -635,7 +578,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cleanup-and-context-manager/" class="md-nav__link">
+      <a href="../../usage/cleanup-and-context-manager/" class="md-nav__link">
         Cleanup and context manager
       </a>
     </li>
@@ -805,16 +748,16 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
       
       
-        
-      
-      <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
       
       
         
@@ -833,7 +776,7 @@
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="../../extensions/">Extensions</a>
+          <a href="../">Extensions</a>
           
             <label for="__nav_6">
               <span class="md-nav__icon md-icon"></span>
@@ -841,7 +784,7 @@
           
         </div>
       
-      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
         <label class="md-nav__title" for="__nav_6">
           <span class="md-nav__icon md-icon"></span>
           Extensions
@@ -856,7 +799,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../extensions/substrate-node-extension/" class="md-nav__link">
+      <a href="../substrate-node-extension/" class="md-nav__link">
         SubstrateNodeExtension
       </a>
     </li>
@@ -870,7 +813,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../extensions/polkascan-extension/" class="md-nav__link">
+      <a href="../polkascan-extension/" class="md-nav__link">
         PolkascanExtension
       </a>
     </li>
@@ -882,11 +825,93 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../../extensions/subsquid-extension/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          SubsquidExtension
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         SubsquidExtension
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    Installation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#initialization" class="md-nav__link">
+    Initialization
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implemented-extension-calls" class="md-nav__link">
+    Implemented extension calls
+  </a>
+  
+    <nav class="md-nav" aria-label="Implemented extension calls">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#filter-events" class="md-nav__link">
+    Filter events
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filter-extrinsics" class="md-nav__link">
+    Filter extrinsics
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#search-block-number" class="md-nav__link">
+    Search block number
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -940,23 +965,50 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
-    Example
+  <a href="#installation" class="md-nav__link">
+    Installation
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#list-of-available-runtime-apis-and-methods" class="md-nav__link">
-    List of available runtime APIs and methods
+  <a href="#initialization" class="md-nav__link">
+    Initialization
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#get-param-type-decomposition" class="md-nav__link">
-    Get param type decomposition
+  <a href="#implemented-extension-calls" class="md-nav__link">
+    Implemented extension calls
   </a>
+  
+    <nav class="md-nav" aria-label="Implemented extension calls">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#filter-events" class="md-nav__link">
+    Filter events
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filter-extrinsics" class="md-nav__link">
+    Filter extrinsics
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#search-block-number" class="md-nav__link">
+    Search block number
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -975,7 +1027,7 @@
                   
 
   
-    <a href="https://github.com/polkascan/py-substrate-interface/edit/master/docs/usage/call-runtime-apis.md" title="Edit this page" class="md-content__button md-icon">
+    <a href="https://github.com/polkascan/py-substrate-interface/edit/master/docs/extensions/subsquid-extension.md" title="Edit this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4v-2m10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1 2.1 2.1Z"/></svg>
     </a>
@@ -984,7 +1036,7 @@
     
       
     
-    <a href="https://github.com/polkascan/py-substrate-interface/raw/master/docs/usage/call-runtime-apis.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/polkascan/py-substrate-interface/raw/master/docs/extensions/subsquid-extension.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.15 8.15 0 0 1-1.23-2Z"/></svg>
     </a>
@@ -992,34 +1044,50 @@
 
 
 
-<h1 id="call-runtime-apis">Call runtime APIs<a class="headerlink" href="#call-runtime-apis" title="Permanent link">&para;</a></h1>
-<p>Each Substrate node contains a runtime. The runtime contains the business logic of the chain. It defines what 
-transactions are valid and invalid and determines how the chain's state changes in response to transactions. </p>
-<p>A Runtime API facilitates this kind of communication between the outer node and the runtime. 
-<a href="https://docs.substrate.io/reference/runtime-apis/">More information about Runtime APIs</a></p>
-<h2 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>
-<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">runtime_call</span><span class="p">(</span><span class="s2">&quot;AccountNonceApi&quot;</span><span class="p">,</span> <span class="s2">&quot;account_nonce&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY&quot;</span><span class="p">])</span>
-<span class="c1"># &lt;U32(value=2)&gt;</span>
+<h1 id="subsquidextension">SubsquidExtension<a class="headerlink" href="#subsquidextension" title="Permanent link">&para;</a></h1>
+<p>This extension enables utilisation of <a href="https://docs.subsquid.io/giant-squid-api/statuses/">Giant Squid indexes</a> provided by <a href="https://subsquid.io">Subsquid</a></p>
+<p>Maintained by <a href="https://github.com/polkascan/py-substrate-interface-extension-subsquid">Polkascan Foundation</a>.</p>
+<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>substrate-interface-subsquid
 </code></pre></div></td></tr></table></div>
-<h2 id="list-of-available-runtime-apis-and-methods">List of available runtime APIs and methods<a class="headerlink" href="#list-of-available-runtime-apis-and-methods" title="Permanent link">&para;</a></h2>
+<h2 id="initialization">Initialization<a class="headerlink" href="#initialization" title="Permanent link">&para;</a></h2>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
 <span class="normal">2</span>
 <span class="normal">3</span>
 <span class="normal">4</span>
-<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">runtime_calls</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">get_metadata_runtime_call_functions</span><span class="p">()</span>
-<span class="c1">#[</span>
-<span class="c1">#    &lt;RuntimeCallDefinition(value={&#39;description&#39;: &#39;The API to query account nonce (aka transaction index)&#39;, &#39;params&#39;: [{&#39;name&#39;: &#39;account_id&#39;, &#39;type&#39;: &#39;AccountId&#39;}], &#39;type&#39;: &#39;Index&#39;, &#39;api&#39;: &#39;AccountNonceApi&#39;, &#39;method&#39;: &#39;account_nonce&#39;})&gt;</span>
-<span class="c1">#    ...</span>
-<span class="c1">#]</span>
+<span class="normal">5</span>
+<span class="normal">6</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="kn">from</span> <span class="nn">substrateinterface</span> <span class="kn">import</span> <span class="n">SubstrateInterface</span>
+<span class="kn">from</span> <span class="nn">substrateinterface_subsquid.extensions</span> <span class="kn">import</span> <span class="n">SubsquidExtension</span>
+
+<span class="n">substrate</span> <span class="o">=</span> <span class="n">SubstrateInterface</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s2">&quot;wss://rpc.polkadot.io&quot;</span><span class="p">)</span>
+
+<span class="n">substrate</span><span class="o">.</span><span class="n">register_extension</span><span class="p">(</span><span class="n">SubsquidExtension</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s1">&#39;https://squid.subsquid.io/gs-explorer-polkadot/graphql&#39;</span><span class="p">))</span>
 </code></pre></div></td></tr></table></div>
-<h2 id="get-param-type-decomposition">Get param type decomposition<a class="headerlink" href="#get-param-type-decomposition" title="Permanent link">&para;</a></h2>
-<p>A helper function to compose the parameters for this runtime API call</p>
+<h2 id="implemented-extension-calls">Implemented extension calls<a class="headerlink" href="#implemented-extension-calls" title="Permanent link">&para;</a></h2>
+<h3 id="filter-events">Filter events<a class="headerlink" href="#filter-events" title="Permanent link">&para;</a></h3>
 <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
 <span class="normal">2</span>
-<span class="normal">3</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">runtime_call</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">get_metadata_runtime_call_function</span><span class="p">(</span><span class="s2">&quot;ContractsApi&quot;</span><span class="p">,</span> <span class="s2">&quot;call&quot;</span><span class="p">)</span>
-<span class="n">param_info</span> <span class="o">=</span> <span class="n">runtime_call</span><span class="o">.</span><span class="n">get_param_info</span><span class="p">()</span>
-<span class="c1"># [&#39;AccountId&#39;, &#39;AccountId&#39;, &#39;u128&#39;, &#39;u64&#39;, (None, &#39;u128&#39;), &#39;Bytes&#39;]</span>
+<span class="normal">3</span>
+<span class="normal">4</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">events</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">filter_events</span><span class="p">(</span>
+    <span class="n">pallet_name</span><span class="o">=</span><span class="s2">&quot;Balances&quot;</span><span class="p">,</span> <span class="n">event_name</span><span class="o">=</span><span class="s2">&quot;Transfer&quot;</span><span class="p">,</span> <span class="n">account_id</span><span class="o">=</span><span class="s2">&quot;12L9MSmxHY8YvtZKpA7Vpvac2pwf4wrT3gd2Tx78sCctoXSE&quot;</span><span class="p">,</span> 
+    <span class="n">page_size</span><span class="o">=</span><span class="mi">25</span>
+<span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="filter-extrinsics">Filter extrinsics<a class="headerlink" href="#filter-extrinsics" title="Permanent link">&para;</a></h3>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">extrinsics</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">filter_extrinsics</span><span class="p">(</span>
+    <span class="n">ss58_address</span><span class="o">=</span><span class="s2">&quot;12L9MSmxHY8YvtZKpA7Vpvac2pwf4wrT3gd2Tx78sCctoXSE&quot;</span><span class="p">,</span>
+    <span class="n">pallet_name</span><span class="o">=</span><span class="s2">&quot;Balances&quot;</span><span class="p">,</span> <span class="n">call_name</span><span class="o">=</span><span class="s2">&quot;transfer_keep_alive&quot;</span><span class="p">,</span> <span class="n">page_size</span><span class="o">=</span><span class="mi">25</span>
+<span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+<h3 id="search-block-number">Search block number<a class="headerlink" href="#search-block-number" title="Permanent link">&para;</a></h3>
+<div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="n">block_datetime</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+
+<span class="n">block_number</span> <span class="o">=</span> <span class="n">substrate</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">search_block_number</span><span class="p">(</span><span class="n">block_datetime</span><span class="o">=</span><span class="n">block_datetime</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 
 
@@ -1047,7 +1115,7 @@ transactions are valid and invalid and determines how the chain's state changes 
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../extrinsics/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Extrinsics" rel="prev">
+          <a href="../polkascan-extension/" class="md-footer__link md-footer__link--prev" aria-label="Previous: PolkascanExtension" rel="prev">
             <div class="md-footer__button md-icon">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
             </div>
@@ -1056,26 +1124,11 @@ transactions are valid and invalid and determines how the chain's state changes 
                 <span class="md-footer__direction">
                   Previous
                 </span>
-                Extrinsics
+                PolkascanExtension
               </div>
             </div>
           </a>
         
-        
-          
-          <a href="../ink-contract-interfacing/" class="md-footer__link md-footer__link--next" aria-label="Next: ink! contract interfacing" rel="next">
-            <div class="md-footer__title">
-              <div class="md-ellipsis">
-                <span class="md-footer__direction">
-                  Next
-                </span>
-                ink! contract interfacing
-              </div>
-            </div>
-            <div class="md-footer__button md-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
-            </div>
-          </a>
         
       </nav>
     
