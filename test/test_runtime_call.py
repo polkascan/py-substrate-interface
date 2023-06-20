@@ -41,6 +41,13 @@ class RuntimeCallTestCase(unittest.TestCase):
         self.assertGreater(result.value['spec_version'], 0)
         self.assertEqual('polkadot', result.value['spec_name'])
 
+    def test_core_version_at_not_best_block(self):
+        parent_hash = self.substrate.get_block_header()['header']['parentHash']
+        result = self.substrate.runtime_call("Core", "version", block_hash = parent_hash)
+
+        self.assertGreater(result.value['spec_version'], 0)
+        self.assertEqual('polkadot', result.value['spec_name'])
+
     def test_transaction_payment(self):
         call = self.substrate.compose_call(
             call_module='Balances',

@@ -741,7 +741,7 @@ class ContractInstance:
         return cls(contract_address=contract_address, metadata=metadata, substrate=substrate)
 
     def read(self, keypair: Keypair, method: str, args: dict = None,
-             value: int = 0, gas_limit: int = None) -> GenericContractExecResult:
+             value: int = 0, gas_limit: int = None, block_hash: str = None) -> GenericContractExecResult:
         """
         Used to execute non-mutable messages to for example read data from the contract using getters. Can also be used
         to predict gas limits and 'dry-run' the execution when a mutable message is used.
@@ -754,6 +754,7 @@ class ContractInstance:
         args: arguments of message in {'name': value} format
         value: value to send when executing the message
         gas_limit: dict repesentation of `WeightV2` type
+        block_hash: hash of the block to execute the message on
 
         Returns
         -------
@@ -770,7 +771,7 @@ class ContractInstance:
             'origin': keypair.ss58_address,
             'value': value,
             'storage_deposit_limit': None
-        })
+        }, block_hash)
         if 'Error' in call_result['result']:
             raise ContractReadFailedException(call_result.value['result']['Error'])
 

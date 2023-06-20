@@ -1202,7 +1202,7 @@ class SubstrateInterface:
 
         return extrinsics
 
-    def runtime_call(self, api: str, method: str, params: Union[list, dict] = None) -> ScaleType:
+    def runtime_call(self, api: str, method: str, params: Union[list, dict] = None, block_hash: str = None) -> ScaleType:
         """
         Calls a runtime API method
 
@@ -1211,6 +1211,7 @@ class SubstrateInterface:
         api: Name of the runtime API e.g. 'TransactionPaymentApi'
         method: Name of the method e.g. 'query_fee_details'
         params: List of parameters needed to call the runtime API
+        block_hash: Hash of the block at which to make the runtime API call
 
         Returns
         -------
@@ -1251,7 +1252,7 @@ class SubstrateInterface:
                 param_data += scale_obj.encode(params[param['name']])
 
         # RPC request
-        result_data = self.rpc_request("state_call", [f'{api}_{method}', str(param_data)])
+        result_data = self.rpc_request("state_call", [f'{api}_{method}', str(param_data), block_hash])
 
         # Decode result
         result_obj = self.runtime_config.create_scale_object(runtime_call_def['type'])

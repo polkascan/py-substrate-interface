@@ -393,6 +393,12 @@ class FlipperInstanceTestCase(unittest.TestCase):
 
         self.assertEqual(False, result.contract_result_data.value)
 
+    def test_instance_read_at_not_best_block(self):
+        parent_hash = self.substrate.get_block_header()['header']['parentHash']
+        result = self.contract.read(self.keypair, 'get', block_hash = parent_hash)
+
+        self.assertEqual(False, result.contract_result_data.value)
+
 
 class FlipperInstanceV4TestCase(FlipperInstanceTestCase):
     def setUp(self) -> None:
