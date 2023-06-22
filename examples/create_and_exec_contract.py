@@ -19,78 +19,70 @@ import os
 from substrateinterface.contracts import ContractCode, ContractInstance
 from substrateinterface import SubstrateInterface, Keypair
 
-# # Enable for debugging purposes
+# Enable for debugging purposes
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
-try:
-    substrate = SubstrateInterface(
-        url="ws://127.0.0.1:9944"
+substrate = SubstrateInterface(url='wss://rococo-contracts-rpc.polkadot.io')
+keypair = Keypair.create_from_uri('//Alice')
+contract_address = "5DYXHYiH5jPj8orDw5HSFJhmATe8NtmbguG3vs53v8RgSHTW"
+
+# Check if contract is on chain
+contract_info = substrate.query("Contracts", "ContractInfoOf", [contract_address])
+
+if contract_info.value:
+
+    print(f'Found contract on chain: {contract_info.value}')
+
+    # Create contract instance from deterministic address
+    contract = ContractInstance.create_from_address(
+        contract_address=contract_address,
+        metadata_file=os.path.join(os.path.dirname(__file__), 'assets', 'flipper-v4.json'),
+        substrate=substrate
+    )
+else:
+
+    # Upload WASM code
+    code = ContractCode.create_from_contract_files(
+        metadata_file=os.path.join(os.path.dirname(__file__), 'assets', 'flipper-v4.json'),
+        wasm_file=os.path.join(os.path.dirname(__file__), 'assets', 'flipper-v4.wasm'),
+        substrate=substrate
     )
 
-    keypair = Keypair.create_from_uri('//Alice')
-    contract_address = "5GhwarrVMH8kjb8XyW6zCfURHbHy3v84afzLbADyYYX6H2Kk"
+    # Deploy contract
+    print('Deploy contract...')
+    contract = code.deploy(
+        keypair=keypair,
+        constructor="new",
+        args={'init_value': True},
+        value=0,
+        gas_limit={'ref_time': 147523041, 'proof_size': 16689},
+        upload_code=True
+    )
 
-    # Check if contract is on chain
-    contract_info = substrate.query("Contracts", "ContractInfoOf", [contract_address])
+    print(f'✅ Deployed @ {contract.contract_address}')
 
-    if contract_info.value:
+# Read current value
+result = contract.read(keypair, 'get')
+print('Current value of "get":', result.contract_result_data)
 
-        print(f'Found contract on chain: {contract_info.value}')
+# Do a gas estimation of the message
+gas_predit_result = contract.read(keypair, 'flip')
 
-        # Create contract instance from deterministic address
-        contract = ContractInstance.create_from_address(
-            contract_address=contract_address,
-            metadata_file=os.path.join(os.path.dirname(__file__), 'assets', 'flipper.json'),
-            substrate=substrate
-        )
-    else:
+print('Result of dry-run: ', gas_predit_result.value)
+print('Gas estimate: ', gas_predit_result.gas_required)
 
-        # Upload WASM code
-        code = ContractCode.create_from_contract_files(
-            metadata_file=os.path.join(os.path.dirname(__file__), 'assets', 'flipper.json'),
-            wasm_file=os.path.join(os.path.dirname(__file__), 'assets', 'flipper.wasm'),
-            substrate=substrate
-        )
+# Do the actual call
+print('Executing contract call...')
+contract_receipt = contract.exec(keypair, 'flip', args={
 
-        # Deploy contract
-        print('Deploy contract...')
-        contract = code.deploy(
-            keypair=keypair,
-            constructor="new",
-            args={'init_value': True},
-            value=0,
-            gas_limit={'ref_time': 25990000000, 'proof_size': 11990383647911208550},
-            upload_code=True
-        )
+}, gas_limit=gas_predit_result.gas_required)
 
-        print(f'✅ Deployed @ {contract.contract_address}')
+if contract_receipt.is_success:
+    print(f'Events triggered in contract: {contract_receipt.contract_events}')
+else:
+    print(f'Error message: {contract_receipt.error_message}')
 
-    # Read current value
-    result = contract.read(keypair, 'get')
-    print('Current value of "get":', result.contract_result_data)
+result = contract.read(keypair, 'get')
 
-    # Do a gas estimation of the message
-    gas_predit_result = contract.read(keypair, 'flip')
-
-    print('Result of dry-run: ', gas_predit_result.value)
-    print('Gas estimate: ', gas_predit_result.gas_required)
-
-    # Do the actual call
-    print('Executing contract call...')
-    contract_receipt = contract.exec(keypair, 'flip', args={
-
-    }, gas_limit=gas_predit_result.gas_required)
-
-    if contract_receipt.is_success:
-        print(f'Events triggered in contract: {contract_receipt.contract_events}')
-    else:
-        print(f'Error message: {contract_receipt.error_message}')
-
-    result = contract.read(keypair, 'get')
-
-    print('Current value of "get":', result.contract_result_data)
-
-except ConnectionRefusedError:
-    print("⚠️ Could not connect to (local) Canvas node, please read the instructions at "
-          "https://github.com/paritytech/substrate-contracts-node")
+print('Current value of "get":', result.contract_result_data)
