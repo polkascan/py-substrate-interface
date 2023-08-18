@@ -786,8 +786,8 @@ class SubstrateInterface:
         if len(param_types) == 0:
             raise ValueError('Given storage function is not a map')
 
-        if len(params) != len(param_types) - 1:
-            raise ValueError(f'Storage function map requires {len(param_types) -1} parameters, {len(params)} given')
+        if len(params) > len(param_types) - 1:
+            raise ValueError(f'Storage function map can accept max {len(param_types) - 1} parameters, {len(params)} given')
 
         # Generate storage key prefix
         storage_key = StorageKey.create_from_storage_function(
@@ -815,9 +815,9 @@ class SubstrateInterface:
 
         def concat_hash_len(key_hasher: str) -> int:
             if key_hasher == "Blake2_128Concat":
-                return 32
-            elif key_hasher == "Twox64Concat":
                 return 16
+            elif key_hasher == "Twox64Concat":
+                return 8
             elif key_hasher == "Identity":
                 return 0
             else:
@@ -836,12 +836,27 @@ class SubstrateInterface:
             for result_group in response['result']:
                 for item in result_group['changes']:
                     try:
-                        item_key = self.decode_scale(
-                            type_string=param_types[len(params)],
-                            scale_bytes='0x' + item[0][len(prefix) + concat_hash_len(key_hashers[len(params)]):],
+                        # Determine type string
+                        key_type_string = []
+                        for n in range(len(params), len(param_types)):
+                            key_type_string.append(f'[u8; {concat_hash_len(key_hashers[n])}]')
+                            key_type_string.append(param_types[n])
+
+                        item_key_obj = self.decode_scale(
+                            type_string=f"({', '.join(key_type_string)})",
+                            scale_bytes='0x' + item[0][len(prefix):],
                             return_scale_obj=True,
                             block_hash=block_hash
                         )
+
+                        # strip key_hashers to use as item key
+                        if len(param_types) - len(params) == 1:
+                            item_key = item_key_obj.value_object[1]
+                        else:
+                            item_key = tuple(
+                                item_key_obj.value_object[key + 1] for key in range(len(params), len(param_types) + 1, 2)
+                            )
+
                     except Exception:
                         if not ignore_decoding_errors:
                             raise

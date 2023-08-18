@@ -213,13 +213,15 @@ class QueryMapTestCase(unittest.TestCase):
         )
         self.assertEqual(era_stakers.records, [])
 
-    def test_double_map_missing_param(self):
-        with self.assertRaises(ValueError) as cm:
-            self.kusama_substrate.query_map(
-                module='Staking',
-                storage_function='ErasStakers'
-            )
-        self.assertEqual('Storage function map requires 1 parameters, 0 given', str(cm.exception))
+    def test_nested_keys(self):
+
+        result = self.kusama_substrate.query_map(
+            module='ConvictionVoting',
+            storage_function='VotingFor',
+            max_results=10
+        )
+        self.assertTrue(self.kusama_substrate.is_valid_ss58_address(result[0][0][0].value))
+        self.assertGreaterEqual(result[0][0][1], 0)
 
     def test_double_map_too_many_params(self):
         with self.assertRaises(ValueError) as cm:
@@ -228,7 +230,7 @@ class QueryMapTestCase(unittest.TestCase):
                 storage_function='ErasStakers',
                 params=[21000000, 2]
             )
-        self.assertEqual('Storage function map requires 1 parameters, 2 given', str(cm.exception))
+        self.assertEqual('Storage function map can accept max 1 parameters, 2 given', str(cm.exception))
 
     def test_map_with_param(self):
         with self.assertRaises(ValueError) as cm:
@@ -237,7 +239,7 @@ class QueryMapTestCase(unittest.TestCase):
                 storage_function='Account',
                 params=[2]
             )
-        self.assertEqual('Storage function map requires 0 parameters, 1 given', str(cm.exception))
+        self.assertEqual('Storage function map can accept max 0 parameters, 1 given', str(cm.exception))
 
 
 if __name__ == '__main__':
