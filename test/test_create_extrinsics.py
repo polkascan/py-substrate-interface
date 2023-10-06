@@ -49,15 +49,10 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
         cls.keypair = Keypair.create_from_mnemonic(mnemonic)
 
     def test_create_extrinsic_metadata_v14(self):
-
         # Create balance transfer call
-        call = self.kusama_substrate.compose_call(
-            call_module='Balances',
-            call_function='transfer',
-            call_params={
-                'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
-                'value': 3 * 10 ** 3
-            }
+        call = self.kusama_substrate.runtime.pallet("Balances").call("transfer").create(
+            dest='EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
+            value=3 * 10 ** 3
         )
 
         extrinsic = self.kusama_substrate.create_signed_extrinsic(call=call, keypair=self.keypair, tip=1)
@@ -75,13 +70,9 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
         for substrate in [self.kusama_substrate, self.polkadot_substrate]:
 
             # Create balance transfer call
-            call = substrate.compose_call(
-                call_module='Balances',
-                call_function='transfer',
-                call_params={
-                    'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
-                    'value': 3 * 10 ** 3
-                }
+            call = self.kusama_substrate.runtime.pallet("Balances").call("transfer").create(
+                dest='EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
+                value=3 * 10 ** 3
             )
 
             extrinsic = substrate.create_signed_extrinsic(call=call, keypair=self.keypair, era={'period': 64})
@@ -97,21 +88,13 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
 
     def test_create_batch_extrinsic(self):
 
-        balance_call = self.polkadot_substrate.compose_call(
-            call_module='Balances',
-            call_function='transfer',
-            call_params={
-                'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
-                'value': 3 * 10 ** 3
-            }
+        balance_call = self.polkadot_substrate.runtime.pallet("Balances").call("transfer").create(
+            dest='EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
+            value=3 * 10 ** 3
         )
 
-        call = self.polkadot_substrate.compose_call(
-            call_module='Utility',
-            call_function='batch',
-            call_params={
-                'calls': [balance_call, balance_call]
-            }
+        call = self.polkadot_substrate.runtime.pallet("Utility").call("batch").create(
+            calls=[balance_call, balance_call]
         )
 
         extrinsic = self.polkadot_substrate.create_signed_extrinsic(call=call, keypair=self.keypair, era={'period': 64})

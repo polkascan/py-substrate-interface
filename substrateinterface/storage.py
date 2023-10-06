@@ -81,7 +81,7 @@ class StorageKey:
             value_scale_type = storage_item.get_value_type_string()
 
         return cls(
-            pallet=None, storage_function=None, params=None,
+            pallet=pallet, storage_function=storage_function, params=None,
             data=data, metadata=metadata,
             value_scale_type=value_scale_type, runtime_config=runtime_config
         )

@@ -33,16 +33,16 @@ from scalecodec.types import GenericCall, GenericExtrinsic, Extrinsic, MultiAcco
 from scalecodec.type_registry import load_type_registry_preset
 from scalecodec.updater import update_type_registries
 from .extensions import Extension
-from .interfaces import ExtensionInterface
+from .interfaces import ExtensionInterface, RuntimeInterface, QueryMapResult, ChainInterface, BlockInterface, \
+    ContractInterface
 
 from .storage import StorageKey
 
 from .exceptions import SubstrateRequestException, ConfigurationError, StorageFunctionNotFound, BlockNotFound, \
     ExtrinsicNotFound, ExtensionCallNotFound
 from .constants import *
-from .keypair import Keypair, KeypairType, MnemonicLanguageCode
-from .utils.ss58 import ss58_decode, ss58_encode, is_valid_ss58_address, get_ss58_format
-
+from .keypair import Keypair
+from .utils.ss58 import ss58_decode, ss58_encode, is_valid_ss58_address
 
 __all__ = ['SubstrateInterface', 'ExtrinsicReceipt', 'logger']
 
@@ -157,8 +157,11 @@ class SubstrateInterface:
             'rpc_methods': None
         }
 
-        # Initialize extension interface
+        # Initialize interfaces
+        self.runtime = RuntimeInterface(self)
+        self.block = BlockInterface(self)
         self.extensions = ExtensionInterface(self)
+        self.contract = ContractInterface(self)
 
         self.session = requests.Session()
 
@@ -756,7 +759,7 @@ class SubstrateInterface:
 
         Returns
         -------
-        QueryMapResult
+        substrateinterface.interfaces.QueryMapResult
         """
 
         if block_hash is None:
@@ -976,88 +979,16 @@ class SubstrateInterface:
             # Check requirements
             if callable(subscription_handler):
                 raise ValueError("Subscriptions can only be registered for current state; block_hash cannot be set")
-        else:
-            # Retrieve chain tip
-            block_hash = self.get_chain_head()
+
+        if callable(subscription_handler):
+            raise NotImplementedError()
 
         if params is None:
             params = []
 
-        self.init_runtime(block_hash=block_hash)
-
-        if module == 'Substrate':
-            # Search for 'well-known' storage keys
-            return self.__query_well_known(storage_function, block_hash)
-
-        # Search storage call in metadata
-        metadata_pallet = self.metadata.get_metadata_pallet(module)
-
-        if not metadata_pallet:
-            raise StorageFunctionNotFound(f'Pallet "{module}" not found')
-
-        storage_item = metadata_pallet.get_storage_function(storage_function)
-
-        if not metadata_pallet or not storage_item:
-            raise StorageFunctionNotFound(f'Storage function "{module}.{storage_function}" not found')
-
-        # SCALE type string of value
-        param_types = storage_item.get_params_type_string()
-        value_scale_type = storage_item.get_value_type_string()
-
-        if len(params) != len(param_types):
-            raise ValueError(f'Storage function requires {len(param_types)} parameters, {len(params)} given')
-
-        if raw_storage_key:
-            storage_key = StorageKey.create_from_data(
-                data=raw_storage_key, pallet=module, storage_function=storage_function,
-                value_scale_type=value_scale_type, metadata=self.metadata, runtime_config=self.runtime_config
-            )
-        else:
-
-            storage_key = StorageKey.create_from_storage_function(
-                module, storage_function, params, runtime_config=self.runtime_config, metadata=self.metadata
-            )
-
-        if callable(subscription_handler):
-
-            # Wrap subscription handler to discard storage key arg
-            def result_handler(storage_key, updated_obj, update_nr, subscription_id):
-                return subscription_handler(updated_obj, update_nr, subscription_id)
-
-            return self.subscribe_storage([storage_key], result_handler)
-
-        else:
-
-            if self.supports_rpc_method('state_getStorageAt'):
-                response = self.rpc_request("state_getStorageAt", [storage_key.to_hex(), block_hash])
-            else:
-                response = self.rpc_request("state_getStorage", [storage_key.to_hex(), block_hash])
-
-            if 'error' in response:
-                raise SubstrateRequestException(response['error']['message'])
-
-            if 'result' in response:
-                if value_scale_type:
-
-                    if response.get('result') is not None:
-                        query_value = response.get('result')
-                    elif storage_item.value['modifier'] == 'Default':
-                        # Fallback to default value of storage function if no result
-                        query_value = storage_item.value_object['default'].value_object
-                    else:
-                        # No result is interpreted as an Option<...> result
-                        value_scale_type = f'Option<{value_scale_type}>'
-                        query_value = storage_item.value_object['default'].value_object
-
-                    obj = self.runtime_config.create_scale_object(
-                        type_string=value_scale_type,
-                        data=ScaleBytes(query_value),
-                        metadata=self.metadata
-                    )
-                    obj.decode()
-                    obj.meta_info = {'result_found': response.get('result') is not None}
-
-                    return obj
+        return self.runtime.at(block_hash=block_hash).pallet(module).storage(storage_function).get(
+            *params, raw_storage_key=raw_storage_key
+        )
 
     def __query_well_known(self, name: str, block_hash: str) -> ScaleType:
         """
@@ -1387,19 +1318,9 @@ class SubstrateInterface:
         if call_params is None:
             call_params = {}
 
-        self.init_runtime(block_hash=block_hash)
-
-        call = self.runtime_config.create_scale_object(
-            type_string='Call', metadata=self.metadata
+        return self.runtime.at(block_hash=block_hash).pallet(call_module).call(call_function).create(
+            **call_params
         )
-
-        call.encode({
-            'call_module': call_module,
-            'call_function': call_function,
-            'call_args': call_params
-        })
-
-        return call
 
     def get_account_nonce(self, account_address) -> int:
         """
@@ -3399,58 +3320,3 @@ class ExtrinsicReceipt:
         return self[name]
 
 
-class QueryMapResult:
-
-    def __init__(self, records: list, page_size: int, module: str = None, storage_function: str = None,
-                 params: list = None, block_hash: str = None, substrate: SubstrateInterface = None,
-                 last_key: str = None, max_results: int = None, ignore_decoding_errors: bool = False):
-        self.current_index = -1
-        self.records = records
-        self.page_size = page_size
-        self.module = module
-        self.storage_function = storage_function
-        self.block_hash = block_hash
-        self.substrate = substrate
-        self.last_key = last_key
-        self.max_results = max_results
-        self.params = params
-        self.ignore_decoding_errors = ignore_decoding_errors
-        self.loading_complete = False
-
-    def retrieve_next_page(self, start_key) -> list:
-        if not self.substrate:
-            return []
-
-        result = self.substrate.query_map(module=self.module, storage_function=self.storage_function,
-                                          params=self.params, page_size=self.page_size, block_hash=self.block_hash,
-                                          start_key=start_key, max_results=self.max_results,
-                                          ignore_decoding_errors=self.ignore_decoding_errors)
-
-        # Update last key from new result set to use as offset for next page
-        self.last_key = result.last_key
-
-        return result.records
-
-    def __iter__(self):
-        self.current_index = -1
-        return self
-
-    def __next__(self):
-        self.current_index += 1
-
-        if self.max_results is not None and self.current_index >= self.max_results:
-            self.loading_complete = True
-            raise StopIteration
-
-        if self.current_index >= len(self.records) and not self.loading_complete:
-            # try to retrieve next page from node
-            self.records += self.retrieve_next_page(start_key=self.last_key)
-
-        if self.current_index >= len(self.records):
-            self.loading_complete = True
-            raise StopIteration
-
-        return self.records[self.current_index]
-
-    def __getitem__(self, item):
-        return self.records[item]

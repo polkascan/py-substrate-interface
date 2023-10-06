@@ -36,7 +36,8 @@ class RuntimeCallTestCase(unittest.TestCase):
         cls.keypair = Keypair.create_from_mnemonic(mnemonic)
 
     def test_core_version(self):
-        result = self.substrate.runtime_call("Core", "version")
+        # result = self.substrate.runtime_call("Core", "version")
+        result = self.substrate.runtime.api("Core").call("version").execute()
 
         self.assertGreater(result.value['spec_version'], 0)
         self.assertEqual('polkadot', result.value['spec_name'])
@@ -69,8 +70,11 @@ class RuntimeCallTestCase(unittest.TestCase):
 
     def test_metadata_call_info(self):
 
-        runtime_call = self.substrate.get_metadata_runtime_call_function("TransactionPaymentApi", "query_fee_details")
-        param_info = runtime_call.get_param_info()
+        #runtime_call = self.substrate.get_metadata_runtime_call_function("TransactionPaymentApi", "query_fee_details")
+        #param_info = runtime_call.get_param_info()
+
+        param_info = self.substrate.runtime.api("TransactionPaymentApi").call("query_fee_details").get_param_info()
+
         self.assertEqual('Extrinsic', param_info[0])
         self.assertEqual('u32', param_info[1])
 
@@ -90,7 +94,7 @@ class RuntimeCallTestCase(unittest.TestCase):
 
     def test_unknown_runtime_call(self):
         with self.assertRaises(ValueError):
-            self.substrate.runtime_call("Foo", "bar")
+            self.substrate.runtime.api("Foo").call("bar").execute()
 
 
 if __name__ == '__main__':
