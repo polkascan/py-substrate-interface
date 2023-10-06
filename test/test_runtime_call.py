@@ -80,13 +80,14 @@ class RuntimeCallTestCase(unittest.TestCase):
         self.assertEqual('h256', param_info[0]['parent_hash'])
 
     def test_check_all_runtime_call_types(self):
-        runtime_calls = self.substrate.get_metadata_runtime_call_functions()
-        for runtime_call in runtime_calls:
-            param_info = runtime_call.get_param_info()
-            self.assertEqual(type(param_info), list)
-            result_obj = self.substrate.create_scale_object(runtime_call.value['type'])
-            info = result_obj.generate_type_decomposition()
-            self.assertIsNotNone(info)
+        runtime_apis = self.substrate.get_metadata_runtime_call_functions()
+        for api in runtime_apis:
+            for runtime_call in api.get_methods():
+                param_info = runtime_call.get_param_info()
+                self.assertEqual(type(param_info), list)
+                result_obj = self.substrate.create_scale_object(runtime_call.get_return_type_string())
+                info = result_obj.generate_type_decomposition()
+                self.assertIsNotNone(info)
 
     def test_unknown_runtime_call(self):
         with self.assertRaises(ValueError):
