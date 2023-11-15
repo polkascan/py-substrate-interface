@@ -16,6 +16,8 @@
 
 import unittest
 
+from scalecodec import ScaleBytes
+from scalecodec.exceptions import RemainingScaleBytesNotEmptyException
 from substrateinterface import SubstrateInterface
 from test import settings
 
@@ -98,6 +100,15 @@ class TestInit(unittest.TestCase):
             self.assertEqual(2, substrate.ss58_format)
 
         self.assertFalse(substrate.websocket.connected)
+
+    def test_strict_scale_decode(self):
+
+        with self.assertRaises(RemainingScaleBytesNotEmptyException):
+            self.kusama_substrate.decode_scale('u8', ScaleBytes('0x0101'))
+
+        with SubstrateInterface(url=settings.KUSAMA_NODE_URL, config={'strict_scale_decode': False}) as substrate:
+            result = substrate.decode_scale('u8', ScaleBytes('0x0101'))
+            self.assertEqual(result, 1)
 
 
 if __name__ == '__main__':
