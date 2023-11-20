@@ -584,7 +584,7 @@ class SubstrateInterface:
         return response.get('result')
 
     def generate_storage_hash(self, storage_module: str, storage_function: str, params: list = None,
-                              hashers: list = None):
+                              hashers: list = None) -> str:
         """
         Generate a storage key for given module/function
 
@@ -1378,7 +1378,9 @@ class SubstrateInterface:
 
         return self.runtime_config.create_scale_object(type_string, data=data, **kwargs)
 
-    def compose_call(self, call_module: str, call_function: str, call_params: dict = None, block_hash: str = None):
+    def compose_call(
+            self, call_module: str, call_function: str, call_params: dict = None, block_hash: str = None
+    ) -> GenericCall:
         """
         Composes a call payload which can be used in an extrinsic.
 
@@ -1541,10 +1543,12 @@ class SubstrateInterface:
 
         return signature_payload.data
 
-    def create_signed_extrinsic(self, call: GenericCall, keypair: Keypair, era: dict = None, nonce: int = None,
-                                tip: int = 0, tip_asset_id: int = None, signature: Union[bytes, str] = None) -> GenericExtrinsic:
+    def create_signed_extrinsic(
+            self, call: GenericCall, keypair: Keypair, era: dict = None, nonce: int = None,
+            tip: int = 0, tip_asset_id: int = None, signature: Union[bytes, str] = None
+    ) -> GenericExtrinsic:
         """
-        Creates a extrinsic signed by given account details
+        Creates an extrinsic signed by given account details
 
         Parameters
         ----------
