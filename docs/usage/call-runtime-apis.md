@@ -17,7 +17,7 @@ result = substrate.runtime_call("AccountNonceApi", "account_nonce", ["5GrwvaEF5z
 ```python
 runtime_calls = substrate.get_metadata_runtime_call_functions()
 #[
-#    <RuntimeCallDefinition(value={'description': 'The API to query account nonce (aka transaction index)', 'params': [{'name': 'account_id', 'type': 'AccountId'}], 'type': 'Index', 'api': 'AccountNonceApi', 'method': 'account_nonce'})>
+#   <RuntimeApiMetadataV14(value={'name': 'AccountNonceApi', 'methods': [{'name': 'account_nonce', 'inputs': [{'name': 'account_id', 'type': 'AccountId'}], 'output': 'Index', 'docs': ['The API to query account nonce (aka transaction index)']}], 'docs': []})>
 #    ...
 #]
 ```
@@ -28,5 +28,5 @@ A helper function to compose the parameters for this runtime API call
 ```python
 runtime_call = substrate.get_metadata_runtime_call_function("ContractsApi", "call")
 param_info = runtime_call.get_param_info()
-# ['AccountId', 'AccountId', 'u128', 'u64', (None, 'u128'), 'Bytes']
+# ['AccountId', 'AccountId', 'u128', (None, {'proof_size': 'u64', 'ref_time': 'u64'}), (None, 'u128'), 'Bytes']
 ```
