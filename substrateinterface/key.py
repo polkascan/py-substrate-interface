@@ -16,8 +16,6 @@ import re
 from hashlib import blake2b
 from math import ceil
 
-from scalecodec.types import Bytes
-
 RE_JUNCTION = r'(\/\/?)([^/]+)'
 JUNCTION_ID_LEN = 32
 
@@ -35,13 +33,13 @@ class DeriveJunction:
             chain_code = int(path).to_bytes(byte_length, 'little').ljust(32, b'\x00')
 
         else:
-            path_scale = Bytes()
-            path_scale.encode(path)
+            from scalecodec.types import Bytes
+            path_scale = Bytes.encode(path)
 
-            if len(path_scale.data) > JUNCTION_ID_LEN:
-                chain_code = blake2b(path_scale.data.data, digest_size=32).digest()
+            if len(path_scale) > JUNCTION_ID_LEN:
+                chain_code = blake2b(path_scale.data, digest_size=32).digest()
             else:
-                chain_code = bytes(path_scale.data.data.ljust(32, b'\x00'))
+                chain_code = bytes(path_scale.data.ljust(32, b'\x00'))
 
         return cls(chain_code=chain_code, is_hard=is_hard)
 

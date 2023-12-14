@@ -31,9 +31,7 @@ class QueryMapTestCase(unittest.TestCase):
     def setUpClass(cls):
 
         cls.kusama_substrate = SubstrateInterface(
-            url=settings.KUSAMA_NODE_URL,
-            ss58_format=2,
-            type_registry_preset='kusama'
+            url=settings.KUSAMA_NODE_URL
         )
 
         orig_rpc_request = cls.kusama_substrate.rpc_request
@@ -66,7 +64,7 @@ class QueryMapTestCase(unittest.TestCase):
 
     def test_claims_claim_map(self):
 
-        result = self.kusama_substrate.query_map('Claims', 'Claims', max_results=3)
+        result = self.kusama_substrate.runtime.pallet("Claims").storage("Claims").list(max_results=3)
 
         records = [item for item in result]
 

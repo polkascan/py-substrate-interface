@@ -17,6 +17,7 @@
 import unittest
 from unittest.mock import MagicMock
 
+from scalecodec.types import U32
 from substrateinterface import SubstrateInterface, Keypair
 from substrateinterface.exceptions import StorageFunctionNotFound
 from test import settings
@@ -27,13 +28,16 @@ class RuntimeCallTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.substrate = SubstrateInterface(
-            url=settings.POLKADOT_NODE_URL,
-            ss58_format=0,
-            type_registry_preset='polkadot'
+            # url='ws://127.0.0.1:9944'
+            url=settings.POLKADOT_NODE_URL
         )
         # Create new keypair
         mnemonic = Keypair.generate_mnemonic()
         cls.keypair = Keypair.create_from_mnemonic(mnemonic)
+
+
+    # def test_list_api_methods(self):
+    #     pass
 
     def test_core_version(self):
         # result = self.substrate.runtime_call("Core", "version")
@@ -43,11 +47,15 @@ class RuntimeCallTestCase(unittest.TestCase):
         self.assertEqual('polkadot', result.value['spec_name'])
 
     def test_core_version_at_not_best_block(self):
-        parent_hash = self.substrate.get_block_header()['header']['parentHash']
-        result = self.substrate.runtime_call("Core", "version", block_hash = parent_hash)
+        block_hash = "0x4baab1f281c516935b81da79b37cabf31500c65caa1f0a606245c8b0f98d11a8"
+        result = self.substrate.runtime.at(block_hash).api("Core").call("version").execute()
 
-        self.assertGreater(result.value['spec_version'], 0)
+        self.assertEqual(result.value['spec_version'], 9430)
         self.assertEqual('polkadot', result.value['spec_name'])
+
+    def test_account_nonce(self):
+        result = self.substrate.runtime.api("AccountNonceApi").call("account_nonce").execute(self.keypair.ss58_address)
+        self.assertEqual(result.value, 0)
 
     def test_transaction_payment(self):
         call = self.substrate.compose_call(
@@ -60,10 +68,8 @@ class RuntimeCallTestCase(unittest.TestCase):
         )
 
         extrinsic = self.substrate.create_signed_extrinsic(call=call, keypair=self.keypair, tip=1)
-        extrinsic_len = self.substrate.create_scale_object('u32')
-        extrinsic_len.encode(len(extrinsic.data))
 
-        result = self.substrate.runtime_call("TransactionPaymentApi", "query_fee_details", [extrinsic, extrinsic_len])
+        result = self.substrate.runtime.api("TransactionPaymentApi").call("query_fee_details").execute(extrinsic, len(extrinsic.data))
 
         self.assertGreater(result.value['inclusion_fee']['base_fee'], 0)
         self.assertEqual(0, result.value['tip'])
