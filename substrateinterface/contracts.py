@@ -718,6 +718,17 @@ class ContractInstance:
         self.contract_address = contract_address
         self.metadata = metadata
 
+        self.init()
+
+    def init(self):
+        # Determine ContractExecResult according to PalletVersion
+        pallet_version = self.substrate.query("Contracts", "PalletVersion")
+
+        if pallet_version.value <= 9:
+            self.substrate.runtime_config.update_type_registry_types({"ContractExecResult": "ContractExecResultTo267"})
+        else:
+            self.substrate.runtime_config.update_type_registry_types({"ContractExecResult": "ContractExecResultTo269"})
+
     @classmethod
     def create_from_address(cls, contract_address: str, metadata_file: str,
                             substrate: SubstrateInterface = None) -> "ContractInstance":
