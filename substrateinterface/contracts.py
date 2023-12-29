@@ -22,7 +22,7 @@ from typing import Optional
 from .utils import version_tuple
 
 from substrateinterface.exceptions import ExtrinsicFailedException, DeployContractFailedException, \
-    ContractReadFailedException, ContractMetadataParseException
+    ContractReadFailedException, ContractMetadataParseException, StorageFunctionNotFound
 from scalecodec.base import ScaleBytes, ScaleType
 from scalecodec.types import GenericContractExecResult
 from substrateinterface.base import SubstrateInterface, Keypair, ExtrinsicReceipt
@@ -717,6 +717,24 @@ class ContractInstance:
         self.substrate = substrate
         self.contract_address = contract_address
         self.metadata = metadata
+
+        self.init()
+
+    def init(self):
+        # Determine ContractExecResult according to PalletVersion
+        try:
+            pallet_version = self.substrate.query("Contracts", "PalletVersion")
+
+            if pallet_version.value <= 9:
+                self.substrate.runtime_config.update_type_registry_types(
+                    {"ContractExecResult": "ContractExecResultTo267"}
+                )
+            else:
+                self.substrate.runtime_config.update_type_registry_types(
+                    {"ContractExecResult": "ContractExecResultTo269"}
+                )
+        except StorageFunctionNotFound:
+            pass
 
     @classmethod
     def create_from_address(cls, contract_address: str, metadata_file: str,

@@ -797,7 +797,7 @@ class SubstrateInterface:
 
         # Generate storage key prefix
         storage_key = StorageKey.create_from_storage_function(
-            module, storage_function, params, runtime_config=self.runtime_config, metadata=self.metadata
+            module, storage_item.value['name'], params, runtime_config=self.runtime_config, metadata=self.metadata
         )
         prefix = storage_key.to_hex()
 
@@ -1021,7 +1021,7 @@ class SubstrateInterface:
         else:
 
             storage_key = StorageKey.create_from_storage_function(
-                module, storage_function, params, runtime_config=self.runtime_config, metadata=self.metadata
+                module, storage_item.value['name'], params, runtime_config=self.runtime_config, metadata=self.metadata
             )
 
         if callable(subscription_handler):
