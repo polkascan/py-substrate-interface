@@ -44,11 +44,11 @@ class QueryTestCase(unittest.TestCase):
             module='System',
             storage_function='Account',
             params=['F4xQKRUagnSGjFqafyhajLs94e7Vvzvr8ebwYJceKpr8R7T'],
-            block_hash='0x176e064454388fd78941a0bace38db424e71db9d5d5ed0272ead7003a02234fa'
+            block_hash='0xbf787e2f322080e137ed53e763b1cc97d5c5585be1f736914e27d68ac97f5f2c'
         )
 
-        self.assertEqual(7673, result.value['nonce'])
-        self.assertEqual(637747267365404068, result.value['data']['free'])
+        self.assertEqual(67501, result.value['nonce'])
+        self.assertEqual(1099945000512, result.value['data']['free'])
         self.assertEqual(result.meta_info['result_found'], True)
 
     def test_system_account_non_existing(self):

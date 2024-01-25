@@ -51,7 +51,7 @@ class RuntimeCallTestCase(unittest.TestCase):
     def test_transaction_payment(self):
         call = self.substrate.compose_call(
             call_module='Balances',
-            call_function='transfer',
+            call_function='transfer_keep_alive',
             call_params={
                 'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
                 'value': 3 * 10 ** 3
