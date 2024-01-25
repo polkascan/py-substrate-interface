@@ -53,7 +53,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
         # Create balance transfer call
         call = self.kusama_substrate.compose_call(
             call_module='Balances',
-            call_function='transfer',
+            call_function='transfer_keep_alive',
             call_params={
                 'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
                 'value': 3 * 10 ** 3
@@ -66,7 +66,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
         decoded_extrinsic.decode(extrinsic.data)
 
         self.assertEqual(decoded_extrinsic['call']['call_module'].name, 'Balances')
-        self.assertEqual(decoded_extrinsic['call']['call_function'].name, 'transfer')
+        self.assertEqual(decoded_extrinsic['call']['call_function'].name, 'transfer_keep_alive')
         self.assertEqual(extrinsic['nonce'], 0)
         self.assertEqual(extrinsic['tip'], 1)
 
@@ -77,7 +77,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
             # Create balance transfer call
             call = substrate.compose_call(
                 call_module='Balances',
-                call_function='transfer',
+                call_function='transfer_keep_alive',
                 call_params={
                     'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
                     'value': 3 * 10 ** 3
@@ -99,7 +99,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
 
         balance_call = self.polkadot_substrate.compose_call(
             call_module='Balances',
-            call_function='transfer',
+            call_function='transfer_keep_alive',
             call_params={
                 'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
                 'value': 3 * 10 ** 3
@@ -126,7 +126,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
 
         call = self.kusama_substrate.compose_call(
             call_module='Balances',
-            call_function='transfer',
+            call_function='transfer_keep_alive',
             call_params={
                 'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
                 'value': 3 * 10 ** 3
@@ -172,7 +172,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
 
         call = self.kusama_substrate.compose_call(
             call_module='Balances',
-            call_function='transfer',
+            call_function='transfer_keep_alive',
             call_params={
                 'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
                 'value': 2000
@@ -218,7 +218,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
         # Create balance transfer call
         call = self.kusama_substrate.compose_call(
             call_module='Balances',
-            call_function='transfer',
+            call_function='transfer_keep_alive',
             call_params={
                 'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
                 'value': 3 * 10 ** 3

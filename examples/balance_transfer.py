@@ -24,16 +24,22 @@ substrate = SubstrateInterface(
     url="ws://127.0.0.1:9944"
 )
 
+substrate = SubstrateInterface(url="ws://127.0.0.1:9944")
+keypair_alice = Keypair.create_from_uri('//Alice', ss58_format=substrate.ss58_format)
+print(keypair_alice.ss58_address)
+
 keypair = Keypair.create_from_uri('//Alice')
 
 call = substrate.compose_call(
     call_module='Balances',
-    call_function='transfer',
+    call_function='transfer_keep_alive',
     call_params={
         'dest': '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty',
         'value': 1 * 10**15
     }
 )
+
+print(call.data.to_hex())
 
 extrinsic = substrate.create_signed_extrinsic(
     call=call,

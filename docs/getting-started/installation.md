@@ -25,7 +25,7 @@ print(result.value['data']['free']) # 635278638077956496
 ```python
 call = substrate.compose_call(
     call_module='Balances',
-    call_function='transfer',
+    call_function='transfer_keep_alive',
     call_params={
         'dest': '5E9oDs9PjpsBbxXxRE9uMaZZhnBAV38n2ouLB28oecBDdeQo',
         'value': 1 * 10**12

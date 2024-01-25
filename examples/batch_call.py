@@ -28,7 +28,7 @@ keypair = Keypair.create_from_uri('//Alice')
 
 balance_call = substrate.compose_call(
     call_module='Balances',
-    call_function='transfer',
+    call_function='transfer_keep_alive',
     call_params={
         'dest': '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty',
         'value': 1 * 10**15
