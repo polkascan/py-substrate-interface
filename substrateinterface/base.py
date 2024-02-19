@@ -29,7 +29,7 @@ from typing import Optional, Union, List
 from websocket import create_connection, WebSocketConnectionClosedException
 
 from scalecodec.base import ScaleBytes, RuntimeConfigurationObject, ScaleType
-from scalecodec.types import GenericCall, GenericExtrinsic, Extrinsic, MultiAccountId, GenericRuntimeCallDefinition
+from scalecodec.types import GenericCall, GenericExtrinsic, Extrinsic, MultiAccountId, GenericRuntimeApiMethodMetadata
 from scalecodec.type_registry import load_type_registry_preset
 from scalecodec.updater import update_type_registries
 from .extensions import Extension
@@ -1248,24 +1248,25 @@ class SubstrateInterface:
         if params is None:
             params = {}
 
-        try:
-            runtime_call_def = self.runtime_config.type_registry["runtime_api"][api]['methods'][method]
-            runtime_api_types = self.runtime_config.type_registry["runtime_api"][api].get("types", {})
-        except KeyError:
-            raise ValueError(f"Runtime API Call '{api}.{method}' not found in registry")
+        runtime_api = self.metadata.get_runtime_api(api)
 
-        if type(params) is list and len(params) != len(runtime_call_def['params']):
+        if not runtime_api:
+            raise ValueError(f"Runtime API '{api}' not found")
+
+        runtime_api_method = runtime_api.get_method(method)
+
+        if not runtime_api_method:
+            raise ValueError(f"Runtime API method '{api}.{method}' not found")
+
+        if type(params) is list and len(params) != len(runtime_api_method.get_params()):
             raise ValueError(
                 f"Number of parameter provided ({len(params)}) does not "
-                f"match definition {len(runtime_call_def['params'])}"
+                f"match definition {len(runtime_api_method.get_params())}"
             )
-
-        # Add runtime API types to registry
-        self.runtime_config.update_type_registry_types(runtime_api_types)
 
         # Encode params
         param_data = ScaleBytes(bytes())
-        for idx, param in enumerate(runtime_call_def['params']):
+        for idx, param in enumerate(runtime_api_method.get_params()):
             scale_obj = self.runtime_config.create_scale_object(param['type'])
             if type(params) is list:
                 param_data += scale_obj.encode(params[idx])
@@ -1279,7 +1280,7 @@ class SubstrateInterface:
         result_data = self.rpc_request("state_call", [f'{api}_{method}', str(param_data), block_hash])
 
         # Decode result
-        result_obj = self.runtime_config.create_scale_object(runtime_call_def['type'])
+        result_obj = self.runtime_config.create_scale_object(runtime_api_method.get_return_type_string())
         result_obj.decode(ScaleBytes(result_data['result']), check_remaining=self.config.get('strict_scale_decode'))
 
         return result_obj
@@ -2250,24 +2251,25 @@ class SubstrateInterface:
                     if error_name == error.name:
                         return error
 
-    def get_metadata_runtime_call_functions(self) -> list:
+    def get_metadata_runtime_call_functions(self, block_hash: str = None) -> list:
         """
         Get a list of available runtime API calls
+
+        Parameters
+        ----------
+        block_hash: Optional block hash, when omitted the chain tip will be used
 
         Returns
         -------
         list
         """
-        self.init_runtime()
-        call_functions = []
+        self.init_runtime(block_hash=block_hash)
 
-        for api, methods in self.runtime_config.type_registry["runtime_api"].items():
-            for method in methods["methods"].keys():
-                call_functions.append(self.get_metadata_runtime_call_function(api, method))
+        return self.metadata.get_runtime_apis()
 
-        return call_functions
-
-    def get_metadata_runtime_call_function(self, api: str, method: str) -> GenericRuntimeCallDefinition:
+    def get_metadata_runtime_call_function(
+            self, api: str, method: str, block_hash: str = None
+    ) -> GenericRuntimeApiMethodMetadata:
         """
         Get details of a runtime API call
 
@@ -2275,28 +2277,25 @@ class SubstrateInterface:
         ----------
         api: Name of the runtime API e.g. 'TransactionPaymentApi'
         method: Name of the method e.g. 'query_fee_details'
+        block_hash: Optional block hash, when omitted the chain tip will be used
 
         Returns
         -------
-        GenericRuntimeCallDefinition
+        GenericRuntimeApiMethodMetadata
         """
-        self.init_runtime()
+        self.init_runtime(block_hash=block_hash)
 
-        try:
-            runtime_call_def = self.runtime_config.type_registry["runtime_api"][api]['methods'][method]
-            runtime_call_def['api'] = api
-            runtime_call_def['method'] = method
-            runtime_api_types = self.runtime_config.type_registry["runtime_api"][api].get("types", {})
-        except KeyError:
-            raise ValueError(f"Runtime API Call '{api}.{method}' not found in registry")
+        runtime_api = self.metadata.get_runtime_api(api)
 
-        # Add runtime API types to registry
-        self.runtime_config.update_type_registry_types(runtime_api_types)
+        if not runtime_api:
+            raise ValueError(f"Runtime API '{api}' not found")
 
-        runtime_call_def_obj = self.create_scale_object("RuntimeCallDefinition")
-        runtime_call_def_obj.encode(runtime_call_def)
+        runtime_api_method = runtime_api.get_method(method)
 
-        return runtime_call_def_obj
+        if not runtime_api_method:
+            raise ValueError(f"Runtime API method '{api}.{method}' not found")
+
+        return runtime_api_method
 
     def __get_block_handler(self, block_hash: str, ignore_decoding_errors: bool = False, include_author: bool = False,
                             header_only: bool = False, finalized_only: bool = False,
