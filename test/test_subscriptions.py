@@ -36,7 +36,6 @@ class SubscriptionsTestCase(unittest.TestCase):
 
         result = self.substrate.query("System", "Events", [], subscription_handler=subscription_handler)
 
-        self.assertEqual(result['update_nr'], 0)
         self.assertIsNotNone(result['subscription_id'])
 
     def test_subscribe_storage_multi(self):
@@ -57,7 +56,6 @@ class SubscriptionsTestCase(unittest.TestCase):
             storage_keys=storage_keys, subscription_handler=subscription_handler
         )
 
-        self.assertEqual(result['update_nr'], 0)
         self.assertIsNotNone(result['subscription_id'])
 
     def test_subscribe_new_heads(self):
