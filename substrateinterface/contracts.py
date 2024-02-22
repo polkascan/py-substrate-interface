@@ -451,7 +451,7 @@ class ContractExecutionReceipt(ExtrinsicReceipt):
 
     @classmethod
     def create_from_extrinsic_receipt(cls, receipt: ExtrinsicReceipt,
-                                      contract_metadata: ContractMetadata, contract_address: str) -> "ContractExecutionReceipt":
+                                      contract_metadata: ContractMetadata, contract_address: str = None) -> "ContractExecutionReceipt":
         """
         Promotes a ExtrinsicReceipt object to a ContractExecutionReceipt. It uses the provided ContractMetadata to
         decode "ContractExecution" events
