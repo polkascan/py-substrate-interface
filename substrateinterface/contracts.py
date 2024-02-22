@@ -446,11 +446,12 @@ class ContractExecutionReceipt(ExtrinsicReceipt):
         """
         self.__contract_events = None
         self.contract_metadata = kwargs.pop('contract_metadata')
+        self.contract_address = kwargs.pop('contract_address')
         super(ContractExecutionReceipt, self).__init__(*args, **kwargs)
 
     @classmethod
     def create_from_extrinsic_receipt(cls, receipt: ExtrinsicReceipt,
-                                      contract_metadata: ContractMetadata) -> "ContractExecutionReceipt":
+                                      contract_metadata: ContractMetadata, contract_address: str = None) -> "ContractExecutionReceipt":
         """
         Promotes a ExtrinsicReceipt object to a ContractExecutionReceipt. It uses the provided ContractMetadata to
         decode "ContractExecution" events
@@ -469,7 +470,8 @@ class ContractExecutionReceipt(ExtrinsicReceipt):
             extrinsic_hash=receipt.extrinsic_hash,
             block_hash=receipt.block_hash,
             finalized=receipt.finalized,
-            contract_metadata=contract_metadata
+            contract_metadata=contract_metadata,
+            contract_address=contract_address
         )
 
     def process_events(self):
@@ -482,7 +484,7 @@ class ContractExecutionReceipt(ExtrinsicReceipt):
             for event in self.triggered_events:
 
                 if self.substrate.implements_scaleinfo():
-                    if event.value['module_id'] == 'Contracts' and event.value['event_id'] == 'ContractEmitted':
+                    if event.value['module_id'] == 'Contracts' and event.value['event_id'] == 'ContractEmitted' and event.value['attributes']['contract'] == self.contract_address:
                         # Create contract event
                         contract_event_obj = ContractEvent(
                             data=ScaleBytes(event['event'][1][1]['data'].value_object),
@@ -855,4 +857,4 @@ class ContractInstance:
             extrinsic, wait_for_inclusion=wait_for_inclusion, wait_for_finalization=wait_for_finalization
         )
 
-        return ContractExecutionReceipt.create_from_extrinsic_receipt(receipt, self.metadata)
+        return ContractExecutionReceipt.create_from_extrinsic_receipt(receipt, self.metadata, self.contract_address)
