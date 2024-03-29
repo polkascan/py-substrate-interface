@@ -116,3 +116,14 @@ def xxh64(data):
 
 def identity(data):
     return data
+
+
+def concat_hash_len(key_hasher: str) -> int:
+    if key_hasher == "Blake2_128Concat":
+        return 16
+    elif key_hasher == "Twox64Concat":
+        return 8
+    elif key_hasher == "Identity":
+        return 0
+    else:
+        raise ValueError('Unsupported hash type')

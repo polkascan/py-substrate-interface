@@ -87,17 +87,29 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
 
         # Decode extrinsic again as test
         extrinsic.decode(extrinsic.data)
-        extrinsic.value_object = None
-        extrinsic.deserialize({'address': '0x0af2a0ff1ee73cc0401b29386f3ef271dcd6e3a423c4a368ea20c59c22612c37', 'signature': {'Sr25519': '0x9e89915e5a53c38b4f1158f8e41964c83752f46512cdc6b1bd178d53d4ee577a334d52339435e402d002ea9096be0d5778e261b0e74ed814139cbb32100b0183'}, 'era': {'Mortal': {'period': 64, 'current': 0}}, 'nonce': 0, 'tip': 0, 'call': {'Utility': {'batch': {'calls': [{'Balances': {'transfer_keep_alive': {'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk', 'value': 3000}}}, {'Balances': {'transfer_keep_alive': {'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk', 'value': 3000}}}]}}}})
 
         self.assertEqual({'Id': self.keypair.ss58_address}, extrinsic.value['address'])
         self.assertEqual(2, len(extrinsic.value['call']['Utility']['batch']['calls']))
+
+        # Test deserialize
+        extrinsic.value_object = None
+        extrinsic.deserialize(
+            {'address': '0x0af2a0ff1ee73cc0401b29386f3ef271dcd6e3a423c4a368ea20c59c22612c37', 'signature': {
+                'Sr25519': '0x9e89915e5a53c38b4f1158f8e41964c83752f46512cdc6b1bd178d53d4ee577a334d52339435e402d002ea9096be0d5778e261b0e74ed814139cbb32100b0183'},
+             'era': {'Mortal': {'period': 64, 'current': 0}}, 'nonce': 0, 'tip': 0, 'call': {'Utility': {'batch': {
+                'calls': [{'Balances': {
+                    'transfer_keep_alive': {'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk', 'value': 3000}}},
+                          {'Balances': {
+                              'transfer_keep_alive': {'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
+                                                      'value': 3000}}}]}}}}
+            )
+        self.assertIsNotNone(extrinsic.value_object)
 
     def test_create_multisig_extrinsic(self):
 
         call = self.kusama_substrate.compose_call(
             call_module='Balances',
-            call_function='transfer',
+            call_function='transfer_keep_alive',
             call_params={
                 'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
                 'value': 3 * 10 ** 3
@@ -143,7 +155,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
 
         call = self.kusama_substrate.compose_call(
             call_module='Balances',
-            call_function='transfer',
+            call_function='transfer_keep_alive',
             call_params={
                 'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
                 'value': 2000
@@ -189,7 +201,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
         # Create balance transfer call
         call = self.kusama_substrate.compose_call(
             call_module='Balances',
-            call_function='transfer',
+            call_function='transfer_keep_alive',
             call_params={
                 'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
                 'value': 3 * 10 ** 3

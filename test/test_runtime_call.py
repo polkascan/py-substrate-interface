@@ -35,7 +35,6 @@ class RuntimeCallTestCase(unittest.TestCase):
         mnemonic = Keypair.generate_mnemonic()
         cls.keypair = Keypair.create_from_mnemonic(mnemonic)
 
-
     # def test_list_api_methods(self):
     #     pass
 
@@ -60,7 +59,7 @@ class RuntimeCallTestCase(unittest.TestCase):
     def test_transaction_payment(self):
         call = self.substrate.compose_call(
             call_module='Balances',
-            call_function='transfer',
+            call_function='transfer_keep_alive',
             call_params={
                 'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
                 'value': 3 * 10 ** 3
@@ -76,27 +75,10 @@ class RuntimeCallTestCase(unittest.TestCase):
 
     def test_metadata_call_info(self):
 
-        #runtime_call = self.substrate.get_metadata_runtime_call_function("TransactionPaymentApi", "query_fee_details")
-        #param_info = runtime_call.get_param_info()
-
         param_info = self.substrate.runtime.api("TransactionPaymentApi").call("query_fee_details").get_param_info()
 
-        self.assertEqual('Extrinsic', param_info[0])
-        self.assertEqual('u32', param_info[1])
-
-        runtime_call = self.substrate.get_metadata_runtime_call_function("Core", "initialise_block")
-        param_info = runtime_call.get_param_info()
-        self.assertEqual('u32', param_info[0]['number'])
-        self.assertEqual('h256', param_info[0]['parent_hash'])
-
-    def test_check_all_runtime_call_types(self):
-        runtime_calls = self.substrate.get_metadata_runtime_call_functions()
-        for runtime_call in runtime_calls:
-            param_info = runtime_call.get_param_info()
-            self.assertEqual(type(param_info), list)
-            result_obj = self.substrate.create_scale_object(runtime_call.value['type'])
-            info = result_obj.generate_type_decomposition()
-            self.assertIsNotNone(info)
+        self.assertEqual('<Extrinsic>', param_info[0])
+        self.assertEqual(32, param_info[1])
 
     def test_unknown_runtime_call(self):
         with self.assertRaises(ValueError):

@@ -35,7 +35,7 @@ older or runtimes under development the `ss58_format` (default 42) and other pro
 
 ### Balance information of an account
 ```python
-result = substrate.query('System', 'Account', ['F4xQKRUagnSGjFqafyhajLs94e7Vvzvr8ebwYJceKpr8R7T'])
+result = substrate.runtime.pallet('System').storage('Account').get('F4xQKRUagnSGjFqafyhajLs94e7Vvzvr8ebwYJceKpr8R7T')
 print(result.value['data']['free']) # 635278638077956496
 ```
 ### Create balance transfer extrinsic

@@ -25,7 +25,7 @@ from scalecodec.exceptions import RemainingScaleBytesNotEmptyException
 from substrateinterface import SubstrateInterface
 
 from scalecodec.base import ScaleBytes
-from scalecodec.types import Vec, GenericAddress
+from scalecodec.types import Vec, MultiAddress, MetadataVersioned
 
 
 class RPCCompatilibityTestCase(unittest.TestCase):
@@ -36,20 +36,18 @@ class RPCCompatilibityTestCase(unittest.TestCase):
             os.path.join(os.path.dirname(__file__), 'fixtures', 'metadata_hex.json')
         )
 
-        cls.substrate = SubstrateInterface(url='dummy', ss58_format=42, type_registry_preset='substrate-node-template')
-        metadata_decoder = cls.substrate.runtime_config.create_scale_object(
-            'MetadataVersioned', ScaleBytes(cls.metadata_fixture_dict['V14'])
-        )
-        metadata_decoder.decode()
+        cls.substrate = SubstrateInterface(url='dummy', ss58_format=42)
+
+        metadata_decoder = MetadataVersioned.new()
+        metadata_decoder.decode(ScaleBytes(cls.metadata_fixture_dict['V14']))
+
         cls.substrate.get_block_metadata = MagicMock(return_value=metadata_decoder)
 
         def mocked_query(module, storage_function, block_hash):
             if module == 'Session' and storage_function == 'Validators':
                 if block_hash == '0xec828914eca09331dad704404479e2899a971a9b5948345dc40abca4ac818f93':
-                    vec = Vec()
-                    author = GenericAddress()
-                    author.value = '5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY'
-                    vec.elements = [author]
+                    vec = Vec(MultiAddress).new()
+                    vec.deserialize(['5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY'])
                     return vec
 
             raise ValueError(f"Unsupported mocked query {module}.{storage_function} @ {block_hash}")

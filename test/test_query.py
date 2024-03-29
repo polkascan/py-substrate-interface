@@ -116,11 +116,11 @@ class QueryTestCase(unittest.TestCase):
 
     def test_well_known_pallet_version(self):
 
-        sf = self.kusama_substrate.get_metadata_storage_function("System", "PalletVersion")
+        sf = self.kusama_substrate.get_metadata_storage_function("Balances", "PalletVersion")
         self.assertEqual(sf.value['name'], ':__STORAGE_VERSION__:')
 
-        result = self.kusama_substrate.query("System", "PalletVersion")
-        self.assertGreaterEqual(result.value, 0)
+        result = self.kusama_substrate.runtime.pallet("Balances").storage("PalletVersion").get()
+        self.assertGreaterEqual(result.value, 1)
 
     def test_query_multi(self):
 

@@ -196,7 +196,7 @@ class AutodetectAddressTypeTestCase(unittest.TestCase):
 
         call = substrate.compose_call(
             call_module='Balances',
-            call_function='transfer',
+            call_function='transfer_keep_alive',
             call_params={
                 'dest': keypair_alice.ss58_address,
                 'value': 2000
@@ -216,7 +216,7 @@ class AutodetectAddressTypeTestCase(unittest.TestCase):
 
         call = substrate.compose_call(
             call_module='Balances',
-            call_function='transfer',
+            call_function='transfer_keep_alive',
             call_params={
                 'dest': keypair_alice.ss58_address,
                 'value': 2000

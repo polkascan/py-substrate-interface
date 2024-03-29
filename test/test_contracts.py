@@ -17,7 +17,7 @@
 import os
 import unittest
 
-from scalecodec import ScaleBytes
+from scalecodec.base import ScaleBytes
 from substrateinterface import SubstrateInterface, ContractMetadata, ContractInstance, Keypair, ContractEvent
 from substrateinterface.exceptions import ContractMetadataParseException
 from test import settings
@@ -102,7 +102,7 @@ class ContractMetadataTestCase(unittest.TestCase):
 
     def test_generate_message_data_with_args(self):
 
-        scale_data = self.contract_metadata.generate_message_data("transfer", args={
+        scale_data = self.contract_metadata.generate_message_data("transfer_keep_alive", args={
             'to': '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty',
             'value': 10000
         })
@@ -113,7 +113,7 @@ class ContractMetadataTestCase(unittest.TestCase):
 
     def test_generate_message_data_missing_arg(self):
         with self.assertRaises(ValueError) as cm:
-            self.contract_metadata.generate_message_data("transfer", args={
+            self.contract_metadata.generate_message_data("transfer_keep_alive", args={
                 'value': 10000
             })
         self.assertEqual('Argument "to" is missing', str(cm.exception))
@@ -231,7 +231,7 @@ class ContractMetadataV1TestCase(ContractMetadataTestCase):
 
     def test_generate_message_data_with_args(self):
 
-        scale_data = self.contract_metadata.generate_message_data("transfer", args={
+        scale_data = self.contract_metadata.generate_message_data("transfer_keep_alive", args={
             'to': '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty',
             'value': 10000
         })
@@ -242,7 +242,7 @@ class ContractMetadataV1TestCase(ContractMetadataTestCase):
 
     def test_generate_message_data_missing_arg(self):
         with self.assertRaises(ValueError) as cm:
-            self.contract_metadata.generate_message_data("transfer", args={
+            self.contract_metadata.generate_message_data("transfer_keep_alive", args={
                 'value': 10000
             })
         self.assertEqual('Argument "to" is missing', str(cm.exception))
