@@ -41,19 +41,10 @@ print(result.value['data']['free']) # 635278638077956496
 ### Create balance transfer extrinsic
 
 ```python
-call = substrate.compose_call(
-    call_module='Balances',
-    call_function='transfer',
-    call_params={
-        'dest': '5E9oDs9PjpsBbxXxRE9uMaZZhnBAV38n2ouLB28oecBDdeQo',
-        'value': 1 * 10**12
-    }
-)
-
-keypair = Keypair.create_from_uri('//Alice')
-extrinsic = substrate.create_signed_extrinsic(call=call, keypair=keypair)
-
-receipt = substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
+receipt = substrate.runtime.pallet("Balances").call("transfer_keep_alive").create_extrinsic(
+    dest='5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty',
+    value=1 * 10**15
+).sign_and_submit(keypair=keypair, era={'period': 64}, wait_for_inclusion=True)
 
 print(f"Extrinsic '{receipt.extrinsic_hash}' sent and included in block '{receipt.block_hash}'")
 ```
