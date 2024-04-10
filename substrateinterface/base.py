@@ -2355,7 +2355,8 @@ class SubstrateInterface:
 
                                     engine = bytes(log_digest[1][0])
                                     # Retrieve validator set
-                                    validator_set = self.query("Session", "Validators", block_hash=block_hash)
+                                    parent_hash = block_data['header']['parentHash']
+                                    validator_set = self.query("Session", "Validators", block_hash=parent_hash)
 
                                     if engine == b'BABE':
                                         babe_predigest = self.runtime_config.create_scale_object(
