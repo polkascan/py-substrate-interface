@@ -60,9 +60,10 @@ async def main():
         ]
         responses = await substrate.send_rpc_requests(payloads)
 
-        for response in responses:
-            print(response)
+        for payload in responses:
+            print(payload.response)
 
 
 if __name__ == "__main__":
     asyncio.run(main())
+
