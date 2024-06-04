@@ -66,6 +66,27 @@ def list_remove_iter(xs: list):
         else:
             i += 1
 
+class RequestPayload:
+
+    def __init__(self, request_id: int, method: str, params: list, result_handler: callable):
+        self.request_id = request_id
+        self.method = method
+        self.params = params
+        self.result_handler = result_handler
+        self.response = None
+        self.complete = False
+        self.subscription_id = None
+        self.subscription_update_nr = 0
+
+    def __str__(self):
+        payload = {
+            "jsonrpc": "2.0",
+            "method": self.method,
+            "params": self.params,
+            "id": self.request_id
+        }
+        return json.dumps(payload)
+
 
 class SubstrateInterface:
 
@@ -198,26 +219,71 @@ class SubstrateInterface:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-    async def message_handler(self):
-        async for message in self.websocket:
+    async def send_rpc_requests(self, request_payloads: list):
+
+        request_payloads_dict = {p.request_id: p for p in request_payloads}
+
+        for request in request_payloads:
+            await self.websocket.send(str(request))
+
+        while True:
+            message = await self.websocket.recv()
+
             print(f"<: {message}")
             message_dict = json.loads(message)
-            if self.config['async_stop_event'].is_set() and message_dict['id'] >= self.request_id - 1:
+            # match request
+
+            if 'id' in message_dict:
+                current_payload = request_payloads_dict[message_dict['id']]
+
+                if current_payload.result_handler:
+                    # register subscription
+                    current_payload.subscription_id = message_dict['result']
+                    request_payloads_dict[current_payload.subscription_id] = current_payload
+                else:
+                    current_payload.response = message_dict['result']
+                    current_payload.complete = True
+
+            if 'params' in message_dict:
+                # Process subscription update
+                current_payload = request_payloads_dict[message_dict['params']['subscription']]
+
+                # process result handler
+                if current_payload.result_handler:
+                    current_payload.subscription_update_nr += 1
+                    callback_result = await current_payload.result_handler(
+                        message_dict, current_payload.subscription_update_nr, current_payload.subscription_id
+                    )
+                    if callback_result is not None:
+                        current_payload.response = callback_result
+                        current_payload.complete = True
+                else:
+                    current_payload.response = message_dict
+                    current_payload.complete = True
+
+
+                # if self.config['async_stop_event'].is_set() and message_dict['id'] >= self.request_id - 1:
+                #     break
+
+            if all(request.complete for request in request_payloads):
                 break
 
-    def create_payload(self, request_id, method, params=[]):
-        payload = {
-            "jsonrpc": "2.0",
-            "method": method,
-            "params": params,
-            "id": request_id
-        }
-        return json.dumps(payload)
+        return request_payloads
+
+
+    def create_request_payload(self, method: str, params: list = None, result_handler: callable = None):
+        if params is None:
+            params = []
+
+        request_payload = RequestPayload(
+            request_id=self.request_id, method=method, params=params, result_handler=result_handler
+        )
+        self.request_id += 1
+        return request_payload
     async def connect(self):
-        async with websockets.connect(self.url) as websocket:
-            self.websocket = websocket
-            receive_task = asyncio.create_task(self.message_handler())
-            await asyncio.gather(receive_task)
+        self.websocket = await websockets.connect(self.url)
+        # receive_task = asyncio.create_task(self.message_handler())
+        # await asyncio.gather(receive_task)
 
     async def disconnect(self):
         self.config['async_stop_event'].set()
