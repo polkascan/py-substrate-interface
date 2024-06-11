@@ -192,7 +192,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
             call_module='System',
             call_function='remark',
             call_params={
-                'remark': '0x' + ('01' * 177)
+                'remark': '0x' + ('01' * 175)
             }
         )
 
@@ -206,7 +206,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
             call_module='System',
             call_function='remark',
             call_params={
-                'remark': '0x' + ('01' * 178)
+                'remark': '0x' + ('01' * 176)
             }
         )
 

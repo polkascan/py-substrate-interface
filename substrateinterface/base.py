@@ -1490,6 +1490,11 @@ class SubstrateInterface:
                     ['asset_id', signed_extensions['ChargeAssetTxPayment']['extrinsic']]
                 )
 
+            if 'CheckMetadataHash' in signed_extensions:
+                signature_payload.type_mapping.append(
+                    ['mode', signed_extensions['CheckMetadataHash']['extrinsic']]
+                )
+
             if 'CheckSpecVersion' in signed_extensions:
                 signature_payload.type_mapping.append(
                     ['spec_version', signed_extensions['CheckSpecVersion']['additional_signed']]
@@ -1515,6 +1520,11 @@ class SubstrateInterface:
                     ['block_hash', signed_extensions['CheckEra']['additional_signed']]
                 )
 
+            if 'CheckMetadataHash' in signed_extensions:
+                signature_payload.type_mapping.append(
+                    ['metadata_hash', signed_extensions['CheckMetadataHash']['additional_signed']]
+                )
+
         if include_call_length:
 
             length_obj = self.runtime_config.create_scale_object('Bytes')
@@ -1532,7 +1542,9 @@ class SubstrateInterface:
             'genesis_hash': genesis_hash,
             'block_hash': block_hash,
             'transaction_version': self.transaction_version,
-            'asset_id': {'tip': tip, 'asset_id': tip_asset_id}
+            'asset_id': {'tip': tip, 'asset_id': tip_asset_id},
+            'metadata_hash': None,
+            'mode': 'Disabled'
         }
 
         signature_payload.encode(payload_dict)
@@ -1624,7 +1636,8 @@ class SubstrateInterface:
             'nonce': nonce,
             'era': era,
             'tip': tip,
-            'asset_id': {'tip': tip, 'asset_id': tip_asset_id}
+            'asset_id': {'tip': tip, 'asset_id': tip_asset_id},
+            'mode': 'Disabled'
         }
 
         # Check if ExtrinsicSignature is MultiSignature, otherwise omit signature_version
