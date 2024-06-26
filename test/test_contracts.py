@@ -409,5 +409,59 @@ class FlipperInstanceV4TestCase(FlipperInstanceTestCase):
         )
 
 
+class FlipperInstanceV5TestCase(FlipperInstanceTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+
+        class MockedSubstrateInterface(SubstrateInterface):
+
+            def rpc_request(self, method, params, result_handler=None):
+                if method == 'state_call':
+                    return {
+                        'jsonrpc': '2.0',
+                         'result': '0x1a987a663dbd8e5cf16786bc0100010000000000000000000000000000000000000000000008000000',
+                         'id': 16
+                    }
+                if method == 'contracts_call':
+                    return {
+                        'jsonrpc': '2.0',
+                        'result': {
+                            'gasConsumed': 7419127834,
+                            'gasRequired': 74999922688,
+                            'storageDeposit': {'charge': '0x0'},
+                            'debugMessage': '',
+                            'result': {'Ok': {'flags': 0, 'data': '0x0000'}}
+                        },
+                        'id': self.request_id}
+
+                return super().rpc_request(method, params, result_handler)
+
+        cls.substrate = MockedSubstrateInterface(
+            url=settings.KUSAMA_NODE_URL, type_registry_preset='canvas', type_registry={'types': {"ContractExecResult": "ContractExecResultTo269"}}
+        )
+
+        cls.keypair = Keypair.create_from_uri('//Alice')
+
+    def setUp(self) -> None:
+        self.contract = ContractInstance.create_from_address(
+            contract_address="5DaohteAvvR9PZEhynqWvbFT8HEaHNuiiPTZV61VEUHnqsfU",
+            metadata_file=os.path.join(os.path.dirname(__file__), 'fixtures', 'flipper-v5.json'),
+            substrate=self.substrate
+        )
+
+    def test_instance_read(self):
+
+        result = self.contract.read(self.keypair, 'get')
+
+        self.assertEqual({'Ok': False}, result.contract_result_data.value)
+
+    def test_instance_read_at_not_best_block(self):
+        parent_hash = self.substrate.get_block_header()['header']['parentHash']
+        result = self.contract.read(self.keypair, 'get', block_hash=parent_hash)
+
+        self.assertEqual({'Ok': False}, result.contract_result_data.value)
+
+
 if __name__ == '__main__':
     unittest.main()

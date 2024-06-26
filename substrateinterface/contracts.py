@@ -90,7 +90,7 @@ class ContractMetadata:
         elif 'version' in self.metadata_dict:
             self.metadata_version = int(self.metadata_dict['version'])
 
-        if self.metadata_version is None or self.metadata_version > 4:
+        if self.metadata_version is None or self.metadata_version > 5:
             raise ContractMetadataParseException("Unsupported metadata version")
 
         if 1 <= self.metadata_version <= 3:
@@ -125,6 +125,13 @@ class ContractMetadata:
         if self.metadata_version <= 2:
             for idx, c in enumerate(self.metadata_dict['spec']['constructors']):
                 c["payable"] = True
+
+        # V4 -> V5: new event fields: module_path and signature_topic
+        if self.metadata_version <= 4:
+            for idx, c in enumerate(self.metadata_dict['spec']['events']):
+                c["module_path"] = None
+                c["signature_topic"] = None
+
 
     def __parse_metadata(self):
 
@@ -392,6 +399,13 @@ class ContractMetadata:
 
         return self.metadata_dict['spec']['events'][event_id]
 
+    def get_event_id_by_topic(self, topic: str) -> Optional[int]:
+        for event_id, event in enumerate(self.metadata_dict['spec']['events']):
+            if topic == event['signature_topic']:
+                return event_id
+
+        # raise ValueError(f'Contract event for topic "{topic}" not found')
+
 
 class ContractEvent(ScaleType):
 
@@ -485,9 +499,20 @@ class ContractExecutionReceipt(ExtrinsicReceipt):
 
                 if self.substrate.implements_scaleinfo():
                     if event.value['module_id'] == 'Contracts' and event.value['event_id'] == 'ContractEmitted' and event.value['attributes']['contract'] == self.contract_address:
+
+                        contract_data = event['event'][1][1]['data'].value_object
+
+                        if self.contract_metadata.metadata_version >= 5:
+                            # Find corresponding contract event by event topic
+                            for topic in event.value['topics']:
+                                event_id = self.contract_metadata.get_event_id_by_topic(topic)
+                                if event_id is not None:
+                                    event_bytes = self.substrate.create_scale_object("U8").encode(event_id).data
+                                    contract_data = event_bytes + contract_data
+
                         # Create contract event
                         contract_event_obj = ContractEvent(
-                            data=ScaleBytes(event['event'][1][1]['data'].value_object),
+                            data=ScaleBytes(contract_data),
                             runtime_config=self.substrate.runtime_config,
                             contract_metadata=self.contract_metadata
                         )

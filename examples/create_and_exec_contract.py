@@ -37,15 +37,15 @@ if contract_info.value:
     # Create contract instance from deterministic address
     contract = ContractInstance.create_from_address(
         contract_address=contract_address,
-        metadata_file=os.path.join(os.path.dirname(__file__), 'assets', 'flipper-v4.json'),
+        metadata_file=os.path.join(os.path.dirname(__file__), 'assets', 'flipper-v5.json'),
         substrate=substrate
     )
 else:
 
     # Upload WASM code
     code = ContractCode.create_from_contract_files(
-        metadata_file=os.path.join(os.path.dirname(__file__), 'assets', 'flipper-v4.json'),
-        wasm_file=os.path.join(os.path.dirname(__file__), 'assets', 'flipper-v4.wasm'),
+        metadata_file=os.path.join(os.path.dirname(__file__), 'assets', 'flipper-v5.json'),
+        wasm_file=os.path.join(os.path.dirname(__file__), 'assets', 'flipper-v5.wasm'),
         substrate=substrate
     )
 
