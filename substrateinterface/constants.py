@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 
 STORAGE_HASH_SYSTEM_EVENTS = "0xcc956bdb7605e3547539f321ac2bc95c"
 STORAGE_HASH_SYSTEM_EVENTS_V9 = "0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7"
@@ -39,3 +40,8 @@ WELL_KNOWN_STORAGE_KEYS = {
         "default": "0x00000000"
     },
 }
+
+if os.getenv('GITHUB_REF') and os.getenv('GITHUB_REF').startswith('refs/tags/v'):
+    __version__ = os.getenv('GITHUB_REF').replace('refs/tags/v', '')
+else:
+    __version__ = '0.0.0-dev1'
