@@ -18,7 +18,7 @@ from typing import Callable, List, TYPE_CHECKING, Union, Optional, Tuple
 
 from scalecodec.base import ScaleType, ScaleBytes
 from scalecodec.exceptions import ScaleDecodeException
-from scalecodec.types import Option, GenericStorageEntryMetadata, Call, GenericCall, GenericExtrinsic
+
 # from .contracts import ContractMetadata
 
 from .keypair import Keypair, KeypairType, MnemonicLanguageCode
@@ -26,6 +26,10 @@ from .extensions import Extension
 from .exceptions import ExtensionCallNotFound, StorageFunctionNotFound, SubstrateRequestException
 
 __all__ = ['ExtensionInterface', 'RuntimeInterface', 'BlockInterface', 'ChainInterface', 'ContractInterface']
+
+from .scale.extrinsic import GenericCall, GenericExtrinsic
+
+from .scale.metadata import GenericStorageEntryMetadata
 
 from .storage import StorageKey
 
@@ -675,6 +679,7 @@ class ContractMetadataInterface(Interface):
         self.contract_interface = contract_interface
 
     def create_from_file(self, metadata_file: str) -> "ContractMetadata":
+        from .contracts import ContractMetadata
         return ContractMetadata.create_from_file(
             metadata_file=metadata_file, substrate=self.contract_interface.substrate
         )

@@ -19,9 +19,11 @@ from typing import Any, Optional, List, Union
 from substrateinterface.exceptions import StorageFunctionNotFound
 
 from scalecodec.base import ScaleBytes, ScaleTypeDef
-from scalecodec.types import GenericMetadataVersioned, Tuple, Option, Array, U8
-from scalecodec.utils.ss58 import ss58_decode
-from scalecodec.base import RuntimeConfigurationObject, ScaleType
+from scalecodec.types import Tuple, Option, Array, U8
+
+from .scale.metadata import GenericMetadataVersioned
+from .utils.ss58 import ss58_decode
+from scalecodec.base import ScaleType
 from .utils.hasher import blake2_256, two_x64_concat, xxh128, blake2_128, blake2_128_concat, identity, concat_hash_len
 
 
@@ -36,7 +38,7 @@ class StorageKey:
     def __init__(
             self, pallet: str, storage_function: str, params: list,
             data: bytes, value_scale_type: ScaleTypeDef, param_scale_types: List[ScaleTypeDef],
-            metadata: GenericMetadataVersioned, runtime_config: RuntimeConfigurationObject
+            metadata: GenericMetadataVersioned, runtime_config: 'RuntimeConfigurationObject'
     ):
         self.pallet = pallet
         self.storage_function = storage_function
@@ -51,7 +53,7 @@ class StorageKey:
         self.metadata_storage_function = None
 
     @classmethod
-    def create_from_data(cls, data: bytes, runtime_config: RuntimeConfigurationObject,
+    def create_from_data(cls, data: bytes, runtime_config: 'RuntimeConfigurationObject',
                          metadata: GenericMetadataVersioned, value_scale_type: str = None, pallet: str = None,
                          storage_function: str = None) -> 'StorageKey':
         """
@@ -92,7 +94,7 @@ class StorageKey:
 
     @classmethod
     def create_from_storage_function(cls, pallet: str, storage_function: str, params: list,
-                                     runtime_config: RuntimeConfigurationObject,
+                                     runtime_config: 'RuntimeConfigurationObject',
                                      metadata: GenericMetadataVersioned) -> 'StorageKey':
         """
         Create a StorageKey instance providing storage function details

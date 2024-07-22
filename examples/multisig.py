@@ -20,19 +20,13 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 substrate = SubstrateInterface(url="ws://127.0.0.1:9944")
-
-keypair_alice = Keypair.create_from_uri('//Alice', ss58_format=substrate.ss58_format)
-keypair_bob = Keypair.create_from_uri('//Bob', ss58_format=substrate.ss58_format)
-keypair_charlie = Keypair.create_from_uri('//Charlie', ss58_format=substrate.ss58_format)
+keypair_alice = substrate.keyring.create_from_uri('//Alice')
+keypair_bob = substrate.keyring.create_from_uri('//Bob')
+keypair_charlie = substrate.keyring.create_from_uri('//Charlie')
 
 # Generate multi-sig account from signatories and threshold
 multisig_account = substrate.generate_multisig_account(
-    signatories=[
-        keypair_alice.ss58_address,
-        keypair_bob.ss58_address,
-        keypair_charlie.ss58_address
-    ],
-    threshold=2
+    signatories=[keypair_alice, keypair_bob, keypair_charlie], threshold=2
 )
 
 call = substrate.compose_call(
@@ -40,7 +34,7 @@ call = substrate.compose_call(
     call_function='transfer_keep_alive',
     call_params={
         'dest': keypair_alice.ss58_address,
-        'value': 3 * 10 ** 3
+        'value': 4 * 10 ** 3
     }
 )
 

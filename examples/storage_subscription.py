@@ -14,13 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from substrateinterface import SubstrateInterface
-
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 def subscription_handler(storage_key, updated_obj, update_nr, subscription_id):
     print(f"Update for {storage_key}: {updated_obj.value}")
 
 
 substrate = SubstrateInterface(url="ws://127.0.0.1:9944")
+
 
 # Accounts to track
 storage_keys = [

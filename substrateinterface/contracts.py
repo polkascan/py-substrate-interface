@@ -19,12 +19,13 @@ import os
 from hashlib import blake2b
 from typing import Optional
 
+from .scale.types import GenericContractExecResult
 from .utils import version_tuple
 
 from substrateinterface.exceptions import ExtrinsicFailedException, DeployContractFailedException, \
     ContractReadFailedException, ContractMetadataParseException
 from scalecodec.base import ScaleBytes, ScaleType
-from scalecodec.types import GenericContractExecResult
+
 from substrateinterface.base import SubstrateInterface, Keypair, ExtrinsicReceipt
 
 __all__ = ['ContractExecutionReceipt', 'ContractMetadata', 'ContractCode', 'ContractInstance', 'ContractEvent']

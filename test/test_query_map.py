@@ -17,11 +17,10 @@
 import unittest
 from unittest.mock import MagicMock
 
-from scalecodec.types import GenericAccountId
-
 from substrateinterface.exceptions import SubstrateRequestException
 
 from substrateinterface import SubstrateInterface
+from substrateinterface.scale.account import GenericAccountId
 from test import settings
 
 

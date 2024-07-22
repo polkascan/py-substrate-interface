@@ -17,6 +17,8 @@
 import unittest
 from unittest.mock import MagicMock
 
+from substrateinterface.scale.account import MultiAddress
+from substrateinterface.scale.metadata import MetadataVersioned
 from test import settings
 
 from scalecodec.exceptions import RemainingScaleBytesNotEmptyException
@@ -26,7 +28,7 @@ from substrateinterface import SubstrateInterface
 from test.fixtures import metadata_node_template_hex
 
 from scalecodec.base import ScaleBytes
-from scalecodec.types import Vec, MultiAddress, MetadataVersioned
+from scalecodec.types import Vec
 
 
 class BlockTestCase(unittest.TestCase):
@@ -43,7 +45,7 @@ class BlockTestCase(unittest.TestCase):
         def mocked_query(module, storage_function, block_hash):
             if module == 'Session' and storage_function == 'Validators':
                 if block_hash == '0xec828914eca09331dad704404479e2899a971a9b5948345dc40abca4ac818f93':
-                    vec = Vec(MultiAddress).new()
+                    vec = Vec(MultiAddress()).new()
                     vec.deserialize(['5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY'])
                     return vec
 

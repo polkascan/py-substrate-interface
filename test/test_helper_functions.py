@@ -17,11 +17,12 @@ import os
 import unittest
 from unittest.mock import MagicMock
 
-from scalecodec.type_registry import load_type_registry_file, load_type_registry_preset
-from scalecodec.types import MetadataVersioned, GenericExtrinsic
 from substrateinterface.exceptions import SubstrateRequestException
 from scalecodec.base import ScaleBytes
 from substrateinterface import SubstrateInterface, Keypair
+from substrateinterface.scale.extrinsic import GenericExtrinsic
+from substrateinterface.scale.metadata import MetadataVersioned
+from substrateinterface.utils import load_json_file
 from test.settings import POLKADOT_NODE_URL
 
 
@@ -34,7 +35,7 @@ class TestHelperFunctions(unittest.TestCase):
 
         cls.substrate = SubstrateInterface(url='dummy', ss58_format=42)
 
-        cls.metadata_fixture_dict = load_type_registry_file(
+        cls.metadata_fixture_dict = load_json_file(
             os.path.join(os.path.dirname(__file__), 'fixtures', 'metadata_hex.json')
         )
 

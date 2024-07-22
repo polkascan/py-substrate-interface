@@ -29,14 +29,17 @@ from typing import Optional, Union, List
 
 from websocket import create_connection, WebSocketConnectionClosedException
 
-from scalecodec.base import ScaleBytes, RuntimeConfigurationObject, ScaleType
-from scalecodec.types import GenericCall, GenericExtrinsic, Extrinsic, MultiAccountId, GenericRuntimeCallDefinition, \
-    MetadataVersioned, Era, ExtrinsicPayloadValue, GenericMetadataVersioned, RawBabePreDigest, RawAuraPreDigest, \
-    GenericEventRecord
+from scalecodec.base import ScaleBytes, ScaleType
+from scalecodec.types import U32
+from .scale.account import MultiAccountId, GenericMultiAccountId
+from .scale.extrinsic import GenericCall, GenericExtrinsic, Extrinsic, Era, ExtrinsicPayloadValue, GenericEventRecord
+from .scale.metadata import MetadataVersioned, GenericMetadataVersioned
+
 
 from .extensions import Extension
 from .interfaces import ExtensionInterface, RuntimeInterface, QueryMapResult, ChainInterface, BlockInterface, \
     ContractInterface, UtilsInterface, KeyringInterface
+from .scale.types import GenericRuntimeCallDefinition, RawBabePreDigest, RawAuraPreDigest
 
 from .storage import StorageKey
 
@@ -44,6 +47,7 @@ from .exceptions import SubstrateRequestException, ConfigurationError, StorageFu
     ExtrinsicNotFound, ExtensionCallNotFound
 from .constants import *
 from .keypair import Keypair
+from .utils.hasher import concat_hash_len
 from .utils.ss58 import ss58_decode, ss58_encode, is_valid_ss58_address
 
 __all__ = ['SubstrateInterface', 'ExtrinsicReceipt', 'logger']
@@ -1194,48 +1198,50 @@ class SubstrateInterface:
         -------
         ScaleType
         """
-        self.init_runtime()
+        return self.runtime.at(block_hash=block_hash).api(api).call(method).execute(*params)
 
-        self.debug_message(f"Executing Runtime Call {api}.{method}")
-
-        if params is None:
-            params = {}
-
-        try:
-            runtime_call_def = self.runtime_config.type_registry["runtime_api"][api]['methods'][method]
-            runtime_api_types = self.runtime_config.type_registry["runtime_api"][api].get("types", {})
-        except KeyError:
-            raise ValueError(f"Runtime API Call '{api}.{method}' not found in registry")
-
-        if type(params) is list and len(params) != len(runtime_call_def['params']):
-            raise ValueError(
-                f"Number of parameter provided ({len(params)}) does not "
-                f"match definition {len(runtime_call_def['params'])}"
-            )
-
-        # Add runtime API types to registry
-        self.runtime_config.update_type_registry_types(runtime_api_types)
-
-        # Encode params
-        param_data = ScaleBytes(bytes())
-        for idx, param in enumerate(runtime_call_def['params']):
-            scale_obj = self.runtime_config.create_scale_object(param['type'])
-            if type(params) is list:
-                param_data += scale_obj.encode(params[idx])
-            else:
-                if param['name'] not in params:
-                    raise ValueError(f"Runtime Call param '{param['name']}' is missing")
-
-                param_data += scale_obj.encode(params[param['name']])
-
-        # RPC request
-        result_data = self.rpc_request("state_call", [f'{api}_{method}', str(param_data), block_hash])
-
-        # Decode result
-        result_obj = self.runtime_config.create_scale_object(runtime_call_def['type'])
-        result_obj.decode(ScaleBytes(result_data['result']))
-
-        return result_obj
+        # self.init_runtime()
+        #
+        # self.debug_message(f"Executing Runtime Call {api}.{method}")
+        #
+        # if params is None:
+        #     params = {}
+        #
+        # try:
+        #     runtime_call_def = self.runtime_config.type_registry["runtime_api"][api]['methods'][method]
+        #     runtime_api_types = self.runtime_config.type_registry["runtime_api"][api].get("types", {})
+        # except KeyError:
+        #     raise ValueError(f"Runtime API Call '{api}.{method}' not found in registry")
+        #
+        # if type(params) is list and len(params) != len(runtime_call_def['params']):
+        #     raise ValueError(
+        #         f"Number of parameter provided ({len(params)}) does not "
+        #         f"match definition {len(runtime_call_def['params'])}"
+        #     )
+        #
+        # # Add runtime API types to registry
+        # self.runtime_config.update_type_registry_types(runtime_api_types)
+        #
+        # # Encode params
+        # param_data = ScaleBytes(bytes())
+        # for idx, param in enumerate(runtime_call_def['params']):
+        #     scale_obj = self.runtime_config.create_scale_object(param['type'])
+        #     if type(params) is list:
+        #         param_data += scale_obj.encode(params[idx])
+        #     else:
+        #         if param['name'] not in params:
+        #             raise ValueError(f"Runtime Call param '{param['name']}' is missing")
+        #
+        #         param_data += scale_obj.encode(params[param['name']])
+        #
+        # # RPC request
+        # result_data = self.rpc_request("state_call", [f'{api}_{method}', str(param_data), block_hash])
+        #
+        # # Decode result
+        # result_obj = self.runtime_config.create_scale_object(runtime_call_def['type'])
+        # result_obj.decode(ScaleBytes(result_data['result']))
+        #
+        # return result_obj
 
     def get_events(self, block_hash: str = None) -> list:
         """
@@ -1399,6 +1405,10 @@ class SubstrateInterface:
         # Create signature payload
         signature_payload = call.data
 
+        # Metadata hash extension defaults
+        metadata_hash = None
+        metadata_check = {'mode': 'Disabled'}
+
         # Process signed extensions in metadata
         if 'signed_extensions' in self.metadata[1][1]['extrinsic']:
 
@@ -1420,6 +1430,9 @@ class SubstrateInterface:
             if 'ChargeAssetTxPayment' in signed_extensions:
                 signature_payload += signed_extensions['ChargeAssetTxPayment']['extrinsic'].new().encode(tip_asset_id)
 
+            if 'CheckMetadataHash' in signed_extensions:
+                signature_payload += signed_extensions['CheckMetadataHash']['extrinsic'].new().encode(metadata_check)
+
             if 'CheckSpecVersion' in signed_extensions:
                 signature_payload += signed_extensions['CheckSpecVersion']['additional_signed'].new().encode(self.runtime_version)
 
@@ -1434,6 +1447,9 @@ class SubstrateInterface:
 
             if 'CheckEra' in signed_extensions:
                 signature_payload += signed_extensions['CheckEra']['additional_signed'].new().encode(block_hash)
+
+            if 'CheckMetadataHash' in signed_extensions:
+                signature_payload += signed_extensions['CheckMetadataHash']['additional_signed'].new().encode(metadata_hash)
 
         if signature_payload.length > 256:
             return ScaleBytes(data=blake2b(signature_payload.data, digest_size=32).digest())
@@ -1525,7 +1541,8 @@ class SubstrateInterface:
             'nonce': nonce,
             'tip': tip,
             'call': call,
-            'asset_id': {'tip': tip, 'asset_id': tip_asset_id}
+            'asset_id': {'tip': tip, 'asset_id': tip_asset_id},
+            'metadata_check': {'mode': 'Disabled'}
         }
 
         # Check if ExtrinsicSignature is MultiSignature, otherwise omit signature_version
@@ -1562,7 +1579,7 @@ class SubstrateInterface:
 
         return extrinsic
 
-    def generate_multisig_account(self, signatories: list, threshold: int) -> MultiAccountId:
+    def generate_multisig_account(self, signatories: list, threshold: int) -> GenericMultiAccountId:
         """
         Generate deterministic Multisig account with supplied signatories and threshold
         Parameters
@@ -1575,13 +1592,13 @@ class SubstrateInterface:
         MultiAccountId
         """
 
-        multi_sig_account = MultiAccountId.create_from_account_list(signatories, threshold)
+        multi_sig_account = MultiAccountId(signatories, threshold, ss58_format=self.ss58_format).new()
 
-        multi_sig_account.ss58_address = ss58_encode(multi_sig_account.value.replace('0x', ''), self.ss58_format)
+        # multi_sig_account.ss58_address = ss58_encode(multi_sig_account.value.replace('0x', ''), self.ss58_format)
 
         return multi_sig_account
 
-    def create_multisig_extrinsic(self, call: GenericCall, keypair: Keypair, multisig_account: MultiAccountId,
+    def create_multisig_extrinsic(self, call: GenericCall, keypair: Keypair, multisig_account: GenericMultiAccountId,
                                   max_weight: Optional[Union[dict, int]] = None, era: dict = None, nonce: int = None,
                                   tip: int = 0, tip_asset_id: int = None, signature: Union[bytes, str] = None
                                   ) -> GenericExtrinsic:
@@ -1620,7 +1637,7 @@ class SubstrateInterface:
         # Compose 'as_multi' when final, 'approve_as_multi' otherwise
         if multisig_details.value and len(multisig_details.value['approvals']) + 1 == multisig_account.threshold:
             multi_sig_call = self.compose_call("Multisig", "as_multi", {
-                'other_signatories': [s for s in multisig_account.signatories if s != f'0x{keypair.public_key.hex()}'],
+                'other_signatories': [s.public_key for s in multisig_account.signatories if s.public_key != keypair.public_key],
                 'threshold': multisig_account.threshold,
                 'maybe_timepoint': maybe_timepoint,
                 'call': call,
@@ -1629,7 +1646,7 @@ class SubstrateInterface:
             })
         else:
             multi_sig_call = self.compose_call("Multisig", "approve_as_multi", {
-                'other_signatories': [s for s in multisig_account.signatories if s != f'0x{keypair.public_key.hex()}'],
+                'other_signatories': [s.public_key for s in multisig_account.signatories if s.public_key != keypair.public_key],
                 'threshold': multisig_account.threshold,
                 'maybe_timepoint': maybe_timepoint,
                 'call_hash': call.call_hash,
@@ -1748,35 +1765,14 @@ class SubstrateInterface:
         )
 
         if self.supports_rpc_method('state_call'):
-            extrinsic_len = self.runtime_config.create_scale_object('u32')
+            extrinsic_len = U32.new()
             extrinsic_len.encode(len(extrinsic.data))
 
             result = self.runtime_call("TransactionPaymentApi", "query_info", [extrinsic, extrinsic_len])
 
             return result.value
         else:
-            # Backwards compatibility; deprecated RPC method
-            payment_info = self.rpc_request('payment_queryInfo', [str(extrinsic.data)])
-
-            # convert partialFee to int
-            if 'result' in payment_info:
-                payment_info['result']['partialFee'] = int(payment_info['result']['partialFee'])
-
-                if type(payment_info['result']['weight']) is int:
-                    # Transform format to WeightV2 if applicable as per https://github.com/paritytech/substrate/pull/12633
-                    try:
-                        weight_obj = self.runtime_config.create_scale_object("sp_weights::weight_v2::Weight")
-                        if weight_obj is not None:
-                            payment_info['result']['weight'] = {
-                                'ref_time': payment_info['result']['weight'],
-                                'proof_size': 0
-                            }
-                    except NotImplementedError:
-                        pass
-
-                return payment_info['result']
-            else:
-                raise SubstrateRequestException(payment_info['error']['message'])
+            raise NotImplementedError("Only runtime calls using 'state_call' are supported")
 
     def get_type_registry(self, block_hash: str = None, max_recursion: int = 4) -> dict:
         """
@@ -3030,8 +3026,8 @@ class ExtrinsicReceipt:
                         )
                         self.__error_message = {
                             'type': 'Module',
-                            'name': module_error.name,
-                            'docs': module_error.docs
+                            'name': module_error,
+                            'docs': ''
                         }
                     elif 'BadOrigin' in dispatch_error:
                         self.__error_message = {
@@ -3150,4 +3146,25 @@ class ExtrinsicReceipt:
     def get(self, name):
         return self[name]
 
+
+class RuntimeConfigurationObject:
+    """
+    Container for runtime configuration, for example type definitions and runtime upgrade information
+    """
+
+    # @classmethod
+    # def all_subclasses(cls, class_):
+    #     return set(class_.__subclasses__()).union(
+    #         [s for c in class_.__subclasses__() for s in cls.all_subclasses(c)])
+
+    def __init__(self, ss58_format=None):
+        self.active_spec_version_id = None
+        self.chain_id = None
+
+        self.ss58_format = ss58_format
+
+    def set_active_spec_version_id(self, spec_version_id):
+        # TODO remove
+        if spec_version_id != self.active_spec_version_id:
+            self.active_spec_version_id = spec_version_id
 

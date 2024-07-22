@@ -17,7 +17,6 @@ import os
 import unittest
 
 from scalecodec.base import ScaleBytes
-from scalecodec.type_registry import load_type_registry_file
 from substrateinterface import SubstrateInterface, Keypair, ExtrinsicReceipt
 from substrateinterface.exceptions import SubstrateRequestException
 from test import settings
