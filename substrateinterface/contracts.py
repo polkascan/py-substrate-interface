@@ -19,12 +19,13 @@ import os
 from hashlib import blake2b
 from typing import Optional
 
+from .scale.types import GenericContractExecResult
 from .utils import version_tuple
 
 from substrateinterface.exceptions import ExtrinsicFailedException, DeployContractFailedException, \
     ContractReadFailedException, ContractMetadataParseException
 from scalecodec.base import ScaleBytes, ScaleType
-from scalecodec.types import GenericContractExecResult
+
 from substrateinterface.base import SubstrateInterface, Keypair, ExtrinsicReceipt
 
 __all__ = ['ContractExecutionReceipt', 'ContractMetadata', 'ContractCode', 'ContractInstance', 'ContractEvent']
@@ -481,32 +482,18 @@ class ContractExecutionReceipt(ExtrinsicReceipt):
 
             for event in self.triggered_events:
 
-                if self.substrate.implements_scaleinfo():
-                    if event.value['module_id'] == 'Contracts' and event.value['event_id'] == 'ContractEmitted':
-                        # Create contract event
-                        contract_event_obj = ContractEvent(
-                            data=ScaleBytes(event['event'][1][1]['data'].value_object),
-                            runtime_config=self.substrate.runtime_config,
-                            contract_metadata=self.contract_metadata
-                        )
+                if event.value['module_id'] == 'Contracts' and event.value['event_id'] == 'ContractEmitted':
+                    # Create contract event
+                    contract_event_obj = ContractEvent(
+                        data=ScaleBytes(event['event'][1][1]['data'].value_object),
+                        runtime_config=self.substrate.runtime_config,
+                        contract_metadata=self.contract_metadata
+                    )
 
-                        contract_event_obj.decode()
+                    contract_event_obj.decode()
 
-                        self.__contract_events.append(contract_event_obj)
-                else:
+                    self.__contract_events.append(contract_event_obj)
 
-                    if event.event_module.name == 'Contracts' and event.event.name == 'ContractEmitted':
-
-                        # Create contract event
-                        contract_event_obj = ContractEvent(
-                            data=ScaleBytes(event.params[1]['value']),
-                            runtime_config=self.substrate.runtime_config,
-                            contract_metadata=self.contract_metadata
-                        )
-
-                        contract_event_obj.decode()
-
-                        self.__contract_events.append(contract_event_obj)
 
     @property
     def contract_events(self):
@@ -691,22 +678,13 @@ class ContractCode:
 
         for event in result.triggered_events:
 
-            if self.substrate.implements_scaleinfo():
+            if event.value['event']['event_id'] == 'Instantiated':
+                return ContractInstance(
+                    contract_address=event.value['event']['attributes']['contract'],
+                    metadata=self.metadata,
+                    substrate=self.substrate
+                )
 
-                if event.value['event']['event_id'] == 'Instantiated':
-                    return ContractInstance(
-                        contract_address=event.value['event']['attributes']['contract'],
-                        metadata=self.metadata,
-                        substrate=self.substrate
-                    )
-            else:
-
-                if event.event.name == 'Instantiated':
-                    return ContractInstance(
-                        contract_address=event.params[1]['value'],
-                        metadata=self.metadata,
-                        substrate=self.substrate
-                    )
 
         raise DeployContractFailedException()
 

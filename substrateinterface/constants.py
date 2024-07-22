@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 
 STORAGE_HASH_SYSTEM_EVENTS = "0xcc956bdb7605e3547539f321ac2bc95c"
 STORAGE_HASH_SYSTEM_EVENTS_V9 = "0x26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7"
@@ -39,3 +40,8 @@ WELL_KNOWN_STORAGE_KEYS = {
         "default": "0x00000000"
     },
 }
+
+DEFAULT_EXTRINSIC_VERSION = 4
+BIT_SIGNED = 0b10000000
+BIT_UNSIGNED = 0
+UNMASK_VERSION = 0b01111111

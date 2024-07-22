@@ -17,6 +17,8 @@
 import unittest
 from unittest.mock import MagicMock
 
+from substrateinterface.scale.account import MultiAddress
+from substrateinterface.scale.metadata import MetadataVersioned
 from test import settings
 
 from scalecodec.exceptions import RemainingScaleBytesNotEmptyException
@@ -26,27 +28,25 @@ from substrateinterface import SubstrateInterface
 from test.fixtures import metadata_node_template_hex
 
 from scalecodec.base import ScaleBytes
-from scalecodec.types import Vec, GenericAddress
+from scalecodec.types import Vec
 
 
 class BlockTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.substrate = SubstrateInterface(url='dummy', ss58_format=42, type_registry_preset='substrate-node-template')
-        metadata_decoder = cls.substrate.runtime_config.create_scale_object(
-            'MetadataVersioned', ScaleBytes(metadata_node_template_hex)
-        )
-        metadata_decoder.decode()
+        cls.substrate = SubstrateInterface(url='dummy', ss58_format=42)
+
+        metadata_decoder = MetadataVersioned.new()
+        metadata_decoder.decode(ScaleBytes(metadata_node_template_hex))
+
         cls.substrate.get_block_metadata = MagicMock(return_value=metadata_decoder)
 
         def mocked_query(module, storage_function, block_hash):
             if module == 'Session' and storage_function == 'Validators':
                 if block_hash == '0xec828914eca09331dad704404479e2899a971a9b5948345dc40abca4ac818f93':
-                    vec = Vec()
-                    author = GenericAddress()
-                    author.value = '5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY'
-                    vec.elements = [author]
+                    vec = Vec(MultiAddress()).new()
+                    vec.deserialize(['5GNJqTPyNqANBkUVMN1LPPrxXnFouWXoe2wNSmmEoLctxiZY'])
                     return vec
 
             raise ValueError(f"Unsupported mocked query {module}.{storage_function} @ {block_hash}")
@@ -188,11 +188,11 @@ class BlockTestCase(unittest.TestCase):
         self.assertEqual(extrinsics[0]['call']['call_args']['now'], 1611744282004)
 
     def test_get_by_block_number(self):
-
-        block = self.substrate.get_block(
-            block_number=100
-        )
-        extrinsics = block['extrinsics']
+        extrinsics = self.substrate.block.number(100).extrinsics()
+        # block = self.substrate.get_block(
+        #     block_number=100
+        # )
+        # extrinsics = block['extrinsics']
 
         self.assertEqual(extrinsics[0]['call']['call_module'].name, 'Timestamp')
         self.assertEqual(extrinsics[0]['call']['call_function'].name, 'set')

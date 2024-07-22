@@ -27,35 +27,28 @@ class QueryTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.kusama_substrate = SubstrateInterface(
-            url=settings.KUSAMA_NODE_URL,
-            ss58_format=2,
-            type_registry_preset='kusama'
+            url=settings.KUSAMA_NODE_URL
         )
 
         cls.polkadot_substrate = SubstrateInterface(
-            url=settings.POLKADOT_NODE_URL,
-            ss58_format=0,
-            type_registry_preset='polkadot'
+            url=settings.POLKADOT_NODE_URL
         )
 
     def test_system_account(self):
 
-        result = self.kusama_substrate.query(
-            module='System',
-            storage_function='Account',
-            params=['F4xQKRUagnSGjFqafyhajLs94e7Vvzvr8ebwYJceKpr8R7T'],
-            block_hash='0x176e064454388fd78941a0bace38db424e71db9d5d5ed0272ead7003a02234fa'
+        result = self.kusama_substrate.runtime.at(
+            '0xbf787e2f322080e137ed53e763b1cc97d5c5585be1f736914e27d68ac97f5f2c'
+        ).pallet('System').storage('Account').get(
+            'F4xQKRUagnSGjFqafyhajLs94e7Vvzvr8ebwYJceKpr8R7T'
         )
 
-        self.assertEqual(7673, result.value['nonce'])
-        self.assertEqual(637747267365404068, result.value['data']['free'])
+        self.assertEqual(67501, result.value['nonce'])
+        self.assertEqual(1099945000512, result.value['data']['free'])
         self.assertEqual(result.meta_info['result_found'], True)
 
     def test_system_account_non_existing(self):
-        result = self.kusama_substrate.query(
-            module='System',
-            storage_function='Account',
-            params=['GSEX8kR4Kz5UZGhvRUCJG93D5hhTAoVZ5tAe6Zne7V42DSi']
+        result = self.kusama_substrate.runtime.pallet('System').storage('Account').get(
+            'GSEX8kR4Kz5UZGhvRUCJG93D5hhTAoVZ5tAe6Zne7V42DSi'
         )
 
         self.assertEqual(
@@ -65,6 +58,17 @@ class QueryTestCase(unittest.TestCase):
                     'free': 0, 'reserved': 0, 'frozen': 0, 'flags': 170141183460469231731687303715884105728
                 }
             }, result.value)
+
+    def test_multiple_params(self):
+        result = self.kusama_substrate.runtime.at(
+            '0xbf787e2f322080e137ed53e763b1cc97d5c5585be1f736914e27d68ac97f5f2c'
+        ).pallet('Staking').storage('ErasStakers').get(
+            5946, 'EiBh85f6jURjXKovmokab4Li9QcHejecoaj2ADVeRWZWsAw'
+        )
+
+        self.assertEqual(8335009536888687, result.value['total'])
+        self.assertEqual(10000000000000, result.value['own'])
+        self.assertEqual(result.meta_info['result_found'], True)
 
     def test_non_existing_query(self):
         with self.assertRaises(StorageFunctionNotFound) as cm:
@@ -77,23 +81,19 @@ class QueryTestCase(unittest.TestCase):
             self.kusama_substrate.query("System", "Account")
 
     def test_modifier_default_result(self):
-        result = self.kusama_substrate.query(
-            module='Staking',
-            storage_function='HistoryDepth',
-            block_hash='0x4b313e72e3a524b98582c31cd3ff6f7f2ef5c38a3c899104a833e468bb1370a2'
-        )
+
+        result = self.kusama_substrate.runtime.at(
+            '0xbf787e2f322080e137ed53e763b1cc97d5c5585be1f736914e27d68ac97f5f2c'
+        ).pallet('Staking').storage('MinCommission').get()
 
         self.assertEqual(84, result.value)
         self.assertEqual(result.meta_info['result_found'], False)
 
     def test_modifier_option_result(self):
 
-        result = self.kusama_substrate.query(
-            module='Identity',
-            storage_function='IdentityOf',
-            params=["DD6kXYJPHbPRbBjeR35s1AR7zDh7W2aE55EBuDyMorQZS2a"],
-            block_hash='0x4b313e72e3a524b98582c31cd3ff6f7f2ef5c38a3c899104a833e468bb1370a2'
-        )
+        result = self.kusama_substrate.runtime.at(
+            '0xbf787e2f322080e137ed53e763b1cc97d5c5585be1f736914e27d68ac97f5f2c'
+        ).pallet('Identity').storage('IdentityOf').get("DD6kXYJPHbPRbBjeR35s1AR7zDh7W2aE55EBuDyMorQZS2a")
 
         self.assertIsNone(result.value)
         self.assertEqual(result.meta_info['result_found'], False)
@@ -116,11 +116,11 @@ class QueryTestCase(unittest.TestCase):
 
     def test_well_known_pallet_version(self):
 
-        sf = self.kusama_substrate.get_metadata_storage_function("System", "PalletVersion")
+        sf = self.kusama_substrate.get_metadata_storage_function("Balances", "PalletVersion")
         self.assertEqual(sf.value['name'], ':__STORAGE_VERSION__:')
 
-        result = self.kusama_substrate.query("System", "PalletVersion")
-        self.assertGreaterEqual(result.value, 0)
+        result = self.kusama_substrate.runtime.pallet("Balances").storage("PalletVersion").get()
+        self.assertGreaterEqual(result.value, 1)
 
     def test_query_multi(self):
 

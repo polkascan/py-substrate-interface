@@ -13,9 +13,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import asyncio
 
 import warnings
+import websockets
 
 from datetime import datetime
 from hashlib import blake2b
@@ -28,13 +29,17 @@ from typing import Optional, Union, List
 
 from websocket import create_connection, WebSocketConnectionClosedException
 
-from scalecodec.base import ScaleBytes, RuntimeConfigurationObject, ScaleType
-from scalecodec.types import GenericCall, GenericExtrinsic, Extrinsic, MultiAccountId, GenericRuntimeCallDefinition
-from scalecodec.type_registry import load_type_registry_preset
-from scalecodec.updater import update_type_registries
+from scalecodec.base import ScaleBytes, ScaleType
+from scalecodec.types import U32
+from .scale.account import MultiAccountId, GenericMultiAccountId
+from .scale.extrinsic import GenericCall, GenericExtrinsic, Extrinsic, Era, ExtrinsicPayloadValue, GenericEventRecord
+from .scale.metadata import MetadataVersioned, GenericMetadataVersioned
+
+
 from .extensions import Extension
 from .interfaces import ExtensionInterface, RuntimeInterface, QueryMapResult, ChainInterface, BlockInterface, \
-    ContractInterface
+    ContractInterface, UtilsInterface, KeyringInterface
+from .scale.types import GenericRuntimeCallDefinition, RawBabePreDigest, RawAuraPreDigest
 
 from .storage import StorageKey
 
@@ -42,6 +47,7 @@ from .exceptions import SubstrateRequestException, ConfigurationError, StorageFu
     ExtrinsicNotFound, ExtensionCallNotFound
 from .constants import *
 from .keypair import Keypair
+from .utils.hasher import concat_hash_len
 from .utils.ss58 import ss58_decode, ss58_encode, is_valid_ss58_address
 
 __all__ = ['SubstrateInterface', 'ExtrinsicReceipt', 'logger']
@@ -64,12 +70,32 @@ def list_remove_iter(xs: list):
         else:
             i += 1
 
+class RequestPayload:
+
+    def __init__(self, request_id: int, method: str, params: list, result_handler: callable):
+        self.request_id = request_id
+        self.method = method
+        self.params = params
+        self.result_handler = result_handler
+        self.response = None
+        self.complete = False
+        self.subscription_id = None
+        self.subscription_update_nr = 0
+
+    def __str__(self):
+        payload = {
+            "jsonrpc": "2.0",
+            "method": self.method,
+            "params": self.params,
+            "id": self.request_id
+        }
+        return json.dumps(payload)
+
 
 class SubstrateInterface:
 
-    def __init__(self, url=None, websocket=None, ss58_format=None, type_registry=None, type_registry_preset=None,
-                 cache_region=None, runtime_config=None, use_remote_preset=False, ws_options=None,
-                 auto_discover=True, auto_reconnect=True):
+    def __init__(self, url=None, websocket=None, ss58_format=None,
+                 cache_region=None, runtime_config=None, ws_options=None, auto_reconnect=True, use_async=False):
         """
         A specialized class in interfacing with a Substrate node.
 
@@ -77,10 +103,7 @@ class SubstrateInterface:
         ----------
         url: the URL to the substrate node, either in format https://127.0.0.1:9933 or wss://127.0.0.1:9944
         ss58_format: The address type which account IDs will be SS58-encoded to Substrate addresses. Defaults to 42, for Kusama the address type is 2
-        type_registry: A dict containing the custom type registry in format: {'types': {'customType': 'u32'},..}
-        type_registry_preset: The name of the predefined type registry shipped with the SCALE-codec, e.g. kusama
         cache_region: a Dogpile cache region as a central store for the metadata cache
-        use_remote_preset: When True preset is downloaded from Github master, otherwise use files from local installed scalecodec package
         ws_options: dict of options to pass to the websocket-client create_connection function
         """
 
@@ -107,9 +130,6 @@ class SubstrateInterface:
         if ss58_format is not None:
             self.ss58_format = ss58_format
 
-        self.type_registry_preset = type_registry_preset
-        self.type_registry = type_registry
-
         self.request_id = 1
         self.url = url
         self.websocket = None
@@ -128,7 +148,7 @@ class SubstrateInterface:
 
         self.__rpc_message_queue = []
 
-        if self.url and (self.url[0:6] == 'wss://' or self.url[0:5] == 'ws://'):
+        if not use_async and self.url and (self.url[0:6] == 'wss://' or self.url[0:5] == 'ws://'):
             self.connect_websocket()
 
         elif websocket:
@@ -140,7 +160,7 @@ class SubstrateInterface:
             'cache-control': "no-cache"
         }
 
-        self.metadata = None
+        self.metadata: Optional[GenericMetadataVersioned] = None
 
         self.runtime_version = None
         self.transaction_version = None
@@ -151,21 +171,22 @@ class SubstrateInterface:
         self.__metadata_cache = {}
 
         self.config = {
-            'use_remote_preset': use_remote_preset,
-            'auto_discover': auto_discover,
             'auto_reconnect': auto_reconnect,
-            'rpc_methods': None
+            'rpc_methods': None,
+            'use_async': use_async,
+            'async_stop_event': asyncio.Event()
         }
 
         # Initialize interfaces
         self.runtime = RuntimeInterface(self)
+        # self.chain = ChainInterface(self)
         self.block = BlockInterface(self)
         self.extensions = ExtensionInterface(self)
         self.contract = ContractInterface(self)
+        self.utils = UtilsInterface(self)
+        self.keyring = KeyringInterface(self)
 
         self.session = requests.Session()
-
-        self.reload_type_registry(use_remote_preset=use_remote_preset, auto_discover=auto_discover)
 
     def connect_websocket(self):
         """
@@ -201,6 +222,86 @@ class SubstrateInterface:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
+
+    async def send_rpc_requests(self, request_payloads: list):
+
+        request_payloads_dict = {p.request_id: p for p in request_payloads}
+
+        for request in request_payloads:
+            await self.websocket.send(str(request))
+
+        while True:
+            message = await self.websocket.recv()
+
+            print(f"<: {message}")
+            message_dict = json.loads(message)
+            # match request
+
+            if 'id' in message_dict:
+                current_payload = request_payloads_dict[message_dict['id']]
+
+                if current_payload.result_handler:
+                    # register subscription
+                    current_payload.subscription_id = message_dict['result']
+                    request_payloads_dict[current_payload.subscription_id] = current_payload
+                else:
+                    current_payload.response = message_dict['result']
+                    current_payload.complete = True
+
+            if 'params' in message_dict:
+                # Process subscription update
+                current_payload = request_payloads_dict[message_dict['params']['subscription']]
+
+                # process result handler
+                if current_payload.result_handler:
+                    current_payload.subscription_update_nr += 1
+                    callback_result = await current_payload.result_handler(
+                        message_dict, current_payload.subscription_update_nr, current_payload.subscription_id
+                    )
+                    if callback_result is not None:
+                        current_payload.response = callback_result
+                        current_payload.complete = True
+                else:
+                    current_payload.response = message_dict
+                    current_payload.complete = True
+
+
+                # if self.config['async_stop_event'].is_set() and message_dict['id'] >= self.request_id - 1:
+                #     break
+
+            if all(request.complete for request in request_payloads):
+                break
+
+        return request_payloads
+
+
+    def create_request_payload(self, method: str, params: list = None, result_handler: callable = None):
+        if params is None:
+            params = []
+
+        request_payload = RequestPayload(
+            request_id=self.request_id, method=method, params=params, result_handler=result_handler
+        )
+        self.request_id += 1
+        return request_payload
+    async def connect(self):
+        self.websocket = await websockets.connect(self.url)
+        # receive_task = asyncio.create_task(self.message_handler())
+        # await asyncio.gather(receive_task)
+
+    async def disconnect(self):
+        self.config['async_stop_event'].set()
+        await self.websocket.close()
+
+    async def __aenter__(self):
+        # Setup code (e.g., open an asynchronous connection)
+        await self.connect()
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        await self.disconnect()
+        # Cleanup code (e.g., close an asynchronous connection)
+
 
     @staticmethod
     def debug_message(message: str):
@@ -265,6 +366,7 @@ class SubstrateInterface:
         self.debug_message('RPC request #{}: "{}"'.format(request_id, method))
 
         if self.websocket:
+            # TODO Replace with asyncio websocket
             try:
                 self.websocket.send(json.dumps(payload))
             except WebSocketConnectionClosedException:
@@ -415,17 +517,6 @@ class SubstrateInterface:
         if self.runtime_config:
             self.runtime_config.ss58_format = value
 
-    def implements_scaleinfo(self) -> Optional[bool]:
-        """
-        Returns True if current runtime implementation a `PortableRegistry` (`MetadataV14` and higher)
-
-        Returns
-        -------
-        bool
-        """
-        if self.metadata:
-            return self.metadata.portable_registry is not None
-
     def get_chain_head(self):
         """
         A pass-though to existing JSONRPC method `chain_getHead`
@@ -524,12 +615,10 @@ class SubstrateInterface:
             raise SubstrateRequestException(response['error']['message'])
 
         if response.get('result') and decode:
-            metadata_decoder = self.runtime_config.create_scale_object(
-                'MetadataVersioned', data=ScaleBytes(response.get('result'))
-            )
-            metadata_decoder.decode()
+            metadata_versioned = MetadataVersioned.new()
+            metadata_versioned.decode(ScaleBytes(response.get('result')))
 
-            return metadata_decoder
+            return metadata_versioned
 
         return response
 
@@ -701,18 +790,8 @@ class SubstrateInterface:
                 self.debug_message('Stored metadata for {} in Redis'.format(self.runtime_version))
                 self.cache_region.set('METADATA_{}'.format(self.runtime_version), self.metadata)
 
-        # Update type registry
-        self.reload_type_registry(
-            use_remote_preset=self.config.get('use_remote_preset'),
-            auto_discover=self.config.get('auto_discover')
-        )
-
-        # Check if PortableRegistry is present in metadata (V14+), otherwise fall back on legacy type registry (<V14)
-        if self.implements_scaleinfo():
-            self.debug_message('Add PortableRegistry from metadata to type registry')
-            self.runtime_config.add_portable_registry(self.metadata)
-
         # Set active runtime version
+        # TODO this is not thread-safe
         self.runtime_config.set_active_spec_version_id(self.runtime_version)
 
         # Check and apply runtime constants
@@ -720,15 +799,26 @@ class SubstrateInterface:
 
         if ss58_prefix_constant:
             self.ss58_format = ss58_prefix_constant.value
+            # Set ss58 format in relevant PortableRegistry types
+            account_id_type = self.metadata.portable_registry.get_scale_type_def(
+                self.metadata.portable_registry.get_si_type_id('sp_core::crypto::accountid32')
+            )
+            account_id_type.ss58_format = self.ss58_format
+
+            multi_address_type = self.metadata.portable_registry.get_scale_type_def(
+                self.metadata.portable_registry.get_si_type_id('sp_runtime::multiaddress::multiaddress')
+            )
+            multi_address_type.set_ss58_format(self.ss58_format)
 
         # Set runtime compatibility flags
-        try:
-            _ = self.runtime_config.create_scale_object("sp_weights::weight_v2::Weight")
-            self.config['is_weight_v2'] = True
-            self.runtime_config.update_type_registry_types({'Weight': 'sp_weights::weight_v2::Weight'})
-        except NotImplementedError:
-            self.config['is_weight_v2'] = False
-            self.runtime_config.update_type_registry_types({'Weight': 'WeightV1'})
+        # # TODO is there a more sustainable way?
+        # try:
+        #     _ = self.runtime_config.create_scale_object("sp_weights::weight_v2::Weight")
+        #     self.config['is_weight_v2'] = True
+        #     self.runtime_config.update_type_registry_types({'Weight': 'sp_weights::weight_v2::Weight'})
+        # except NotImplementedError:
+        #     self.config['is_weight_v2'] = False
+        #     self.runtime_config.update_type_registry_types({'Weight': 'WeightV1'})
 
     def query_map(self, module: str, storage_function: str, params: Optional[list] = None, block_hash: str = None,
                   max_results: int = None, start_key: str = None, page_size: int = 100,
@@ -815,16 +905,6 @@ class SubstrateInterface:
 
         result = []
         last_key = None
-
-        def concat_hash_len(key_hasher: str) -> int:
-            if key_hasher == "Blake2_128Concat":
-                return 16
-            elif key_hasher == "Twox64Concat":
-                return 8
-            elif key_hasher == "Identity":
-                return 0
-            else:
-                raise ValueError('Unsupported hash type')
 
         if len(result_keys) > 0:
 
@@ -1079,52 +1159,7 @@ class SubstrateInterface:
         -------
 
         """
-        self.init_runtime()
-
-        storage_key_map = {s.to_hex(): s for s in storage_keys}
-
-        def result_handler(message, update_nr, subscription_id):
-            # Process changes
-            for change_storage_key, change_data in message['params']['result']['changes']:
-                # Check for target storage key
-                storage_key = storage_key_map[change_storage_key]
-                result_found = False
-
-                if change_data is not None:
-                    change_scale_type = storage_key.value_scale_type
-                    result_found = True
-                elif storage_key.metadata_storage_function.value['modifier'] == 'Default':
-                    # Fallback to default value of storage function if no result
-                    change_scale_type = storage_key.value_scale_type
-                    change_data = storage_key.metadata_storage_function.value_object['default'].value_object
-                else:
-                    # No result is interpreted as an Option<...> result
-                    change_scale_type = f'Option<{storage_key.value_scale_type}>'
-                    change_data = storage_key.metadata_storage_function.value_object['default'].value_object
-
-                # Decode SCALE result data
-                updated_obj = self.runtime_config.create_scale_object(
-                    type_string=change_scale_type,
-                    data=ScaleBytes(change_data),
-                    metadata=self.metadata
-                )
-                updated_obj.decode()
-                updated_obj.meta_info = {'result_found': result_found}
-
-                subscription_result = subscription_handler(storage_key, updated_obj, update_nr, subscription_id)
-
-                if subscription_result is not None:
-                    # Handler returned end result: unsubscribe from further updates
-                    self.rpc_request("state_unsubscribeStorage", [subscription_id])
-
-                    return subscription_result
-
-        if not callable(subscription_handler):
-            raise ValueError('Provided "subscription_handler" is not callable')
-
-        return self.rpc_request(
-            "state_subscribeStorage", [[s.to_hex() for s in storage_keys]], result_handler=result_handler
-        )
+        raise NotImplementedError
 
     def retrieve_pending_extrinsics(self) -> list:
         """
@@ -1142,7 +1177,7 @@ class SubstrateInterface:
         extrinsics = []
 
         for extrinsic_data in result_data['result']:
-            extrinsic = self.runtime_config.create_scale_object('Extrinsic', metadata=self.metadata)
+            extrinsic = self.metadata.get_extrinsic_type_def().new()
             extrinsic.decode(ScaleBytes(extrinsic_data))
             extrinsics.append(extrinsic)
 
@@ -1163,48 +1198,50 @@ class SubstrateInterface:
         -------
         ScaleType
         """
-        self.init_runtime()
+        return self.runtime.at(block_hash=block_hash).api(api).call(method).execute(*params)
 
-        self.debug_message(f"Executing Runtime Call {api}.{method}")
-
-        if params is None:
-            params = {}
-
-        try:
-            runtime_call_def = self.runtime_config.type_registry["runtime_api"][api]['methods'][method]
-            runtime_api_types = self.runtime_config.type_registry["runtime_api"][api].get("types", {})
-        except KeyError:
-            raise ValueError(f"Runtime API Call '{api}.{method}' not found in registry")
-
-        if type(params) is list and len(params) != len(runtime_call_def['params']):
-            raise ValueError(
-                f"Number of parameter provided ({len(params)}) does not "
-                f"match definition {len(runtime_call_def['params'])}"
-            )
-
-        # Add runtime API types to registry
-        self.runtime_config.update_type_registry_types(runtime_api_types)
-
-        # Encode params
-        param_data = ScaleBytes(bytes())
-        for idx, param in enumerate(runtime_call_def['params']):
-            scale_obj = self.runtime_config.create_scale_object(param['type'])
-            if type(params) is list:
-                param_data += scale_obj.encode(params[idx])
-            else:
-                if param['name'] not in params:
-                    raise ValueError(f"Runtime Call param '{param['name']}' is missing")
-
-                param_data += scale_obj.encode(params[param['name']])
-
-        # RPC request
-        result_data = self.rpc_request("state_call", [f'{api}_{method}', str(param_data), block_hash])
-
-        # Decode result
-        result_obj = self.runtime_config.create_scale_object(runtime_call_def['type'])
-        result_obj.decode(ScaleBytes(result_data['result']))
-
-        return result_obj
+        # self.init_runtime()
+        #
+        # self.debug_message(f"Executing Runtime Call {api}.{method}")
+        #
+        # if params is None:
+        #     params = {}
+        #
+        # try:
+        #     runtime_call_def = self.runtime_config.type_registry["runtime_api"][api]['methods'][method]
+        #     runtime_api_types = self.runtime_config.type_registry["runtime_api"][api].get("types", {})
+        # except KeyError:
+        #     raise ValueError(f"Runtime API Call '{api}.{method}' not found in registry")
+        #
+        # if type(params) is list and len(params) != len(runtime_call_def['params']):
+        #     raise ValueError(
+        #         f"Number of parameter provided ({len(params)}) does not "
+        #         f"match definition {len(runtime_call_def['params'])}"
+        #     )
+        #
+        # # Add runtime API types to registry
+        # self.runtime_config.update_type_registry_types(runtime_api_types)
+        #
+        # # Encode params
+        # param_data = ScaleBytes(bytes())
+        # for idx, param in enumerate(runtime_call_def['params']):
+        #     scale_obj = self.runtime_config.create_scale_object(param['type'])
+        #     if type(params) is list:
+        #         param_data += scale_obj.encode(params[idx])
+        #     else:
+        #         if param['name'] not in params:
+        #             raise ValueError(f"Runtime Call param '{param['name']}' is missing")
+        #
+        #         param_data += scale_obj.encode(params[param['name']])
+        #
+        # # RPC request
+        # result_data = self.rpc_request("state_call", [f'{api}_{method}', str(param_data), block_hash])
+        #
+        # # Decode result
+        # result_obj = self.runtime_config.create_scale_object(runtime_call_def['type'])
+        # result_obj.decode(ScaleBytes(result_data['result']))
+        #
+        # return result_obj
 
     def get_events(self, block_hash: str = None) -> list:
         """
@@ -1225,7 +1262,7 @@ class SubstrateInterface:
 
         storage_obj = self.query(module="System", storage_function="Events", block_hash=block_hash)
         if storage_obj:
-            events += storage_obj.elements
+            events += storage_obj.value_object
         return events
 
     def get_metadata(self, block_hash=None):
@@ -1335,7 +1372,7 @@ class SubstrateInterface:
         int
         """
         if self.supports_rpc_method('state_call'):
-            nonce_obj = self.runtime_call("AccountNonceApi", "account_nonce", [account_address])
+            nonce_obj = self.runtime.api("AccountNonceApi").call("account_nonce").execute(account_address)
             return nonce_obj.value
         else:
             response = self.rpc_request("system_accountNextIndex", [account_address])
@@ -1348,114 +1385,81 @@ class SubstrateInterface:
         genesis_hash = self.get_block_hash(0)
 
         if not era:
-            era = '00'
+            era = 'Immortal'
 
-        if era == '00':
+        era_obj = Era().new()
+
+        if era == 'Immortal':
             # Immortal extrinsic
+            era_obj.encode(era)
             block_hash = genesis_hash
         else:
             # Determine mortality of extrinsic
-            era_obj = self.runtime_config.create_scale_object('Era')
 
-            if isinstance(era, dict) and 'current' not in era and 'phase' not in era:
+            if isinstance(era['Mortal'], dict) and 'current' not in era['Mortal'] and 'phase' not in era['Mortal']:
                 raise ValueError('The era dict must contain either "current" or "phase" element to encode a valid era')
 
             era_obj.encode(era)
-            block_hash = self.get_block_hash(block_id=era_obj.birth(era.get('current')))
+            block_hash = self.get_block_hash(block_id=era_obj.birth(era['Mortal']['current']))
 
         # Create signature payload
-        signature_payload = self.runtime_config.create_scale_object('ExtrinsicPayloadValue')
+        signature_payload = call.data
+
+        # Metadata hash extension defaults
+        metadata_hash = None
+        metadata_check = {'mode': 'Disabled'}
 
         # Process signed extensions in metadata
         if 'signed_extensions' in self.metadata[1][1]['extrinsic']:
-
-            # Base signature payload
-            signature_payload.type_mapping = [['call', 'CallBytes']]
 
             # Add signed extensions to payload
             signed_extensions = self.metadata.get_signed_extensions()
 
             if 'CheckMortality' in signed_extensions:
-                signature_payload.type_mapping.append(
-                    ['era', signed_extensions['CheckMortality']['extrinsic']]
-                )
+                signature_payload += signed_extensions['CheckMortality']['extrinsic'].new().encode(era_obj)
 
             if 'CheckEra' in signed_extensions:
-                signature_payload.type_mapping.append(
-                    ['era', signed_extensions['CheckEra']['extrinsic']]
-                )
+                signature_payload += signed_extensions['CheckEra']['extrinsic'].new().encode(era_obj)
 
             if 'CheckNonce' in signed_extensions:
-                signature_payload.type_mapping.append(
-                    ['nonce', signed_extensions['CheckNonce']['extrinsic']]
-                )
+                signature_payload += signed_extensions['CheckNonce']['extrinsic'].new().encode(nonce)
 
             if 'ChargeTransactionPayment' in signed_extensions:
-                signature_payload.type_mapping.append(
-                    ['tip', signed_extensions['ChargeTransactionPayment']['extrinsic']]
-                )
+                signature_payload += signed_extensions['ChargeTransactionPayment']['extrinsic'].new().encode(tip)
 
             if 'ChargeAssetTxPayment' in signed_extensions:
-                signature_payload.type_mapping.append(
-                    ['asset_id', signed_extensions['ChargeAssetTxPayment']['extrinsic']]
-                )
+                signature_payload += signed_extensions['ChargeAssetTxPayment']['extrinsic'].new().encode(tip_asset_id)
+
+            if 'CheckMetadataHash' in signed_extensions:
+                signature_payload += signed_extensions['CheckMetadataHash']['extrinsic'].new().encode(metadata_check)
 
             if 'CheckSpecVersion' in signed_extensions:
-                signature_payload.type_mapping.append(
-                    ['spec_version', signed_extensions['CheckSpecVersion']['additional_signed']]
-                )
+                signature_payload += signed_extensions['CheckSpecVersion']['additional_signed'].new().encode(self.runtime_version)
 
             if 'CheckTxVersion' in signed_extensions:
-                signature_payload.type_mapping.append(
-                    ['transaction_version', signed_extensions['CheckTxVersion']['additional_signed']]
-                )
+                signature_payload += signed_extensions['CheckTxVersion']['additional_signed'].new().encode(self.transaction_version)
 
             if 'CheckGenesis' in signed_extensions:
-                signature_payload.type_mapping.append(
-                    ['genesis_hash', signed_extensions['CheckGenesis']['additional_signed']]
-                )
+                signature_payload += signed_extensions['CheckGenesis']['additional_signed'].new().encode(genesis_hash)
 
             if 'CheckMortality' in signed_extensions:
-                signature_payload.type_mapping.append(
-                    ['block_hash', signed_extensions['CheckMortality']['additional_signed']]
-                )
+                signature_payload += signed_extensions['CheckMortality']['additional_signed'].new().encode(block_hash)
 
             if 'CheckEra' in signed_extensions:
-                signature_payload.type_mapping.append(
-                    ['block_hash', signed_extensions['CheckEra']['additional_signed']]
-                )
+                signature_payload += signed_extensions['CheckEra']['additional_signed'].new().encode(block_hash)
 
-        if include_call_length:
+            if 'CheckMetadataHash' in signed_extensions:
+                signature_payload += signed_extensions['CheckMetadataHash']['additional_signed'].new().encode(metadata_hash)
 
-            length_obj = self.runtime_config.create_scale_object('Bytes')
-            call_data = str(length_obj.encode(str(call.data)))
+        if signature_payload.length > 256:
+            return ScaleBytes(data=blake2b(signature_payload.data, digest_size=32).digest())
 
-        else:
-            call_data = str(call.data)
-
-        payload_dict = {
-            'call': call_data,
-            'era': era,
-            'nonce': nonce,
-            'tip': tip,
-            'spec_version': self.runtime_version,
-            'genesis_hash': genesis_hash,
-            'block_hash': block_hash,
-            'transaction_version': self.transaction_version,
-            'asset_id': {'tip': tip, 'asset_id': tip_asset_id}
-        }
-
-        signature_payload.encode(payload_dict)
-
-        if signature_payload.data.length > 256:
-            return ScaleBytes(data=blake2b(signature_payload.data.data, digest_size=32).digest())
-
-        return signature_payload.data
+        return signature_payload
 
     def create_signed_extrinsic(self, call: GenericCall, keypair: Keypair, era: dict = None, nonce: int = None,
                                 tip: int = 0, tip_asset_id: int = None, signature: Union[bytes, str] = None) -> GenericExtrinsic:
         """
-        Creates a extrinsic signed by given account details
+        Creates an extrinsic signed by given account details
 
         Parameters
         ----------
@@ -1490,18 +1494,20 @@ class SubstrateInterface:
 
         # Process era
         if era is None:
-            era = '00'
+            era = 'Immortal'
         else:
             if isinstance(era, dict) and 'current' not in era and 'phase' not in era:
                 # Retrieve current block id
                 era['current'] = self.get_block_number(self.get_chain_finalised_head())
+                era = {'Mortal': era}
 
         if signature is not None:
 
             if type(signature) is str and signature[0:2] == '0x':
                 signature = bytes.fromhex(signature[2:])
 
-            # Check if signature is a MultiSignature and contains signature version
+            # # Check if signature is a MultiSignature and contains signature version
+            # TODO too implicit
             if len(signature) == 65:
                 signature_version = signature[0]
                 signature = signature[1:]
@@ -1515,30 +1521,34 @@ class SubstrateInterface:
             )
 
             # Set Signature version to crypto type of keypair
+            # TODO too implicit
             signature_version = keypair.crypto_type
+
+            extrinsic_signature = self.metadata.get_extrinsic_signature_type_def()
+
 
             # Sign payload
             signature = keypair.sign(signature_payload)
 
         # Create extrinsic
-        extrinsic = self.runtime_config.create_scale_object(type_string='Extrinsic', metadata=self.metadata)
+        extrinsic = self.metadata.get_extrinsic_type_def().new()
 
         value = {
-            'account_id': f'0x{keypair.public_key.hex()}',
-            'signature': f'0x{signature.hex()}',
-            'call_function': call.value['call_function'],
-            'call_module': call.value['call_module'],
-            'call_args': call.value['call_args'],
-            'nonce': nonce,
+            'address': f'0x{keypair.public_key.hex()}',
+            # TODO dynamic determine signature
+            'signature': {'Sr25519': f'0x{signature.hex()}'},
             'era': era,
+            'nonce': nonce,
             'tip': tip,
-            'asset_id': {'tip': tip, 'asset_id': tip_asset_id}
+            'call': call,
+            'asset_id': {'tip': tip, 'asset_id': tip_asset_id},
+            'metadata_check': {'mode': 'Disabled'}
         }
 
         # Check if ExtrinsicSignature is MultiSignature, otherwise omit signature_version
-        signature_cls = self.runtime_config.get_decoder_class("ExtrinsicSignature")
-        if issubclass(signature_cls, self.runtime_config.get_decoder_class('Enum')):
-            value['signature_version'] = signature_version
+        # signature_cls = self.runtime_config.get_decoder_class("ExtrinsicSignature")
+        # if issubclass(signature_cls, self.runtime_config.get_decoder_class('Enum')):
+        #     value['signature_version'] = signature_version
 
         extrinsic.encode(value)
 
@@ -1569,7 +1579,7 @@ class SubstrateInterface:
 
         return extrinsic
 
-    def generate_multisig_account(self, signatories: list, threshold: int) -> MultiAccountId:
+    def generate_multisig_account(self, signatories: list, threshold: int) -> GenericMultiAccountId:
         """
         Generate deterministic Multisig account with supplied signatories and threshold
         Parameters
@@ -1582,13 +1592,13 @@ class SubstrateInterface:
         MultiAccountId
         """
 
-        multi_sig_account = MultiAccountId.create_from_account_list(signatories, threshold)
+        multi_sig_account = MultiAccountId(signatories, threshold, ss58_format=self.ss58_format).new()
 
-        multi_sig_account.ss58_address = ss58_encode(multi_sig_account.value.replace('0x', ''), self.ss58_format)
+        # multi_sig_account.ss58_address = ss58_encode(multi_sig_account.value.replace('0x', ''), self.ss58_format)
 
         return multi_sig_account
 
-    def create_multisig_extrinsic(self, call: GenericCall, keypair: Keypair, multisig_account: MultiAccountId,
+    def create_multisig_extrinsic(self, call: GenericCall, keypair: Keypair, multisig_account: GenericMultiAccountId,
                                   max_weight: Optional[Union[dict, int]] = None, era: dict = None, nonce: int = None,
                                   tip: int = 0, tip_asset_id: int = None, signature: Union[bytes, str] = None
                                   ) -> GenericExtrinsic:
@@ -1627,7 +1637,7 @@ class SubstrateInterface:
         # Compose 'as_multi' when final, 'approve_as_multi' otherwise
         if multisig_details.value and len(multisig_details.value['approvals']) + 1 == multisig_account.threshold:
             multi_sig_call = self.compose_call("Multisig", "as_multi", {
-                'other_signatories': [s for s in multisig_account.signatories if s != f'0x{keypair.public_key.hex()}'],
+                'other_signatories': [s.public_key for s in multisig_account.signatories if s.public_key != keypair.public_key],
                 'threshold': multisig_account.threshold,
                 'maybe_timepoint': maybe_timepoint,
                 'call': call,
@@ -1636,7 +1646,7 @@ class SubstrateInterface:
             })
         else:
             multi_sig_call = self.compose_call("Multisig", "approve_as_multi", {
-                'other_signatories': [s for s in multisig_account.signatories if s != f'0x{keypair.public_key.hex()}'],
+                'other_signatories': [s.public_key for s in multisig_account.signatories if s.public_key != keypair.public_key],
                 'threshold': multisig_account.threshold,
                 'maybe_timepoint': maybe_timepoint,
                 'call_hash': call.call_hash,
@@ -1755,35 +1765,14 @@ class SubstrateInterface:
         )
 
         if self.supports_rpc_method('state_call'):
-            extrinsic_len = self.runtime_config.create_scale_object('u32')
+            extrinsic_len = U32.new()
             extrinsic_len.encode(len(extrinsic.data))
 
             result = self.runtime_call("TransactionPaymentApi", "query_info", [extrinsic, extrinsic_len])
 
             return result.value
         else:
-            # Backwards compatibility; deprecated RPC method
-            payment_info = self.rpc_request('payment_queryInfo', [str(extrinsic.data)])
-
-            # convert partialFee to int
-            if 'result' in payment_info:
-                payment_info['result']['partialFee'] = int(payment_info['result']['partialFee'])
-
-                if type(payment_info['result']['weight']) is int:
-                    # Transform format to WeightV2 if applicable as per https://github.com/paritytech/substrate/pull/12633
-                    try:
-                        weight_obj = self.runtime_config.create_scale_object("sp_weights::weight_v2::Weight")
-                        if weight_obj is not None:
-                            payment_info['result']['weight'] = {
-                                'ref_time': payment_info['result']['weight'],
-                                'proof_size': 0
-                            }
-                    except NotImplementedError:
-                        pass
-
-                return payment_info['result']
-            else:
-                raise SubstrateRequestException(payment_info['error']['message'])
+            raise NotImplementedError("Only runtime calls using 'state_call' are supported")
 
     def get_type_registry(self, block_hash: str = None, max_recursion: int = 4) -> dict:
         """
@@ -1802,9 +1791,6 @@ class SubstrateInterface:
         dict
         """
         self.init_runtime(block_hash=block_hash)
-
-        if not self.implements_scaleinfo():
-            raise NotImplementedError("MetadataV14 or higher runtimes is required")
 
         type_registry = {}
 
@@ -2050,13 +2036,15 @@ class SubstrateInterface:
         -------
         ScaleType
         """
-
+        # TODO move to interfaces
         constant = self.get_metadata_constant(module_name, constant_name, block_hash=block_hash)
+
         if constant:
-            # Decode to ScaleType
-            return self.decode_scale(
-                constant.type, ScaleBytes(constant.constant_value), block_hash=block_hash, return_scale_obj=True
-            )
+
+            scale_type = self.metadata.portable_registry.get_scale_type_def(constant.value['type']).new()
+            scale_type.decode(ScaleBytes(constant.value_object['value'].value_object))
+
+            return scale_type
 
     def get_metadata_storage_functions(self, block_hash=None) -> list:
         """
@@ -2225,18 +2213,14 @@ class SubstrateInterface:
                     # Convert block number from hex (backwards compatibility)
                     block_data['header']['number'] = int(block_data['header']['number'], 16)
 
-                extrinsic_cls = self.runtime_config.get_decoder_class('Extrinsic')
+                # Decode extrinsics
 
                 if 'extrinsics' in block_data:
                     for idx, extrinsic_data in enumerate(block_data['extrinsics']):
-                        extrinsic_decoder = extrinsic_cls(
-                            data=ScaleBytes(extrinsic_data),
-                            metadata=self.metadata,
-                            runtime_config=self.runtime_config
-                        )
+                        extrinsic = self.metadata.get_extrinsic_type_def().new()
                         try:
-                            extrinsic_decoder.decode()
-                            block_data['extrinsics'][idx] = extrinsic_decoder
+                            extrinsic.decode(ScaleBytes(extrinsic_data))
+                            block_data['extrinsics'][idx] = extrinsic
 
                         except Exception as e:
                             if not ignore_decoding_errors:
@@ -2247,65 +2231,46 @@ class SubstrateInterface:
                     if type(log_data) is str:
                         # Convert digest log from hex (backwards compatibility)
                         try:
-                            log_digest_cls = self.runtime_config.get_decoder_class('sp_runtime::generic::digest::DigestItem')
+                            si_type_id = self.metadata.portable_registry.get_si_type_id('sp_runtime::generic::digest::DigestItem')
+                            DigestItem = self.metadata.portable_registry.get_scale_type_def(si_type_id)
 
-                            if log_digest_cls is None:
+                            if DigestItem is None:
                                 raise NotImplementedError("No decoding class found for 'DigestItem'")
 
-                            log_digest = log_digest_cls(data=ScaleBytes(log_data))
-                            log_digest.decode()
+                            log_digest = DigestItem.new()
+                            log_digest.decode(data=ScaleBytes(log_data))
 
                             block_data['header']["digest"]["logs"][idx] = log_digest
 
                             if include_author and 'PreRuntime' in log_digest.value:
 
-                                if self.implements_scaleinfo():
+                                engine = bytes(log_digest[1][0])
+                                # Retrieve validator set
+                                validator_set = self.query("Session", "Validators", block_hash=block_hash)
 
-                                    engine = bytes(log_digest[1][0])
-                                    # Retrieve validator set
-                                    validator_set = self.query("Session", "Validators", block_hash=block_hash)
+                                if engine == b'BABE':
+                                    babe_predigest = RawBabePreDigest.new()
 
-                                    if engine == b'BABE':
-                                        babe_predigest = self.runtime_config.create_scale_object(
-                                            type_string='RawBabePreDigest',
-                                            data=ScaleBytes(bytes(log_digest[1][1]))
-                                        )
+                                    babe_predigest.decode(ScaleBytes(bytes(log_digest[1][1])))
 
-                                        babe_predigest.decode()
+                                    rank_validator = babe_predigest[1].value['authority_index']
 
-                                        rank_validator = babe_predigest[1].value['authority_index']
+                                    block_author = validator_set[rank_validator]
+                                    block_data['author'] = block_author.value
 
-                                        block_author = validator_set[rank_validator]
-                                        block_data['author'] = block_author.value
+                                elif engine == b'aura':
+                                    aura_predigest = RawAuraPreDigest.new()
 
-                                    elif engine == b'aura':
-                                        aura_predigest = self.runtime_config.create_scale_object(
-                                            type_string='RawAuraPreDigest',
-                                            data=ScaleBytes(bytes(log_digest[1][1]))
-                                        )
+                                    aura_predigest.decode(ScaleBytes(bytes(log_digest[1][1])))
 
-                                        aura_predigest.decode()
+                                    rank_validator = aura_predigest.value['slot_number'] % len(validator_set)
 
-                                        rank_validator = aura_predigest.value['slot_number'] % len(validator_set)
-
-                                        block_author = validator_set[rank_validator]
-                                        block_data['author'] = block_author.value
-                                    else:
-                                        raise NotImplementedError(
-                                            f"Cannot extract author for engine {log_digest.value['PreRuntime'][0]}"
-                                        )
+                                    block_author = validator_set[rank_validator]
+                                    block_data['author'] = block_author.value
                                 else:
-
-                                    if log_digest.value['PreRuntime']['engine'] == 'BABE':
-                                        validator_set = self.query("Session", "Validators", block_hash=block_hash)
-                                        rank_validator = log_digest.value['PreRuntime']['data']['authority_index']
-
-                                        block_author = validator_set.elements[rank_validator]
-                                        block_data['author'] = block_author.value
-                                    else:
-                                        raise NotImplementedError(
-                                            f"Cannot extract author for engine {log_digest.value['PreRuntime']['engine']}"
-                                        )
+                                    raise NotImplementedError(
+                                        f"Cannot extract author for engine {log_digest.value['PreRuntime'][0]}"
+                                    )
 
                         except Exception:
                             if not ignore_decoding_errors:
@@ -2578,7 +2543,7 @@ class SubstrateInterface:
         """
         self.init_runtime(block_hash=block_hash)
 
-        if type(scale_bytes) == str:
+        if type(scale_bytes) is str:
             scale_bytes = ScaleBytes(scale_bytes)
 
         obj = self.runtime_config.create_scale_object(
@@ -2838,74 +2803,6 @@ class SubstrateInterface:
             "spec_version": spec_version
         }
 
-    def update_type_registry_presets(self) -> bool:
-        try:
-            update_type_registries()
-            self.reload_type_registry(use_remote_preset=False)
-            return True
-        except Exception:
-            return False
-
-    def reload_type_registry(self, use_remote_preset: bool = True, auto_discover: bool = True):
-        """
-        Reload type registry and preset used to instantiate the SubtrateInterface object. Useful to periodically apply
-        changes in type definitions when a runtime upgrade occurred
-
-        Parameters
-        ----------
-        use_remote_preset: When True preset is downloaded from Github master, otherwise use files from local installed scalecodec package
-        auto_discover
-
-        Returns
-        -------
-
-        """
-        self.runtime_config.clear_type_registry()
-
-        self.runtime_config.implements_scale_info = self.implements_scaleinfo()
-
-        # Load metadata types in runtime configuration
-        self.runtime_config.update_type_registry(load_type_registry_preset(name="core"))
-        self.apply_type_registry_presets(use_remote_preset=use_remote_preset, auto_discover=auto_discover)
-
-    def apply_type_registry_presets(self, use_remote_preset: bool = True, auto_discover: bool = True):
-        if self.type_registry_preset is not None:
-            # Load type registry according to preset
-            type_registry_preset_dict = load_type_registry_preset(
-                name=self.type_registry_preset, use_remote_preset=use_remote_preset
-            )
-
-            if not type_registry_preset_dict:
-                raise ValueError(f"Type registry preset '{self.type_registry_preset}' not found")
-
-        elif auto_discover:
-            # Try to auto discover type registry preset by chain name
-            type_registry_name = self.chain.lower().replace(' ', '-')
-            try:
-                type_registry_preset_dict = load_type_registry_preset(type_registry_name)
-                self.debug_message(f"Auto set type_registry_preset to {type_registry_name} ...")
-                self.type_registry_preset = type_registry_name
-            except ValueError:
-                type_registry_preset_dict = None
-
-        else:
-            type_registry_preset_dict = None
-
-        if type_registry_preset_dict:
-            # Load type registries in runtime configuration
-            if self.implements_scaleinfo() is False:
-                # Only runtime with no embedded types in metadata need the default set of explicit defined types
-                self.runtime_config.update_type_registry(
-                    load_type_registry_preset("legacy", use_remote_preset=use_remote_preset)
-                )
-
-            if self.type_registry_preset != "legacy":
-                self.runtime_config.update_type_registry(type_registry_preset_dict)
-
-        if self.type_registry:
-            # Load type registries in runtime configuration
-            self.runtime_config.update_type_registry(self.type_registry)
-
     def register_extension(self, extension: Extension):
         """
         Register an Extension and adds its functionality to the ExtensionRegistry
@@ -3053,7 +2950,7 @@ class ExtrinsicReceipt:
         return self.__extrinsic
 
     @property
-    def triggered_events(self) -> list:
+    def triggered_events(self) -> List[GenericEventRecord]:
         """
         Gets triggered events for submitted extrinsic. block_hash where extrinsic is included is required, manually
         set block_hash or use `wait_for_inclusion` when submitting extrinsic
@@ -3087,155 +2984,85 @@ class ExtrinsicReceipt:
             has_transaction_fee_paid_event = False
 
             for event in self.triggered_events:
-                if event.value['module_id'] == 'TransactionPayment' and event.value['event_id'] == 'TransactionFeePaid':
-                    self.__total_fee_amount = event.value['attributes']['actual_fee']
+                if event.pallet_name == 'TransactionPayment' and event.event_name == 'TransactionFeePaid':
+                    self.__total_fee_amount = event.attributes['actual_fee'].value
                     has_transaction_fee_paid_event = True
 
             # Process other events
             for event in self.triggered_events:
 
                 # Check events
-                if self.substrate.implements_scaleinfo():
+                if event.pallet_name == 'System' and event.event_name == 'ExtrinsicSuccess':
+                    self.__is_success = True
+                    self.__error_message = None
 
-                    if event.value['module_id'] == 'System' and event.value['event_id'] == 'ExtrinsicSuccess':
-                        self.__is_success = True
-                        self.__error_message = None
+                    if 'dispatch_info' in event.attributes:
+                        self.__weight = event.attributes.value['dispatch_info']['weight']
 
-                        if 'dispatch_info' in event.value['attributes']:
-                            self.__weight = event.value['attributes']['dispatch_info']['weight']
+                elif event.pallet_name == 'System' and event.event_name == 'ExtrinsicFailed':
+                    self.__is_success = False
+
+                    dispatch_info = event.attributes.value['dispatch_info']
+                    dispatch_error = event.attributes.value['dispatch_error']
+
+                    self.__weight = dispatch_info['weight']
+
+                    if 'Module' in dispatch_error:
+
+                        if type(dispatch_error['Module']) is tuple:
+                            module_index = dispatch_error['Module'][0]
+                            error_index = dispatch_error['Module'][1]
                         else:
-                            # Backwards compatibility
-                            self.__weight = event.value['attributes']['weight']
+                            module_index = dispatch_error['Module']['index']
+                            error_index = dispatch_error['Module']['error']
 
-                    elif event.value['module_id'] == 'System' and event.value['event_id'] == 'ExtrinsicFailed':
-                        self.__is_success = False
+                        if type(error_index) is str:
+                            # Actual error index is first u8 in new [u8; 4] format
+                            error_index = int(error_index[2:4], 16)
 
+                        module_error = self.substrate.metadata.get_module_error(
+                            module_index=module_index,
+                            error_index=error_index
+                        )
+                        self.__error_message = {
+                            'type': 'Module',
+                            'name': module_error,
+                            'docs': ''
+                        }
+                    elif 'BadOrigin' in dispatch_error:
+                        self.__error_message = {
+                            'type': 'System',
+                            'name': 'BadOrigin',
+                            'docs': 'Bad origin'
+                        }
+                    elif 'CannotLookup' in dispatch_error:
+                        self.__error_message = {
+                            'type': 'System',
+                            'name': 'CannotLookup',
+                            'docs': 'Cannot lookup'
+                        }
+                    elif 'Other' in dispatch_error:
+                        self.__error_message = {
+                            'type': 'System',
+                            'name': 'Other',
+                            'docs': 'Unspecified error occurred'
+                        }
+
+                elif not has_transaction_fee_paid_event:
+
+                    if event.pallet_name == 'Treasury' and event.event_name == 'Deposit':
                         if type(event.value['attributes']) is dict:
-                            dispatch_info = event.value['attributes']['dispatch_info']
-                            dispatch_error = event.value['attributes']['dispatch_error']
+                            self.__total_fee_amount += event.value['attributes']['value']
                         else:
                             # Backwards compatibility
-                            dispatch_info = event.value['attributes'][1]
-                            dispatch_error = event.value['attributes'][0]
+                            self.__total_fee_amount += event.value['attributes']
 
-                        self.__weight = dispatch_info['weight']
-
-                        if 'Module' in dispatch_error:
-
-                            if type(dispatch_error['Module']) is tuple:
-                                module_index = dispatch_error['Module'][0]
-                                error_index = dispatch_error['Module'][1]
-                            else:
-                                module_index = dispatch_error['Module']['index']
-                                error_index = dispatch_error['Module']['error']
-
-                            if type(error_index) is str:
-                                # Actual error index is first u8 in new [u8; 4] format
-                                error_index = int(error_index[2:4], 16)
-
-                            module_error = self.substrate.metadata.get_module_error(
-                                module_index=module_index,
-                                error_index=error_index
-                            )
-                            self.__error_message = {
-                                'type': 'Module',
-                                'name': module_error.name,
-                                'docs': module_error.docs
-                            }
-                        elif 'BadOrigin' in dispatch_error:
-                            self.__error_message = {
-                                'type': 'System',
-                                'name': 'BadOrigin',
-                                'docs': 'Bad origin'
-                            }
-                        elif 'CannotLookup' in dispatch_error:
-                            self.__error_message = {
-                                'type': 'System',
-                                'name': 'CannotLookup',
-                                'docs': 'Cannot lookup'
-                            }
-                        elif 'Other' in dispatch_error:
-                            self.__error_message = {
-                                'type': 'System',
-                                'name': 'Other',
-                                'docs': 'Unspecified error occurred'
-                            }
-
-                    elif not has_transaction_fee_paid_event:
-
-                        if event.value['module_id'] == 'Treasury' and event.value['event_id'] == 'Deposit':
-                            if type(event.value['attributes']) is dict:
-                                self.__total_fee_amount += event.value['attributes']['value']
-                            else:
-                                # Backwards compatibility
-                                self.__total_fee_amount += event.value['attributes']
-
-                        elif event.value['module_id'] == 'Balances' and event.value['event_id'] == 'Deposit':
-                            if type(event.value['attributes']) is dict:
-                                self.__total_fee_amount += event.value['attributes']['amount']
-                            else:
-                                # Backwards compatibility
-                                self.__total_fee_amount += event.value['attributes'][1]
-
-                else:
-
-                    if event.event_module.name == 'System' and event.event.name == 'ExtrinsicSuccess':
-                        self.__is_success = True
-                        self.__error_message = None
-
-                        for param in event.params:
-                            if param['type'] == 'DispatchInfo':
-                                self.__weight = param['value']['weight']
-
-                    elif event.event_module.name == 'System' and event.event.name == 'ExtrinsicFailed':
-                        self.__is_success = False
-
-                        for param in event.params:
-                            if param['type'] == 'DispatchError':
-                                if 'Module' in param['value']:
-
-                                    if type(param['value']['Module']['error']) is str:
-                                        # Actual error index is first u8 in new [u8; 4] format (e.g. 0x01000000)
-                                        error_index = int(param['value']['Module']['error'][2:4], 16)
-                                    else:
-                                        error_index = param['value']['Module']['error']
-
-                                    module_error = self.substrate.metadata.get_module_error(
-                                        module_index=param['value']['Module']['index'],
-                                        error_index=error_index
-                                    )
-                                    self.__error_message = {
-                                        'type': 'Module',
-                                        'name': module_error.name,
-                                        'docs': module_error.docs
-                                    }
-                                elif 'BadOrigin' in param['value']:
-                                    self.__error_message = {
-                                        'type': 'System',
-                                        'name': 'BadOrigin',
-                                        'docs': 'Bad origin'
-                                    }
-                                elif 'CannotLookup' in param['value']:
-                                    self.__error_message = {
-                                        'type': 'System',
-                                        'name': 'CannotLookup',
-                                        'docs': 'Cannot lookup'
-                                    }
-                                elif 'Other' in param['value']:
-                                    self.__error_message = {
-                                        'type': 'System',
-                                        'name': 'Other',
-                                        'docs': 'Unspecified error occurred'
-                                    }
-
-                            if param['type'] == 'DispatchInfo':
-                                self.__weight = param['value']['weight']
-
-                    elif event.event_module.name == 'Treasury' and event.event.name == 'Deposit':
-                        self.__total_fee_amount += event.params[0]['value']
-
-                    elif event.event_module.name == 'Balances' and event.event.name == 'Deposit':
-                        self.__total_fee_amount += event.params[1]['value']
+                    elif event.pallet_name == 'Balances' and event.event_name == 'Deposit':
+                        if type(event.value['attributes']) is dict:
+                            self.__total_fee_amount += event.value['attributes']['amount']
+                        else:
+                            # Backwards compatibility
+                            self.__total_fee_amount += event.value['attributes'][1]
 
     @property
     def is_success(self) -> bool:
@@ -3319,4 +3146,25 @@ class ExtrinsicReceipt:
     def get(self, name):
         return self[name]
 
+
+class RuntimeConfigurationObject:
+    """
+    Container for runtime configuration, for example type definitions and runtime upgrade information
+    """
+
+    # @classmethod
+    # def all_subclasses(cls, class_):
+    #     return set(class_.__subclasses__()).union(
+    #         [s for c in class_.__subclasses__() for s in cls.all_subclasses(c)])
+
+    def __init__(self, ss58_format=None):
+        self.active_spec_version_id = None
+        self.chain_id = None
+
+        self.ss58_format = ss58_format
+
+    def set_active_spec_version_id(self, spec_version_id):
+        # TODO remove
+        if spec_version_id != self.active_spec_version_id:
+            self.active_spec_version_id = spec_version_id
 

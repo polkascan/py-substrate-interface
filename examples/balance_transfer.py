@@ -21,29 +21,23 @@ from substrateinterface.exceptions import SubstrateRequestException
 # logging.basicConfig(level=logging.DEBUG)
 
 substrate = SubstrateInterface(
-    url="ws://127.0.0.1:9944"
+    url="ws://127.0.0.1:9944",
+
 )
+result = substrate.runtime.api("Core").call("version").execute()
+block_hash = substrate.runtime.pallet("System").storage("BlockHash").get(3358739)
+
 
 keypair = Keypair.create_from_uri('//Alice')
+# borrow_rate = substrate.query("Loans", "BorrowRate", [101], block_hash="0x24155c44e47572496091f4a0216155dc6e503150a1f10881c90d3484bbeea7e3")
 
-call = substrate.compose_call(
-    call_module='Balances',
-    call_function='transfer',
-    call_params={
-        'dest': '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty',
-        'value': 1 * 10**15
-    }
-)
+receipt = substrate.runtime.pallet("Balances").call("transfer_keep_alive").create_extrinsic(
+    dest='5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty',
+    value=1 * 10**15
+).sign_and_submit(keypair=keypair, era={'period': 64}, wait_for_inclusion=True)
 
-extrinsic = substrate.create_signed_extrinsic(
-    call=call,
-    keypair=keypair,
-    era={'period': 64}
-)
 
 try:
-    receipt = substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
-
     print('Extrinsic "{}" included in block "{}"'.format(
         receipt.extrinsic_hash, receipt.block_hash
     ))

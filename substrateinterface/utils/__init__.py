@@ -13,6 +13,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
+
+import os
+
 import re
 
 
@@ -32,3 +36,10 @@ def version_tuple(version_string: str) -> tuple:
         raise ValueError('version_string can only contain numeric characters')
 
     return tuple(int(v) for v in version_string.split('.'))
+
+def load_json_file(file_path: str) -> dict:
+
+    with open(os.path.abspath(file_path), 'r') as fp:
+        data = fp.read()
+
+    return json.loads(data)

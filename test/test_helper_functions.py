@@ -17,28 +17,29 @@ import os
 import unittest
 from unittest.mock import MagicMock
 
-from scalecodec import GenericExtrinsic
-from scalecodec.type_registry import load_type_registry_file, load_type_registry_preset
 from substrateinterface.exceptions import SubstrateRequestException
 from scalecodec.base import ScaleBytes
 from substrateinterface import SubstrateInterface, Keypair
+from substrateinterface.scale.extrinsic import GenericExtrinsic
+from substrateinterface.scale.metadata import MetadataVersioned
+from substrateinterface.utils import load_json_file
 from test.settings import POLKADOT_NODE_URL
 
 
 class TestHelperFunctions(unittest.TestCase):
 
-    test_metadata_version = 'V13'
+    test_metadata_version = 'V14'
 
     @classmethod
     def setUpClass(cls):
 
-        cls.substrate = SubstrateInterface(url='dummy', ss58_format=42, type_registry_preset='kusama')
+        cls.substrate = SubstrateInterface(url='dummy', ss58_format=42)
 
-        cls.metadata_fixture_dict = load_type_registry_file(
+        cls.metadata_fixture_dict = load_json_file(
             os.path.join(os.path.dirname(__file__), 'fixtures', 'metadata_hex.json')
         )
 
-        metadata_decoder = cls.substrate.runtime_config.create_scale_object('MetadataVersioned')
+        metadata_decoder = MetadataVersioned.new()
         metadata_decoder.decode(ScaleBytes(cls.metadata_fixture_dict[cls.test_metadata_version]))
 
         cls.substrate.get_block_metadata = MagicMock(return_value=metadata_decoder)
@@ -82,7 +83,7 @@ class TestHelperFunctions(unittest.TestCase):
 
         cls.substrate.rpc_request = MagicMock(side_effect=mocked_request)
 
-        cls.empty_substrate = SubstrateInterface(url='dummy', ss58_format=42, type_registry_preset='kusama')
+        cls.empty_substrate = SubstrateInterface(url='dummy', ss58_format=42)
 
         def mocked_request(method, params):
 
@@ -90,7 +91,7 @@ class TestHelperFunctions(unittest.TestCase):
 
         cls.empty_substrate.rpc_request = MagicMock(side_effect=mocked_request)
 
-        cls.error_substrate = SubstrateInterface(url='wss://kusama-rpc.polkadot.io', ss58_format=2, type_registry_preset='kusama')
+        cls.error_substrate = SubstrateInterface(url='wss://kusama-rpc.polkadot.io', ss58_format=2)
 
         # def mocked_request(method, params):
         #     return {'jsonrpc': '2.0', 'error': {
@@ -131,8 +132,8 @@ class TestHelperFunctions(unittest.TestCase):
             self.assertEqual(module['spec_version'], 2023)
 
     def test_get_metadata_call_function(self):
-        call_function = self.substrate.get_metadata_call_function("Balances", "transfer")
-        self.assertEqual("transfer", call_function.name)
+        call_function = self.substrate.get_metadata_call_function("Balances", "transfer_keep_alive")
+        self.assertEqual("transfer_keep_alive", call_function.name)
         self.assertEqual('dest', call_function.args[0].name)
         self.assertEqual('value', call_function.args[1].name)
 

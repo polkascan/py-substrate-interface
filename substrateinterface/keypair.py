@@ -16,7 +16,7 @@
 
 import json
 
-from scalecodec.utils.ss58 import ss58_encode, ss58_decode, get_ss58_format
+from .utils.ss58 import ss58_encode, ss58_decode, get_ss58_format
 
 from scalecodec.base import ScaleBytes
 from typing import Union, Optional

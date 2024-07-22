@@ -13,9 +13,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
 
 import os
 
+from scalecodec.types import PortableRegistry, PortableType, Vec
 from substrateinterface.contracts import ContractCode, ContractInstance
 from substrateinterface import SubstrateInterface, Keypair
 
@@ -23,12 +25,21 @@ from substrateinterface import SubstrateInterface, Keypair
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
-substrate = SubstrateInterface(url='wss://rococo-contracts-rpc.polkadot.io')
+with open(os.path.join(os.path.dirname(__file__), 'assets', 'flipper-v4.contract'), 'r') as file:
+    metadata_dict = json.load(file)
+
+registry = PortableRegistry.new()
+registry.deserialize(metadata_dict)
+
+
+# substrate = SubstrateInterface(url='wss://rococo-contracts-rpc.polkadot.io')
+# keypair = Keypair.create_from_mnemonic("image panda soap apart model autumn table they modify mushroom praise remind")
 keypair = Keypair.create_from_uri('//Alice')
+substrate = SubstrateInterface(url='ws://127.0.0.1:9944')
 contract_address = "5DYXHYiH5jPj8orDw5HSFJhmATe8NtmbguG3vs53v8RgSHTW"
 
 # Check if contract is on chain
-contract_info = substrate.query("Contracts", "ContractInfoOf", [contract_address])
+contract_info = substrate.runtime.pallet("Contracts").storage("ContractInfoOf").get(contract_address)
 
 if contract_info.value:
 
@@ -41,6 +52,8 @@ if contract_info.value:
         substrate=substrate
     )
 else:
+
+    code = substrate.contract.bundle()
 
     # Upload WASM code
     code = ContractCode.create_from_contract_files(

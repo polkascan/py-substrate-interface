@@ -14,13 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import binascii
-from typing import Any, Optional
+from typing import Any, Optional, List, Union
 
 from substrateinterface.exceptions import StorageFunctionNotFound
 
-from scalecodec import ScaleBytes, GenericMetadataVersioned, ss58_decode
-from scalecodec.base import ScaleDecoder, RuntimeConfigurationObject, ScaleType
-from .utils.hasher import blake2_256, two_x64_concat, xxh128, blake2_128, blake2_128_concat, identity
+from scalecodec.base import ScaleBytes, ScaleTypeDef
+from scalecodec.types import Tuple, Option, Array, U8
+
+from .scale.metadata import GenericMetadataVersioned
+from .utils.ss58 import ss58_decode
+from scalecodec.base import ScaleType
+from .utils.hasher import blake2_256, two_x64_concat, xxh128, blake2_128, blake2_128_concat, identity, concat_hash_len
 
 
 class StorageKey:
@@ -33,8 +37,8 @@ class StorageKey:
 
     def __init__(
             self, pallet: str, storage_function: str, params: list,
-            data: bytes, value_scale_type: str, metadata: GenericMetadataVersioned,
-            runtime_config: RuntimeConfigurationObject
+            data: bytes, value_scale_type: ScaleTypeDef, param_scale_types: List[ScaleTypeDef],
+            metadata: GenericMetadataVersioned, runtime_config: 'RuntimeConfigurationObject'
     ):
         self.pallet = pallet
         self.storage_function = storage_function
@@ -44,10 +48,12 @@ class StorageKey:
         self.metadata = metadata
         self.runtime_config = runtime_config
         self.value_scale_type = value_scale_type
+        self.param_scale_types = param_scale_types
+        self.param_hashers = None
         self.metadata_storage_function = None
 
     @classmethod
-    def create_from_data(cls, data: bytes, runtime_config: RuntimeConfigurationObject,
+    def create_from_data(cls, data: bytes, runtime_config: 'RuntimeConfigurationObject',
                          metadata: GenericMetadataVersioned, value_scale_type: str = None, pallet: str = None,
                          storage_function: str = None) -> 'StorageKey':
         """
@@ -83,12 +89,12 @@ class StorageKey:
         return cls(
             pallet=pallet, storage_function=storage_function, params=None,
             data=data, metadata=metadata,
-            value_scale_type=value_scale_type, runtime_config=runtime_config
+            value_scale_type=value_scale_type, param_scale_types=None, runtime_config=runtime_config
         )
 
     @classmethod
     def create_from_storage_function(cls, pallet: str, storage_function: str, params: list,
-                                     runtime_config: RuntimeConfigurationObject,
+                                     runtime_config: 'RuntimeConfigurationObject',
                                      metadata: GenericMetadataVersioned) -> 'StorageKey':
         """
         Create a StorageKey instance providing storage function details
@@ -107,7 +113,7 @@ class StorageKey:
         """
         storage_key_obj = cls(
             pallet=pallet, storage_function=storage_function, params=params,
-            data=None, runtime_config=runtime_config, metadata=metadata, value_scale_type=None
+            data=None, runtime_config=runtime_config, metadata=metadata, value_scale_type=None, param_scale_types=None
         )
 
         storage_key_obj.generate()
@@ -157,11 +163,33 @@ class StorageKey:
         if not self.metadata_storage_function:
             raise StorageFunctionNotFound(f'Storage function "{self.pallet}.{self.storage_function}" not found')
 
-        # Process specific type of storage function
-        self.value_scale_type = self.metadata_storage_function.get_value_type_string()
-        param_types = self.metadata_storage_function.get_params_type_string()
+        value_scale_type_id = self.metadata_storage_function.get_value_type_id()
 
-        hashers = self.metadata_storage_function.get_param_hashers()
+        # TODO make generic
+        if type(value_scale_type_id) is str:
+            self.value_scale_type = self.metadata.portable_registry.get_type_def_primitive(value_scale_type_id)
+        else:
+            # Process specific type of storage function
+            self.value_scale_type = self.metadata.portable_registry.get_scale_type_def(value_scale_type_id)
+
+        param_type_id = self.metadata_storage_function.get_params_type_id()
+
+        if param_type_id is None:
+            self.param_scale_types = []
+        else:
+            param_types_def = self.metadata.portable_registry.get_scale_type_def(
+                self.metadata_storage_function.get_params_type_id()
+            )
+
+            if type(param_types_def) is Tuple:
+                self.param_scale_types = param_types_def.values
+            else:
+                self.param_scale_types = (param_types_def,)
+
+        # if len(self.params) != len(param_types):
+        #     raise ValueError(f'Storage function requires {len(param_types)} parameters, {len(self.params)} given')
+
+        self.param_hashers = self.metadata_storage_function.get_param_hashers()
 
         storage_hash = xxh128(metadata_pallet.value['storage']['prefix'].encode()) + xxh128(self.storage_function.encode())
 
@@ -173,14 +201,14 @@ class StorageKey:
                     # Already encoded
                     self.params_encoded.append(param)
                 else:
-                    param = self.convert_storage_parameter(param_types[idx], param)
-                    param_obj = self.runtime_config.create_scale_object(type_string=param_types[idx])
+                    # param = self.convert_storage_parameter(param_types[idx], param)
+                    param_obj = self.param_scale_types[idx].new()
                     self.params_encoded.append(param_obj.encode(param))
 
             for idx, param in enumerate(self.params_encoded):
                 # Get hasher assiociated with param
                 try:
-                    param_hasher = hashers[idx]
+                    param_hasher = self.param_hashers[idx]
                 except IndexError:
                     raise ValueError(f'No hasher found for param #{idx + 1}')
 
@@ -191,7 +219,7 @@ class StorageKey:
                     params_key += binascii.unhexlify(param)
                 elif type(param) is ScaleBytes:
                     params_key += param.data
-                elif isinstance(param, ScaleDecoder):
+                elif isinstance(param, ScaleType):
                     params_key += param.data.data
 
                 if not param_hasher:
@@ -222,7 +250,20 @@ class StorageKey:
 
         return self.data
 
-    def decode_scale_value(self, data: Optional[ScaleBytes] = None) -> ScaleType:
+    def create_key_type_def(self, param_count: int) -> ScaleTypeDef:
+        # Build storage key type
+        key_items = []
+        for n in range(param_count, len(self.param_scale_types)):
+            key_items.append(Array(U8, concat_hash_len(self.param_hashers[n])))
+            key_items.append(self.param_scale_types[n])
+        return Tuple(*key_items)
+
+    def decode_key_data(self, hex_data: str, param_count: int) -> ScaleType:
+        item_key = self.create_key_type_def(param_count).new()
+        item_key.decode(ScaleBytes('0x' + hex_data[len(self.to_hex()):]))
+        return item_key
+
+    def decode_scale_value(self, data: Optional[Union[ScaleBytes, str]] = None) -> ScaleType:
         """
 
         Parameters
@@ -233,6 +274,8 @@ class StorageKey:
         -------
 
         """
+        if type(data) is str:
+            data = ScaleBytes(data)
 
         result_found = False
 
@@ -245,16 +288,12 @@ class StorageKey:
             data = ScaleBytes(self.metadata_storage_function.value_object['default'].value_object)
         else:
             # No result is interpreted as an Option<...> result
-            change_scale_type = f'Option<{self.value_scale_type}>'
+            change_scale_type = Option(self.value_scale_type)
             data = ScaleBytes(self.metadata_storage_function.value_object['default'].value_object)
 
         # Decode SCALE result data
-        updated_obj = self.runtime_config.create_scale_object(
-            type_string=change_scale_type,
-            data=data,
-            metadata=self.metadata
-        )
-        updated_obj.decode()
+        updated_obj = change_scale_type.new(metadata=self.metadata)
+        updated_obj.decode(data)
         updated_obj.meta_info = {'result_found': result_found}
 
         return updated_obj

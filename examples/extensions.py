@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 substrate = SubstrateInterface(url="wss://rpc.polkadot.io")
 
-substrate.register_extension(SubstrateNodeExtension(max_block_range=100))
+substrate.extensions.register(SubstrateNodeExtension(max_block_range=100))
 
 # Search for block number corresponding a specific datetime
 block_datetime = datetime(2022, 12, 31, 0, 0, 0)

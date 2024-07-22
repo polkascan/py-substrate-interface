@@ -17,11 +17,10 @@
 import unittest
 from unittest.mock import MagicMock
 
-from scalecodec.types import GenericAccountId
-
 from substrateinterface.exceptions import SubstrateRequestException
 
 from substrateinterface import SubstrateInterface
+from substrateinterface.scale.account import GenericAccountId
 from test import settings
 
 
@@ -31,9 +30,7 @@ class QueryMapTestCase(unittest.TestCase):
     def setUpClass(cls):
 
         cls.kusama_substrate = SubstrateInterface(
-            url=settings.KUSAMA_NODE_URL,
-            ss58_format=2,
-            type_registry_preset='kusama'
+            url=settings.KUSAMA_NODE_URL
         )
 
         orig_rpc_request = cls.kusama_substrate.rpc_request
@@ -66,7 +63,7 @@ class QueryMapTestCase(unittest.TestCase):
 
     def test_claims_claim_map(self):
 
-        result = self.kusama_substrate.query_map('Claims', 'Claims', max_results=3)
+        result = self.kusama_substrate.runtime.pallet("Claims").storage("Claims").list(max_results=3)
 
         records = [item for item in result]
 
@@ -79,11 +76,11 @@ class QueryMapTestCase(unittest.TestCase):
     def test_system_account_map_block_hash(self):
 
         # Retrieve first two records from System.Account query map
-
-        result = self.kusama_substrate.query_map(
-            'System', 'Account', page_size=1,
-            block_hash="0x587a1e69871c09f2408d724ceebbe16edc4a69139b5df9786e1057c4d041af73"
-        )
+        result = self.kusama_substrate.runtime.pallet("System").storage("Account").list(page_size=1)
+        # result = self.kusama_substrate.query_map(
+        #     'System', 'Account', page_size=1,
+        #     block_hash="0x587a1e69871c09f2408d724ceebbe16edc4a69139b5df9786e1057c4d041af73"
+        # )
 
         record_1_1 = next(result)
 
@@ -100,11 +97,7 @@ class QueryMapTestCase(unittest.TestCase):
         self.assertIn('nonce', record_1_2[1].value)
 
         # Same query map with yield of 2 must result in same records
-
-        result = self.kusama_substrate.query_map(
-            'System', 'Account', page_size=2,
-            block_hash="0x587a1e69871c09f2408d724ceebbe16edc4a69139b5df9786e1057c4d041af73"
-        )
+        result = self.kusama_substrate.runtime.pallet("System").storage("Account").list(page_size=2)
 
         record_2_1 = next(result)
         record_2_2 = next(result)
@@ -170,21 +163,17 @@ class QueryMapTestCase(unittest.TestCase):
             )
 
     def test_double_map(self):
-        era_stakers = self.kusama_substrate.query_map(
-            module='Staking',
-            storage_function='ErasStakers',
-            params=[2185],
-            max_results=4,
-            block_hash="0x61dd66907df3187fd1438463f2c87f0d596797936e0a292f6f98d12841da2325"
-        )
+        era_stakers = self.kusama_substrate.runtime.at(
+            "0x420d9540194eb7bce28934a9f8bc36503e8c32111c33ea3e6a19ba433904ac9c"
+        ).pallet("Staking").storage("ErasStakers").list(6137, max_results=4)
 
         records = list(era_stakers)
 
         self.assertEqual(len(records), 4)
-        self.assertEqual(records[0][0].ss58_address, 'JCghFN7mD4ETKzMbvSVmMMPwWutJGk6Bm1yKWk8Z9KhPGeZ')
-        self.assertEqual(records[1][0].ss58_address, 'CmNv7yFV13CMM6r9dJYgdi4UTJK7tzFEF17gmK9c3mTc2PG')
-        self.assertEqual(records[2][0].ss58_address, 'DfishveZoxSRNRb8FtyS7ignbw6cr32eCY2w6ctLDRM1NQz')
-        self.assertEqual(records[3][0].ss58_address, 'HmsTAS1bCtZc9FSq9nqJzZCEkhhSygtXj9TDxNgEWTHnpyQ')
+        self.assertEqual(records[0][0].ss58_address, 'EiBh85f6jURjXKovmokab4Li9QcHejecoaj2ADVeRWZWsAw')
+        self.assertEqual(records[1][0].ss58_address, 'DosBPrbyFZ1ta8rPX5Mt6mFvNqqa9eg2tMngs5rRSWrWaZ6')
+        self.assertEqual(records[2][0].ss58_address, 'Hn8ELsyUL9UgDZpPX6bE464o4sbi7gqgYEKjntK7xuVzGXH')
+        self.assertEqual(records[3][0].ss58_address, 'GXTJJh2kQJoS9amET2WmZ82uFkm7HYCScoP9bEDV5JyKsWE')
 
     def test_double_map_page_size(self):
         era_stakers = self.kusama_substrate.query_map(

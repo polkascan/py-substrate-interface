@@ -16,8 +16,7 @@
 import os
 import unittest
 
-from scalecodec import ScaleBytes
-from scalecodec.type_registry import load_type_registry_file
+from scalecodec.base import ScaleBytes
 from substrateinterface import SubstrateInterface, Keypair, ExtrinsicReceipt
 from substrateinterface.exceptions import SubstrateRequestException
 from test import settings
@@ -28,15 +27,11 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.kusama_substrate = SubstrateInterface(
-            url=settings.KUSAMA_NODE_URL,
-            ss58_format=2,
-            type_registry_preset='kusama'
+            url=settings.KUSAMA_NODE_URL
         )
 
         cls.polkadot_substrate = SubstrateInterface(
-            url=settings.POLKADOT_NODE_URL,
-            ss58_format=0,
-            type_registry_preset='polkadot'
+            url=settings.POLKADOT_NODE_URL
         )
 
         module_path = os.path.dirname(__file__)
@@ -47,35 +42,27 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
         # Create new keypair
         mnemonic = Keypair.generate_mnemonic()
         cls.keypair = Keypair.create_from_mnemonic(mnemonic)
+        # cls.keypair = Keypair.create_from_uri('//Alice')
 
     def test_create_extrinsic_metadata_v14(self):
         # Create balance transfer call
-        call = self.kusama_substrate.runtime.pallet("Balances").call("transfer").create(
+        extrinsic = self.kusama_substrate.runtime.pallet("Balances").call("transfer_keep_alive").create_extrinsic(
             dest='EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
             value=3 * 10 ** 3
-        )
+        ).sign(keypair=self.keypair, era='Immortal', tip=1)
 
-        extrinsic = self.kusama_substrate.create_signed_extrinsic(call=call, keypair=self.keypair, tip=1)
-
-        decoded_extrinsic = self.kusama_substrate.create_scale_object("Extrinsic")
-        decoded_extrinsic.decode(extrinsic.data)
-
-        self.assertEqual(decoded_extrinsic['call']['call_module'].name, 'Balances')
-        self.assertEqual(decoded_extrinsic['call']['call_function'].name, 'transfer')
-        self.assertEqual(extrinsic['nonce'], 0)
-        self.assertEqual(extrinsic['tip'], 1)
+        self.assertEqual(extrinsic.value['nonce'], 0)
+        self.assertEqual(extrinsic.value['tip'], 1)
 
     def test_create_mortal_extrinsic(self):
 
         for substrate in [self.kusama_substrate, self.polkadot_substrate]:
 
             # Create balance transfer call
-            call = self.kusama_substrate.runtime.pallet("Balances").call("transfer").create(
+            extrinsic = self.kusama_substrate.runtime.pallet("Balances").call("transfer_keep_alive").create_extrinsic(
                 dest='EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
                 value=3 * 10 ** 3
-            )
-
-            extrinsic = substrate.create_signed_extrinsic(call=call, keypair=self.keypair, era={'period': 64})
+            ).sign(keypair=self.keypair, era={'period': 64})
 
             try:
                 substrate.submit_extrinsic(extrinsic)
@@ -88,28 +75,40 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
 
     def test_create_batch_extrinsic(self):
 
-        balance_call = self.polkadot_substrate.runtime.pallet("Balances").call("transfer").create(
+        balance_call = self.polkadot_substrate.runtime.pallet("Balances").call("transfer_keep_alive").create(
             dest='EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
             value=3 * 10 ** 3
         )
 
-        call = self.polkadot_substrate.runtime.pallet("Utility").call("batch").create(
+        extrinsic = self.polkadot_substrate.runtime.pallet("Utility").call("batch").create_extrinsic(
             calls=[balance_call, balance_call]
-        )
-
-        extrinsic = self.polkadot_substrate.create_signed_extrinsic(call=call, keypair=self.keypair, era={'period': 64})
+        ).sign(keypair=self.keypair, era={'period': 64})
 
         # Decode extrinsic again as test
         extrinsic.decode(extrinsic.data)
 
-        self.assertEqual('Utility', extrinsic.value['call']['call_module'])
-        self.assertEqual('batch', extrinsic.value['call']['call_function'])
+        self.assertEqual({'Id': self.keypair.ss58_address}, extrinsic.value['address'])
+        self.assertEqual(2, len(extrinsic.value['call']['Utility']['batch']['calls']))
+
+        # Test deserialize
+        extrinsic.value_object = None
+        extrinsic.deserialize(
+            {'address': '0x0af2a0ff1ee73cc0401b29386f3ef271dcd6e3a423c4a368ea20c59c22612c37', 'signature': {
+                'Sr25519': '0x9e89915e5a53c38b4f1158f8e41964c83752f46512cdc6b1bd178d53d4ee577a334d52339435e402d002ea9096be0d5778e261b0e74ed814139cbb32100b0183'},
+             'era': {'Mortal': {'period': 64, 'current': 0}}, 'nonce': 0, 'tip': 0, 'call': {'Utility': {'batch': {
+                'calls': [{'Balances': {
+                    'transfer_keep_alive': {'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk', 'value': 3000}}},
+                          {'Balances': {
+                              'transfer_keep_alive': {'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
+                                                      'value': 3000}}}]}}}}
+            )
+        self.assertIsNotNone(extrinsic.value_object)
 
     def test_create_multisig_extrinsic(self):
 
         call = self.kusama_substrate.compose_call(
             call_module='Balances',
-            call_function='transfer',
+            call_function='transfer_keep_alive',
             call_params={
                 'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
                 'value': 3 * 10 ** 3
@@ -155,7 +154,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
 
         call = self.kusama_substrate.compose_call(
             call_module='Balances',
-            call_function='transfer',
+            call_function='transfer_keep_alive',
             call_params={
                 'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
                 'value': 2000
@@ -201,7 +200,7 @@ class CreateExtrinsicsTestCase(unittest.TestCase):
         # Create balance transfer call
         call = self.kusama_substrate.compose_call(
             call_module='Balances',
-            call_function='transfer',
+            call_function='transfer_keep_alive',
             call_params={
                 'dest': 'EaG2CRhJWPb7qmdcJvy3LiWdh26Jreu9Dx6R1rXxPmYXoDk',
                 'value': 3 * 10 ** 3

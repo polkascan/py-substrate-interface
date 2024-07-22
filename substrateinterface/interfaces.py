@@ -14,16 +14,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable, List, TYPE_CHECKING
+from typing import Callable, List, TYPE_CHECKING, Union, Optional, Tuple
 
-from scalecodec import ScaleType, ScaleBytes
+from scalecodec.base import ScaleType, ScaleBytes
+from scalecodec.exceptions import ScaleDecodeException
+
 # from .contracts import ContractMetadata
 
-from .keypair import Keypair
+from .keypair import Keypair, KeypairType, MnemonicLanguageCode
 from .extensions import Extension
 from .exceptions import ExtensionCallNotFound, StorageFunctionNotFound, SubstrateRequestException
 
-__all__ = ['ExtensionInterface', 'RuntimeInterface']
+__all__ = ['ExtensionInterface', 'RuntimeInterface', 'BlockInterface', 'ChainInterface', 'ContractInterface']
+
+from .scale.extrinsic import GenericCall, GenericExtrinsic
+
+from .scale.metadata import GenericStorageEntryMetadata
 
 from .storage import StorageKey
 
@@ -31,13 +37,21 @@ if TYPE_CHECKING:
     from .base import SubstrateInterface
 
 
-class StorageFunctionInterface:
+class Interface:
+    pass
+
+
+class StorageFunctionInterface(Interface):
 
     def __init__(self, pallet_interface: 'RuntimePalletInterface', name: str):
         self.pallet_interface = pallet_interface
         self.name = name
 
-    def get_metadata_obj(self):
+    @property
+    def substrate(self):
+        return self.pallet_interface.runtime_interface.substrate
+
+    def get_metadata_obj(self) -> GenericStorageEntryMetadata:
         pallet = self.pallet_interface.get_metadata_obj()
 
         if not pallet:
@@ -49,6 +63,23 @@ class StorageFunctionInterface:
 
         return storage
 
+    def create_storage_key(self, *args) -> StorageKey:
+        """
+        Create a `StorageKey` instance providing storage function details. See `subscribe_storage()`.
+
+
+        Returns
+        -------
+        StorageKey
+        """
+
+        self.pallet_interface.runtime_interface.init()
+
+        return StorageKey.create_from_storage_function(
+            self.pallet_interface.name, self.name, list(args),
+            runtime_config=self.substrate.runtime_config, metadata=self.substrate.metadata
+        )
+
     def get(self, *args, raw_storage_key=None):
 
         self.pallet_interface.runtime_interface.init()
@@ -58,22 +89,20 @@ class StorageFunctionInterface:
 
         # SCALE type string of value
         storage_function = self.get_metadata_obj()
-        param_types = storage_function.get_params_type_string()
-        value_scale_type = storage_function.get_value_type_string()
-
-        if len(args) != len(param_types):
-            raise ValueError(f'Storage function requires {len(param_types)} parameters, {len(args)} given')
+        value_scale_type_id = storage_function.get_value_type_id()
 
         if raw_storage_key:
             storage_key = StorageKey.create_from_data(
-                data=raw_storage_key, pallet=self.pallet_interface.name,
-                storage_function=self.name, value_scale_type=value_scale_type,
+                data=raw_storage_key,
+                pallet=self.pallet_interface.name,
+                storage_function=storage_function.value['name'],
+                value_scale_type=value_scale_type_id,
                 metadata=substrate.metadata,
                 runtime_config=substrate.runtime_config
             )
         else:
             storage_key = StorageKey.create_from_storage_function(
-                self.pallet_interface.name, self.name, list(args),
+                self.pallet_interface.name, storage_function.value['name'], list(args),
                 metadata=substrate.metadata,
                 runtime_config=substrate.runtime_config
             )
@@ -88,27 +117,7 @@ class StorageFunctionInterface:
             raise SubstrateRequestException(response['error']['message'])
 
         if 'result' in response:
-            if value_scale_type:
-
-                if response.get('result') is not None:
-                    query_value = response.get('result')
-                elif storage_function.value['modifier'] == 'Default':
-                    # Fallback to default value of storage function if no result
-                    query_value = storage_function.value_object['default'].value_object
-                else:
-                    # No result is interpreted as an Option<...> result
-                    value_scale_type = f'Option<{value_scale_type}>'
-                    query_value = storage_function.value_object['default'].value_object
-
-                obj = substrate.runtime_config.create_scale_object(
-                    type_string=value_scale_type,
-                    data=ScaleBytes(query_value),
-                    metadata=substrate.metadata
-                )
-                obj.decode()
-                obj.meta_info = {'result_found': response.get('result') is not None}
-
-                return obj
+            return storage_key.decode_scale_value(response.get('result'))
 
     def list(self, *args, max_results: int = None, start_key: str = None, page_size: int = 100,
              ignore_decoding_errors: bool = True) -> 'QueryMapResult':
@@ -121,22 +130,18 @@ class StorageFunctionInterface:
         # SCALE type string of value
         storage_item = self.get_metadata_obj()
 
-        value_type = storage_item.get_value_type_string()
-        param_types = storage_item.get_params_type_string()
+        # param_scale_type_id = storage_item.get_params_type_id()
         key_hashers = storage_item.get_param_hashers()
-
-        # Check MapType condititions
-        if len(param_types) == 0:
-            raise ValueError('Given storage function is not a map')
-
-        if len(args) != len(param_types) - 1:
-            raise ValueError(f'Storage function map requires {len(param_types) - 1} parameters, {len(args)} given')
 
         # Generate storage key prefix
         storage_key = StorageKey.create_from_storage_function(
-            pallet=self.pallet_interface.name, storage_function=self.name, params=list(args),
+            pallet=self.pallet_interface.name, storage_function=storage_item.value['name'], params=list(args),
             metadata=substrate.metadata, runtime_config=substrate.runtime_config
         )
+
+        if len(storage_key.param_scale_types) == 0:
+            raise ValueError('Given storage function is not a map')
+
         prefix = storage_key.to_hex()
 
         if not start_key:
@@ -180,25 +185,27 @@ class StorageFunctionInterface:
             for result_group in response['result']:
                 for item in result_group['changes']:
                     try:
-                        item_key = substrate.decode_scale(
-                            type_string=param_types[len(args)],
-                            scale_bytes='0x' + item[0][len(prefix) + concat_hash_len(key_hashers[len(params)]):],
-                            return_scale_obj=True,
-                            block_hash=block_hash
-                        )
-                    except Exception:
+
+                        item_key = storage_key.decode_key_data(item[0], len(args))
+
+                        # strip key_hashers to use as item key
+                        if len(storage_key.param_scale_types) - len(args) == 1:
+                            item_key = item_key.value_object[1]
+                        else:
+                            item_key = tuple(
+                                item_key.value_object[key + 1] for key in
+                                range(len(args), len(storage_key.param_scale_types) + 1, 2)
+                            )
+
+                    except ScaleDecodeException:
                         if not ignore_decoding_errors:
                             raise
                         item_key = None
 
                     try:
-                        item_value = substrate.decode_scale(
-                            type_string=value_type,
-                            scale_bytes=item[1],
-                            return_scale_obj=True,
-                            block_hash=block_hash
-                        )
-                    except Exception:
+                        item_value = storage_key.decode_scale_value(item[1])
+
+                    except ScaleDecodeException:
                         if not ignore_decoding_errors:
                             raise
                         item_value = None
@@ -207,8 +214,8 @@ class StorageFunctionInterface:
 
         return QueryMapResult(
             records=result, page_size=page_size, module=self.pallet_interface.name, storage_function=self.name,
-            params=list(args), block_hash=block_hash, substrate=substrate, last_key=last_key, max_results=max_results,
-            ignore_decoding_errors=ignore_decoding_errors
+            params=list(args), block_hash=block_hash, storage_function_interface=self,
+            last_key=last_key, max_results=max_results, ignore_decoding_errors=ignore_decoding_errors
         )
 
     def multi(self, params_list: list) -> list:
@@ -218,55 +225,36 @@ class StorageFunctionInterface:
         pass
 
 
-class RuntimeAPIInterface:
-
-    def __init__(self, runtime_interface, name: str, params: dict = None):
-        self.runtime_interface = runtime_interface
-        self.name = name
-        self.params = params
-
-
-class RuntimeCallInterface:
+class RuntimeCallInterface(Interface):
 
     def __init__(self, pallet_interface: 'RuntimePalletInterface', name: str):
         self.pallet_interface = pallet_interface
         self.name = name
-        self.call = None
 
-    def create(self, **kwargs):
+    @property
+    def substrate(self) -> 'SubstrateInterface':
+        return self.pallet_interface.runtime_interface.substrate
+
+    def create(self, **kwargs) -> GenericCall:
         self.pallet_interface.runtime_interface.init()
 
-        substrate = self.pallet_interface.runtime_interface.substrate
+        call = self.substrate.metadata.get_call_type_def().new(metadata=self.substrate.metadata)
 
-        call = substrate.runtime_config.create_scale_object(
-            type_string='Call', metadata=substrate.metadata
-        )
-
-        call.encode({
-            'call_module': self.pallet_interface.name,
-            'call_function': self.name,
-            'call_args': kwargs
-        })
+        try:
+            call.encode({self.pallet_interface.name: {self.name: kwargs}})
+        except ValueError as e:
+            raise ValueError(f"Could not encode Call: {e}")
 
         return call
 
-    def sign_and_submit(self, call, keypair: Keypair, era: dict = None, nonce: int = None, tip: int = 0,
-                        tip_asset_id: int = None, wait_for_inclusion: bool = False, wait_for_finalization: bool = False
-                        ) -> "ExtrinsicReceipt":
-
-        substrate = self.pallet_interface.runtime_interface.substrate
-
-        extrinsic = substrate.create_signed_extrinsic(
-            call=call, keypair=keypair, era=era, nonce=nonce, tip=tip, tip_asset_id=tip_asset_id
-        )
-        return substrate.submit_extrinsic(
-            extrinsic, wait_for_inclusion=wait_for_inclusion, wait_for_finalization=wait_for_finalization
-        )
+    def create_extrinsic(self, **kwargs) -> 'ExtrinsicInterface':
+        return ExtrinsicInterface(substrate=self.substrate, call=self.create(**kwargs))
 
     def get_param_info(self):
         pass
 
-    def metadata(self):
+    def get_metadata_info(self):
+        # TODO determine final name
         self.pallet_interface.runtime_interface.init()
 
         pallet = self.pallet_interface.get_metadata_obj()
@@ -281,7 +269,29 @@ class RuntimeCallInterface:
         raise ValueError(f'Storage function "{self.pallet_interface.name}.{self.name}" not found')
 
 
-class ConstantInterface:
+class ExtrinsicInterface(Interface):
+
+    def __init__(self, substrate: 'SubstrateInterface', call: GenericCall):
+        self.substrate = substrate
+        self.call = call
+
+    def sign(self, keypair: Keypair, era: dict = None, nonce: int = None, tip: int = 0) -> GenericExtrinsic:
+        return self.substrate.create_signed_extrinsic(
+            call=self.call, keypair=keypair, era=era, nonce=nonce, tip=tip
+        )
+
+    def sign_and_submit(self, keypair: Keypair, era: dict = None, nonce: int = None, tip: int = 0,
+                        wait_for_inclusion: bool = False, wait_for_finalization: bool = False
+                        ) -> "ExtrinsicReceipt":
+
+        extrinsic = self.sign(keypair=keypair, era=era, nonce=nonce, tip=tip)
+
+        return self.substrate.submit_extrinsic(
+            extrinsic, wait_for_inclusion=wait_for_inclusion, wait_for_finalization=wait_for_finalization
+        )
+
+
+class ConstantInterface(Interface):
     def __init__(self, runtime_interface):
         self.runtime_interface = runtime_interface
 
@@ -292,26 +302,111 @@ class ConstantInterface:
         pass
 
 
-class StorageInterface:
+class StorageInterface(Interface):
 
     def __init__(self, runtime_interface: 'RuntimeInterface'):
         self.runtime_interface = runtime_interface
 
-    def multi(self, storage_keys: List[StorageKey]):
-        pass
+    @property
+    def substrate(self):
+        return self.runtime_interface.substrate
+
+    def multi(self, storage_keys: List[StorageKey]) -> List[Tuple[StorageKey, ScaleType]]:
+        """
+        Query multiple storage keys in one request.
+
+        Example:
+
+        ```
+        storage_keys = [
+            substrate.create_storage_key(
+                "System", "Account", ["F4xQKRUagnSGjFqafyhajLs94e7Vvzvr8ebwYJceKpr8R7T"]
+            ),
+            substrate.create_storage_key(
+                "System", "Account", ["GSEX8kR4Kz5UZGhvRUCJG93D5hhTAoVZ5tAe6Zne7V42DSi"]
+            )
+        ]
+
+        result = xxxxxxxx
+        ```
+
+        Parameters
+        ----------
+        storage_keys: list of StorageKey objects
+        block_hash: Optional block_hash of state snapshot
+
+        Returns
+        -------
+        list of `(storage_key, scale_obj)` tuples
+        """
+
+        self.runtime_interface.init()
+
+        # Retrieve corresponding value
+        response = self.substrate.rpc_request(
+            "state_queryStorageAt", [[s.to_hex() for s in storage_keys], self.runtime_interface.block_hash]
+        )
+
+        if 'error' in response:
+            raise SubstrateRequestException(response['error']['message'])
+
+        result = []
+
+        storage_key_map = {s.to_hex(): s for s in storage_keys}
+
+        for result_group in response['result']:
+            for change_storage_key, change_data in result_group['changes']:
+                # Decode result for specified storage_key
+                storage_key = storage_key_map[change_storage_key]
+                if change_data is not None:
+                    change_data = ScaleBytes(change_data)
+
+                result.append((storage_key, storage_key.decode_scale_value(change_data)))
+
+        return result
 
     def subscribe(self, storage_keys: List[StorageKey], subscription_handler: callable):
-        pass
+        self.runtime_interface.init()
+
+        storage_key_map = {s.to_hex(): s for s in storage_keys}
+
+        def result_handler(message, update_nr, subscription_id):
+            # Process changes
+            for change_storage_key, change_data in message['params']['result']['changes']:
+                # Check for target storage key
+                storage_key = storage_key_map[change_storage_key]
+
+                updated_obj = storage_key.decode_scale_value(change_data)
+
+                # Process subscription handler
+                subscription_result = subscription_handler(storage_key, updated_obj, update_nr, subscription_id)
+
+                if subscription_result is not None:
+                    # Handler returned end result: unsubscribe from further updates
+                    self.substrate.rpc_request("state_unsubscribeStorage", [subscription_id])
+
+                    return subscription_result
+
+        if not callable(subscription_handler):
+            raise ValueError('Provided "subscription_handler" is not callable')
+
+        return self.substrate.rpc_request(
+            "state_subscribeStorage", [[s.to_hex() for s in storage_keys]], result_handler=result_handler
+        )
 
 
-class RuntimePalletInterface:
+class RuntimePalletInterface(Interface):
 
     def __init__(self, runtime_interface: 'RuntimeInterface', name: str):
         self.runtime_interface = runtime_interface
         self.name = name
 
+    @property
+    def substrate(self):
+        return self.runtime_interface.substrate
+
     def get_metadata_obj(self) -> 'GenericPalletMetadata':
-        return self.runtime_interface.substrate.metadata.get_metadata_pallet(self.name)
+        return self.substrate.metadata.get_metadata_pallet(self.name)
 
     def call(self, name) -> RuntimeCallInterface:
         return RuntimeCallInterface(self, name)
@@ -323,24 +418,66 @@ class RuntimePalletInterface:
         pass
 
 
-class RuntimeApiCallInterface:
+class RuntimeApiCallInterface(Interface):
 
     def __init__(self, runtime_api_interface: 'RuntimeApiInterface', name: str):
         self.runtime_api_interface = runtime_api_interface
         self.name = name
 
+        self.api = None
+        self.api_method = None
+        self.params = None
+
+    def init(self):
+        self.runtime_api_interface.runtime_interface.init()
+        self.api = self.substrate.metadata.get_api(self.runtime_api_interface.name)
+        self.api_method = self.api.get_method(self.name)
+        self.params = self.api_method.get_params(self.substrate.metadata)
+
+    @property
+    def substrate(self):
+        return self.runtime_api_interface.runtime_interface.substrate
+
     def execute(self, *args):
-        raise NotImplementedError()
+
+        self.init()
+
+        if len(self.params) != len(args):
+            raise ValueError(
+                f"Number of arguments provided ({len(args)}) does not "
+                f"match definition ({len(self.params)})"
+            )
+
+        param_data = ScaleBytes(bytes())
+        for idx, param in enumerate(self.params):
+            param_data += param['type_def'].new().encode(args[idx])
+
+        # RPC request
+        result_data = self.substrate.rpc_request(
+            "state_call",
+            [f'{self.api.name}_{self.api_method.name}', str(param_data), self.runtime_api_interface.runtime_interface.block_hash]
+        )
+
+        result_obj = self.api_method.get_return_type_def(self.substrate.metadata).new()
+        result_obj.decode(ScaleBytes(result_data['result']))
+
+        return result_obj
 
     def get_param_info(self):
-        raise NotImplementedError()
+        self.init()
+        params = self.api_method.get_params(self.substrate.metadata)
+        return [p['type_def'].example_value() for p in params]
 
 
-class RuntimeApiInterface:
+class RuntimeApiInterface(Interface):
 
     def __init__(self, runtime_interface: 'RuntimeInterface', name: str):
         self.runtime_interface = runtime_interface
         self.name = name
+
+    @property
+    def substrate(self):
+        return self.runtime_interface.substrate
 
     def call(self, name) -> RuntimeApiCallInterface:
         return RuntimeApiCallInterface(self, name)
@@ -349,7 +486,7 @@ class RuntimeApiInterface:
         raise NotImplementedError()
 
 
-class RuntimeInterface:
+class RuntimeInterface(Interface):
 
     def __init__(self, substrate: 'SubstrateInterface', block_hash: str = None):
         self.substrate = substrate
@@ -370,9 +507,12 @@ class RuntimeInterface:
         self.init(block_hash=block_hash)
         return self
 
-    def create_scale_type(self, type_string: str, data: ScaleBytes = None) -> ScaleType:
+    def create_scale_object(self, si_type_id: int) -> ScaleType:
         self.init()
-        return self.config.create_scale_object(type_string=type_string, data=data)
+        type_def = self.substrate.metadata.portable_registry.get_scale_type_def(si_type_id)
+        if not type_def:
+            raise ValueError("Type def not found for {}".format(si_type_id))
+        return type_def.new()
 
     def pallet(self, name: str) -> RuntimePalletInterface:
         return RuntimePalletInterface(self, name)
@@ -386,11 +526,11 @@ class RuntimeInterface:
     def api(self, name) -> RuntimeApiInterface:
         return RuntimeApiInterface(self, name)
 
-    def subscribe_storage(self, storage_keys):
-        raise NotImplementedError()
+    # def subscribe_storage(self, storage_keys):
+    #     raise NotImplementedError()
 
     @property
-    def storage(self):
+    def storage(self) -> StorageInterface:
         return StorageInterface(self)
 
     @property
@@ -399,11 +539,15 @@ class RuntimeInterface:
         return self.substrate.metadata
 
 
-class BlockInterface:
+class BlockInterface(Interface):
 
-    def __init__(self, substrate: 'SubstrateInterface'):
+    def __init__(self, substrate: 'SubstrateInterface', number_or_hash: Union[int, str] = None) -> None:
         self.substrate = substrate
-        self.block_hash = None
+
+        if type(number_or_hash) is int:
+            number_or_hash = self.substrate.get_block_hash(number_or_hash)
+
+        self.block_hash = number_or_hash
 
     # def __init__(self, chain_interface: 'ChainInterface', block_hash: str):
     #     self.chain_interface = chain_interface
@@ -429,7 +573,7 @@ class BlockInterface:
         return self.substrate.runtime.at(self.block_hash).pallet("System").storage("Events").get()
 
 
-class ChainInterface:
+class ChainInterface(Interface):
     def __init__(self, substrate: 'SubstrateInterface'):
         self.substrate = substrate
 
@@ -439,8 +583,11 @@ class ChainInterface:
     def block(self):
         return BlockInterface(self.substrate)
 
+    def get_extrinsic(self, identifier: str):
+        pass
 
-class ExtensionInterface:
+
+class ExtensionInterface(Interface):
     """
     Keeps tracks of active extensions and which calls can be made
     """
@@ -526,27 +673,25 @@ class ExtensionInterface:
         return self.get_extension_callable(name)
 
 
-class ContractMetadataInterface:
+class ContractMetadataInterface(Interface):
 
     def __init__(self, contract_interface):
         self.contract_interface = contract_interface
 
     def create_from_file(self, metadata_file: str) -> "ContractMetadata":
+        from .contracts import ContractMetadata
         return ContractMetadata.create_from_file(
             metadata_file=metadata_file, substrate=self.contract_interface.substrate
         )
 
 
-class ContractInstanceInterface:
+class ContractInstanceInterface(Interface):
     def __init__(self, contract_bundle_interface, address: str):
         self.contract_bundle_interface = contract_bundle_interface
         self.address = address
 
 
-
-
-
-class ContractBundleInterface:
+class ContractBundleInterface(Interface):
 
     def __init__(self, contract_interface, bundle_data: dict):
         self.contract_interface = contract_interface
@@ -563,7 +708,7 @@ class ContractBundleInterface:
         return ContractInstanceInterface(self, address)
 
 
-class ContractInterface:
+class ContractInterface(Interface):
 
     def __init__(self, substrate):
         self.substrate = substrate
@@ -575,10 +720,39 @@ class ContractInterface:
     def bundle(self, bundle_data: dict):
         return ContractBundleInterface(self, bundle_data)
 
+
+class UtilsInterface(Interface):
+
+    def __init__(self, substrate):
+        self.substrate = substrate
+
+
+class KeyringInterface(Interface):
+
+    def __init__(self, substrate):
+        self.substrate = substrate
+
+    def create_from_uri(
+            self, uri: str, crypto_type=KeypairType.SR25519, language_code: str = MnemonicLanguageCode.ENGLISH
+    ) -> Keypair:
+        return Keypair.create_from_uri(
+            suri=uri, crypto_type=crypto_type, ss58_format=self.substrate.ss58_format, language_code=language_code
+        )
+
+    def create_from_mnemonic(
+            self, mnemonic: str, crypto_type=KeypairType.SR25519, language_code: str = MnemonicLanguageCode.ENGLISH
+    ) -> Keypair:
+        return Keypair.create_from_mnemonic(
+            mnemonic=mnemonic, crypto_type=crypto_type, ss58_format=self.substrate.ss58_format,
+            language_code=language_code
+        )
+
+
 class QueryMapResult:
 
     def __init__(self, records: list, page_size: int, module: str = None, storage_function: str = None,
-                 params: list = None, block_hash: str = None, substrate: 'SubstrateInterface' = None,
+                 params: list = None, block_hash: str = None,
+                 storage_function_interface: 'StorageFunctionInterface' = None,
                  last_key: str = None, max_results: int = None, ignore_decoding_errors: bool = False):
         self.current_index = -1
         self.records = records
@@ -586,7 +760,7 @@ class QueryMapResult:
         self.module = module
         self.storage_function = storage_function
         self.block_hash = block_hash
-        self.substrate = substrate
+        self.storage_function_interface = storage_function_interface
         self.last_key = last_key
         self.max_results = max_results
         self.params = params
@@ -594,13 +768,12 @@ class QueryMapResult:
         self.loading_complete = False
 
     def retrieve_next_page(self, start_key) -> list:
-        if not self.substrate:
+        if not self.storage_function_interface:
             return []
 
-        result = self.substrate.query_map(module=self.module, storage_function=self.storage_function,
-                                          params=self.params, page_size=self.page_size, block_hash=self.block_hash,
-                                          start_key=start_key, max_results=self.max_results,
-                                          ignore_decoding_errors=self.ignore_decoding_errors)
+        result = self.storage_function_interface.list(*self.params, page_size=self.page_size, start_key=start_key,
+                                                      max_results=self.max_results,
+                                                      ignore_decoding_errors=self.ignore_decoding_errors)
 
         # Update last key from new result set to use as offset for next page
         self.last_key = result.last_key
