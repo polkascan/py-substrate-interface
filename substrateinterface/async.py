@@ -634,9 +634,12 @@ class AsyncSubstrateInterface:
                             ):
                                 # handles subscriptions, overwrites the previous mapping of {item_id : payload_id}
                                 # with {subscription_id : payload_id}
-                                item_id = request_manager.overwrite_request(
-                                    item_id, response["result"]
-                                )
+                                try:
+                                    item_id = request_manager.overwrite_request(
+                                        item_id, response["result"]
+                                    )
+                                except KeyError:
+                                    raise SubstrateRequestException(str(response))
                             decoded_response, complete = await self._process_response(
                                 response,
                                 item_id,
