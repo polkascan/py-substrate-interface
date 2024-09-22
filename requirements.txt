@@ -17,6 +17,9 @@ py-sr25519-bindings>=0.2.0,<1
 py-ed25519-zebra-bindings>=1.0,<2
 py-bip39-bindings>=0.1.9,<1
 
+bt-decode==0.2.0a0  # this will change in the future to 0.2.0
+async-property==0.2.2
+
 mkdocs
 mkdocs-material
 mkdocs-autorefs
